@@ -1,0 +1,17 @@
+.p-alert {
+    border-left: 6px solid #2f55d4;
+    color: #8492a6;
+    background-color: #f8f9fc;
+    padding: 10px 15px;
+    max-width: 800px;
+}
+
+.p-alert_warn {
+    border-left: 6px solid #ffc107;
+    color: #dda501;
+    background-color: #fef9eb;
+}
+
+.block.half-top-padded {
+    padding-top: 10px;
+}

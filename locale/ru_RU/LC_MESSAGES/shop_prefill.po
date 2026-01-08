@@ -1,0 +1,43 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: prefill\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ru_RU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=((((n%10)==1)&&((n%100)!=11))?(0):(((((n%10)>=2)&&((n%10)<=4))&&(((n%100)<10)||((n%100)>=20)))?(1):2));\n"
+"X-Generator: Poedit 3.2.2\n"
+
+# Основное
+msgid "title"
+msgstr "Предзаполнение полей оформления заказа"
+
+msgid "devs"
+msgstr "Разработчик"
+
+# Меню
+msgid "menu.help"
+msgstr "Поддержка"
+
+msgid "menu.feedback"
+msgstr "Оставить отзыв"
+
+# Настпройки
+msgid "setting.plugin_active"
+msgstr "Статус плагина"
+
+msgid "setting.storefront_selector"
+msgstr "Витрина"
+
+msgid "setting.storefront_selector.general"
+msgstr "Общие настройки для всех витрин"
+
+msgid "setting.active"
+msgstr "Статус для витрины"
+
+msgid "setting.default_value"
+msgstr "Значение по умолчанию"

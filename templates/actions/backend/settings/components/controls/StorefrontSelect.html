@@ -1,0 +1,12 @@
+{strip}
+    <select data-id="storefront-select">
+        <option data-code="*">[`setting.storefront_selector.general`]</option>
+        {foreach $storefronts as $domain=>$domain_storefronts}
+            <optgroup label="{$domain}">
+                {foreach $domain_storefronts as $storefront}
+                    <option data-code="{$storefront->getCode()}">{$storefront->getFullUrl()}</option>
+                {/foreach}
+            </optgroup>
+        {/foreach}
+    </select>
+{/strip}

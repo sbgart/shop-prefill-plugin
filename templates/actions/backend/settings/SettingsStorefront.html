@@ -1,0 +1,8 @@
+{include file='./blocks/Tabs.html' tabs=['General','Prefill', 'Help']}
+
+<script>
+    $(function () {
+        const prefillSettings = new PrefillSettings('#prefill [data-id="storefront-content"]');
+        prefillSettings.tabs();
+    });
+</script>

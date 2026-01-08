@@ -1,0 +1,24 @@
+<div class="fields">
+    {include file='../../components/Field.html'
+    name="{$name_prefix}[active]"
+    type='Switcher'
+    label='[`setting.active`]'
+    value=$settings['active']
+    tooltip='[`tooltip.storefront_active`]'}
+</div>
+
+<div class="fields">
+    {include file='../../components/Field.html'
+    name="{$name_prefix}[prefill][active]"
+    type='Switcher'
+    label='[`setting.prefill.active`]'
+    value=$settings['prefill']['active']}
+</div>
+
+
+<script>
+    $(function () {
+        const prefillSettings = new PrefillSettings('#prefill [data-id="storefront-content"]');
+        prefillSettings.switcher();
+    });
+</script>

@@ -1,0 +1,91 @@
+{strip}
+
+    {$type=$type|default:"text"}
+
+    {$spoiler=$spoiler|default: false}
+    {$spoiler_icon=$spoiler_icon|default: false}
+    {$spoiler_summary=$spoiler_summary|default: '[`setting.spoiler_summary`]'}
+
+    {$hint_spoiler=$hint_spoiler|default: false}
+    {$hint_spoiler_summary=$hint_spoiler_summary|default: '[`setting.hint_spoiler_summary`]'}
+
+    {$default=$default|default: false}
+    <div class="field">
+        {if isset($label)}
+            <div class="name">
+                {$label}
+                {if isset($tooltip)}
+                    <span class="shop-tooltip">
+                <i class="icon10 info"></i>
+                <span>{$tooltip}</span>
+            </span>
+                {/if}
+            </div>
+        {/if}
+        <div class="value">
+            {include assign=control file="../components/controls/{$type}.html"}
+
+            {capture assign=hint_spoiler_block}
+                {if isset($default) || isset($hint_spoiler)}
+                    <div class="block block not-padded half-top-padded">
+                        <ul class="menu-h with-icons">
+                            {if $hint_spoiler}
+                                <li>
+                                    <a href="#" class="inline-link" data-spoiler-trigger="{$name}">
+                                        <i class="icon16 light-bulb" style="vertical-align: middle;"></i>
+                                        <b><i>{$hint_spoiler_summary}</i></b>
+                                        <i class="icon10 darr no-overhanging"></i>
+                                    </a>
+                                </li>
+                            {/if}
+                            {if !empty($default)}
+                                <li>
+                                    <a href="#" class="inline-link"
+                                       data-reset-config-trigger="{$name}">
+                                        <i class="icon16 rotate-left" style="vertical-align: middle;"></i>
+                                        <b><i>[`setting.reset`]</i></b>
+                                    </a>
+                                </li>
+                            {/if}
+                        </ul>
+                        {if $hint_spoiler}
+                            <div data-spoiler-content="{$name}">
+                                <div class="block left-padded">
+                                    <div class="p-alert">
+                                        {$spoiler_hint}
+                                    </div>
+                                </div>
+                            </div>
+                        {/if}
+                    </div>
+                {/if}
+            {/capture}
+
+            {capture assign=value_block}
+                {if isset($hint_before)}
+                    <span class="hint">{$hint_before}</span>
+                {/if}
+                {$control}
+                {if isset($hint_after)}
+                    <span class="hint">{$hint_after}</span>
+                {/if}
+                {$hint_spoiler_block}
+            {/capture}
+
+            {if $spoiler}
+                <a href="#" class="inline-link" data-spoiler-trigger="vs_{$name|escape:"html"}">
+                    {if $spoiler_icon}<i class="icon16 {$spoiler_icon}" style="vertical-align: middle;"></i>{/if}
+                    <b><i>{$spoiler_summary}</i></b>
+                    <i class="icon10 darr no-overhanging"></i>
+                </a>
+                <div class="block not-padded" data-spoiler-content="vs_{$name|escape:"html"}">
+                    <div class="block left-padded">
+                        {$value_block}
+                    </div>
+                </div>
+            {else}
+                {$value_block}
+            {/if}
+        </div>
+    </div>
+{/strip}

@@ -1,0 +1,9 @@
+{strip}
+    <select name="{$name}">
+        {if isset($blank_option)}
+            <option value="">{$blank_option}</option>
+        {/if}
+
+        {html_options options=$options selected=$value}
+    </select>
+{/strip}

@@ -1,0 +1,20 @@
+<div data-type="tabs">
+
+    <ul class="tabs">
+        {foreach from=$tabs item=tab}
+            <li>
+                <a href="#" data-tab-trigger="{$tab|lower}">
+                    [`tab.{$tab|lower}`]
+                </a>
+            </li>
+        {/foreach}
+
+    </ul>
+
+    {foreach from=$tabs item=tab}
+        <div class="tab-content" data-tab-content="{$tab|lower}">
+            {include file="./tabs/`$tab`.html"}
+        </div>
+    {/foreach}
+
+</div>

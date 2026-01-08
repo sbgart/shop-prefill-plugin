@@ -1,0 +1,10 @@
+{strip}
+    <input type="hidden" name="{$name}" value="false">
+    <input type="checkbox"
+           name="{$name}"
+           data-type="switcher{if isset($collapse)},collapse{/if}"
+           value="true"
+            {if isset($value) && $value == 'true'} {'checked'} {/if}
+            {if isset($collapse)} data-for="{$collapse}" {/if}
+            {if isset($id)} data-id="{$id}" {/if} />
+{/strip}

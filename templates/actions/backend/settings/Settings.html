@@ -1,0 +1,51 @@
+{$name_prefix = "`$app_id`_`$plugin_id`"}
+
+<div id="{$plugin_id}">
+    {include file='./blocks/Head.html'}
+
+    {include file='./blocks/Header.html'}
+
+    <form id="plugins-settings-form" action="?module=plugins&id={$plugin_id}&action=save" method="POST">
+        {$wa->csrf()}
+
+        <div class="fields" style="width: 100%;">
+
+            <div class="field-group">
+                {include file='./components/Field.html'
+                type='Switcher'
+                name="{$name_prefix}[active]"
+                label='[`setting.plugin_active`]'
+                value=$settings['active']}
+            </div>
+
+            <!-- Storefront selector -->
+            <div class="field-group">
+                {include file='./components/Field.html'
+                type='StorefrontSelect'
+                label='<strong>[`setting.storefront_selector`]</strong>'
+                tooltip='[`title.storefront_selector`]'}
+            </div>
+            <div data-id="storefront-content"></div>
+
+            <hr>
+
+            <div class="field">
+                <div class="value submit">
+                    <input type="submit" class="button green" value="[`Save`]">
+                    <span id="plugins-settings-form-status" style="display: none;"></span>
+                </div>
+            </div>
+
+        </div>
+    </form>
+
+</div>
+
+<script>
+    $(function () {
+        const prefillSettings = new PrefillSettings('#prefill');
+
+        prefillSettings.switcher();
+        prefillSettings.storefrontSelect();
+    });
+</script>

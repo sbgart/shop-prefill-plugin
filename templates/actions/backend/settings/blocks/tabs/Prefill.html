@@ -1,0 +1,51 @@
+<div class="fields">
+    {include file='../../components/Field.html'
+    name="{$name_prefix}[prefill][apply_immediately]"
+    type='Switcher'
+    label='[`setting.prefill.apply_immediately`]'
+    value=$settings['prefill']['apply_immediately']
+    hint_after='[`tooltip.prefill.apply_immediately`]'}
+</div>
+<div class="fields">
+    {include file='../../components/Field.html'
+    name="{$name_prefix}[prefill][source]"
+    type='Select'
+    options=['last_order'=>'[`option.source.last_order`]',''=>'[`option.source.none`]']
+    label='[`setting.prefill.source`]'
+    value=$settings['prefill']['source']
+    tooltip='[`tooltip.prefill.source`]'}
+</div>
+
+<div class="fields">
+    {include file='../../components/Field.html'
+    name="{$name_prefix}[prefill][default_payment]"
+    type='Select'
+    options=$payment_methods
+    blank_option = '[`option.source.none`]'
+    label='[`setting.default_payment`]'
+    value=$settings['prefill']['default_payment']
+    tooltip='[`tooltip.prefill.default_payment`]'}
+</div>
+<div class="fields">
+    {include file='../../components/Field.html'
+    name="{$name_prefix}[prefill][cityselect_integration]"
+    type='Switcher'
+    label='[`setting.prefill.cityselect_integration`]'
+    value=$settings['prefill']['cityselect_integration']
+    hint_after='[`tooltip.prefill.cityselect_integration`]'}
+</div>
+<div class="fields">
+    {include file='../../components/Field.html'
+    name="{$name_prefix}[prefill][disable_comment]"
+    type='Switcher'
+    label='[`setting.prefill.disable_comment`]'
+    value=$settings['prefill']['disable_comment']
+    hint_after='[`tooltip.prefill.disable_comment`]'}
+</div>
+
+<script>
+    $(function () {
+        const prefillSettings = new PrefillSettings('#prefill [data-id="storefront-content"]');
+        prefillSettings.switcher();
+    });
+</script>
