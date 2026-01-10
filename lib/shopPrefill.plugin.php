@@ -457,16 +457,17 @@ JS;
             return '';
         }
 
-        // ВРЕМЕННЫЙ DEBUG: Выводим всю структуру auth для поиска service_agreement
-        $debug_auth_structure = '';
-        if (isset($params['data']['auth'])) {
-            $debug_auth_structure  = '<div style="background: #e3f2fd; padding: 10px; margin: 10px; border: 2px solid #2196f3; border-radius: 5px;">';
-            $debug_auth_structure .= '<strong>🔍 DEBUG: Структура $params[\'data\'][\'auth\']:</strong>';
-            $debug_auth_structure .= '<pre style="font-size: 11px; overflow-x: auto;">';
-            $debug_auth_structure .= htmlspecialchars(print_r($params['data']['auth'], true));
-            $debug_auth_structure .= '</pre></div>';
-        }
-
+        // ВРЕМЕННЫЙ DEBUG: Выводим ВСЮ структуру $params для поиска service_agreement
+        $debug_full_structure  = '<div style="background: #e3f2fd; padding: 10px; margin: 10px; border: 2px solid #2196f3; border-radius: 5px;">';
+        $debug_full_structure .= '<strong>🔍 DEBUG: Полная структура $params:</strong>';
+        $debug_full_structure .= '<pre style="font-size: 10px; overflow-x: auto; max-height: 600px; overflow-y: auto;">';
+        $debug_full_structure .= htmlspecialchars(print_r($params, true));
+        $debug_full_structure .= '</pre></div>';
+        
+        return $debug_full_structure;
+        
+        // TODO: Раскомментировать после получения структуры данных
+        /*
         // Собираем ВСЕ delayed_errors из всех шагов
         $auth_delayed_errors    = ifset($params, 'data', 'auth', 'delayed_errors', []);
         $details_delayed_errors = ifset($params, 'data', 'details', 'delayed_errors', []);
@@ -571,6 +572,7 @@ JS;
         $debug_html .= '</div>';
 
         return $debug_html;
+        */
     }
 
     /**
