@@ -9,43 +9,29 @@ class shopPrefillPluginCheckout
     public static function addShortShippingInfoSection(array &$checkout_params): void
     {
         $region_html = $checkout_params['result']['region']['html'] ?? null;
-        if (!$region_html) {
+        if (! $region_html) {
             return;
         }
 
-        $short_shipping_info_section = shopPrefillPluginViewProvider::render('/checkout/ShortShippingInfoSection');
+        $short_shipping_info_section                 = shopPrefillPluginViewProvider::render('/checkout/ShortShippingInfoSection');
         $checkout_params['result']['region']['html'] = $short_shipping_info_section . $region_html;
     }
 
-    public static function addParamsChoiceLink(array &$checkout_params): void
+    public static function addParamsChoiceLink(array &$checkout_params): string
     {
-        $shipping_section_html = $checkout_params["data"]["result"]["region"]["html"] ?? null;
+        // Манипулируем HTML секции региона через vars
+        if (isset($checkout_params['vars']['region']['html'])) {
+            $test_html = '<div style="background: yellow; padding: 20px; margin: 10px; border: 2px solid orange;">
+                <strong>🎉 TEST IN REGION SECTION!</strong>
+                <p>Вставлено в секцию региона через хук checkout_render_shipping</p>
+            </div>';
 
-        if (!$shipping_section_html) {
-            return;
+            // Добавляем HTML в конец секции региона
+            $checkout_params['vars']['region']['html'] .= $test_html;
         }
 
-        libxml_use_internal_errors(true);
-
-        $html = mb_convert_encoding($shipping_section_html, 'HTML-ENTITIES', 'UTF-8');
-        $dom = new DOMDocument();
-        $dom->encoding = 'UTF-8';
-        @$dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-        $xpath = new DOMXPath($dom);
-
-        libxml_clear_errors();
-
-        $region_block_header = $xpath->query(
-            "//*[contains(@class, 'wa-section-header')]//*[contains(@class, 'wa-header')]"
-        );
-
-        $tt = $region_block_header[0]->nodeValue;
-
-        if ($region_block_header->length > 0) {
-            $region_block_header[0]->nodeValue = 'Test!';
-        }
-
-        $checkout_params["data"]["result"]["region"]["html"] = "ddd";//$dom->saveHTML();
+        // Возвращаем пустую строку, чтобы ничего не добавлялось в секцию shipping
+        return '';
     }
 
 }

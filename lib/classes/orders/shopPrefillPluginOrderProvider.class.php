@@ -2,14 +2,14 @@
 
 class shopPrefillPluginOrderProvider
 {
-    private ?shopOrderModel $order_model = null;
+    private ?shopOrderModel       $order_model        = null;
     private ?shopOrderParamsModel $order_params_model = null;
 
     private ?array $last_user_order = null;
 
     public function __construct(shopOrderModel $order_model, shopOrderParamsModel $order_params_model)
     {
-        $this->order_model = $order_model;
+        $this->order_model        = $order_model;
         $this->order_params_model = $order_params_model;
     }
 
@@ -59,15 +59,21 @@ class shopPrefillPluginOrderProvider
         return array_column($orders_id, 'id');
     }
 
-    public function getUserOrdersParams(int $contact_id): ?array
+    public function getUserOrdersParams(int $contact_id): array
     {
         if (empty($contact_id)) {
-            return null;
+            return [];
         }
 
         $orders_id = $this->getUserOrdersId($contact_id);
 
-        return $this->getOrderParamsModel()->get($orders_id);
+        if (empty($orders_id)) {
+            return [];
+        }
+
+        $params = $this->getOrderParamsModel()->get($orders_id);
+
+        return $params ?: [];
     }
 
 
@@ -91,13 +97,87 @@ class shopPrefillPluginOrderProvider
         return $comment !== false ? $comment : '';
     }
 
-    public function storeComment(int $order_id, string $comment): bool
+    public function storeComment(int $order_id, ?string $comment): bool
     {
         if (empty($comment) || $order_id <= 0) {
             return false;
         }
 
         return $this->getOrderParamsModel()->setOne($order_id, 'comment', $comment);
+    }
+
+    /**
+     * Получает contact_id из заказа
+     *
+     * @param int $order_id ID заказа
+     * @return int|null contact_id или null
+     */
+    public function getContactIdFromOrder(int $order_id): ?int
+    {
+        if ($order_id <= 0) {
+            return null;
+        }
+
+        $contact_id = $this->getOrderModel()->select('contact_id')
+            ->where('id=?', $order_id)
+            ->fetchField('contact_id');
+
+        return $contact_id ? (int) $contact_id : null;
+    }
+
+    /**
+     * Находит ID последнего заказа по хешу гостя
+     *
+     * @param string $hash Хеш гостя
+     * @return int|null ID последнего заказа или null если не найден
+     */
+    public function getLastOrderIdByGuestHash(string $hash): ?int
+    {
+        if (empty($hash)) {
+            return null;
+        }
+
+        $result = $this->getOrderParamsModel()
+            ->query(
+                "SELECT order_id FROM shop_order_params
+                 WHERE name = s:name AND value = s:hash
+                 ORDER BY order_id DESC
+                 LIMIT 1",
+                [
+                    'name' => shopPrefillPluginGuestHashStorage::getGuestHashParamName(),
+                    'hash' => $hash,
+                ]
+            )
+            ->fetchField('order_id');
+
+        return $result ? (int) $result : null;
+    }
+
+    /**
+     * Возвращает все ID заказов гостя по хешу
+     *
+     * @param string $hash Хеш гостя
+     * @return array Массив ID заказов (от новых к старым)
+     */
+    public function getAllOrderIdsByGuestHash(string $hash): array
+    {
+        if (empty($hash)) {
+            return [];
+        }
+
+        $results = $this->getOrderParamsModel()
+            ->query(
+                "SELECT order_id FROM shop_order_params
+                 WHERE name = s:name AND value = s:hash
+                 ORDER BY order_id DESC",
+                [
+                    'name' => shopPrefillPluginGuestHashStorage::getGuestHashParamName(),
+                    'hash' => $hash,
+                ]
+            )
+            ->fetchAll('order_id');
+
+        return array_keys($results);
     }
 
 }

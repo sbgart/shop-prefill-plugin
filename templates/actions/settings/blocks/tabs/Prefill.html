@@ -1,13 +1,5 @@
 <div class="fields">
     {include file='../../components/Field.html'
-    name="{$name_prefix}[prefill][apply_immediately]"
-    type='Switcher'
-    label='[`setting.prefill.apply_immediately`]'
-    value=$settings['prefill']['apply_immediately']
-    hint_after='[`tooltip.prefill.apply_immediately`]'}
-</div>
-<div class="fields">
-    {include file='../../components/Field.html'
     name="{$name_prefix}[prefill][source]"
     type='Select'
     options=['last_order'=>'[`option.source.last_order`]',''=>'[`option.source.none`]']
@@ -28,19 +20,19 @@
 </div>
 <div class="fields">
     {include file='../../components/Field.html'
-    name="{$name_prefix}[prefill][cityselect_integration]"
+    name="{$name_prefix}[prefill][integration][cityselect]"
     type='Switcher'
-    label='[`setting.prefill.cityselect_integration`]'
-    value=$settings['prefill']['cityselect_integration']
-    hint_after='[`tooltip.prefill.cityselect_integration`]'}
+    label='[`setting.prefill.integration.cityselect`]'
+    value=$settings['prefill']['integration']['cityselect']
+    hint_after='[`tooltip.prefill.integration.cityselect`]'}
 </div>
 <div class="fields">
     {include file='../../components/Field.html'
-    name="{$name_prefix}[prefill][disable_comment]"
+    name="{$name_prefix}[prefill][disable][fields][comment]"
     type='Switcher'
-    label='[`setting.prefill.disable_comment`]'
-    value=$settings['prefill']['disable_comment']
-    hint_after='[`tooltip.prefill.disable_comment`]'}
+    label='[`setting.prefill.disable.fields.comment`]'
+    value=$settings['prefill']['disable']['fields']['comment']
+    hint_after='[`tooltip.prefill.disable.fields.comment`]'}
 </div>
 
 <script>

@@ -9,9 +9,12 @@ return [
     'custom_settings' => true,
     'frontend'        => true,
     'handlers'        => [
-        'frontend_order'      => "frontendOrder", //Предзаполняем форму только в корзине
-        'frontend_head'       => 'frontendHead', //Предзаполняем форму при входе на сайт
-        'checkout_result'     => 'checkoutRenderShipping', //Для сворачивания блоков корзины
-        'order_action.create' => 'orderActionCreate', // Для сохранения shipping_type в параметры заказа
+        'frontend_order'           => "frontendOrder", //Предзаполняем форму только в корзине
+        'frontend_head'            => 'frontendHead', //Предзаполняем форму при входе на сайт
+        'checkout_render_auth'     => 'checkoutRenderAuth', //Добавляем контент в секцию авторизации
+        'checkout_render_region'   => 'checkoutRenderRegion', //Добавляем контент в секцию региона
+        'checkout_render_shipping' => 'checkoutRenderShipping', //Для сворачивания блоков корзины
+        'checkout_render_confirm'  => 'checkoutRenderConfirm', //DEBUG: Показываем все delayed_errors
+        'order_action.create'      => 'orderActionCreate', // Для сохранения shipping_type в параметры заказа
     ],
 ];

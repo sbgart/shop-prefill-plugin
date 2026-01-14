@@ -4,11 +4,11 @@ class shopPrefillPluginUserProvider
 {
 
     private waAuthUser $user;
-    private ?int $id = null;
-    private ?bool $isAuth = null;
-    private ?string $create_datetime = null;
-    private ?string $login = null;
-    private ?string $password = null;
+    private ?int       $id              = null;
+    private ?bool      $isAuth          = null;
+    private ?string    $create_datetime = null;
+    private ?string    $login           = null;
+    private ?string    $password        = null;
 
     public function __construct(waAuthUser $user)
     {
@@ -20,7 +20,7 @@ class shopPrefillPluginUserProvider
         return $this->user;
     }
 
-    public function getId(): int
+    public function getId(): ?int
     {
         return $this->id ??= $this->getUser()->getId();
     }
@@ -50,7 +50,7 @@ class shopPrefillPluginUserProvider
      */
     public function rememberMe(int $expires = 90): void
     {
-        if (!$this->isAuth()) {
+        if (! $this->isAuth()) {
             return;
         }
 

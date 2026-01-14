@@ -12,6 +12,7 @@ return [
                 'comment' => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
             ],
             'section' => [
+                'auth'   => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'region' => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
             ],
         ],

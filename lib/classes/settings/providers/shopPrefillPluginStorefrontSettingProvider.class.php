@@ -10,7 +10,7 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
     {
         parent::__construct();
 
-        $config = shopPrefillPlugin::getConfig('storefront.settings') ?? [];
+        $config          = shopPrefillPlugin::getConfig('storefront.settings') ?? [];
         $this->structure = $this->buildStructure($config);
     }
 
@@ -59,5 +59,9 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
 
         $this->setSetting($storefront_code, 'update_time', time());
         $this->setSetting($storefront_code, 'updated_by', wa()->getUser()->getId() ?? []);
+
+        // Очищаем кэш после сохранения
+        $cache = new waRuntimeCache('prefill_settings_' . $storefront_code);
+        $cache->delete();
     }
 }

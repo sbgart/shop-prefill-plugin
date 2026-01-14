@@ -2,19 +2,19 @@
 
 class shopPrefillPluginSessionStorageProvider
 {
-    public bool $prefilled = false;
+    public bool   $prefilled        = false;
     private array $prefill_disabled = [];
 
     private shopPrefillPluginFillParamsProvider $params_provider;
-    private ?shopPrefillPluginFillParams $fill_params = null;
-    private waSessionStorage $storage;
+    private ?shopPrefillPluginFillParams        $fill_params     = null;
+    private waSessionStorage                    $storage;
 
     /**
      * @throws waException
      */
     public function __construct(array $prefill_disabled = [])
     {
-        $this->storage = wa()->getStorage();
+        $this->storage          = wa()->getStorage();
         $this->prefill_disabled = $prefill_disabled;
     }
 
@@ -24,7 +24,12 @@ class shopPrefillPluginSessionStorageProvider
         return $this->storage;
     }
 
-    public function getCheckoutParams()
+    /**
+     * Получает параметры checkout из хранилища
+     *
+     * @return array|null Параметры checkout или null если хранилище пустое
+     */
+    public function getCheckoutParams(): ?array
     {
         return $this->getStorage()->get('shop/checkout');
     }
@@ -41,59 +46,92 @@ class shopPrefillPluginSessionStorageProvider
     }
 
     /**
+     * Заполняет параметры checkout с проверкой наличия данных
+     *
+     * @param shopPrefillPluginFillParams $params Параметры для предзаполнения
      * @throws waException
      * @throws waDbException
      */
     public function preFillCheckoutParams(shopPrefillPluginFillParams $params): void
     {
-        $final_params = [];
-
-        if ($this->prefilled) { // Если данные уже заполнены, то выходим.
+        // Если уже заполняли в этом запросе, проверяем наличие данных перед повторным заполнением
+        if ($this->prefilled) {
             return;
         }
+
+        $final_params = [];
 
         $checkout_params = $this->getCheckoutParams();
         $checkout_params = is_array($checkout_params) ? $checkout_params : [];
 
-        if (!isset($checkout_params['order']['region']['city'])) { // Если есть значение city, то параметры региона уже были заполнены ранее.
+        // Auth секция - предзаполняем если нет данных о пользователе
+        if (! isset($checkout_params['order']['auth']['data']['email'])) {
+            $this->prepareAuthSectionParams($params, $final_params);
+        }
+
+        if (! isset($checkout_params['order']['region']['city'])) {
             $this->prepareRegionSectionParams($params, $final_params);
         }
 
-        if (!isset($checkout_params['order']['shipping']['type_id'])) { // Если есть значение type_id, то параметры доставки уже были заполнены ранее.
+        if (! isset($checkout_params['order']['shipping']['type_id'])) {
             $this->prepareShippingSectionParams($params, $final_params);
             $this->preparePaymentSectionParams($params, $final_params);
             $this->prepareConfirmSectionParams($params, $final_params);
         }
 
-        if (!isset($checkout_params['order']['payment']['id'])) { // Если есть значение id, то параметры оплаты уже были заполнены ранее.
-
-        }
-
-        if (!isset($checkout_params['order']['confirm']['comment'])) { // Если есть значение comment, то параметры уже были заполнены ранее.
-
-        }
-
-        if (!empty($final_params)) {
+        if (! empty($final_params)) {
             $this->setCheckoutParams(shopPrefillPluginHelper::deepMergeArrays($checkout_params, $final_params));
         }
 
         $this->prefilled = true;
     }
 
-    public function fillCheckoutParams(shopPrefillPluginFillParams $params): void
+    /**
+     * Подготавливает параметры auth секции для предзаполнения
+     *
+     * Предзаполняет только для неавторизованных пользователей:
+     * - Тип покупателя (auth[mode])
+     * - Поля контакта (auth[data][*])
+     */
+    private function prepareAuthSectionParams(?shopPrefillPluginFillParams $fill_params, array &$final_params): void
     {
-        $final_params = [];
+        if (($this->prefill_disabled['section']['auth'] ?? false)) {
+            return;
+        }
 
-        $this->prepareRegionSectionParams($params, $final_params);
-        $this->prepareShippingSectionParams($params, $final_params);
-        $this->preparePaymentSectionParams($params, $final_params);
-        $this->prepareConfirmSectionParams($params, $final_params);
+        if ($fill_params === null) {
+            return;
+        }
 
-        if (!empty($final_params)) {
-            $checkout_params = $this->getCheckoutParams();
-            $checkout_params = is_array($checkout_params) ? $checkout_params : [];
+        // Для авторизованных пользователей auth данные берутся из контакта автоматически
+        if ($this->isUserAuthenticated()) {
+            return;
+        }
 
-            $this->setCheckoutParams(shopPrefillPluginHelper::deepMergeArrays($checkout_params, $final_params));
+        // Тип покупателя (person/company)
+        $customer_type = $fill_params->getCustomerType();
+        if ($customer_type && ! ($this->prefill_disabled['fields']['customer_type'] ?? false)) {
+            $final_params['order']['auth']['mode'] = $customer_type;
+        }
+
+        // Поля auth[data] (email, phone, кастомные поля)
+        $auth_data = $fill_params->getAuthData();
+        foreach ($auth_data as $field_id => $value) {
+            if (! ($this->prefill_disabled['fields'][$field_id] ?? false)) {
+                $final_params['order']['auth']['data'][$field_id] = $value;
+            }
+        }
+    }
+
+    /**
+     * Проверяет, авторизован ли текущий пользователь
+     */
+    private function isUserAuthenticated(): bool
+    {
+        try {
+            return wa()->getUser()->isAuth();
+        } catch (waException $e) {
+            return false;
         }
     }
 
@@ -108,9 +146,9 @@ class shopPrefillPluginSessionStorageProvider
         }
 
         $final_params['order']['region']['country'] = $fill_params->getCountry();
-        $final_params['order']['region']['region'] = $fill_params->getRegion();
-        $final_params['order']['region']['city'] = $fill_params->getCity();
-        $final_params['order']['region']['zip'] = $fill_params->getZip();
+        $final_params['order']['region']['region']  = $fill_params->getRegion();
+        $final_params['order']['region']['city']    = $fill_params->getCity();
+        $final_params['order']['region']['zip']     = $fill_params->getZip();
     }
 
     private function prepareShippingSectionParams(?shopPrefillPluginFillParams $fill_params, array &$final_params): void
@@ -123,7 +161,7 @@ class shopPrefillPluginSessionStorageProvider
             return;
         }
 
-        $final_params['order']['shipping']['type_id'] = $fill_params->getShippingTypeId();
+        $final_params['order']['shipping']['type_id']    = $fill_params->getShippingTypeId();
         $final_params['order']['shipping']['variant_id'] = $fill_params->getShippingVariantId();
 
         if ($fill_params->getShippingCustom()) {
@@ -161,7 +199,7 @@ class shopPrefillPluginSessionStorageProvider
             return;
         }
 
-        if (!($this->prefill_disabled['fields']['comment'] ?? false)) {
+        if (! ($this->prefill_disabled['fields']['comment'] ?? false)) {
             $final_params['order']['confirm']['comment'] = $fill_params->getComment();
         }
     }
