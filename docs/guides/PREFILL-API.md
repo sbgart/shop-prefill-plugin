@@ -1,11 +1,42 @@
 # API плагина Prefill
 
-**Дата создания:** 2026-01-08
+**Дата создания:** 2026-01-08  
 **Версия:** 1.0
 
 ## Обзор API
 
 Плагин Prefill предоставляет программный интерфейс для интеграции с другими компонентами Shop-Script и расширения функциональности.
+
+## ⚠️ Маршрутизация AJAX-запросов
+
+**Важно!** Для плагинов Shop-Script все AJAX-запросы к frontend-контроллерам должны использовать полный путь через приложение.
+
+### Правильный подход ✅
+
+```javascript
+// В PHP передаем базовый URL
+$js_params = [
+    'appUrl' => wa()->getAppUrl('shop'),  // "/shop/"
+];
+
+// В JavaScript используем полный путь
+constructor(params) {
+    this.appUrl = params.appUrl;
+}
+
+$.post(this.appUrl + 'prefill/consent', { action: 'grant' })
+// → /shop/prefill/consent ✅
+```
+
+### Неправильный подход ❌
+
+```javascript
+$.post('/prefill/consent', { action: 'grant' })
+// → /prefill/consent ❌ (404 Not Found)
+```
+
+**См. также:** `docs/bugs/ajax-routing-404.md`
+
 
 ## Основные классы
 

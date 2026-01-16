@@ -33,7 +33,7 @@ class shopPrefillPluginDebugHelper
     {
         self::$debug_stack[] = [
             'title' => $title,
-            'data'  => $checkout_params,
+            'data' => $checkout_params,
         ];
     }
 
@@ -45,7 +45,7 @@ class shopPrefillPluginDebugHelper
      */
     public static function registerHookCall(string $hook_name): void
     {
-        if (! in_array($hook_name, self::$called_hooks)) {
+        if (!in_array($hook_name, self::$called_hooks)) {
             self::$called_hooks[] = $hook_name;
         }
     }
@@ -105,7 +105,7 @@ class shopPrefillPluginDebugHelper
 
             // Получаем настройки витрины
             $storefront_settings = $plugin->getStorefrontSettings();
-            $plugin_enabled      = ! empty($storefront_settings['prefill']['active']);
+            $plugin_enabled = !empty($storefront_settings['prefill']['active']);
 
             // Группируем стек по хукам
             $grouped_stack = [];
@@ -122,13 +122,13 @@ class shopPrefillPluginDebugHelper
                     $clean_title = 'AFTER';
                 }
 
-                if (! isset($grouped_stack[$hook_name])) {
+                if (!isset($grouped_stack[$hook_name])) {
                     $grouped_stack[$hook_name] = [];
                 }
 
                 $grouped_stack[$hook_name][] = [
                     'title' => $clean_title,
-                    'data'  => $entry['data'],
+                    'data' => $entry['data'],
                     'color' => self::getEntryColor($entry['title']),
                 ];
             }
@@ -137,51 +137,51 @@ class shopPrefillPluginDebugHelper
             $fill_params_data = [];
             $fill_params_meta = [
                 'user_authorized' => false,
-                'user_id'         => null,
-                'contact_id'      => null,
-                'guest_hash'      => null,
-                'orders_count'    => 0,
-                'source'          => 'empty',
+                'user_id' => null,
+                'contact_id' => null,
+                'guest_hash' => null,
+                'orders_count' => 0,
+                'source' => 'empty',
                 'source_order_id' => null,
             ];
 
             try {
                 // Проверяем авторизацию
-                $user_provider      = $plugin->getUserProvider();
+                $user_provider = $plugin->getUserProvider();
                 $guest_hash_storage = $plugin->getGuestHashStorage();
 
                 $fill_params_meta['user_authorized'] = $user_provider->isAuth();
 
                 if ($fill_params_meta['user_authorized']) {
                     // Авторизованный пользователь
-                    $fill_params_meta['user_id']    = $user_provider->getId();
+                    $fill_params_meta['user_id'] = $user_provider->getId();
                     $fill_params_meta['contact_id'] = $user_provider->getId();
 
                     // Получаем количество заказов
-                    $order_provider                   = $plugin->getOrderProvider();
-                    $orders_ids                       = $order_provider->getUserOrdersId($fill_params_meta['user_id']);
+                    $order_provider = $plugin->getOrderProvider();
+                    $orders_ids = $order_provider->getUserOrdersId($fill_params_meta['user_id']);
                     $fill_params_meta['orders_count'] = count($orders_ids ?: []);
                 } else {
                     // Гость: показываем укороченный хеш
-                    $guest_hash                     = $guest_hash_storage->getGuestHash();
+                    $guest_hash = $guest_hash_storage->getGuestHash();
                     $fill_params_meta['guest_hash'] = $guest_hash ? substr($guest_hash, 0, 16) . '...' : null;
 
                     // Получаем количество заказов гостя
                     if ($guest_hash) {
-                        $order_provider                   = $plugin->getOrderProvider();
-                        $orders_ids                       = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
+                        $order_provider = $plugin->getOrderProvider();
+                        $orders_ids = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
                         $fill_params_meta['orders_count'] = count($orders_ids);
                     }
                 }
 
                 // Получаем параметры предзаполнения из БД
-                $fill_params      = $plugin->getFillParamsProvider()->getFillParams();
+                $fill_params = $plugin->getFillParamsProvider()->getFillParams();
                 $fill_params_data = $fill_params->toArray();
 
                 // Определяем источник данных
                 $order_id = $fill_params->getId();
                 if ($order_id) {
-                    $fill_params_meta['source']          = 'order';
+                    $fill_params_meta['source'] = 'order';
                     $fill_params_meta['source_order_id'] = $order_id;
                 } elseif ($fill_params_meta['orders_count'] > 0) {
                     $fill_params_meta['source'] = 'orders (no data)';
@@ -203,12 +203,12 @@ class shopPrefillPluginDebugHelper
 
             // Подготавливаем данные для шаблона
             $template_vars = [
-                'debug_stack'      => $grouped_stack,
-                'plugin_enabled'   => $plugin_enabled,
-                'has_orders'       => ($fill_params_meta['orders_count'] ?? 0) > 0,
-                'fill_params'      => $fill_params_data,
+                'debug_stack' => $grouped_stack,
+                'plugin_enabled' => $plugin_enabled,
+                'has_orders' => ($fill_params_meta['orders_count'] ?? 0) > 0,
+                'fill_params' => $fill_params_data,
                 'fill_params_meta' => $fill_params_meta,
-                'current_storage'  => $current_storage,
+                'current_storage' => $current_storage,
             ];
 
             // Рендерим шаблон
@@ -233,6 +233,28 @@ class shopPrefillPluginDebugHelper
             // Обновляем HTML стека (последний вызов побеждает)
             window.PrefillDebugHelper.stackHtml = '{$debug_html_escaped}';
 
+            // Функция для работы с куками
+            window.PrefillDebugHelper.setCookie = function(name, value, days) {
+                var expires = '';
+                if (days) {
+                    var date = new Date();
+                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                    expires = '; expires=' + date.toUTCString();
+                }
+                document.cookie = name + '=' + (value || '') + expires + '; path=/';
+            };
+
+            window.PrefillDebugHelper.getCookie = function(name) {
+                var nameEQ = name + '=';
+                var ca = document.cookie.split(';');
+                for (var i = 0; i < ca.length; i++) {
+                    var c = ca[i];
+                    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+                }
+                return null;
+            };
+
             // Функция для рендера стека
             window.PrefillDebugHelper.renderStack = function() {
                 var existing = document.getElementById('prefill-debug-stack');
@@ -245,8 +267,26 @@ class shopPrefillPluginDebugHelper
                     var tempDiv = document.createElement('div');
                     tempDiv.innerHTML = html;
                     document.body.appendChild(tempDiv.firstChild);
+
+                    // Применяем сохраненное состояние (по умолчанию свернуто)
+                    var savedState = window.PrefillDebugHelper.getCookie('wa_prefill_debug_collapsed');
+                    var shouldCollapse = savedState === null ? true : (savedState === '1');
+
+                    if (shouldCollapse) {
+                         var body = document.getElementById('prefill-debug-body');
+                         var btn = document.getElementById('prefill-debug-collapse-btn');
+                         var container = document.getElementById('prefill-debug-stack');
+
+                         if (body && btn && container) {
+                             body.style.display = 'none';
+                             btn.innerHTML = '➕';
+                             container.style.width = 'auto';
+                         }
+                    }
                 }
             };
+            
+            // ... wrappers ...
 
             // Функция для очистки хранилища
             window.PrefillDebugHelper.clearStorage = function() {
@@ -328,10 +368,12 @@ class shopPrefillPluginDebugHelper
                     body.style.display = 'flex';
                     btn.innerHTML = '➖';
                     container.style.width = '';
+                    window.PrefillDebugHelper.setCookie('wa_prefill_debug_collapsed', '0', 365);
                 } else {
                     body.style.display = 'none';
                     btn.innerHTML = '➕';
                     container.style.width = 'auto';
+                    window.PrefillDebugHelper.setCookie('wa_prefill_debug_collapsed', '1', 365);
                 }
             };
 
@@ -578,11 +620,11 @@ class shopPrefillPluginDebugHelper
      */
     public static function renderErrorsDebugHtml(array $errors_info, string $hook_name = 'CONFIRM SECTION'): string
     {
-        if (! $errors_info['has_errors']) {
+        if (!$errors_info['has_errors']) {
             return '';
         }
 
-        $debug_html  = '<div style="background: #f8d7da; padding: 15px; margin: 10px; border: 2px solid #dc3545; border-radius: 5px;">';
+        $debug_html = '<div style="background: #f8d7da; padding: 15px; margin: 10px; border: 2px solid #dc3545; border-radius: 5px;">';
         $debug_html .= '<strong>⚠️ ' . htmlspecialchars($hook_name) . ': Обнаружены незаполненные обязательные поля!</strong>';
         $debug_html .= '<p style="margin: 5px 0 10px 0; color: #721c24;">Нельзя скрывать поля - пользователь не сможет их заполнить!</p>';
 
@@ -595,9 +637,9 @@ class shopPrefillPluginDebugHelper
             }
             $debug_html .= '<ul style="margin: 5px 0; padding-left: 20px;">';
             foreach ($errors_info['regular_errors'] as $error) {
-                $field_name  = ifset($error, 'name', 'unknown');
-                $error_text  = ifset($error, 'text', 'Unknown error');
-                $section     = ifset($error, 'section', '');
+                $field_name = ifset($error, 'name', 'unknown');
+                $error_text = ifset($error, 'text', 'Unknown error');
+                $section = ifset($error, 'section', '');
                 $debug_html .= '<li><code>' . htmlspecialchars($field_name) . '</code>';
                 if ($section) {
                     $debug_html .= ' <span style="font-size: 11px; color: #666;">(' . htmlspecialchars($section) . ')</span>';

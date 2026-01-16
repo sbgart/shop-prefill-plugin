@@ -1,6 +1,4 @@
-<div
-  id="prefill-debug-stack"
-  style="
+<div id="prefill-debug-stack" style="
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -16,11 +14,9 @@
     display: flex;
     flex-direction: column;
     transition: all 0.2s ease;
-  "
->
+  ">
   {* Заголовок с кнопками *}
-  <div
-    style="
+  <div style="
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -29,28 +25,21 @@
       color: white;
       border-radius: 3px 3px 0 0;
       flex-shrink: 0;
-    "
-    ondblclick="PrefillDebugHelper.toggleCollapse()"
-    title="Двойной клик для сворачивания"
-  >
-    <strong>🔍 DEBUG</strong>
+    " ondblclick="PrefillDebugHelper.toggleCollapse()" title="Двойной клик для сворачивания">
+    <strong>🔍 Debug Panel</strong>&nbsp;
     <div style="display: flex; gap: 4px">
       {* Кнопка обновления *}
       <button onclick="PrefillDebugHelper.refreshDebug()" class="prefill-debug-btn" title="Обновить данные">🔄</button>
 
       {* Кнопка сворачивания *}
-      <button
-        id="prefill-debug-collapse-btn"
-        onclick="PrefillDebugHelper.toggleCollapse()"
-        class="prefill-debug-btn"
-        title="Свернуть/Развернуть"
-      >
+      <button id="prefill-debug-collapse-btn" onclick="PrefillDebugHelper.toggleCollapse()" class="prefill-debug-btn"
+        title="Свернуть/Развернуть">
         ➖
       </button>
 
       {* Кнопка закрытия *}
       <button onclick="this.closest('#prefill-debug-stack').remove()" class="prefill-debug-btn" title="Закрыть">
-        ✕
+        ❌
       </button>
     </div>
   </div>
@@ -80,15 +69,13 @@
 
   <div id="prefill-debug-body" style="display: flex; flex-direction: column; overflow: hidden; flex-grow: 1">
     {* Информация о статусе плагина *}
-    <div
-      style="
+    <div style="
             padding: 8px 15px;
             background: {if $plugin_enabled}#d4edda{else}#f8d7da{/if};
             border-bottom: 1px solid {if $plugin_enabled}#28a745{else}#dc3545{/if};
             font-size: 10px;
             flex-shrink: 0;
-        "
-    >
+        ">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px">
         <div style="display: flex; align-items: center; gap: 8px">
           <div>
@@ -97,16 +84,14 @@
           </div>
           <label style="display: flex; align-items: center; gap: 5px; cursor: pointer">
             <input type="checkbox" {if $plugin_enabled}checked{/if}
-            onchange="PrefillDebugHelper.togglePrefill(this.checked)" style="cursor: pointer;">
+              onchange="PrefillDebugHelper.togglePrefill(this.checked)" style="cursor: pointer;">
             <span style="font-size: 9px">Вкл/Выкл</span>
           </label>
         </div>
 
         <div style="display: flex; gap: 5px">
           {* Кнопка принудительного предзаполнения *}
-          <button
-            onclick="PrefillDebugHelper.forcePrefill()"
-            style="
+          <button onclick="PrefillDebugHelper.forcePrefill()" style="
               background: #4caf50;
               color: white;
               border: none;
@@ -115,16 +100,12 @@
               cursor: pointer;
               font-size: 10px;
               font-weight: bold;
-            "
-            title="Принудительно заполнить checkout (Force Prefill)"
-          >
+            " title="Принудительно заполнить checkout (Force Prefill)">
             ⚡ Force
           </button>
 
           {* Кнопка очистки хранилища *}
-          <button
-            onclick="PrefillDebugHelper.clearStorage()"
-            style="
+          <button onclick="PrefillDebugHelper.clearStorage()" style="
               background: #ff9800;
               color: white;
               border: none;
@@ -133,9 +114,7 @@
               cursor: pointer;
               font-size: 10px;
               font-weight: bold;
-            "
-            title="Очистить сессию checkout"
-          >
+            " title="Очистить сессию checkout">
             🗑️ Clear
           </button>
         </div>
@@ -145,8 +124,7 @@
     {* Актуальные данные хранилища *}
     <div style="padding: 0; background: #e8f5e9; border-bottom: 1px solid #a5d6a7; flex-shrink: 0">
       <details open>
-        <summary
-          style="
+        <summary style="
             padding: 8px 15px;
             cursor: pointer;
             color: #2e7d32;
@@ -154,14 +132,12 @@
             font-size: 10px;
             user-select: none;
             outline: none;
-          "
-        >
+          ">
           💾 Актуальное состояние хранилища (Session Storage)
         </summary>
         <div style="padding: 0 15px 15px 15px">
           {if empty($current_storage)}
-          <p
-            style="
+          <p style="
               color: #ff5722;
               font-weight: bold;
               font-size: 10px;
@@ -170,8 +146,7 @@
               background: #fff;
               border: 1px solid #ffcdd2;
               border-radius: 4px;
-            "
-          >
+            ">
             ❌ Хранилище пустое
           </p>
           {else} {assign var="has_order" value=isset($current_storage.order)} {assign var="has_auth"
@@ -183,8 +158,7 @@
           value=isset($current_storage['payment-section'])} {assign var="has_confirm"
           value=isset($current_storage['confirm-section'])}
 
-          <div
-            style="
+          <div style="
               background: #fff;
               padding: 10px;
               border: 1px solid #a5d6a7;
@@ -192,8 +166,7 @@
               margin-bottom: 10px;
               font-size: 10px;
               line-height: 1.6;
-            "
-          >
+            ">
             <strong style="color: #2e7d32">📊 Структура данных:</strong><br />
             order: {if $has_order}✅{else}❌{/if}<br />
             {if $has_order} └─ auth: {if $has_auth}✅{else}❌{/if} {if $has_auth} → data: {if
@@ -205,8 +178,7 @@
             └─ confirm: {if $has_confirm}✅{else}❌{/if}
           </div>
 
-          <pre
-            style="
+          <pre style="
               margin: 0;
               padding: 10px;
               background: #fff;
@@ -215,10 +187,8 @@
               font-size: 9px;
               max-height: 200px;
               overflow: auto;
-            "
-          >
-  {$current_storage|@print_r}</pre
-          >
+            ">
+  {$current_storage|@print_r}</pre>
           {/if}
         </div>
       </details>
@@ -227,8 +197,7 @@
     {* Параметры предзаполнения *}
     <div style="padding: 0; background: #e1f5fe; border-bottom: 1px solid #b3e5fc; flex-shrink: 0">
       <details>
-        <summary
-          style="
+        <summary style="
             padding: 8px 15px;
             cursor: pointer;
             color: #0277bd;
@@ -236,22 +205,19 @@
             font-size: 10px;
             user-select: none;
             outline: none;
-          "
-        >
+          ">
           📦 Параметры для предзаполнения (shopPrefillPluginFillParams)
         </summary>
         <div style="padding: 0 15px 15px 15px">
           {* Метаинформация *}
-          <div
-            style="
+          <div style="
               background: #fff3e0;
               padding: 8px;
               border: 1px solid #ffb74d;
               border-radius: 4px;
               margin-bottom: 10px;
               font-size: 9px;
-            "
-          >
+            ">
             <strong>ℹ️ Метаданные:</strong><br />
             • Пользователь: {if $fill_params_meta.user_authorized}✅ Авторизован (ID:
             {$fill_params_meta.user_id}){else}❌ Гость{if $fill_params_meta.guest_hash} (hash:
@@ -260,8 +226,7 @@
             • Источник: {$fill_params_meta.source|escape}
           </div>
 
-          <pre
-            style="
+          <pre style="
               margin: 0;
               padding: 10px;
               background: #fff;
@@ -270,10 +235,8 @@
               font-size: 9px;
               max-height: 150px;
               overflow: auto;
-            "
-          >
-{$fill_params|@print_r}</pre
-          >
+            ">
+{$fill_params|@print_r}</pre>
         </div>
       </details>
     </div>
@@ -281,19 +244,16 @@
     {* Содержимое с прокруткой *}
     <div style="padding: 15px; overflow-y: auto; flex-grow: 1">
       {foreach $debug_stack as $hook_name => $entries}
-      <div
-        style="
+      <div style="
           background: #fff;
           border: 2px solid #2196f3;
           border-radius: 6px;
           margin-bottom: 15px;
           overflow: hidden;
           flex-shrink: 0;
-        "
-      >
+        ">
         {* Заголовок хука *}
-        <div
-          style="
+        <div style="
             background: #e3f2fd;
             padding: 5px 10px;
             border-bottom: 1px solid #2196f3;
@@ -302,23 +262,20 @@
             font-size: 11px;
             display: flex;
             justify-content: space-between;
-          "
-        >
+          ">
           <span>📍 {$hook_name|escape}</span>
           <span style="font-size: 9px; opacity: 0.7">{$entries|count} entries</span>
         </div>
 
         <div style="padding: 10px">
           {foreach $entries as $entry}
-          <div
-            style="
+          <div style="
                 background: #fcfcfc;
                 padding: 8px;
                 border-radius: 4px;
                 margin-bottom: {if !$entry@last}10px{else}0{/if};
                 border-left: 4px solid {$entry.color};
-              "
-          >
+              ">
             <div style="font-weight: bold; color: {$entry.color}; margin-bottom: 5px; font-size: 10px">
               {$entry.title|escape}
             </div>
@@ -346,8 +303,7 @@
 
             <details style="margin-top: 5px">
               <summary style="cursor: pointer; color: #1976d2; font-size: 9px; user-select: none">📋 Дамп</summary>
-              <pre
-                style="
+              <pre style="
                   margin: 5px 0 0 0;
                   padding: 5px;
                   background: #f5f5f5;
@@ -357,10 +313,8 @@
                   max-height: 150px;
                   font-size: 9px;
                   line-height: 1.2;
-                "
-              >
-                  {$entry.data|@print_r}</pre
-              >
+                ">
+                  {$entry.data|@print_r}</pre>
             </details>
             {/if}
           </div>

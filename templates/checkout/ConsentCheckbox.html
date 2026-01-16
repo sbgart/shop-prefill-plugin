@@ -1,0 +1,11 @@
+{strip}
+<div class="wa-field-wrapper is-agreement-field full-line" style="margin-top: 8px;">
+    <label class="wa-checkbox-wrapper">
+        <input class="wa-checkbox js-prefill-consent-checkbox" type="checkbox" name="prefill[consent]" value="1" {if
+            $has_consent}checked{/if}>
+        <span class="wa-text">
+            {_wp('Запомнить мои данные для следующего заказа')}
+        </span>
+    </label>
+</div>
+{/strip}

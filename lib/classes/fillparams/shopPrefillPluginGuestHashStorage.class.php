@@ -21,17 +21,17 @@ class shopPrefillPluginGuestHashStorage
     private const COOKIE_TTL = 365 * 86400;
 
     private shopPrefillPluginUserProvider $user_provider;
-    private shopOrderParamsModel          $order_params_model;
-    private waResponse                    $response;
+    private shopOrderParamsModel $order_params_model;
+    private waResponse $response;
 
     public function __construct(
         shopPrefillPluginUserProvider $user_provider,
         shopOrderParamsModel $order_params_model,
         waResponse $response
     ) {
-        $this->user_provider      = $user_provider;
+        $this->user_provider = $user_provider;
         $this->order_params_model = $order_params_model;
-        $this->response           = $response;
+        $this->response = $response;
     }
 
     /**
@@ -78,7 +78,7 @@ class shopPrefillPluginGuestHashStorage
         }
 
         // Генерируем новый уникальный хеш
-        $unique_id  = 'guest_' . uniqid('', true) . '_' . microtime(true);
+        $unique_id = 'guest_' . uniqid('', true) . '_' . microtime(true);
         $guest_hash = hash('sha256', $unique_id);
 
         $this->setGuestHashCookie($guest_hash);
@@ -131,6 +131,34 @@ class shopPrefillPluginGuestHashStorage
         }
 
         return $this->getOrderParamsModel()->setOne($order_id, self::GUEST_HASH_PARAM, $hash);
+    }
+
+    /**
+     * Проверяет наличие хеша гостя в куке
+     *
+     * @return bool true если хеш есть
+     */
+    public function hasGuestHash(): bool
+    {
+        return $this->getGuestHash() !== null;
+    }
+
+    /**
+     * Очищает хеш гостя (удаляет куку)
+     *
+     * Используется при очистке истории предзаполнения.
+     */
+    public function clearGuestHash(): void
+    {
+        $this->getResponse()->setCookie(
+            self::GUEST_HASH_COOKIE,
+            '',
+            time() - 3600, // Устанавливаем время в прошлом для удаления
+            null,
+            '',
+            false,
+            true
+        );
     }
 
     /**

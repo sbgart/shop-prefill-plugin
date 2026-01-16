@@ -2,28 +2,28 @@
 
 class shopPrefillPlugin extends shopPlugin
 {
-    public const APP_ID    = "shop";
+    public const APP_ID = "shop";
     public const PLUGIN_ID = "prefill";
 
     public static shopPrefillPlugin $instance;
 
-    private static ?bool $active         = null;
+    private static ?bool $active = null;
     private static ?bool $enable_install = null;
 
-    private static ?array  $installed_shop_plugins = null;
-    private static ?string $plugin_path            = null;
-    private static ?array  $storefront_settings    = null;
-    private static bool    $frontend_assets_inited = false;
+    private static ?array $installed_shop_plugins = null;
+    private static ?string $plugin_path = null;
+    private static ?array $storefront_settings = null;
+    private static bool $frontend_assets_inited = false;
 
-    private ?shopPrefillPluginFillParams         $prefill_params      = null;
-    private ?shopPrefillPluginSettingProvider    $setting_provider    = null;
+    private ?shopPrefillPluginFillParams $prefill_params = null;
+    private ?shopPrefillPluginSettingProvider $setting_provider = null;
     private ?shopPrefillPluginStorefrontProvider $storefront_provider = null;
-    private ?shopPrefillPluginPluginsProvider    $plugins_provider    = null;
-    private ?shopPrefillPluginUserProvider       $user_provider       = null;
-    private ?shopPrefillPluginLocationProvider   $location_provider   = null;
-    private ?shopPrefillPluginContactProvider    $contact_provider    = null;
+    private ?shopPrefillPluginPluginsProvider $plugins_provider = null;
+    private ?shopPrefillPluginUserProvider $user_provider = null;
+    private ?shopPrefillPluginLocationProvider $location_provider = null;
+    private ?shopPrefillPluginContactProvider $contact_provider = null;
 
-    private ?shopOrderModel       $shop_order_model        = null;
+    private ?shopOrderModel $shop_order_model = null;
     private ?shopOrderParamsModel $shop_order_params_model = null;
 
     private ?shopPrefillPluginOrderProvider $order_provider = null;
@@ -33,6 +33,7 @@ class shopPrefillPlugin extends shopPlugin
     private ?shopPrefillPluginFillParamsProvider $fill_params_provider = null;
 
     private ?shopPrefillPluginGuestHashStorage $guest_hash_storage = null;
+    private ?shopPrefillPluginConsentStorage $consent_storage = null;
 
     public function __construct($info)
     {
@@ -95,7 +96,7 @@ class shopPrefillPlugin extends shopPlugin
     {
         $config_file = self::getPluginPath() . '/lib/config/' . $name . '.php';
 
-        if (! file_exists($config_file)) {
+        if (!file_exists($config_file)) {
             return [];
         }
 
@@ -185,6 +186,16 @@ class shopPrefillPlugin extends shopPlugin
         );
     }
 
+    /**
+     * @throws waException
+     */
+    public function getConsentStorage(): shopPrefillPluginConsentStorage
+    {
+        return $this->consent_storage ??= new shopPrefillPluginConsentStorage(
+            wa()->getResponse()
+        );
+    }
+
     public function getOrderProvider(): shopPrefillPluginOrderProvider
     {
         return $this->order_provider ??= new shopPrefillPluginOrderProvider(
@@ -218,12 +229,12 @@ class shopPrefillPlugin extends shopPlugin
      */
     private function frontendAssetsInit(array $css_variables = [], array $js_params = []): void
     {
-        if (! self::$frontend_assets_inited) {
+        if (!self::$frontend_assets_inited) {
             $is_debug = $this->isDebug();
-            $this->addCss('css/frontend.' . (! $is_debug ? 'min.' : '') . 'css');
-            $this->addJs('js/frontend.' . (! $is_debug ? 'min.' : '') . 'js?');
+            $this->addCss('css/frontend.' . (!$is_debug ? 'min.' : '') . 'css');
+            $this->addJs('js/frontend.' . (!$is_debug ? 'min.' : '') . 'js?');
 
-            if (! empty($css_variables)) {
+            if (!empty($css_variables)) {
                 $css_variables_filename = $this->generateCssVariablesFile($css_variables);
                 wa()->getResponse()->addCss(
                     substr(wa()->getDataUrl('plugins/' . self::PLUGIN_ID . '/css/', true, 'shop'), 1)
@@ -248,11 +259,11 @@ class shopPrefillPlugin extends shopPlugin
     {
         // Generate css variables file from the storefront settings and add it
         //TODO: Возможно стоит переделать с md5 на дату обновления настроек витрины, тем самым если файла с датой настроек не будет, то сгенерировать новый файл.
-        $css_variables_map      = shopPrefillPluginViewProvider::createCssVariablesString($css_variables);
+        $css_variables_map = shopPrefillPluginViewProvider::createCssVariablesString($css_variables);
         $css_variables_filename = 'variables_' . md5($css_variables_map) . '.css';
-        $css_public_dir         = wa()->getDataPath('plugins/' . self::PLUGIN_ID . '/css/', true, 'shop');
+        $css_public_dir = wa()->getDataPath('plugins/' . self::PLUGIN_ID . '/css/', true, 'shop');
 
-        if (! file_exists($css_public_dir . $css_variables_filename)) {
+        if (!file_exists($css_public_dir . $css_variables_filename)) {
             file_put_contents($css_public_dir . $css_variables_filename, $css_variables_map);
         }
 
@@ -277,9 +288,9 @@ document.addEventListener('DOMContentLoaded', function() {
     window.prefill = new PrefillFrontendController(params);
 });
 JS;
-        $js_file_name  = md5($inline_script) . '.js';
+        $js_file_name = md5($inline_script) . '.js';
         $js_public_dir = wa()->getDataPath('plugins/' . self::PLUGIN_ID . '/js/', true, 'shop');
-        if (! file_exists($js_public_dir . $js_file_name)) {
+        if (!file_exists($js_public_dir . $js_file_name)) {
             file_put_contents($js_public_dir . $js_file_name, $inline_script);
         }
 
@@ -295,7 +306,7 @@ JS;
      */
     public function frontendOrder($params)
     {
-        if (! $this->isActive()) {
+        if (!$this->isActive()) {
             return;
         }
 
@@ -342,7 +353,7 @@ JS;
      */
     public function frontendHead($params)
     {
-        if (! $this->isActive()) {
+        if (!$this->isActive()) {
             return;
         }
 
@@ -354,7 +365,7 @@ JS;
 
         $storefront_settings = $this->getStorefrontSettings();
 
-        if (! $storefront_settings['active']) {
+        if (!$storefront_settings['active']) {
             return;
         }
 
@@ -395,7 +406,8 @@ JS;
 
         $js_params = [
             'pluginID' => $this::PLUGIN_ID,
-            'isDebug'  => $this->isDebug(),
+            'appUrl' => wa()->getAppUrl('shop'),  // Базовый URL приложения Shop-Script
+            'isDebug' => $this->isDebug(),
         ];
 
         self::frontendAssetsInit($css_variables, $js_params);
@@ -410,7 +422,7 @@ JS;
      */
     public function checkoutRenderAuth(&$params)
     {
-        if (! $this->isActive()) {
+        if (!$this->isActive()) {
             return '';
         }
 
@@ -418,7 +430,7 @@ JS;
         $errors_info = $this->extractCheckoutErrors($params);
 
         // Если нет ошибок - ничего не показываем
-        if (! $errors_info['has_errors']) {
+        if (!$errors_info['has_errors']) {
             return '';
         }
 
@@ -435,7 +447,7 @@ JS;
      */
     public function checkoutRenderRegion(&$params)
     {
-        if (! $this->isActive()) {
+        if (!$this->isActive()) {
             return '';
         }
 
@@ -443,7 +455,7 @@ JS;
         $errors_info = $this->extractCheckoutErrors($params);
 
         // Если нет ошибок - ничего не показываем
-        if (! $errors_info['has_errors']) {
+        if (!$errors_info['has_errors']) {
             return '';
         }
 
@@ -461,7 +473,7 @@ JS;
     public function checkoutRenderShipping(&$params)
     {
         // Check if plugin is active
-        if (! $this->isActive()) {
+        if (!$this->isActive()) {
             return '';
         }
 
@@ -469,7 +481,7 @@ JS;
         $errors_info = $this->extractCheckoutErrors($params);
 
         // Если нет ошибок - ничего не показываем
-        if (! $errors_info['has_errors']) {
+        if (!$errors_info['has_errors']) {
             return '';
         }
 
@@ -486,20 +498,40 @@ JS;
      */
     public function checkoutRenderConfirm(&$params)
     {
-        if (! $this->isActive()) {
+        if (!$this->isActive()) {
             return '';
+        }
+
+        $html = '';
+
+        // Показываем галочку согласия только для неавторизованных И если требуется согласие
+        try {
+            if (!$this->getUserProvider()->isAuth()) {
+                $storefront_settings = $this->getStorefrontSettings();
+                $consent_required = $storefront_settings['guest']['consent_required'];
+
+                // Показываем галочку только если согласие требуется
+                if ($consent_required) {
+                    $has_consent = $this->getConsentStorage()->hasConsent();
+                    $html .= shopPrefillPluginViewProvider::render(
+                        'checkout/ConsentCheckbox',
+                        ['has_consent' => $has_consent]
+                    );
+                }
+            }
+        } catch (Exception $e) {
+            // Игнорируем ошибки рендеринга галочки
         }
 
         // Извлекаем все типы ошибок
         $errors_info = $this->extractCheckoutErrors($params);
 
-        // Если нет ошибок - не показываем debug блок (можно скрывать форму)
-        if (! $errors_info['has_errors']) {
-            return '';
+        // Если есть ошибки - показываем debug информацию
+        if ($errors_info['has_errors']) {
+            $html .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'CONFIRM SECTION');
         }
 
-        // Есть ошибки - показываем debug информацию
-        return shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'CONFIRM SECTION');
+        return $html;
     }
 
     /**
@@ -512,12 +544,12 @@ JS;
     private function extractCheckoutErrors(array $params): array
     {
         // Собираем ВСЕ delayed_errors из всех шагов
-        $auth_delayed_errors    = ifset($params, 'data', 'auth', 'delayed_errors', []);
+        $auth_delayed_errors = ifset($params, 'data', 'auth', 'delayed_errors', []);
         $details_delayed_errors = ifset($params, 'data', 'details', 'delayed_errors', []);
 
         // Проверяем ОБЫЧНЫЕ ошибки (критические, блокирующие)
         $regular_errors = ifset($params, 'errors', []);
-        $error_step_id  = ifset($params, 'error_step_id', null);
+        $error_step_id = ifset($params, 'error_step_id', null);
 
         // Проверяем auth[service_agreement] - чекбокс согласия с условиями
         // Значение = 0 означает НЕ установлен, = 1 означает установлен
@@ -530,15 +562,15 @@ JS;
         }
 
         $all_delayed_errors = array_merge($auth_delayed_errors, $details_delayed_errors);
-        $has_errors         = ! empty($all_delayed_errors) || ! empty($regular_errors) || $service_agreement_error;
+        $has_errors = !empty($all_delayed_errors) || !empty($regular_errors) || $service_agreement_error;
 
         return [
-            'has_errors'              => $has_errors,
-            'regular_errors'          => $regular_errors,
-            'auth_delayed_errors'     => $auth_delayed_errors,
-            'details_delayed_errors'  => $details_delayed_errors,
+            'has_errors' => $has_errors,
+            'regular_errors' => $regular_errors,
+            'auth_delayed_errors' => $auth_delayed_errors,
+            'details_delayed_errors' => $details_delayed_errors,
             'service_agreement_error' => $service_agreement_error,
-            'error_step_id'           => $error_step_id,
+            'error_step_id' => $error_step_id,
         ];
     }
 
@@ -551,15 +583,15 @@ JS;
      */
     public function orderActionCreate($data)
     {
-        if (! $this->isActive()) {
+        if (!$this->isActive()) {
             return;
         }
 
-        if (! isset($data['order_id'])) {
+        if (!isset($data['order_id'])) {
             return;
         }
 
-        $order_id        = (int) $data['order_id'];
+        $order_id = (int) $data['order_id'];
         $checkout_params = $this->getSessionStorageProvider()->getCheckoutParams();
 
         // Сохраняем shipping_type_id
@@ -572,11 +604,18 @@ JS;
         $comment = $checkout_params['order']['confirm']['comment'] ?? '';
         $this->getOrderProvider()->storeComment($order_id, $comment);
 
-        // Для неавторизованных: сохраняем хеш гостя в параметры заказа
-        // Это позволяет потом найти все заказы этого гостя по хешу
-        if (! $this->getUserProvider()->isAuth()) {
-            $guest_hash = $this->getGuestHashStorage()->getOrCreateGuestHash();
-            $this->getGuestHashStorage()->saveGuestHashToOrder($order_id, $guest_hash);
+        // Для неавторизованных: сохраняем хеш гостя
+        // Логика: если согласие не требуется ИЛИ оно получено - сохраняем хеш
+        if (!$this->getUserProvider()->isAuth()) {
+            $storefront_settings = $this->getStorefrontSettings();
+            $consent_required = $storefront_settings['guest']['consent_required'];
+            $has_consent = $this->getConsentStorage()->hasConsent();
+
+            // Сохраняем хеш если: согласие не требуется ИЛИ оно получено
+            if (!$consent_required || $has_consent) {
+                $guest_hash = $this->getGuestHashStorage()->getOrCreateGuestHash();
+                $this->getGuestHashStorage()->saveGuestHashToOrder($order_id, $guest_hash);
+            }
         }
     }
 

@@ -12,21 +12,18 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=((((n%10)==1)&&((n%100)!=11))?(0):(((((n%10)>=2)&&((n%10)<=4))&&(((n%100)<10)||((n%100)>=20)))?(1):2));\n"
 "X-Generator: Poedit 3.2.2\n"
 
-# Основное
 msgid "title"
 msgstr "Предзаполнение полей оформления заказа"
 
 msgid "devs"
 msgstr "Разработчик"
 
-# Меню
 msgid "menu.help"
 msgstr "Поддержка"
 
 msgid "menu.feedback"
 msgstr "Оставить отзыв"
 
-# Настпройки
 msgid "setting.plugin_active"
 msgstr "Статус плагина"
 
@@ -41,3 +38,87 @@ msgstr "Статус для витрины"
 
 msgid "setting.default_value"
 msgstr "Значение по умолчанию"
+
+msgid "consent.remember_data"
+msgstr "Запомнить мои данные для следующего заказа"
+
+msgid "consent.granted"
+msgstr "Согласие получено"
+
+msgid "consent.revoked"
+msgstr "Согласие отозвано"
+
+msgid "consent.history_cleared"
+msgstr "История очищена"
+
+msgid "consent.unknown_action"
+msgstr "Неизвестное действие"
+
+msgid "Запомнить мои данные для следующего заказа"
+msgstr ""
+
+msgid "option.source.last_order"
+msgstr ""
+
+msgid "option.source.none"
+msgstr ""
+
+msgid "setting.prefill.source"
+msgstr ""
+
+msgid "tooltip.prefill.source"
+msgstr ""
+
+msgid "setting.default_payment"
+msgstr ""
+
+msgid "tooltip.prefill.default_payment"
+msgstr ""
+
+msgid "setting.prefill.integration.cityselect"
+msgstr ""
+
+msgid "tooltip.prefill.integration.cityselect"
+msgstr ""
+
+msgid "setting.prefill.disable.fields.comment"
+msgstr ""
+
+msgid "tooltip.prefill.disable.fields.comment"
+msgstr ""
+
+msgid "tooltip.storefront_active"
+msgstr ""
+
+msgid "setting.prefill.active"
+msgstr ""
+
+msgid "tab.{$tab|lower}"
+msgstr ""
+
+msgid "setting.spoiler_summary"
+msgstr ""
+
+msgid "setting.hint_spoiler_summary"
+msgstr ""
+
+msgid "setting.reset"
+msgstr ""
+
+msgid "title.storefront_selector"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Согласие получено"
+msgstr ""
+
+msgid "Согласие отозвано"
+msgstr ""
+
+msgid "История очищена"
+msgstr ""
+
+msgid "Неизвестное действие"
+msgstr ""

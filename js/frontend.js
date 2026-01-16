@@ -1,10 +1,12 @@
 class PrefillFrontendController {
     constructor(params) {
         this.pluginID = params.pluginID;
+        this.appUrl = params.appUrl;  // Базовый URL приложения Shop-Script
         this.isDebug = params.isDebug;
 
         this.addParamsChoiceDialogListeners();
         this.addOrderFormEventListener();
+        this.addConsentCheckboxListener();
 
         this.log('PrefillFrontendController initialized.');
     }
@@ -105,7 +107,7 @@ class PrefillFrontendController {
         let formData = new FormData();
         formData.append('message', message);
         formData.append('type', type);
-        const logUrl = `/${this.pluginID}/logs`;
+        const logUrl = `${this.appUrl}${this.pluginID}/logs`;
         const response = fetch(logUrl, {
             method: 'POST',
             body: formData
@@ -113,7 +115,7 @@ class PrefillFrontendController {
     }
 
     async displayParamsChoiceDialog() {
-        const content = this.fetchView('/prefill/params-choice');
+        const content = this.fetchView(`${this.appUrl}prefill/params-choice`);
         await this.showDialog('prefill-params-choice-dialog', content)
     }
 
@@ -183,6 +185,26 @@ class PrefillFrontendController {
         $(document).on('wa_order_form_details_changed', function () {
             that.renderParamsChoiceLink();
             that.log('Order form region changed, try render link');
+        });
+    }
+
+    /**
+     * Обработчик галочки согласия на сохранение данных
+     */
+    addConsentCheckboxListener() {
+        const that = this;
+        $(document).on('change', '.js-prefill-consent-checkbox', function () {
+            const isChecked = $(this).is(':checked');
+            const action = isChecked ? 'grant' : 'revoke';
+
+            // Используем полный путь через приложение Shop-Script
+            $.post(that.appUrl + that.pluginID + '/consent', { action: action })
+                .done(function (response) {
+                    that.log('Consent ' + action + ': ' + (response.data?.message || 'ok'));
+                })
+                .fail(function () {
+                    that.log('Failed to update consent', 'error');
+                });
         });
     }
 }
