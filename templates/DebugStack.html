@@ -2,7 +2,7 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    max-width: 500px;
+    max-width: 550px;
     max-height: 80vh;
     background: #e3f2fd;
     border: 2px solid #2196f3;
@@ -89,10 +89,10 @@
           </label>
         </div>
 
-        <div style="display: flex; gap: 5px">
-          {* Кнопка принудительного предзаполнения *}
-          <button onclick="PrefillDebugHelper.forcePrefill()" style="
-              background: #4caf50;
+        <div style="display: flex; gap: 5px; position: relative;">
+          {* Меню действий *}
+          <button onclick="PrefillDebugHelper.toggleActionsMenu(event)" class="prefill-debug-btn" style="
+              background: #0277bd;
               color: white;
               border: none;
               border-radius: 3px;
@@ -100,30 +100,75 @@
               cursor: pointer;
               font-size: 10px;
               font-weight: bold;
-            " title="Принудительно заполнить checkout (Force Prefill)">
-            ⚡ Force
+            " title="Меню действий">
+            ⚡ Actions ▼
           </button>
 
-          {* Кнопка очистки хранилища *}
-          <button onclick="PrefillDebugHelper.clearStorage()" style="
-              background: #ff9800;
-              color: white;
-              border: none;
-              border-radius: 3px;
-              padding: 4px 8px;
-              cursor: pointer;
-              font-size: 10px;
-              font-weight: bold;
-            " title="Очистить сессию checkout">
-            🗑️ Clear
-          </button>
+          <div id="prefill-debug-actions-menu" style="
+              display: none;
+              position: absolute;
+              right: 0;
+              top: 100%;
+              background: white;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+              z-index: 100000;
+              min-width: 200px;
+              margin-top: 5px;
+              color: #333;
+              text-align: left;
+            ">
+            {* Force Prefill *}
+            <div onclick="PrefillDebugHelper.forcePrefill()" onmouseover="this.style.background='#f5f5f5'"
+              onmouseout="this.style.background='white'" style="
+                padding: 8px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+              ">
+              <div style="font-weight: bold; font-size: 11px; color: #2e7d32;">⚡ Force Prefill</div>
+              <div style="font-size: 9px; color: #666;">Заполнить принудительно (без очистки)</div>
+            </div>
+
+            {* Reset & Refill *}
+            <div onclick="PrefillDebugHelper.resetAndRefill()" onmouseover="this.style.background='#f5f5f5'"
+              onmouseout="this.style.background='white'" style="
+                padding: 8px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+              ">
+              <div style="font-weight: bold; font-size: 11px; color: #9c27b0;">🔄 Reset & Refill</div>
+              <div style="font-size: 9px; color: #666;">Очистить всё и заполнить заново</div>
+            </div>
+
+            {* Reset First Done *}
+            <div onclick="PrefillDebugHelper.resetFirstPrefillDone()" onmouseover="this.style.background='#f5f5f5'"
+              onmouseout="this.style.background='white'" style="
+                padding: 8px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+              ">
+              <div style="font-weight: bold; font-size: 11px; color: #0277bd;">🔁 Reset 'First Done'</div>
+              <div style="font-size: 9px; color: #666;">Сбросить флаг выполнения</div>
+            </div>
+
+            {* Clear Storage *}
+            <div onclick="PrefillDebugHelper.clearStorage()" onmouseover="this.style.background='#f5f5f5'"
+              onmouseout="this.style.background='white'" style="
+                padding: 8px 12px;
+                cursor: pointer;
+              ">
+              <div style="font-weight: bold; font-size: 11px; color: #ff9800;">🗑️ Clear Storage</div>
+              <div style="font-size: 9px; color: #666;">Полностью очистить сессию checkout</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     {* Актуальные данные хранилища *}
     <div style="padding: 0; background: #e8f5e9; border-bottom: 1px solid #a5d6a7; flex-shrink: 0">
-      <details open>
+      <details id="prefill-debug-storage-details" open ontoggle="PrefillDebugHelper.toggleStorageDetails(this)">
         <summary style="
             padding: 8px 15px;
             cursor: pointer;
@@ -154,9 +199,9 @@
           value=isset($current_storage.order.auth.data)} {assign var="has_region"
           value=isset($current_storage.order.region)} {assign var="has_shipping"
           value=isset($current_storage.order.shipping)} {assign var="has_details"
-          value=isset($current_storage['details-section'])} {assign var="has_payment"
-          value=isset($current_storage['payment-section'])} {assign var="has_confirm"
-          value=isset($current_storage['confirm-section'])}
+          value=isset($current_storage.order.details)} {assign var="has_payment"
+          value=isset($current_storage.order.payment)} {assign var="has_confirm"
+          value=isset($current_storage.order.confirm)}
 
           <div style="
               background: #fff;
@@ -168,9 +213,14 @@
               line-height: 1.6;
             ">
             <strong style="color: #2e7d32">📊 Структура данных:</strong><br />
+            {if isset($current_storage.prefill_metadata.first_prefill_done)}
+            first_prefill_done: {if $current_storage.prefill_metadata.first_prefill_done}✅{else}❌{/if}<br />
+            {/if}
             order: {if $has_order}✅{else}❌{/if}<br />
             {if $has_order} └─ auth: {if $has_auth}✅{else}❌{/if} {if $has_auth} → data: {if
-            $has_auth_data}✅{else}❌{/if}{/if}<br />
+            $has_auth_data}✅{else}❌
+            {/if}
+            {/if}<br />
             └─ region: {if $has_region}✅{else}❌{/if}<br />
             └─ shipping: {if $has_shipping}✅{else}❌{/if}<br />
             {/if} └─ details: {if $has_details}✅{else}❌{/if}<br />
@@ -220,8 +270,10 @@
             ">
             <strong>ℹ️ Метаданные:</strong><br />
             • Пользователь: {if $fill_params_meta.user_authorized}✅ Авторизован (ID:
-            {$fill_params_meta.user_id}){else}❌ Гость{if $fill_params_meta.guest_hash} (hash:
-            {$fill_params_meta.guest_hash|escape}){/if}{/if}<br />
+            {$fill_params_meta.user_id}){else}❌ Гость
+            {if $fill_params_meta.guest_hash} (hash:
+            {$fill_params_meta.guest_hash|escape}){/if}
+            {/if}<br />
             • Заказов: {$fill_params_meta.orders_count}<br />
             • Источник: {$fill_params_meta.source|escape}
           </div>
@@ -236,7 +288,7 @@
               max-height: 150px;
               overflow: auto;
             ">
-{$fill_params|@print_r}</pre>
+  {$fill_params|@print_r}</pre>
         </div>
       </details>
     </div>
@@ -253,7 +305,8 @@
           flex-shrink: 0;
         ">
         {* Заголовок хука *}
-        <div style="
+        <div class="prefill-debug-hook-header" data-hook="{$hook_name|escape}"
+          onclick="PrefillDebugHelper.toggleHookSection(this)" style="
             background: #e3f2fd;
             padding: 5px 10px;
             border-bottom: 1px solid #2196f3;
@@ -262,48 +315,178 @@
             font-size: 11px;
             display: flex;
             justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
           ">
-          <span>📍 {$hook_name|escape}</span>
+          <span style="display: flex; align-items: center; gap: 5px;">
+            <span class="arrow-icon" style="display: inline-block; transition: transform 0.2s;">▼</span>
+            <span>📍 {$hook_name|escape}</span>
+          </span>
           <span style="font-size: 9px; opacity: 0.7">{$entries|count} entries</span>
         </div>
 
-        <div style="padding: 10px">
-          {foreach $entries as $entry}
+        {* Контейнер с контентом хука *}
+        <div style="display: block;">
+
+          {* Статус секций - показываем из первой BEFORE записи *}
+          {assign var="first_sections_status" value=null}
+          {assign var="is_blocked_by_first_prefill" value=false}
+
+          {foreach $entries as $e}
+          {if $e.sections_prefill_status && !$first_sections_status}
+          {assign var="first_sections_status" value=$e.sections_prefill_status}
+          {if isset($e.data.prefill_metadata.first_prefill_done) && $e.data.prefill_metadata.first_prefill_done}
+          {assign var="is_blocked_by_first_prefill" value=true}
+          {/if}
+          {/if}
+          {/foreach}
+          {if $first_sections_status}
           <div style="
+            background: #fff8e1;
+            padding: 8px 10px;
+            border-bottom: 1px solid #ffb74d;
+            font-size: 10px;
+          ">
+            {* Banner if blocked *}
+            {if $is_blocked_by_first_prefill}
+            <div style="
+                    background: #e3f2fd; 
+                    color: #0d47a1; 
+                    padding: 8px; 
+                    border-radius: 4px; 
+                    border: 1px solid #90caf9; 
+                    margin-bottom: 8px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                ">
+              <span style="font-size: 14px;">🔒</span>
+              <div>
+                <div style="font-weight: bold;">First Prefill Done</div>
+                <div style="font-size: 9px; opacity: 0.9;">Предзаполнение заблокировано (защита данных пользователя)
+                </div>
+              </div>
+            </div>
+            {/if}
+
+            <div
+              style="font-weight: bold; color: {if $is_blocked_by_first_prefill}#999{else}#555{/if}; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #eee; font-size: 11px;">
+              Prefill Decision {if $is_blocked_by_first_prefill}(Hypothetical){/if}</div>
+            <table
+              style="width: 100%; border-collapse: collapse; font-size: 10px; border: none; {if $is_blocked_by_first_prefill}opacity: 0.6;{/if}">
+              <thead>
+                <tr style="color: #888;">
+                  <th
+                    style="font-weight: 600; text-align: left; padding: 4px 6px 4px 0; border-bottom: 1px solid #eee; border-left: none !important; border-right: none !important;">
+                    SECTION</th>
+                  <th
+                    style="font-weight: normal; text-align: center; padding: 4px; border-bottom: 1px solid #eee; border-left: none !important; border-right: none !important;">
+                    Cfg
+                  </th>
+                  <th
+                    style="border-bottom: 1px solid #eee; border-left: none !important; border-right: none !important;">
+                  </th>
+                  <th
+                    style="font-weight: normal; text-align: center; padding: 4px; border-bottom: 1px solid #eee; border-left: none !important; border-right: none !important;">
+                    Data
+                  </th>
+                  <th
+                    style="border-bottom: 1px solid #eee; border-left: none !important; border-right: none !important;">
+                  </th>
+                  <th
+                    style="font-weight: normal; text-align: center; padding: 4px; border-bottom: 1px solid #eee; border-left: none !important; border-right: none !important;">
+                    Fill
+                  </th>
+                  <th
+                    style="border-bottom: 1px solid #eee; border-left: none !important; border-right: none !important;">
+                  </th>
+                  <th
+                    style="font-weight: normal; text-align: center; padding: 4px; border-bottom: 1px solid #eee; border-left: none !important; border-right: none !important;">
+                    Res
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {foreach from=$first_sections_status key=sec item=info}
+                <tr>
+                  <td
+                    style="padding: 6px 6px 6px 0; font-weight: 600; color: #444; border-bottom: 1px solid #f9f9f9; border-left: none !important; border-right: none !important;">
+                    {$sec}</td>
+                  <td
+                    style="text-align: center; padding: 6px 4px; border-bottom: 1px solid #f9f9f9; border-left: none !important; border-right: none !important;">
+                    {if $info.enabled}<span title="Enabled">&#9989;</span>{else}<span title="Disabled"
+                      style="opacity: 0.3; filter: grayscale(100%);">&#128683;</span>{/if}
+                  </td>
+                  <td
+                    style="color: #e0e0e0; text-align: center; font-size: 9px; padding: 6px 0; border-bottom: 1px solid #f9f9f9; border-left: none !important; border-right: none !important;">
+                    &rarr;</td>
+                  <td
+                    style="text-align: center; padding: 6px 4px; border-bottom: 1px solid #f9f9f9; border-left: none !important; border-right: none !important;">
+                    {if $info.has_data}<span title="Has Data">&#128190;</span>{else}<span title="No Data"
+                      style="opacity: 0.3;">&#9617;</span>{/if}
+                  </td>
+                  <td
+                    style="color: #e0e0e0; text-align: center; font-size: 9px; padding: 6px 0; border-bottom: 1px solid #f9f9f9; border-left: none !important; border-right: none !important;">
+                    &rarr;</td>
+                  <td
+                    style="text-align: center; padding: 6px 4px; border-bottom: 1px solid #f9f9f9; border-left: none !important; border-right: none !important;">
+                    {if $info.filled}<span title="Filled">&#128230;</span>{else}<span title="Empty"
+                      style="opacity: 0.3;">&#9617;</span>{/if}
+                  </td>
+                  <td
+                    style="color: #e0e0e0; text-align: center; font-size: 9px; padding: 6px 0; border-bottom: 1px solid #f9f9f9; border-left: none !important; border-right: none !important;">
+                    &rarr;</td>
+                  <td
+                    style="text-align: center; padding: 6px 4px; border-bottom: 1px solid #f9f9f9; border-left: none !important; border-right: none !important;">
+                    {if $info.result && $info.has_data}&#127919;{else}<span title="Skipped"
+                      style="opacity: 0.3; filter: grayscale(100%);">&#9193;</span>{/if}
+                  </td>
+                </tr>
+                {/foreach}
+              </tbody>
+            </table>
+          </div>
+          {/if}
+
+          <div style="padding: 10px">
+            {foreach $entries as $entry}
+            <div style="
                 background: #fcfcfc;
                 padding: 8px;
                 border-radius: 4px;
                 margin-bottom: {if !$entry@last}10px{else}0{/if};
                 border-left: 4px solid {$entry.color};
               ">
-            <div style="font-weight: bold; color: {$entry.color}; margin-bottom: 5px; font-size: 10px">
-              {$entry.title|escape}
-            </div>
+              <div style="font-weight: bold; color: {$entry.color}; margin-bottom: 5px; font-size: 10px">
+                {$entry.title|escape}
+              </div>
 
-            {if empty($entry.data)}
-            <p style="color: #ff5722; font-weight: bold; font-size: 10px; margin: 0">❌ Хранилище ПУСТОЕ</p>
-            {else} {assign var="has_order" value=isset($entry.data.order)} {assign var="has_auth"
-            value=isset($entry.data.order.auth)} {assign var="has_auth_data" value=isset($entry.data.order.auth.data)}
-            {assign var="has_region" value=isset($entry.data.order.region)} {assign var="has_shipping"
-            value=isset($entry.data.order.shipping)} {assign var="has_details"
-            value=isset($entry.data['details-section'])} {assign var="has_payment"
-            value=isset($entry.data['payment-section'])} {assign var="has_confirm"
-            value=isset($entry.data['confirm-section'])}
 
-            <div style="font-size: 10px; line-height: 1.4">
-              order: {if $has_order}✅{else}❌{/if}<br />
-              {if $has_order} └─ auth: {if $has_auth}✅{else}❌{/if} {if $has_auth} → data: {if
-              $has_auth_data}✅{else}❌ {/if} {/if}<br />
-              └─ region: {if $has_region}✅{else}❌{/if}<br />
-              └─ shipping: {if $has_shipping}✅{else}❌{/if}<br />
-              {/if} └─ details: {if $has_details}✅{else}❌{/if}<br />
-              └─ payment: {if $has_payment}✅{else}❌{/if}<br />
-              └─ confirm: {if $has_confirm}✅{else}❌{/if}<br />
-            </div>
 
-            <details style="margin-top: 5px">
-              <summary style="cursor: pointer; color: #1976d2; font-size: 9px; user-select: none">📋 Дамп</summary>
-              <pre style="
+              {if empty($entry.data)}
+              <p style="color: #ff5722; font-weight: bold; font-size: 10px; margin: 0">❌ Хранилище ПУСТОЕ</p>
+              {else}
+              {* Используем sections_filled_status если есть, иначе простые проверки *}
+              {if $entry.sections_filled_status}
+              <div style="font-size: 10px; line-height: 1.4">
+                <strong>Filled:</strong><br />
+                └─ auth: {if $entry.sections_filled_status.auth}✅{else}❌{/if}<br />
+                └─ region: {if $entry.sections_filled_status.region}✅{else}❌{/if}<br />
+                └─ shipping: {if $entry.sections_filled_status.shipping}✅{else}❌{/if}<br />
+                └─ details: {if $entry.sections_filled_status.details}✅{else}❌{/if}<br />
+                └─ payment: {if $entry.sections_filled_status.payment}✅{else}❌{/if}<br />
+                └─ confirm: {if $entry.sections_filled_status.confirm}✅{else}❌{/if}
+              </div>
+              {else}
+              {assign var="has_order" value=isset($entry.data.order)}
+              <div style="font-size: 10px; line-height: 1.4">
+                order: {if $has_order}✅{else}❌{/if}
+              </div>
+              {/if}
+
+              <details style="margin-top: 5px">
+                <summary style="cursor: pointer; color: #1976d2; font-size: 9px; user-select: none">📋 Дамп</summary>
+                <pre style="
                   margin: 5px 0 0 0;
                   padding: 5px;
                   background: #f5f5f5;
@@ -314,12 +497,14 @@
                   font-size: 9px;
                   line-height: 1.2;
                 ">
-                  {$entry.data|@print_r}</pre>
-            </details>
-            {/if}
+                          {$entry.data|@print_r}</pre>
+              </details>
+              {/if}
+            </div>
+            {/foreach}
           </div>
-          {/foreach}
-        </div>
+
+        </div> {* Конец контейнера с контентом хука *}
       </div>
       {/foreach}
     </div>

@@ -7,14 +7,13 @@ return [
         'on_entry' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'source' => ['value' => 'last_order'],
         'default_payment' => ['value' => 0, 'filter' => FILTER_VALIDATE_INT],
-        'disable' => [
-            'fields' => [
-                'comment' => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
-            ],
-            'section' => [
-                'auth' => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
-                'region' => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
-            ],
+        'sections' => [
+            'auth' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'region' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'shipping' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'details' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'payment' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'confirm' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         ],
         'integration' => [
             'cityselect' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],

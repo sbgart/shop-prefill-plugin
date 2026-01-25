@@ -6,46 +6,46 @@ class shopPrefillPluginFillParams
 
     private ?int $id = null;
 
-    private ?string $country      = null;
+    private ?string $country = null;
     private ?string $country_name = null;
-    private ?string $region       = null;
-    private ?string $region_name  = null;
-    private ?string $city         = null;
-    private ?string $zip          = null;
-    private ?string $street       = null;
+    private ?string $region = null;
+    private ?string $region_name = null;
+    private ?string $city = null;
+    private ?string $zip = null;
+    private ?string $street = null;
 
-    private ?int    $shipping_id      = null;
+    private ?int $shipping_id = null;
     private ?string $shipping_type_id = null;
     private ?string $shipping_rate_id = null;
-    private ?string $shipping_name    = null;
-    private ?string $shipping_plugin  = null;
-    private ?array  $shipping_custom  = null;
+    private ?string $shipping_name = null;
+    private ?string $shipping_plugin = null;
+    private ?array $shipping_custom = null;
 
-    private ?int    $payment_id     = null;
-    private ?string $payment_name   = null;
+    private ?int $payment_id = null;
+    private ?string $payment_name = null;
     private ?string $payment_plugin = null;
-    private ?array  $payment_custom = null;
+    private ?array $payment_custom = null;
 
     private ?string $comment = null;
 
     // Auth секция
     private ?string $customer_type = null; // "person" или "company"
-    private array   $auth_data     = [];         // Все поля auth[data] (email, phone, кастомные)
+    private array $auth_data = [];         // Все поля auth[data] (email, phone, кастомные)
 
     // Главные поля контактов
-    private ?string $title      = null; // Обращение
-    private ?string $firstname  = null; // Имя
+    private ?string $title = null; // Обращение
+    private ?string $firstname = null; // Имя
     private ?string $middlename = null; // Отчество
-    private ?string $lastname   = null; // Фамилия
-    private ?string $jobtitle   = null; // Должность
-    private ?string $company    = null; // Компания
-    private ?string $email      = null; // Email
-    private ?string $phone      = null; // Телефон
+    private ?string $lastname = null; // Фамилия
+    private ?string $jobtitle = null; // Должность
+    private ?string $company = null; // Компания
+    private ?string $email = null; // Email
+    private ?string $phone = null; // Телефон
 
-    private array $region_params   = ['country', 'region', 'city', 'zip', 'street'];
-    private array $auth_params     = ['customer_type', 'auth_data'];
-    private array $contact_params  = ['title', 'firstname', 'middlename', 'lastname', 'jobtitle', 'company', 'email', 'phone'];
-    private array $payment_params  = ['payment_id', 'payment_name', 'payment_plugin', 'payment_custom'];
+    private array $region_params = ['country', 'region', 'city', 'zip', 'street'];
+    private array $auth_params = ['customer_type', 'auth_data'];
+    private array $contact_params = ['title', 'firstname', 'middlename', 'lastname', 'jobtitle', 'company', 'email', 'phone'];
+    private array $payment_params = ['payment_id', 'payment_name', 'payment_plugin', 'payment_custom'];
     private array $shipping_params
         = [
             'shipping_id',
@@ -55,6 +55,27 @@ class shopPrefillPluginFillParams
             'shipping_plugin',
             'shipping_custom',
         ];
+
+    public function hasDataForSection(string $section_id): bool
+    {
+        switch ($section_id) {
+            case 'auth':
+                return !empty($this->email) || !empty($this->phone) || !empty($this->auth_data) || !empty($this->firstname);
+            case 'region':
+                return !empty($this->city) || !empty($this->region_name) || !empty($this->country_name);
+            case 'shipping':
+                return !empty($this->shipping_id) || !empty($this->shipping_type_id) || !empty($this->shipping_plugin);
+            case 'details':
+                // Проверяем хотя бы одно поле из адреса или контактов (кроме емейла/телефона, которые в auth)
+                return !empty($this->street) || !empty($this->zip) || !empty($this->lastname) || !empty($this->company);
+            case 'payment':
+                return !empty($this->payment_id) || !empty($this->payment_plugin);
+            case 'confirm':
+                return !empty($this->comment);
+            default:
+                return false;
+        }
+    }
 
     public function getId(): ?int
     {
@@ -508,7 +529,7 @@ class shopPrefillPluginFillParams
 
     public function getShippingVariantId(): ?string
     {
-        if (! is_null($this->getShippingId()) && ! is_null($this->getShippingRateId())) {
+        if (!is_null($this->getShippingId()) && !is_null($this->getShippingRateId())) {
             return $this->getShippingId() . '.' . $this->getShippingRateId();
         }
 

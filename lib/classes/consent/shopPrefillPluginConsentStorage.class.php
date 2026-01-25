@@ -7,6 +7,9 @@
  * - '1' = согласие дано
  * - отсутствие куки = нет согласия
  *
+ * Cookie автоматически продлевается на 1 год при каждой проверке hasConsent(),
+ * гарантируя, что согласие не истечёт, пока пользователь посещает сайт.
+ *
  * Используется только для гостей. Авторизованные пользователи
  * идентифицируются по contact_id, согласие не требуется.
  */
@@ -28,13 +31,40 @@ class shopPrefillPluginConsentStorage
     /**
      * Проверяет наличие согласия пользователя
      *
+     * При наличии согласия автоматически продлевает срок жизни cookie на 1 год.
+     * Это обеспечивает, что согласие не истекает, пока пользователь посещает сайт.
+     *
      * @return bool true если согласие дано
      */
     public function hasConsent(): bool
     {
         $consent = waRequest::cookie(self::CONSENT_COOKIE, null, waRequest::TYPE_STRING);
 
-        return $consent === '1';
+        if ($consent === '1') {
+            // Продлеваем cookie при каждой проверке
+            $this->renewConsent();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Продлевает срок жизни cookie согласия
+     *
+     * Вызывается автоматически при каждой проверке hasConsent()
+     */
+    private function renewConsent(): void
+    {
+        $this->response->setCookie(
+            self::CONSENT_COOKIE,
+            '1',
+            time() + self::COOKIE_TTL,
+            null,   // path (default)
+            '',     // domain (default)
+            false,  // secure (TODO: включить для production)
+            true    // httponly — защита от XSS
+        );
     }
 
     /**
@@ -42,12 +72,12 @@ class shopPrefillPluginConsentStorage
      */
     public function grantConsent(): void
     {
-        setcookie(
+        $this->response->setCookie(
             self::CONSENT_COOKIE,
             '1',
             time() + self::COOKIE_TTL,
-            '/',    // path
-            '',     // domain
+            null,   // path (default)
+            '',     // domain (default)
             false,  // secure (TODO: включить для production)
             true    // httponly — защита от XSS
         );
@@ -58,14 +88,14 @@ class shopPrefillPluginConsentStorage
      */
     public function revokeConsent(): void
     {
-        setcookie(
+        $this->response->setCookie(
             self::CONSENT_COOKIE,
             '',
             time() - 3600, // Устанавливаем время в прошлом для удаления
-            '/',
-            '',
-            false,
-            true
+            null,   // path (default)
+            '',     // domain (default)
+            false,  // secure (TODO: включить для production)
+            true    // httponly — защита от XSS
         );
     }
 

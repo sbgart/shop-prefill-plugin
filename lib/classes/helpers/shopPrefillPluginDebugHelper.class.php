@@ -27,14 +27,15 @@ class shopPrefillPluginDebugHelper
      *
      * @param mixed  $checkout_params Данные из хранилища
      * @param string $title           Заголовок записи
+     * @param array  $extra           Дополнительные данные (например, sections_prefill_status)
      * @return void
      */
-    public static function addDebugEntry($checkout_params, string $title): void
+    public static function addDebugEntry($checkout_params, string $title, array $extra = []): void
     {
-        self::$debug_stack[] = [
+        self::$debug_stack[] = array_merge([
             'title' => $title,
             'data' => $checkout_params,
-        ];
+        ], $extra);
     }
 
     /**
@@ -130,6 +131,8 @@ class shopPrefillPluginDebugHelper
                     'title' => $clean_title,
                     'data' => $entry['data'],
                     'color' => self::getEntryColor($entry['title']),
+                    'sections_prefill_status' => $entry['sections_prefill_status'] ?? null,
+                    'sections_filled_status' => $entry['sections_filled_status'] ?? null,
                 ];
             }
 
@@ -159,7 +162,7 @@ class shopPrefillPluginDebugHelper
 
                     // Получаем количество заказов
                     $order_provider = $plugin->getOrderProvider();
-                    $orders_ids = $order_provider->getUserOrdersId($fill_params_meta['user_id']);
+                    $orders_ids = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
                     $fill_params_meta['orders_count'] = count($orders_ids ?: []);
                 } else {
                     // Гость: показываем укороченный хеш
@@ -255,6 +258,12 @@ class shopPrefillPluginDebugHelper
                 return null;
             };
 
+            // Функция для сохранения состояния секции хранилища
+            window.PrefillDebugHelper.toggleStorageDetails = function(details) {
+                var isOpen = details.open ? '1' : '0';
+                window.PrefillDebugHelper.setCookie('wa_prefill_debug_storage_open', isOpen, 365);
+            };
+
             // Функция для рендера стека
             window.PrefillDebugHelper.renderStack = function() {
                 var existing = document.getElementById('prefill-debug-stack');
@@ -268,7 +277,7 @@ class shopPrefillPluginDebugHelper
                     tempDiv.innerHTML = html;
                     document.body.appendChild(tempDiv.firstChild);
 
-                    // Применяем сохраненное состояние (по умолчанию свернуто)
+                    // Применяем сохраненное состояние (общее окно)
                     var savedState = window.PrefillDebugHelper.getCookie('wa_prefill_debug_collapsed');
                     var shouldCollapse = savedState === null ? true : (savedState === '1');
 
@@ -283,9 +292,46 @@ class shopPrefillPluginDebugHelper
                              container.style.width = 'auto';
                          }
                     }
+
+                    // Применяем сохраненное состояние (секция хранилища)
+                    var storageOpen = window.PrefillDebugHelper.getCookie('wa_prefill_debug_storage_open');
+                    var storageDetails = document.getElementById('prefill-debug-storage-details');
+                    if (storageDetails) {
+                        // Если куки нет, оставляем как есть (open по умолчанию)
+                        // Если кука есть, ставим состояние
+                        if (storageOpen !== null) {
+                            if (storageOpen === '1') {
+                                storageDetails.setAttribute('open', '');
+                            } else {
+                                storageDetails.removeAttribute('open');
+                            }
+                        }
+                    }
+
+                    // Применяем сохраненное состояние (секции хуков)
+                    try {
+                        var hooksCookie = window.PrefillDebugHelper.getCookie('wa_prefill_debug_hooks_collapsed');
+                        if (hooksCookie) {
+                            var collapsedHooks = JSON.parse(decodeURIComponent(hooksCookie));
+                            if (Array.isArray(collapsedHooks)) {
+                                var headers = document.querySelectorAll('.prefill-debug-hook-header');
+                                headers.forEach(function(header) {
+                                    var hookName = header.getAttribute('data-hook');
+                                    if (hookName && collapsedHooks.indexOf(hookName) !== -1) {
+                                        var content = header.nextElementSibling;
+                                        var arrow = header.querySelector('.arrow-icon');
+                                        if (content) content.style.display = 'none';
+                                        if (arrow) arrow.style.transform = 'rotate(-90deg)';
+                                    }
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error restoring hooks state:', e);
+                    }
                 }
             };
-            
+
             // ... wrappers ...
 
             // Функция для очистки хранилища
@@ -358,7 +404,7 @@ class shopPrefillPluginDebugHelper
                 });
             };
 
-            // Функция для сворачивания/разворачивания
+            // Функция для сворачивания/разворачивания общего окна
             window.PrefillDebugHelper.toggleCollapse = function() {
                 var body = document.getElementById('prefill-debug-body');
                 var btn = document.getElementById('prefill-debug-collapse-btn');
@@ -374,6 +420,58 @@ class shopPrefillPluginDebugHelper
                     btn.innerHTML = '➕';
                     container.style.width = 'auto';
                     window.PrefillDebugHelper.setCookie('wa_prefill_debug_collapsed', '1', 365);
+                }
+            };
+
+            // Функция для сворачивания/разворачивания секции хука
+            window.PrefillDebugHelper.toggleHookSection = function(headerElement) {
+                // Находим следующий элемент (контейнер с контентом)
+                var content = headerElement.nextElementSibling;
+                var arrow = headerElement.querySelector('.arrow-icon');
+                var hookName = headerElement.getAttribute('data-hook');
+                
+                if (content) {
+                    var isCollapsed = false;
+                    if (content.style.display === 'none') {
+                        content.style.display = 'block';
+                        if (arrow) arrow.style.transform = 'rotate(0deg)';
+                        isCollapsed = false;
+                    } else {
+                        content.style.display = 'none';
+                        if (arrow) arrow.style.transform = 'rotate(-90deg)';
+                        isCollapsed = true;
+                    }
+
+                    // Сохраняем состояние в куки
+                    if (hookName) {
+                        try {
+                            var cookieName = 'wa_prefill_debug_hooks_collapsed';
+                            var cookieVal = window.PrefillDebugHelper.getCookie(cookieName);
+                            var collapsedHooks = [];
+                            
+                            if (cookieVal) {
+                                try {
+                                    collapsedHooks = JSON.parse(decodeURIComponent(cookieVal));
+                                    if (!Array.isArray(collapsedHooks)) collapsedHooks = [];
+                                } catch(e) { collapsedHooks = []; }
+                            }
+
+                            if (isCollapsed) {
+                                if (collapsedHooks.indexOf(hookName) === -1) {
+                                    collapsedHooks.push(hookName);
+                                }
+                            } else {
+                                var index = collapsedHooks.indexOf(hookName);
+                                if (index !== -1) {
+                                    collapsedHooks.splice(index, 1);
+                                }
+                            }
+
+                            window.PrefillDebugHelper.setCookie(cookieName, JSON.stringify(collapsedHooks), 365);
+                        } catch (e) {
+                            console.error('Error saving hook state:', e);
+                        }
+                    }
                 }
             };
 
@@ -401,6 +499,79 @@ class shopPrefillPluginDebugHelper
                     alert('❌ Ошибка запроса: ' + err.message);
                 });
             };
+
+            // Функция для сброса и перезаполнения формы
+            window.PrefillDebugHelper.resetAndRefill = function() {
+                if (!confirm('Очистить всю форму и заново предзаполнить данными из последнего заказа?')) {
+                    return;
+                }
+
+                var url = window.location.origin + '/shop/prefill/reset-and-refill';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.status === 'ok') {
+                        alert('✅ Форма очищена и перезаполнена! Страница будет перезагружена.');
+                        location.reload();
+                    } else {
+                        alert('❌ Ошибка: ' + (data.errors ? JSON.stringify(data.errors) : 'Unknown error'));
+                    }
+                })
+                .catch(function(err) {
+                    alert('❌ Ошибка запроса: ' + err.message);
+                });
+            };
+
+            // Функция для сброса флага first_prefill_done
+            window.PrefillDebugHelper.resetFirstPrefillDone = function() {
+                var url = window.location.origin + '/shop/prefill/reset-first-prefill-done';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.status === 'ok') {
+                        alert('✅ Флаг сброшен! Страница будет перезагружена.');
+                        location.reload();
+                    } else {
+                        alert('❌ Ошибка: ' + (data.errors ? JSON.stringify(data.errors) : 'Unknown error'));
+                    }
+                })
+                .catch(function(err) {
+                    alert('❌ Ошибка запроса: ' + err.message);
+                });
+            };
+
+            // Функция управления меню действий
+            window.PrefillDebugHelper.toggleActionsMenu = function(e) {
+                if (e) { e.stopPropagation(); }
+                var menu = document.getElementById('prefill-debug-actions-menu');
+                if (menu) {
+                    menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'block' : 'none';
+                }
+            };
+
+            // Закрытие меню при клике вне
+            document.addEventListener('click', function(e) {
+                 var menu = document.getElementById('prefill-debug-actions-menu');
+                 if (menu && menu.style.display === 'block') {
+                     if (!e.target.closest('#prefill-debug-actions-menu') && !e.target.closest('button[onclick*=\"toggleActionsMenu\"]')) {
+                         menu.style.display = 'none';
+                     }
+                 }
+            });
 
             // Функция для обновления дебаг-панели через AJAX
             window.PrefillDebugHelper.refreshDebug = function() {
@@ -480,9 +651,26 @@ class shopPrefillPluginDebugHelper
                                     '<span style=\"font-size: 9px\">Вкл/Выкл</span>' +
                                 '</label>' +
                             '</div>' +
-                            '<div style=\"display: flex; gap: 5px\">' +
-                                '<button onclick=\"PrefillDebugHelper.forcePrefill()\" style=\"background: #4caf50; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 10px; font-weight: bold;\" title=\"Принудительно заполнить checkout (Force Prefill)\">⚡ Force</button>' +
-                                '<button onclick=\"PrefillDebugHelper.clearStorage()\" style=\"background: #ff9800; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 10px; font-weight: bold;\" title=\"Очистить сессию checkout\">🗑️ Clear</button>' +
+                            '<div style=\"display: flex; gap: 5px; position: relative;\">' +
+                                '<button onclick=\"PrefillDebugHelper.toggleActionsMenu(event)\" class=\"prefill-debug-btn\" style=\"background: #0277bd; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 10px; font-weight: bold;\" title=\"Меню действий\">⚡ Actions ▼</button>' +
+                                '<div id=\"prefill-debug-actions-menu\" style=\"display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 100000; min-width: 200px; margin-top: 5px; color: #333; text-align: left;\">' +
+                                    '<div onclick=\"PrefillDebugHelper.forcePrefill()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;\">' +
+                                        '<div style=\"font-weight: bold; font-size: 11px; color: #2e7d32;\">⚡ Force Prefill</div>' +
+                                        '<div style=\"font-size: 9px; color: #666;\">Заполнить принудительно (без очистки)</div>' +
+                                    '</div>' +
+                                    '<div onclick=\"PrefillDebugHelper.resetAndRefill()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;\">' +
+                                        '<div style=\"font-weight: bold; font-size: 11px; color: #9c27b0;\">🔄 Reset & Refill</div>' +
+                                        '<div style=\"font-size: 9px; color: #666;\">Очистить всё и заполнить заново</div>' +
+                                    '</div>' +
+                                    '<div onclick=\"PrefillDebugHelper.resetFirstPrefillDone()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;\">' +
+                                        '<div style=\"font-weight: bold; font-size: 11px; color: #0277bd;\">🔁 Reset \\'First Done\\'</div>' +
+                                        '<div style=\"font-size: 9px; color: #666;\">Сбросить флаг выполнения</div>' +
+                                    '</div>' +
+                                    '<div onclick=\"PrefillDebugHelper.clearStorage()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer;\">' +
+                                        '<div style=\"font-weight: bold; font-size: 11px; color: #ff9800;\">🗑️ Clear Storage</div>' +
+                                        '<div style=\"font-size: 9px; color: #666;\">Полностью очистить сессию checkout</div>' +
+                                    '</div>' +
+                                '</div>' +
                             '</div>' +
                         '</div>';
 
@@ -528,9 +716,19 @@ class shopPrefillPluginDebugHelper
                                     var hasPayment = checkoutParams['payment-section'] !== undefined;
                                     var hasConfirm = checkoutParams['confirm-section'] !== undefined;
 
+                                    var prefillMetadata = checkoutParams.prefill_metadata || {};
+                                    var firstPrefillDone = prefillMetadata.first_prefill_done === true;
+                                    var hasFirstPrefillDone = prefillMetadata.first_prefill_done !== undefined;
+
                                     var structureHtml =
                                         '<div style=\"background: #fff; padding: 10px; border: 1px solid #a5d6a7; border-radius: 4px; margin-bottom: 10px; font-size: 10px; line-height: 1.6;\">' +
-                                            '<strong style=\"color: #2e7d32;\">📊 Структура данных:</strong><br />' +
+                                            '<strong style=\"color: #2e7d32;\">📊 Структура данных:</strong><br />';
+
+                                    if (hasFirstPrefillDone) {
+                                        structureHtml += 'first_prefill_done: ' + (firstPrefillDone ? '✅' : '❌') + '<br />';
+                                    }
+
+                                    structureHtml +=
                                             'order: ' + (hasOrder ? '✅' : '❌') + '<br />';
 
                                     if (hasOrder) {

@@ -6,6 +6,11 @@ class shopPrefillPluginIntegrations
     // TODO: Надо проверить, интеграция запускается только один раз, потому как иначе мы не будем давать выбрать другой город. Через куки "prefill_integrated_init"
 
     /**
+     * Integration with CitySelect plugin.
+     * Sets CitySelect cookies based on prefill data to ensure region section is populated.
+     * CitySelect normally only prefills once per user, but this integration allows
+     * prefill to "reuse" CitySelect functionality for region data.
+     *
      * @param  ?shopPrefillPluginFillParams  $params
      *
      * @return void
@@ -13,7 +18,7 @@ class shopPrefillPluginIntegrations
      */
     public static function cityselect(?shopPrefillPluginFillParams $params): void
     {
-        if (!shopPrefillPlugin::enableInstall('cityselect')) {
+        if (! shopPrefillPlugin::enableInstall('cityselect')) {
             return;
         }
 
@@ -42,7 +47,7 @@ class shopPrefillPluginIntegrations
      */
     public static function dp(?shopPrefillPluginFillParams $fill_params): void
     {
-        if (!shopPrefillPlugin::enableInstall('dp')) {
+        if (! shopPrefillPlugin::enableInstall('dp')) {
             return;
         }
 

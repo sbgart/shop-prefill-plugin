@@ -211,7 +211,7 @@ class shopPrefillPlugin extends shopPlugin
     public function getSessionStorageProvider(): shopPrefillPluginSessionStorageProvider
     {
         return $this->session_storage_provider ??= new shopPrefillPluginSessionStorageProvider(
-            $this->getStorefrontSettings()['prefill']['disable'] ?? []
+            $this->getStorefrontSettings()
         );
     }
 
@@ -321,22 +321,63 @@ JS;
             return;
         }
 
+        // Получаем параметры для заполнения заранее DLYA DEBUG и предзаполнения
+        $fill_params = null;
+        if ($storefront_settings['prefill']['active']) {
+            $fill_params = $this->getFillParamsProvider()->getFillParams();
+        }
+
         // DEBUG: Добавляем состояние хранилища ПЕРЕД предзаполнением
         if ($this->isDebug()) {
             $checkout_params_before = $this->getSessionStorageProvider()->getCheckoutParams();
-            shopPrefillPluginDebugHelper::addDebugEntry($checkout_params_before, 'BEFORE PREFILL (frontendOrder)');
+            $checkout_params_before = is_array($checkout_params_before) ? $checkout_params_before : [];
+
+            // Получаем статус секций для отображения в дебаге
+            $section_checker = $this->getSessionStorageProvider()->getSectionChecker();
+            $sections_prefill_status = [];
+            $sections_filled_status = []; // Оставляем для совместимости, но данные есть и в prefill_status
+            foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
+                // Собираем детальную информацию для UX цепочки
+                $sections_prefill_status[$section_id] = [
+                    'enabled' => $storefront_settings['prefill']['sections'][$section_id] ?? true,
+                    'filled' => $section_checker->isSectionFilled($section_id, $checkout_params_before),
+                    'has_data' => $fill_params ? $fill_params->hasDataForSection($section_id) : false,
+                    'result' => $section_checker->canPrefillSection($section_id, $checkout_params_before),
+                ];
+                $sections_filled_status[$section_id] = $sections_prefill_status[$section_id]['filled'];
+            }
+
+            shopPrefillPluginDebugHelper::addDebugEntry(
+                $checkout_params_before,
+                'BEFORE PREFILL (frontendOrder)',
+                [
+                    'sections_prefill_status' => $sections_prefill_status,
+                    'sections_filled_status' => $sections_filled_status,
+                ]
+            );
         }
 
-        if ($storefront_settings['prefill']['active']) {
-            $this->getSessionStorageProvider()->preFillCheckoutParams(
-                $this->getFillParamsProvider()->getFillParams()
-            );
+        if ($storefront_settings['prefill']['active'] && $fill_params) {
+            $this->getSessionStorageProvider()->preFillCheckoutParams($fill_params);
         }
 
         // DEBUG: Добавляем состояние хранилища ПОСЛЕ предзаполнения и регистрируем отложенный рендер
         if ($this->isDebug()) {
             $checkout_params_after = $this->getSessionStorageProvider()->getCheckoutParams();
-            shopPrefillPluginDebugHelper::addDebugEntry($checkout_params_after, 'AFTER PREFILL (frontendOrder)');
+            $checkout_params_after = is_array($checkout_params_after) ? $checkout_params_after : [];
+
+            // Получаем статус заполненности секций после предзаполнения
+            $section_checker = $this->getSessionStorageProvider()->getSectionChecker();
+            $sections_filled_status = [];
+            foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
+                $sections_filled_status[$section_id] = $section_checker->isSectionFilled($section_id, $checkout_params_after);
+            }
+
+            shopPrefillPluginDebugHelper::addDebugEntry(
+                $checkout_params_after,
+                'AFTER PREFILL (frontendOrder)',
+                ['sections_filled_status' => $sections_filled_status]
+            );
 
             // Регистрируем отложенный вывод стека (будет выведен после всех хуков)
             shopPrefillPluginDebugHelper::scheduleDebugStackRender();
@@ -369,15 +410,55 @@ JS;
             return;
         }
 
+        // Получаем параметры для заполнения заранее DLYA DEBUG и предзаполнения
+        $fill_params = null;
+        if ($storefront_settings['prefill']['active']) {
+            $fill_params = $this->getFillParamsProvider()->getFillParams();
+        }
+
         // DEBUG: Добавляем состояние хранилища ПЕРЕД предзаполнением
         if ($this->isDebug()) {
             $checkout_params_before = $this->getSessionStorageProvider()->getCheckoutParams();
-            shopPrefillPluginDebugHelper::addDebugEntry($checkout_params_before, 'BEFORE PREFILL (frontendHead)');
+            $checkout_params_before = is_array($checkout_params_before) ? $checkout_params_before : [];
+
+            // Получаем статус секций для отображения в дебаге
+            $section_checker = $this->getSessionStorageProvider()->getSectionChecker();
+            $sections_prefill_status = [];
+            $sections_filled_status = [];
+            foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
+                // Собираем детальную информацию для UX цепочки
+                $sections_prefill_status[$section_id] = [
+                    'enabled' => $storefront_settings['prefill']['sections'][$section_id] ?? true,
+                    'filled' => $section_checker->isSectionFilled($section_id, $checkout_params_before),
+                    'has_data' => $fill_params ? $fill_params->hasDataForSection($section_id) : false,
+                    'result' => $section_checker->canPrefillSection($section_id, $checkout_params_before),
+                ];
+                $sections_filled_status[$section_id] = $sections_prefill_status[$section_id]['filled'];
+            }
+
+            shopPrefillPluginDebugHelper::addDebugEntry(
+                $checkout_params_before,
+                'BEFORE PREFILL (frontendHead)',
+                [
+                    'sections_prefill_status' => $sections_prefill_status,
+                    'sections_filled_status' => $sections_filled_status,
+                ]
+            );
         }
 
         // Создаем или обновляем куки авторизации пользователя.
         if ($storefront_settings['remember_me']['active'] && $this->getUserProvider()->isAuth()) {
             $this->getUserProvider()->rememberMe($storefront_settings['remember_me']['expires']);
+        }
+
+        // Для неавторизованных: продлеваем cookie хеша гостя и согласия при каждом визите
+        // Это обеспечивает автоматическое продление срока жизни обоих cookies (1 год)
+        if (!$this->getUserProvider()->isAuth()) {
+            $this->getGuestHashStorage()->getOrCreateGuestHash();
+
+            // Продлеваем cookie согласия (если оно было дано)
+            // Вызов hasConsent() автоматически продлевает cookie
+            $this->getConsentStorage()->hasConsent();
         }
 
         // Предзаполнение включено, заполняем параметры корзины при входе на сайт
@@ -392,7 +473,20 @@ JS;
         // DEBUG: Добавляем состояние хранилища ПОСЛЕ предзаполнения и регистрируем отложенный рендер
         if ($this->isDebug()) {
             $checkout_params_after = $this->getSessionStorageProvider()->getCheckoutParams();
-            shopPrefillPluginDebugHelper::addDebugEntry($checkout_params_after, 'AFTER PREFILL (frontendHead)');
+            $checkout_params_after = is_array($checkout_params_after) ? $checkout_params_after : [];
+
+            // Получаем статус заполненности секций после предзаполнения
+            $section_checker = $this->getSessionStorageProvider()->getSectionChecker();
+            $sections_filled_status = [];
+            foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
+                $sections_filled_status[$section_id] = $section_checker->isSectionFilled($section_id, $checkout_params_after);
+            }
+
+            shopPrefillPluginDebugHelper::addDebugEntry(
+                $checkout_params_after,
+                'AFTER PREFILL (frontendHead)',
+                ['sections_filled_status' => $sections_filled_status]
+            );
 
             // Регистрируем отложенный вывод стека (будет выведен после всех хуков)
             shopPrefillPluginDebugHelper::scheduleDebugStackRender();
