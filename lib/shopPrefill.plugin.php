@@ -229,7 +229,8 @@ class shopPrefillPlugin extends shopPlugin
         if ($this->zen_helper === null) {
             $storefront_settings = $this->getStorefrontSettings();
             $this->zen_helper = new shopPrefillPluginZenHelper(
-                $storefront_settings['zen'] ?? []
+                $storefront_settings['zen'] ?? [],
+                $this
             );
         }
         return $this->zen_helper;
@@ -545,16 +546,17 @@ JS;
         // === ZEN MODE: Генерируем CSS для ВСЕХ групп в первом хуке ===
         try {
             $zen = $this->getZenHelper();
-            $output .= $zen->generateAllStyles();
+            $output .= $zen->generateAllStyles($params);
 
             // Добавляем JavaScript только один раз (в первом хуке)
             $output .= $zen->generateJavaScript();
 
             // Рендерим блок управления для группы customer в КОНЦЕ секции
-            if ($zen->shouldCollapseGroup('customer')) {
+            if ($zen->shouldCollapseGroup('customer', $params)) {
+                // СВЁРНУТО: сводка + "Изменить"
                 $output .= $zen->renderCollapseBlock('customer', $params, true);
-            } elseif ($zen->isGroupEnabled('customer') && $zen->isExpandedByUser('customer')) {
-                // Группа развёрнута пользователем — показываем кнопку «Свернуть»
+            } elseif ($zen->isGroupEnabled('customer')) {
+                // РАЗВЁРНУТО (любая причина): только "Свернуть"
                 $output .= $zen->renderCollapseBlock('customer', $params, false);
             }
         } catch (Exception $e) {
@@ -626,9 +628,11 @@ JS;
 
                 // Если details пустой/нет → выводим блок управления здесь
                 if (!$has_details) {
-                    if ($zen->shouldCollapseGroup('delivery')) {
+                    if ($zen->shouldCollapseGroup('delivery', $params)) {
+                        // СВЁРНУТО: сводка + "Изменить"
                         $output .= $zen->renderCollapseBlock('delivery', $params, true);
-                    } elseif ($zen->isExpandedByUser('delivery')) {
+                    } elseif ($zen->isGroupEnabled('delivery')) {
+                        // РАЗВЁРНУТО (любая причина): только "Свернуть"
                         $output .= $zen->renderCollapseBlock('delivery', $params, false);
                     }
                 }
@@ -670,10 +674,11 @@ JS;
         try {
             $zen = $this->getZenHelper();
 
-            if ($zen->shouldCollapseGroup('delivery')) {
+            if ($zen->shouldCollapseGroup('delivery', $params)) {
+                // СВЁРНУТО: сводка + "Изменить"
                 $output .= $zen->renderCollapseBlock('delivery', $params, true);
-            } elseif ($zen->isGroupEnabled('delivery') && $zen->isExpandedByUser('delivery')) {
-                // Группа развёрнута пользователем — показываем кнопку «Свернуть»
+            } elseif ($zen->isGroupEnabled('delivery')) {
+                // РАЗВЁРНУТО (любая причина): только "Свернуть"
                 $output .= $zen->renderCollapseBlock('delivery', $params, false);
             }
         } catch (Exception $e) {
@@ -710,10 +715,11 @@ JS;
         try {
             $zen = $this->getZenHelper();
 
-            if ($zen->shouldCollapseGroup('payment')) {
+            if ($zen->shouldCollapseGroup('payment', $params)) {
+                // СВЁРНУТО: сводка + "Изменить"
                 $output .= $zen->renderCollapseBlock('payment', $params, true);
-            } elseif ($zen->isGroupEnabled('payment') && $zen->isExpandedByUser('payment')) {
-                // Группа развёрнута пользователем — показываем кнопку «Свернуть»
+            } elseif ($zen->isGroupEnabled('payment')) {
+                // РАЗВЁРНУТО (любая причина): только "Свернуть"
                 $output .= $zen->renderCollapseBlock('payment', $params, false);
             }
         } catch (Exception $e) {
@@ -775,7 +781,7 @@ JS;
      * @param array $params Массив параметров из checkout хука
      * @return array Структурированный массив с информацией об ошибках
      */
-    private function extractCheckoutErrors(array $params): array
+    public function extractCheckoutErrors(array $params): array
     {
         // Собираем ВСЕ delayed_errors из всех шагов
         $auth_delayed_errors = ifset($params, 'data', 'auth', 'delayed_errors', []);
@@ -807,6 +813,7 @@ JS;
             'error_step_id' => $error_step_id,
         ];
     }
+
 
     /**
      * Проверяет, существует ли секция details (адресные поля доставки)

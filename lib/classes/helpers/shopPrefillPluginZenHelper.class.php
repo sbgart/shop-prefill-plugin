@@ -30,11 +30,18 @@ class shopPrefillPluginZenHelper
     private array $settings;
 
     /**
-     * @param array $zen_settings Настройки zen из storefront settings
+     * @var shopPrefillPlugin|null Плагин для доступа к extractCheckoutErrors
      */
-    public function __construct(array $zen_settings)
+    private ?shopPrefillPlugin $plugin = null;
+
+    /**
+     * @param array $zen_settings Настройки zen из storefront settings
+     * @param shopPrefillPlugin|null $plugin Плагин для проверки ошибок
+     */
+    public function __construct(array $zen_settings, ?shopPrefillPlugin $plugin = null)
     {
         $this->settings = $zen_settings;
+        $this->plugin = $plugin;
     }
 
     /**
@@ -75,21 +82,52 @@ class shopPrefillPluginZenHelper
     /**
      * Определяет, нужно ли сворачивать группу
      *
-     * Группа сворачивается если:
+     * Smart Collapse:
      * 1. Дзен-режим включен для этой группы
-     * 2. Пользователь не развернул её вручную (нет cookie)
+     * 2. Обработка состояния collapsing (попытка свернуть):
+     *    - Есть ошибки В ГРУППЕ → не сворачивать (alert будет показан)
+     *    - Нет ошибок → свернуть (cookie будет удалена)
+     * 3. Если expanded пользователем → не сворачивать
+     * 4. Дефолт: проверка ошибок В ГРУППЕ
      *
      * @param string $group Имя группы
+     * @param array $params Данные чекаута для проверки ошибок
      * @return bool
      */
-    public function shouldCollapseGroup(string $group): bool
+    public function shouldCollapseGroup(string $group, array $params = []): bool
     {
         if (!$this->isGroupEnabled($group)) {
             return false;
         }
 
-        if ($this->isExpandedByUser($group)) {
+        $cookie_state = waRequest::cookie(self::COOKIE_PREFIX . $group);
+
+        // 1. Обработка попытки сворачивания (COLLAPSING)
+        if ($cookie_state === 'collapsing') {
+            if (!empty($params)) {
+                $errors = $this->extractGroupErrors($params, $group);
+
+                if ($errors['has_errors']) {
+                    // ЕСТЬ ОШИБКИ В ГРУППЕ: не сворачивать, alert будет показан в renderCollapseBlock
+                    return false;
+                } else {
+                    // НЕТ ОШИБОК: свернуть, cookie будет удалена в renderCollapseBlock
+                    return true;
+                }
+            }
+        }
+
+        // 2. Развернуто пользователем — не сворачиваем
+        if ($cookie_state === 'expanded') {
             return false;
+        }
+
+        // 3. Дефолтное поведение: проверяем ошибки В ГРУППЕ
+        if (!empty($params)) {
+            $errors_info = $this->extractGroupErrors($params, $group);
+            if ($errors_info['has_errors']) {
+                return false;
+            }
         }
 
         return true;
@@ -115,6 +153,89 @@ class shopPrefillPluginZenHelper
     public function getGroupSettings(string $group): array
     {
         return $this->settings['groups'][$group] ?? [];
+    }
+
+    /**
+     * Извлекает ошибки для конкретной группы секций
+     *
+     * Маппинг групп → секций:
+     * - customer → auth (включая service_agreement)
+     * - delivery → region, shipping, details
+     * - payment → payment
+     *
+     * @param array $params Массив параметров из checkout хука
+     * @param string $group Имя группы (customer, delivery, payment)
+     * @return array Структурированный массив с информацией об ошибках группы
+     */
+    private function extractGroupErrors(array $params, string $group): array
+    {
+        $has_errors = false;
+        $group_errors = [];
+
+        switch ($group) {
+            case 'customer':
+                // Проверяем ошибки в auth
+                $auth_delayed_errors = ifset($params, 'data', 'auth', 'delayed_errors', []);
+                if (!empty($auth_delayed_errors)) {
+                    $has_errors = true;
+                    $group_errors['auth_delayed_errors'] = $auth_delayed_errors;
+                }
+
+                // Проверяем service_agreement
+                $service_agreement_value = ifset($params, 'vars', 'auth', 'service_agreement', null);
+                if ($service_agreement_value !== null && $service_agreement_value == 0) {
+                    $has_errors = true;
+                    $group_errors['service_agreement_error'] = true;
+                }
+
+                // Проверяем regular_errors если error_step_id = 'auth'
+                $error_step_id = ifset($params, 'error_step_id', null);
+                if ($error_step_id === 'auth') {
+                    $regular_errors = ifset($params, 'errors', []);
+                    if (!empty($regular_errors)) {
+                        $has_errors = true;
+                        $group_errors['regular_errors'] = $regular_errors;
+                    }
+                }
+                break;
+
+            case 'delivery':
+                // Проверяем ошибки в region, shipping, details
+                $details_delayed_errors = ifset($params, 'data', 'details', 'delayed_errors', []);
+                if (!empty($details_delayed_errors)) {
+                    $has_errors = true;
+                    $group_errors['details_delayed_errors'] = $details_delayed_errors;
+                }
+
+                // Проверяем regular_errors если error_step_id в группе delivery
+                $error_step_id = ifset($params, 'error_step_id', null);
+                if (in_array($error_step_id, ['region', 'shipping', 'details'])) {
+                    $regular_errors = ifset($params, 'errors', []);
+                    if (!empty($regular_errors)) {
+                        $has_errors = true;
+                        $group_errors['regular_errors'] = $regular_errors;
+                    }
+                }
+                break;
+
+            case 'payment':
+                // Проверяем ошибки в payment
+                $error_step_id = ifset($params, 'error_step_id', null);
+                if ($error_step_id === 'payment') {
+                    $regular_errors = ifset($params, 'errors', []);
+                    if (!empty($regular_errors)) {
+                        $has_errors = true;
+                        $group_errors['regular_errors'] = $regular_errors;
+                    }
+                }
+                break;
+        }
+
+        return [
+            'has_errors' => $has_errors,
+            'group' => $group,
+            'errors' => $group_errors,
+        ];
     }
 
     /**
@@ -179,9 +300,10 @@ class shopPrefillPluginZenHelper
      * Вызывается в первом хуке (checkoutRenderAuth) и генерирует
      * единый <style> тег для всех групп, которые нужно свернуть.
      *
+     * @param array $params Данные чекаута для проверки ошибок
      * @return string HTML с тегом <style> или пустая строка
      */
-    public function generateAllStyles(): string
+    public function generateAllStyles(array $params = []): string
     {
         if (!$this->isActive()) {
             return '';
@@ -190,7 +312,7 @@ class shopPrefillPluginZenHelper
         $styles = [];
 
         foreach ($this->getGroups() as $group) {
-            if ($this->shouldCollapseGroup($group)) {
+            if ($this->shouldCollapseGroup($group, $params)) {
                 $styles[] = "/* === GROUP: {$group} === */";
                 $styles[] = $this->generateGroupStyles($group);
             }
@@ -249,6 +371,23 @@ class shopPrefillPluginZenHelper
     public function renderCollapseBlock(string $group, array $params, bool $is_collapsed = true): string
     {
         $output = '<div class="prefill-zen-collapse-block">';
+
+        // Проверяем состояние cookie для обработки collapsing
+        $cookie_state = waRequest::cookie(self::COOKIE_PREFIX . $group);
+
+        // Smart Collapse: обработка попытки сворачивания
+        if ($cookie_state === 'collapsing') {
+            if ($is_collapsed) {
+                // НЕТ ОШИБОК: удаляем cookie через inline JS
+                $output .= '<script>document.cookie = "' . self::COOKIE_PREFIX . $group . '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";</script>';
+            } else {
+                // ЕСТЬ ОШИБКИ: показываем alert и переключаем cookie в expanded
+                $output .= '<script>';
+                $output .= 'alert("Пожалуйста, исправьте ошибки перед сворачиванием.");';
+                $output .= 'document.cookie = "' . self::COOKIE_PREFIX . $group . '=expanded; path=/; SameSite=Lax";';
+                $output .= '</script>';
+            }
+        }
 
         if ($is_collapsed) {
             // Свёрнуто: сводка + кнопка "Изменить"
@@ -494,8 +633,8 @@ class shopPrefillPluginZenHelper
             // Устанавливаем cookie и перезагружаем форму
             document.cookie = cookieName + '=expanded; path=/; SameSite=Lax';
         } else {
-            // Удаляем cookie
-            document.cookie = cookieName + '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            // Smart Collapse: устанавливаем промежуточное состояние для проверки на сервере
+            document.cookie = cookieName + '=collapsing; path=/; SameSite=Lax';
         }
 
         // Перезагружаем форму checkout
