@@ -30,6 +30,27 @@ return [
     'styles' => [
         'accent_color' => ['value' => '#000'],
     ],
+    // Zen Mode — сворачивание секций чекаута
+    'zen' => [
+        'active' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+        'groups' => [
+            'customer' => [
+                'enabled' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+                'icon' => ['value' => ''],
+                'summary_template' => ['value' => '{if $company}{$company} • {/if}{$firstname} {$lastname} • {$phone}'],
+            ],
+            'delivery' => [
+                'enabled' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+                'icon' => ['value' => ''],
+                'summary_template' => ['value' => '{$shipping_name} • {$shipping_rate}'],
+            ],
+            'payment' => [
+                'enabled' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+                'icon' => ['value' => ''],
+                'summary_template' => ['value' => '{$payment_name}'],
+            ],
+        ],
+    ],
     'update_time' => ['value' => 0, 'filter' => FILTER_VALIDATE_INT],
     'updated_by' => ['value' => 0, 'filter' => FILTER_VALIDATE_INT],
 ];

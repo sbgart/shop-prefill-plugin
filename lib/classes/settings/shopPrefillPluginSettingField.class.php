@@ -20,6 +20,16 @@ class shopPrefillPluginSettingField
 
     public function getValue($setting_value)
     {
-        return isset($setting_value) ? filter_var($setting_value, $this->filter) : $this->default_value;
+        // Для boolean фильтра: пустая строка = default value
+        // Для остальных: пустая строка - валидное значение
+        if (!isset($setting_value)) {
+            return $this->default_value;
+        }
+
+        if ($this->filter === FILTER_VALIDATE_BOOLEAN && $setting_value === '') {
+            return $this->default_value;
+        }
+
+        return filter_var($setting_value, $this->filter);
     }
 }

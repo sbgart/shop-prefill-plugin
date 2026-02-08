@@ -11,4 +11,5 @@ return array(
     'prefill/reset-first-prefill-done' => 'frontend/ResetFirstPrefillDone',
     'prefill/refresh-debug' => 'frontend/RefreshDebug',
     'prefill/consent' => 'frontend/Consent',
+    'prefill/toggle-zen' => 'frontend/ToggleZen',
 );

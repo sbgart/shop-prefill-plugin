@@ -35,6 +35,8 @@ class shopPrefillPlugin extends shopPlugin
     private ?shopPrefillPluginGuestHashStorage $guest_hash_storage = null;
     private ?shopPrefillPluginConsentStorage $consent_storage = null;
 
+    private ?shopPrefillPluginZenHelper $zen_helper = null;
+
     public function __construct($info)
     {
         parent::__construct($info);
@@ -216,12 +218,30 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
+     * Возвращает хелпер для Zen Mode
+     *
+     * @return shopPrefillPluginZenHelper
+     * @throws waException
+     * @throws waDbException
+     */
+    public function getZenHelper(): shopPrefillPluginZenHelper
+    {
+        if ($this->zen_helper === null) {
+            $storefront_settings = $this->getStorefrontSettings();
+            $this->zen_helper = new shopPrefillPluginZenHelper(
+                $storefront_settings['zen'] ?? []
+            );
+        }
+        return $this->zen_helper;
+    }
+
+    /**
      * @throws waException
      */
     public static function getStaticUrl($url = '', $absolute = false): string
     {
         return wa('shop')->getAppStaticUrl(self::APP_ID, $absolute) . 'plugins/'
-            . self::PLUGIN_ID . $url;
+            . self::PLUGIN_ID . '/' . $url;
     }
 
     /**
@@ -509,7 +529,7 @@ JS;
 
     /**
      * Хук срабатывает при рендере секции авторизации на странице оформления заказа.
-     * Показывает информацию об ошибках в секции авторизации.
+     * Выводит CSS для Zen Mode и показывает информацию об ошибках.
      *
      * @param array $params
      * @return string HTML для вставки в секцию авторизации
@@ -520,16 +540,36 @@ JS;
             return '';
         }
 
+        $output = '';
+
+        // === ZEN MODE: Генерируем CSS для ВСЕХ групп в первом хуке ===
+        try {
+            $zen = $this->getZenHelper();
+            $output .= $zen->generateAllStyles();
+
+            // Добавляем JavaScript только один раз (в первом хуке)
+            $output .= $zen->generateJavaScript();
+
+            // Рендерим блок управления для группы customer в КОНЦЕ секции
+            if ($zen->shouldCollapseGroup('customer')) {
+                $output .= $zen->renderCollapseBlock('customer', $params, true);
+            } elseif ($zen->isGroupEnabled('customer') && $zen->isExpandedByUser('customer')) {
+                // Группа развёрнута пользователем — показываем кнопку «Свернуть»
+                $output .= $zen->renderCollapseBlock('customer', $params, false);
+            }
+        } catch (Exception $e) {
+            // Игнорируем ошибки Zen Mode
+        }
+
         // Извлекаем все типы ошибок
         $errors_info = $this->extractCheckoutErrors($params);
 
-        // Если нет ошибок - ничего не показываем
-        if (!$errors_info['has_errors']) {
-            return '';
+        // Если есть ошибки - показываем debug информацию
+        if ($errors_info['has_errors']) {
+            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'AUTH SECTION');
         }
 
-        // Есть ошибки - показываем debug информацию
-        return shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'AUTH SECTION');
+        return $output;
     }
 
     /**
@@ -545,21 +585,23 @@ JS;
             return '';
         }
 
+        $output = '';
+
         // Извлекаем все типы ошибок
         $errors_info = $this->extractCheckoutErrors($params);
 
-        // Если нет ошибок - ничего не показываем
-        if (!$errors_info['has_errors']) {
-            return '';
+        // Если есть ошибки - показываем debug информацию
+        if ($errors_info['has_errors']) {
+            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'REGION SECTION');
         }
 
-        // Есть ошибки - показываем debug информацию
-        return shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'REGION SECTION');
+        return $output;
     }
 
     /**
      * Хук срабатывает перед формированием HTML-кода шага оформления заказа «выбор способа доставки» на странице оформления заказа в корзине.
      * Выполняет предзаполнение параметров формы заказа и показывает информацию об ошибках.
+     * Также может выводить блок управления zen-режимом для группы delivery, если details пустой/не существует.
      *
      * @throws waException
      * @throws SmartyException
@@ -571,16 +613,114 @@ JS;
             return '';
         }
 
+        $output = '';
+
+        // === ZEN MODE: Проверяем, нужно ли выводить блок управления здесь ===
+        // Выводим здесь только если details пустой или не будет рендериться
+        try {
+            $zen = $this->getZenHelper();
+
+            if ($zen->isGroupEnabled('delivery')) {
+                // Проверяем, есть ли данные details
+                $has_details = $this->hasDetailsSection($params);
+
+                // Если details пустой/нет → выводим блок управления здесь
+                if (!$has_details) {
+                    if ($zen->shouldCollapseGroup('delivery')) {
+                        $output .= $zen->renderCollapseBlock('delivery', $params, true);
+                    } elseif ($zen->isExpandedByUser('delivery')) {
+                        $output .= $zen->renderCollapseBlock('delivery', $params, false);
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            // Игнорируем ошибки Zen Mode
+        }
+
         // Извлекаем все типы ошибок
         $errors_info = $this->extractCheckoutErrors($params);
 
-        // Если нет ошибок - ничего не показываем
+        // Если нет ошибок - возвращаем то что есть (может быть zen блок)
         if (!$errors_info['has_errors']) {
+            return $output;
+        }
+
+        // Есть ошибки - добавляем debug информацию
+        $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'SHIPPING SECTION');
+
+        return $output;
+    }
+
+    /**
+     * Хук срабатывает при рендере секции details (адресные поля доставки).
+     * Выводит блок управления zen-режимом для группы delivery в конце секции (если details существует).
+     *
+     * @param array $params
+     * @return string HTML для вставки в секцию details
+     */
+    public function checkoutRenderDetails(&$params)
+    {
+        if (!$this->isActive()) {
             return '';
         }
 
-        // Есть ошибки - показываем debug информацию
-        return shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'SHIPPING SECTION');
+        $output = '';
+
+        // === ZEN MODE: Рендерим блок управления для группы delivery в КОНЦЕ секции details ===
+        try {
+            $zen = $this->getZenHelper();
+
+            if ($zen->shouldCollapseGroup('delivery')) {
+                $output .= $zen->renderCollapseBlock('delivery', $params, true);
+            } elseif ($zen->isGroupEnabled('delivery') && $zen->isExpandedByUser('delivery')) {
+                // Группа развёрнута пользователем — показываем кнопку «Свернуть»
+                $output .= $zen->renderCollapseBlock('delivery', $params, false);
+            }
+        } catch (Exception $e) {
+            // Игнорируем ошибки Zen Mode
+        }
+
+        // Извлекаем все типы ошибок
+        $errors_info = $this->extractCheckoutErrors($params);
+
+        // Если есть ошибки - показываем debug информацию
+        if ($errors_info['has_errors']) {
+            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'DETAILS SECTION');
+        }
+
+        return $output;
+    }
+
+    /**
+     * Хук срабатывает при рендере секции оплаты на странице оформления заказа.
+     * Выводит блок управления для Zen Mode группы payment в конце секции.
+     *
+     * @param array $params
+     * @return string HTML для вставки в секцию оплаты
+     */
+    public function checkoutRenderPayment(&$params)
+    {
+        if (!$this->isActive()) {
+            return '';
+        }
+
+        $output = '';
+
+        // === ZEN MODE: Рендерим блок управления для группы payment в КОНЦЕ секции ===
+        try {
+            $zen = $this->getZenHelper();
+
+            if ($zen->shouldCollapseGroup('payment')) {
+                $output .= $zen->renderCollapseBlock('payment', $params, true);
+            } elseif ($zen->isGroupEnabled('payment') && $zen->isExpandedByUser('payment')) {
+                // Группа развёрнута пользователем — показываем кнопку «Свернуть»
+                $output .= $zen->renderCollapseBlock('payment', $params, false);
+            }
+        } catch (Exception $e) {
+            // Игнорируем ошибки Zen Mode
+        }
+
+        return $output;
     }
 
     /**
@@ -668,6 +808,42 @@ JS;
         ];
     }
 
+    /**
+     * Проверяет, существует ли секция details (адресные поля доставки)
+     * 
+     * Секция details может отсутствовать если:
+     * - Доставка отключена (shipping.used = false)
+     * - Нет адресных полей для выбранной доставки
+     * - Выбран пункт выдачи без адресных полей
+     *
+     * @param array $params Параметры checkout хука
+     * @return bool
+     */
+    private function hasDetailsSection(array $params): bool
+    {
+        // Проверяем, используется ли доставка
+        $shipping_used = ifset($params, 'data', 'shipping', 'used', false);
+        if (!$shipping_used) {
+            return false;
+        }
+
+        // Проверяем наличие адресных полей в shipping_address
+        $shipping_address = ifset($params, 'shipping_address', []);
+        if (empty($shipping_address)) {
+            return false;
+        }
+
+        // Проверяем что хотя бы одно адресное поле есть
+        $address_fields = ['street', 'building', 'apartment', 'zip'];
+        foreach ($address_fields as $field) {
+            if (isset($shipping_address[$field])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     /**
      * Хук срабатывает при создании заказа.
@@ -710,6 +886,12 @@ JS;
                 $guest_hash = $this->getGuestHashStorage()->getOrCreateGuestHash();
                 $this->getGuestHashStorage()->saveGuestHashToOrder($order_id, $guest_hash);
             }
+        }
+
+        // === ZEN MODE: Очищаем cookies после создания заказа ===
+        $zen_cookies = ['prefill_zen_customer', 'prefill_zen_delivery', 'prefill_zen_payment'];
+        foreach ($zen_cookies as $cookie_name) {
+            wa()->getResponse()->setCookie($cookie_name, '', -1, '/');
         }
     }
 

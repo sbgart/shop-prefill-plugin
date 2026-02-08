@@ -34,7 +34,7 @@ class shopPrefillPluginDebugHelper
     {
         self::$debug_stack[] = array_merge([
             'title' => $title,
-            'data' => $checkout_params,
+            'data'  => $checkout_params,
         ], $extra);
     }
 
@@ -46,7 +46,7 @@ class shopPrefillPluginDebugHelper
      */
     public static function registerHookCall(string $hook_name): void
     {
-        if (!in_array($hook_name, self::$called_hooks)) {
+        if (! in_array($hook_name, self::$called_hooks)) {
             self::$called_hooks[] = $hook_name;
         }
     }
@@ -106,7 +106,8 @@ class shopPrefillPluginDebugHelper
 
             // Получаем настройки витрины
             $storefront_settings = $plugin->getStorefrontSettings();
-            $plugin_enabled = !empty($storefront_settings['prefill']['active']);
+            $plugin_enabled      = ! empty($storefront_settings['prefill']['active']);
+            $zen_enabled         = ! empty($storefront_settings['zen']['active']);
 
             // Группируем стек по хукам
             $grouped_stack = [];
@@ -123,16 +124,16 @@ class shopPrefillPluginDebugHelper
                     $clean_title = 'AFTER';
                 }
 
-                if (!isset($grouped_stack[$hook_name])) {
+                if (! isset($grouped_stack[$hook_name])) {
                     $grouped_stack[$hook_name] = [];
                 }
 
                 $grouped_stack[$hook_name][] = [
-                    'title' => $clean_title,
-                    'data' => $entry['data'],
-                    'color' => self::getEntryColor($entry['title']),
+                    'title'                   => $clean_title,
+                    'data'                    => $entry['data'],
+                    'color'                   => self::getEntryColor($entry['title']),
                     'sections_prefill_status' => $entry['sections_prefill_status'] ?? null,
-                    'sections_filled_status' => $entry['sections_filled_status'] ?? null,
+                    'sections_filled_status'  => $entry['sections_filled_status'] ?? null,
                 ];
             }
 
@@ -140,51 +141,51 @@ class shopPrefillPluginDebugHelper
             $fill_params_data = [];
             $fill_params_meta = [
                 'user_authorized' => false,
-                'user_id' => null,
-                'contact_id' => null,
-                'guest_hash' => null,
-                'orders_count' => 0,
-                'source' => 'empty',
+                'user_id'         => null,
+                'contact_id'      => null,
+                'guest_hash'      => null,
+                'orders_count'    => 0,
+                'source'          => 'empty',
                 'source_order_id' => null,
             ];
 
             try {
                 // Проверяем авторизацию
-                $user_provider = $plugin->getUserProvider();
+                $user_provider      = $plugin->getUserProvider();
                 $guest_hash_storage = $plugin->getGuestHashStorage();
 
                 $fill_params_meta['user_authorized'] = $user_provider->isAuth();
 
                 if ($fill_params_meta['user_authorized']) {
                     // Авторизованный пользователь
-                    $fill_params_meta['user_id'] = $user_provider->getId();
+                    $fill_params_meta['user_id']    = $user_provider->getId();
                     $fill_params_meta['contact_id'] = $user_provider->getId();
 
                     // Получаем количество заказов
-                    $order_provider = $plugin->getOrderProvider();
-                    $orders_ids = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
+                    $order_provider                   = $plugin->getOrderProvider();
+                    $orders_ids                       = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
                     $fill_params_meta['orders_count'] = count($orders_ids ?: []);
                 } else {
                     // Гость: показываем укороченный хеш
-                    $guest_hash = $guest_hash_storage->getGuestHash();
+                    $guest_hash                     = $guest_hash_storage->getGuestHash();
                     $fill_params_meta['guest_hash'] = $guest_hash ? substr($guest_hash, 0, 16) . '...' : null;
 
                     // Получаем количество заказов гостя
                     if ($guest_hash) {
-                        $order_provider = $plugin->getOrderProvider();
-                        $orders_ids = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
+                        $order_provider                   = $plugin->getOrderProvider();
+                        $orders_ids                       = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
                         $fill_params_meta['orders_count'] = count($orders_ids);
                     }
                 }
 
                 // Получаем параметры предзаполнения из БД
-                $fill_params = $plugin->getFillParamsProvider()->getFillParams();
+                $fill_params      = $plugin->getFillParamsProvider()->getFillParams();
                 $fill_params_data = $fill_params->toArray();
 
                 // Определяем источник данных
                 $order_id = $fill_params->getId();
                 if ($order_id) {
-                    $fill_params_meta['source'] = 'order';
+                    $fill_params_meta['source']          = 'order';
                     $fill_params_meta['source_order_id'] = $order_id;
                 } elseif ($fill_params_meta['orders_count'] > 0) {
                     $fill_params_meta['source'] = 'orders (no data)';
@@ -206,12 +207,13 @@ class shopPrefillPluginDebugHelper
 
             // Подготавливаем данные для шаблона
             $template_vars = [
-                'debug_stack' => $grouped_stack,
-                'plugin_enabled' => $plugin_enabled,
-                'has_orders' => ($fill_params_meta['orders_count'] ?? 0) > 0,
-                'fill_params' => $fill_params_data,
+                'debug_stack'      => $grouped_stack,
+                'plugin_enabled'   => $plugin_enabled,
+                'zen_enabled'      => $zen_enabled,
+                'has_orders'       => ($fill_params_meta['orders_count'] ?? 0) > 0,
+                'fill_params'      => $fill_params_data,
                 'fill_params_meta' => $fill_params_meta,
-                'current_storage' => $current_storage,
+                'current_storage'  => $current_storage,
             ];
 
             // Рендерим шаблон
@@ -375,7 +377,11 @@ class shopPrefillPluginDebugHelper
             };
 
             // Функция для переключения статуса плагина
-            window.PrefillDebugHelper.togglePrefill = function(enabled) {
+            window.PrefillDebugHelper.togglePrefill = function() {
+                if (!confirm('Переключить статус предзаполнения?')) {
+                    return;
+                }
+
                 var url = window.location.origin + '/shop/prefill/toggle-prefill';
 
                 fetch(url, {
@@ -384,14 +390,13 @@ class shopPrefillPluginDebugHelper
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ enabled: enabled })
+                    body: JSON.stringify({})
                 })
                 .then(function(response) {
                     return response.json();
                 })
                 .then(function(data) {
                     if (data.status === 'ok') {
-                        alert('✅ Статус изменён! Страница будет перезагружена.');
                         location.reload();
                     } else {
                         alert('❌ Ошибка: ' + (data.errors ? JSON.stringify(data.errors) : 'Unknown error'));
@@ -429,7 +434,7 @@ class shopPrefillPluginDebugHelper
                 var content = headerElement.nextElementSibling;
                 var arrow = headerElement.querySelector('.arrow-icon');
                 var hookName = headerElement.getAttribute('data-hook');
-                
+
                 if (content) {
                     var isCollapsed = false;
                     if (content.style.display === 'none') {
@@ -448,7 +453,7 @@ class shopPrefillPluginDebugHelper
                             var cookieName = 'wa_prefill_debug_hooks_collapsed';
                             var cookieVal = window.PrefillDebugHelper.getCookie(cookieName);
                             var collapsedHooks = [];
-                            
+
                             if (cookieVal) {
                                 try {
                                     collapsedHooks = JSON.parse(decodeURIComponent(cookieVal));
@@ -554,6 +559,37 @@ class shopPrefillPluginDebugHelper
                 });
             };
 
+            // Функция для переключения Zen Mode
+            window.PrefillDebugHelper.toggleZen = function() {
+                if (!confirm('Переключить статус Zen Mode?')) {
+                    return;
+                }
+
+                var url = window.location.origin + '/shop/prefill/toggle-zen';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.status === 'ok') {
+                        location.reload();
+                    } else {
+                        alert('❌ Ошибка: ' + (data.errors ? JSON.stringify(data.errors) : 'Unknown error'));
+                        location.reload();
+                    }
+                })
+                .catch(function(err) {
+                    alert('❌ Ошибка запроса: ' + err.message);
+                    location.reload();
+                });
+            };
+
             // Функция управления меню действий
             window.PrefillDebugHelper.toggleActionsMenu = function(e) {
                 if (e) { e.stopPropagation(); }
@@ -635,25 +671,31 @@ class shopPrefillPluginDebugHelper
                         // Обновляем статус плагина
                         var bgColor = actualData.plugin_enabled ? '#d4edda' : '#f8d7da';
                         var borderColor = actualData.plugin_enabled ? '#28a745' : '#dc3545';
-                        var statusIcon = actualData.plugin_enabled ? '✅' : '⚠️';
-                        var statusText = actualData.plugin_enabled ? 'ВКЛЮЧЕНО' : 'ВЫКЛЮЧЕНО';
 
                         statusPanel.style.background = bgColor;
                         statusPanel.style.borderBottom = '1px solid ' + borderColor;
                         statusPanel.innerHTML = '<div style=\"display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px\">' +
                             '<div style=\"display: flex; align-items: center; gap: 8px\">' +
-                                '<div>' +
-                                    '<strong>' + statusIcon + ' Предзаполнение:</strong> ' + statusText +
-                                    '<span style=\"opacity: 0.7; font-size: 9px; margin-left: 8px\">(обновлено: ' + (actualData.timestamp || 'N/A') + ')</span>' +
+                                '<div style=\"display: flex; align-items: center; gap: 5px; padding: 3px 8px; background: ' + bgColor + '; border-radius: 3px; border: 1px solid ' + borderColor + ';\">' +
+                                    '<span style=\"font-size: 9px; font-weight: bold; color: ' + (actualData.plugin_enabled ? '#155724' : '#721c24') + ';\">' +
+                                        (actualData.plugin_enabled ? '✅ Prefill ON' : '⚠️ Prefill OFF') +
+                                    '</span>' +
                                 '</div>' +
-                                '<label style=\"display: flex; align-items: center; gap: 5px; cursor: pointer\">' +
-                                    '<input type=\"checkbox\" ' + (actualData.plugin_enabled ? 'checked' : '') + ' onchange=\"PrefillDebugHelper.togglePrefill(this.checked)\" style=\"cursor: pointer;\">' +
-                                    '<span style=\"font-size: 9px\">Вкл/Выкл</span>' +
-                                '</label>' +
+                                '<div style=\"display: flex; align-items: center; gap: 5px; padding: 3px 8px; background: ' + (actualData.zen_enabled ? '#e8f5e9' : '#fce4ec') + '; border-radius: 3px; border: 1px solid ' + (actualData.zen_enabled ? '#4caf50' : '#f06292') + ';\">' +
+                                    '<span style=\"font-size: 9px; font-weight: bold; color: ' + (actualData.zen_enabled ? '#2e7d32' : '#ad1457') + ';\">' +
+                                        (actualData.zen_enabled ? '🧘 Zen ON' : '🧘 Zen OFF') +
+                                    '</span>' +
+                                '</div>' +
                             '</div>' +
                             '<div style=\"display: flex; gap: 5px; position: relative;\">' +
                                 '<button onclick=\"PrefillDebugHelper.toggleActionsMenu(event)\" class=\"prefill-debug-btn\" style=\"background: #0277bd; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 10px; font-weight: bold;\" title=\"Меню действий\">⚡ Actions ▼</button>' +
                                 '<div id=\"prefill-debug-actions-menu\" style=\"display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 100000; min-width: 200px; margin-top: 5px; color: #333; text-align: left;\">' +
+                                    '<!-- PREFILL ACTIONS -->' +
+                                    '<div style=\"padding: 6px 12px; background: #e3f2fd; border-bottom: 2px solid #2196f3; font-weight: bold; font-size: 10px; color: #1565c0; text-transform: uppercase; letter-spacing: 0.5px;\">📝 Prefill</div>' +
+                                    '<div onclick=\"PrefillDebugHelper.togglePrefill()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;\">' +
+                                        '<div style=\"font-weight: bold; font-size: 11px; color: #1565c0;\">🔄 Toggle Prefill</div>' +
+                                        '<div style=\"font-size: 9px; color: #666;\">Вкл/Выкл предзаполнение</div>' +
+                                    '</div>' +
                                     '<div onclick=\"PrefillDebugHelper.forcePrefill()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;\">' +
                                         '<div style=\"font-weight: bold; font-size: 11px; color: #2e7d32;\">⚡ Force Prefill</div>' +
                                         '<div style=\"font-size: 9px; color: #666;\">Заполнить принудительно (без очистки)</div>' +
@@ -666,9 +708,15 @@ class shopPrefillPluginDebugHelper
                                         '<div style=\"font-weight: bold; font-size: 11px; color: #0277bd;\">🔁 Reset \\'First Done\\'</div>' +
                                         '<div style=\"font-size: 9px; color: #666;\">Сбросить флаг выполнения</div>' +
                                     '</div>' +
-                                    '<div onclick=\"PrefillDebugHelper.clearStorage()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer;\">' +
+                                    '<div onclick=\"PrefillDebugHelper.clearStorage()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer; border-bottom: 2px solid #ddd;\">' +
                                         '<div style=\"font-weight: bold; font-size: 11px; color: #ff9800;\">🗑️ Clear Storage</div>' +
                                         '<div style=\"font-size: 9px; color: #666;\">Полностью очистить сессию checkout</div>' +
+                                    '</div>' +
+                                    '<!-- ZEN MODE -->' +
+                                    '<div style=\"padding: 6px 12px; background: #f3e5f5; border-bottom: 2px solid #9c27b0; font-weight: bold; font-size: 10px; color: #6a1b9a; text-transform: uppercase; letter-spacing: 0.5px;\">🧘 Zen Mode</div>' +
+                                    '<div onclick=\"PrefillDebugHelper.toggleZen()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer;\">' +
+                                        '<div style=\"font-weight: bold; font-size: 11px; color: #673ab7;\">🧘 Toggle Zen Mode</div>' +
+                                        '<div style=\"font-size: 9px; color: #666;\">Вкл/Выкл режим сворачивания</div>' +
                                     '</div>' +
                                 '</div>' +
                             '</div>' +
@@ -818,11 +866,11 @@ class shopPrefillPluginDebugHelper
      */
     public static function renderErrorsDebugHtml(array $errors_info, string $hook_name = 'CONFIRM SECTION'): string
     {
-        if (!$errors_info['has_errors']) {
+        if (! $errors_info['has_errors']) {
             return '';
         }
 
-        $debug_html = '<div style="background: #f8d7da; padding: 15px; margin: 10px; border: 2px solid #dc3545; border-radius: 5px;">';
+        $debug_html  = '<div style="background: #f8d7da; padding: 15px; margin: 10px; border: 2px solid #dc3545; border-radius: 5px;">';
         $debug_html .= '<strong>⚠️ ' . htmlspecialchars($hook_name) . ': Обнаружены незаполненные обязательные поля!</strong>';
         $debug_html .= '<p style="margin: 5px 0 10px 0; color: #721c24;">Нельзя скрывать поля - пользователь не сможет их заполнить!</p>';
 
@@ -835,9 +883,9 @@ class shopPrefillPluginDebugHelper
             }
             $debug_html .= '<ul style="margin: 5px 0; padding-left: 20px;">';
             foreach ($errors_info['regular_errors'] as $error) {
-                $field_name = ifset($error, 'name', 'unknown');
-                $error_text = ifset($error, 'text', 'Unknown error');
-                $section = ifset($error, 'section', '');
+                $field_name  = ifset($error, 'name', 'unknown');
+                $error_text  = ifset($error, 'text', 'Unknown error');
+                $section     = ifset($error, 'section', '');
                 $debug_html .= '<li><code>' . htmlspecialchars($field_name) . '</code>';
                 if ($section) {
                     $debug_html .= ' <span style="font-size: 11px; color: #666;">(' . htmlspecialchars($section) . ')</span>';

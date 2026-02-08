@@ -122,3 +122,44 @@ msgstr ""
 
 msgid "Неизвестное действие"
 msgstr ""
+
+# === ZEN MODE ===
+
+msgid "zen.button.expand"
+msgstr "Изменить"
+
+msgid "zen.button.collapse"
+msgstr "Свернуть"
+
+msgid "zen.group.customer"
+msgstr "Покупатель"
+
+msgid "zen.group.delivery"
+msgstr "Доставка"
+
+msgid "zen.group.payment"
+msgstr "Оплата"
+
+msgid "tab.zen"
+msgstr "Дзен-режим"
+
+msgid "zen.setting.active"
+msgstr "Включить Дзен-режим"
+
+msgid "zen.tooltip.active"
+msgstr "Сворачивает заполненные секции, оставляя только краткую сводку"
+
+msgid "zen.groups.title"
+msgstr "Группы секций"
+
+msgid "zen.setting.group_enabled"
+msgstr "Сворачивать группу"
+
+msgid "zen.template.customer"
+msgstr "Шаблон сводки: Покупатель"
+
+msgid "zen.template.delivery"
+msgstr "Шаблон сводки: Доставка"
+
+msgid "zen.template.payment"
+msgstr "Шаблон сводки: Оплата"

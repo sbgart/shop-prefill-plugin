@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Контроллер для переключения статуса предзаполнения (toggle)
+ * Контроллер для переключения Zen Mode (toggle)
  * Используется для дебага через меню Actions в debug панели
  */
-class shopPrefillPluginFrontendTogglePrefillController extends waJsonController
+class shopPrefillPluginFrontendToggleZenController extends waJsonController
 {
     public function execute()
     {
@@ -22,11 +22,11 @@ class shopPrefillPluginFrontendTogglePrefillController extends waJsonController
             $settings = $storefront->getSettings();
 
             // Переключаем состояние (toggle)
-            $current_state = !empty($settings['prefill']['active']);
+            $current_state = !empty($settings['zen']['active']);
             $new_state = !$current_state;
 
-            // Обновляем настройку
-            $settings['prefill']['active'] = $new_state;
+            // Обновляем настройку zen.active
+            $settings['zen']['active'] = $new_state;
 
             // Сохраняем настройки
             $storefront->saveSettings($settings);
@@ -37,7 +37,7 @@ class shopPrefillPluginFrontendTogglePrefillController extends waJsonController
             $this->response = [
                 'status' => 'ok',
                 'enabled' => $new_state,
-                'message' => $new_state ? 'Prefill enabled' : 'Prefill disabled'
+                'message' => $new_state ? 'Zen Mode enabled' : 'Zen Mode disabled'
             ];
         } catch (Exception $e) {
             $this->errors = [

@@ -78,15 +78,18 @@
         ">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px">
         <div style="display: flex; align-items: center; gap: 8px">
-          <div>
-            <strong>{if $plugin_enabled}✅{else}⚠️{/if} Предзаполнение:</strong>
-            {if $plugin_enabled}ВКЛЮЧЕНО{else}ВЫКЛЮЧЕНО{/if}
+          <div
+            style="display: flex; align-items: center; gap: 5px; padding: 3px 8px; background: {if $plugin_enabled}#d4edda{else}#f8d7da{/if}; border-radius: 3px; border: 1px solid {if $plugin_enabled}#28a745{else}#dc3545{/if};">
+            <span style="font-size: 9px; font-weight: bold; color: {if $plugin_enabled}#155724{else}#721c24{/if};">
+              {if $plugin_enabled}✅ Prefill ON{else}⚠️ Prefill OFF{/if}
+            </span>
           </div>
-          <label style="display: flex; align-items: center; gap: 5px; cursor: pointer">
-            <input type="checkbox" {if $plugin_enabled}checked{/if}
-              onchange="PrefillDebugHelper.togglePrefill(this.checked)" style="cursor: pointer;">
-            <span style="font-size: 9px">Вкл/Выкл</span>
-          </label>
+          <div
+            style="display: flex; align-items: center; gap: 5px; padding: 3px 8px; background: {if $zen_enabled}#e8f5e9{else}#fce4ec{/if}; border-radius: 3px; border: 1px solid {if $zen_enabled}#4caf50{else}#f06292{/if};">
+            <span style="font-size: 9px; font-weight: bold; color: {if $zen_enabled}#2e7d32{else}#ad1457{/if};">
+              {if $zen_enabled}🧘 Zen ON{else}🧘 Zen OFF{/if}
+            </span>
+          </div>
         </div>
 
         <div style="display: flex; gap: 5px; position: relative;">
@@ -119,6 +122,31 @@
               color: #333;
               text-align: left;
             ">
+            {* === PREFILL ACTIONS === *}
+            <div style="
+                padding: 6px 12px;
+                background: #e3f2fd;
+                border-bottom: 2px solid #2196f3;
+                font-weight: bold;
+                font-size: 10px;
+                color: #1565c0;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              ">
+              📝 Prefill
+            </div>
+
+            {* Toggle Prefill *}
+            <div onclick="PrefillDebugHelper.togglePrefill()" onmouseover="this.style.background='#f5f5f5'"
+              onmouseout="this.style.background='white'" style="
+                padding: 8px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+              ">
+              <div style="font-weight: bold; font-size: 11px; color: #1565c0;">🔄 Toggle Prefill</div>
+              <div style="font-size: 9px; color: #666;">Вкл/Выкл предзаполнение</div>
+            </div>
+
             {* Force Prefill *}
             <div onclick="PrefillDebugHelper.forcePrefill()" onmouseover="this.style.background='#f5f5f5'"
               onmouseout="this.style.background='white'" style="
@@ -157,9 +185,34 @@
               onmouseout="this.style.background='white'" style="
                 padding: 8px 12px;
                 cursor: pointer;
+                border-bottom: 2px solid #ddd;
               ">
               <div style="font-weight: bold; font-size: 11px; color: #ff9800;">🗑️ Clear Storage</div>
               <div style="font-size: 9px; color: #666;">Полностью очистить сессию checkout</div>
+            </div>
+
+            {* === ZEN MODE === *}
+            <div style="
+                padding: 6px 12px;
+                background: #f3e5f5;
+                border-bottom: 2px solid #9c27b0;
+                font-weight: bold;
+                font-size: 10px;
+                color: #6a1b9a;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              ">
+              🧘 Zen Mode
+            </div>
+
+            {* Toggle Zen Mode *}
+            <div onclick="PrefillDebugHelper.toggleZen()" onmouseover="this.style.background='#f5f5f5'"
+              onmouseout="this.style.background='white'" style="
+                padding: 8px 12px;
+                cursor: pointer;
+              ">
+              <div style="font-weight: bold; font-size: 11px; color: #673ab7;">🧘 Toggle Zen Mode</div>
+              <div style="font-size: 9px; color: #666;">Вкл/Выкл режим сворачивания</div>
             </div>
           </div>
         </div>
@@ -350,11 +403,11 @@
             {* Banner if blocked *}
             {if $is_blocked_by_first_prefill}
             <div style="
-                    background: #e3f2fd; 
-                    color: #0d47a1; 
-                    padding: 8px; 
-                    border-radius: 4px; 
-                    border: 1px solid #90caf9; 
+                    background: #e3f2fd;
+                    color: #0d47a1;
+                    padding: 8px;
+                    border-radius: 4px;
+                    border: 1px solid #90caf9;
                     margin-bottom: 8px;
                     display: flex;
                     align-items: center;
@@ -497,7 +550,7 @@
                   font-size: 9px;
                   line-height: 1.2;
                 ">
-                          {$entry.data|@print_r}</pre>
+                                {$entry.data|@print_r}</pre>
               </details>
               {/if}
             </div>
