@@ -132,7 +132,7 @@ class shopPrefillPluginFrontendHooks
     private function registerDebugHookCall(string $hook_name): void
     {
         if ($this->is_debug) {
-            shopPrefillPluginDebugHelper::registerHookCall($hook_name);
+            shopPrefillPluginDebug::registerHookCall($hook_name);
         }
     }
 
@@ -168,7 +168,7 @@ class shopPrefillPluginFrontendHooks
             $sections_filled_status[$section_id] = $sections_prefill_status[$section_id]['filled'];
         }
 
-        shopPrefillPluginDebugHelper::addDebugEntry(
+        shopPrefillPluginDebug::addDebugEntry(
             $checkout_params_before,
             "BEFORE PREFILL ($hook_name)",
             [
@@ -200,15 +200,15 @@ class shopPrefillPluginFrontendHooks
             $sections_filled_status[$section_id] = $section_checker->isSectionFilled($section_id, $checkout_params_after);
         }
 
-        shopPrefillPluginDebugHelper::addDebugEntry(
+        shopPrefillPluginDebug::addDebugEntry(
             $checkout_params_after,
             "AFTER PREFILL ($hook_name)",
             ['sections_filled_status' => $sections_filled_status]
         );
 
         // Регистрируем отложенный вывод стека (будет выведен после всех хуков)
-        shopPrefillPluginDebugHelper::scheduleDebugStackRender();
-        shopPrefillPluginDebugHelper::renderDebugStack();
+        shopPrefillPluginDebug::scheduleDebugStackRender();
+        shopPrefillPluginDebug::renderDebugStack();
     }
 
     /**

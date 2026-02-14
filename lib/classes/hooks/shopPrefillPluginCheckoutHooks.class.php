@@ -62,7 +62,7 @@ class shopPrefillPluginCheckoutHooks
         // DEBUG: Добавляем запись в debug stack с данными об ошибках
         if ($this->is_debug) {
             $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebugHelper::addDebugEntry(
+            shopPrefillPluginDebug::addDebugEntry(
                 $checkout_params,
                 'CHECKOUT HOOK (checkoutRenderAuth)',
                 ['errors_info' => $errors_info]
@@ -71,7 +71,7 @@ class shopPrefillPluginCheckoutHooks
 
         // Если есть ошибки - показываем debug информацию
         if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'AUTH SECTION');
+            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'AUTH SECTION');
         }
 
         return $output;
@@ -94,7 +94,7 @@ class shopPrefillPluginCheckoutHooks
         // DEBUG: Добавляем запись в debug stack с данными об ошибках
         if ($this->is_debug) {
             $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebugHelper::addDebugEntry(
+            shopPrefillPluginDebug::addDebugEntry(
                 $checkout_params,
                 'CHECKOUT HOOK (checkoutRenderRegion)',
                 ['errors_info' => $errors_info]
@@ -103,7 +103,7 @@ class shopPrefillPluginCheckoutHooks
 
         // Если есть ошибки - показываем debug информацию
         if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'REGION SECTION');
+            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'REGION SECTION');
         }
 
         return $output;
@@ -149,7 +149,7 @@ class shopPrefillPluginCheckoutHooks
         // DEBUG: Добавляем запись в debug stack с данными об ошибках
         if ($this->is_debug) {
             $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebugHelper::addDebugEntry(
+            shopPrefillPluginDebug::addDebugEntry(
                 $checkout_params,
                 'CHECKOUT HOOK (checkoutRenderShipping)',
                 ['errors_info' => $errors_info]
@@ -158,7 +158,7 @@ class shopPrefillPluginCheckoutHooks
 
         // Если есть ошибки - показываем debug информацию
         if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'SHIPPING SECTION');
+            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'SHIPPING SECTION');
         }
 
         return $output;
@@ -196,7 +196,7 @@ class shopPrefillPluginCheckoutHooks
         // DEBUG: Добавляем запись в debug stack с данными об ошибках
         if ($this->is_debug) {
             $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebugHelper::addDebugEntry(
+            shopPrefillPluginDebug::addDebugEntry(
                 $checkout_params,
                 'CHECKOUT HOOK (checkoutRenderDetails)',
                 ['errors_info' => $errors_info]
@@ -205,7 +205,7 @@ class shopPrefillPluginCheckoutHooks
 
         // Если есть ошибки - показываем debug информацию
         if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'DETAILS SECTION');
+            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'DETAILS SECTION');
         }
 
         return $output;
@@ -243,7 +243,7 @@ class shopPrefillPluginCheckoutHooks
         // DEBUG: Добавляем запись в debug stack
         if ($this->is_debug) {
             $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebugHelper::addDebugEntry(
+            shopPrefillPluginDebug::addDebugEntry(
                 $checkout_params,
                 'CHECKOUT HOOK (checkoutRenderPayment)',
                 ['errors_info' => $errors_info]
@@ -252,7 +252,7 @@ class shopPrefillPluginCheckoutHooks
 
         // Если есть ошибки - показываем debug информацию
         if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'PAYMENT SECTION');
+            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'PAYMENT SECTION');
         }
 
         return $output;
@@ -303,7 +303,7 @@ class shopPrefillPluginCheckoutHooks
         // DEBUG: Добавляем запись в debug stack с данными об ошибках
         if ($this->is_debug) {
             $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebugHelper::addDebugEntry(
+            shopPrefillPluginDebug::addDebugEntry(
                 $checkout_params,
                 'CHECKOUT HOOK (checkoutRenderConfirm)',
                 ['errors_info' => $errors_info]
@@ -312,7 +312,7 @@ class shopPrefillPluginCheckoutHooks
 
         // Если есть ошибки - показываем debug информацию
         if ($errors_info['has_errors']) {
-            $html .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'CONFIRM SECTION');
+            $html .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'CONFIRM SECTION');
         }
 
         return $html;

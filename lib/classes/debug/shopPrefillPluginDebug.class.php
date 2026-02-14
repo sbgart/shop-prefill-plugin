@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Хелпер для отладки состояния хранилища checkout_params
+ * Класс для отладки состояния хранилища checkout_params
  *
  * Предоставляет функции для вывода состояния хранилища в режиме отладки:
  * - addDebugEntry() - добавить запись в стек дебага
  * - renderDebugStack() - вывести весь накопленный стек одним летающим окном
  * - renderErrorsDebugHtml() - вывести ошибки валидации (для checkout хуков)
  */
-class shopPrefillPluginDebugHelper
+class shopPrefillPluginDebug
 {
     /**
      * Стек дебаг-записей для накопления
@@ -34,7 +34,7 @@ class shopPrefillPluginDebugHelper
     {
         self::$debug_stack[] = array_merge([
             'title' => $title,
-            'data'  => $checkout_params,
+            'data' => $checkout_params,
         ], $extra);
     }
 
@@ -46,7 +46,7 @@ class shopPrefillPluginDebugHelper
      */
     public static function registerHookCall(string $hook_name): void
     {
-        if (! in_array($hook_name, self::$called_hooks)) {
+        if (!in_array($hook_name, self::$called_hooks)) {
             self::$called_hooks[] = $hook_name;
         }
     }
@@ -106,8 +106,8 @@ class shopPrefillPluginDebugHelper
 
             // Получаем настройки витрины
             $storefront_settings = $plugin->getStorefrontSettings();
-            $plugin_enabled      = ! empty($storefront_settings['prefill']['active']);
-            $zen_enabled         = ! empty($storefront_settings['zen']['active']);
+            $plugin_enabled = !empty($storefront_settings['prefill']['active']);
+            $zen_enabled = !empty($storefront_settings['zen']['active']);
 
             // Группируем стек по хукам
             $grouped_stack = [];
@@ -124,7 +124,7 @@ class shopPrefillPluginDebugHelper
                     $clean_title = 'AFTER';
                 }
 
-                if (! isset($grouped_stack[$hook_name])) {
+                if (!isset($grouped_stack[$hook_name])) {
                     $grouped_stack[$hook_name] = [];
                 }
 
@@ -135,51 +135,51 @@ class shopPrefillPluginDebugHelper
                     $normalized_errors = [];
                     foreach ($errors_info['regular_errors'] as $key => $error) {
                         $field_name = is_string($key) && !empty($key) ? $key : 'error';
-                        
+
                         if (is_array($error)) {
                             // Если это массив, проверяем структуру
                             if (isset($error['name']) || isset($error['text']) || isset($error['message'])) {
                                 // Структурированная ошибка с полями name/text/message
                                 $normalized_errors[] = [
-                                    'name'     => $error['name'] ?? $field_name,
-                                    'text'     => $error['text'] ?? $error['message'] ?? 'Unknown error',
-                                    'section'  => $error['section'] ?? '',
+                                    'name' => $error['name'] ?? $field_name,
+                                    'text' => $error['text'] ?? $error['message'] ?? 'Unknown error',
+                                    'section' => $error['section'] ?? '',
                                 ];
                             } elseif (!empty($error)) {
                                 // Массив без структуры, но не пустой - выводим содержимое
                                 $normalized_errors[] = [
-                                    'name'     => $field_name,
-                                    'text'     => json_encode($error, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
-                                    'section'  => '',
+                                    'name' => $field_name,
+                                    'text' => json_encode($error, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
+                                    'section' => '',
                                 ];
                             } else {
                                 // Пустой массив - пропускаем или создаем информативное сообщение
                                 $normalized_errors[] = [
-                                    'name'     => $field_name,
-                                    'text'     => 'Empty error data',
-                                    'section'  => '',
+                                    'name' => $field_name,
+                                    'text' => 'Empty error data',
+                                    'section' => '',
                                 ];
                             }
                         } elseif (is_string($error) && !empty($error)) {
                             // Если ошибка - строка, ключ - это имя поля
                             $normalized_errors[] = [
-                                'name'     => $field_name,
-                                'text'     => $error,
-                                'section'  => '',
+                                'name' => $field_name,
+                                'text' => $error,
+                                'section' => '',
                             ];
                         } elseif (is_scalar($error)) {
                             // Число, boolean и т.д.
                             $normalized_errors[] = [
-                                'name'     => $field_name,
-                                'text'     => (string)$error,
-                                'section'  => '',
+                                'name' => $field_name,
+                                'text' => (string) $error,
+                                'section' => '',
                             ];
                         } elseif (!empty($error)) {
                             // Объект или другой тип
                             $normalized_errors[] = [
-                                'name'     => $field_name,
-                                'text'     => json_encode($error, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
-                                'section'  => '',
+                                'name' => $field_name,
+                                'text' => json_encode($error, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
+                                'section' => '',
                             ];
                         }
                         // Пустые значения пропускаем
@@ -188,12 +188,12 @@ class shopPrefillPluginDebugHelper
                 }
 
                 $grouped_stack[$hook_name][] = [
-                    'title'                   => $clean_title,
-                    'data'                    => $entry['data'],
-                    'color'                   => self::getEntryColor($entry['title']),
+                    'title' => $clean_title,
+                    'data' => $entry['data'],
+                    'color' => self::getEntryColor($entry['title']),
                     'sections_prefill_status' => $entry['sections_prefill_status'] ?? null,
-                    'sections_filled_status'  => $entry['sections_filled_status'] ?? null,
-                    'errors_info'             => $errors_info,
+                    'sections_filled_status' => $entry['sections_filled_status'] ?? null,
+                    'errors_info' => $errors_info,
                 ];
             }
 
@@ -201,51 +201,51 @@ class shopPrefillPluginDebugHelper
             $fill_params_data = [];
             $fill_params_meta = [
                 'user_authorized' => false,
-                'user_id'         => null,
-                'contact_id'      => null,
-                'guest_hash'      => null,
-                'orders_count'    => 0,
-                'source'          => 'empty',
+                'user_id' => null,
+                'contact_id' => null,
+                'guest_hash' => null,
+                'orders_count' => 0,
+                'source' => 'empty',
                 'source_order_id' => null,
             ];
 
             try {
                 // Проверяем авторизацию
-                $user_provider      = $plugin->getUserProvider();
+                $user_provider = $plugin->getUserProvider();
                 $guest_hash_storage = $plugin->getGuestHashStorage();
 
                 $fill_params_meta['user_authorized'] = $user_provider->isAuth();
 
                 if ($fill_params_meta['user_authorized']) {
                     // Авторизованный пользователь
-                    $fill_params_meta['user_id']    = $user_provider->getId();
+                    $fill_params_meta['user_id'] = $user_provider->getId();
                     $fill_params_meta['contact_id'] = $user_provider->getId();
 
                     // Получаем количество заказов
-                    $order_provider                   = $plugin->getOrderProvider();
-                    $orders_ids                       = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
+                    $order_provider = $plugin->getOrderProvider();
+                    $orders_ids = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
                     $fill_params_meta['orders_count'] = count($orders_ids ?: []);
                 } else {
                     // Гость: показываем укороченный хеш
-                    $guest_hash                     = $guest_hash_storage->getGuestHash();
+                    $guest_hash = $guest_hash_storage->getGuestHash();
                     $fill_params_meta['guest_hash'] = $guest_hash ? substr($guest_hash, 0, 16) . '...' : null;
 
                     // Получаем количество заказов гостя
                     if ($guest_hash) {
-                        $order_provider                   = $plugin->getOrderProvider();
-                        $orders_ids                       = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
+                        $order_provider = $plugin->getOrderProvider();
+                        $orders_ids = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
                         $fill_params_meta['orders_count'] = count($orders_ids);
                     }
                 }
 
                 // Получаем параметры предзаполнения из БД
-                $fill_params      = $plugin->getFillParamsProvider()->getFillParams();
+                $fill_params = $plugin->getFillParamsProvider()->getFillParams();
                 $fill_params_data = $fill_params->toArray();
 
                 // Определяем источник данных
                 $order_id = $fill_params->getId();
                 if ($order_id) {
-                    $fill_params_meta['source']          = 'order';
+                    $fill_params_meta['source'] = 'order';
                     $fill_params_meta['source_order_id'] = $order_id;
                 } elseif ($fill_params_meta['orders_count'] > 0) {
                     $fill_params_meta['source'] = 'orders (no data)';
@@ -267,13 +267,13 @@ class shopPrefillPluginDebugHelper
 
             // Подготавливаем данные для шаблона
             $template_vars = [
-                'debug_stack'      => $grouped_stack,
-                'plugin_enabled'   => $plugin_enabled,
-                'zen_enabled'      => $zen_enabled,
-                'has_orders'       => ($fill_params_meta['orders_count'] ?? 0) > 0,
-                'fill_params'      => $fill_params_data,
+                'debug_stack' => $grouped_stack,
+                'plugin_enabled' => $plugin_enabled,
+                'zen_enabled' => $zen_enabled,
+                'has_orders' => ($fill_params_meta['orders_count'] ?? 0) > 0,
+                'fill_params' => $fill_params_data,
                 'fill_params_meta' => $fill_params_meta,
-                'current_storage'  => $current_storage,
+                'current_storage' => $current_storage,
             ];
 
             // Рендерим шаблон
@@ -926,13 +926,13 @@ class shopPrefillPluginDebugHelper
      */
     public static function renderErrorsDebugHtml(array $errors_info, string $hook_name = 'CONFIRM SECTION'): string
     {
-        if (! $errors_info['has_errors']) {
+        if (!$errors_info['has_errors']) {
             return '';
         }
 
         static $style_output = false;
         $debug_html = '';
-        if (! $style_output) {
+        if (!$style_output) {
             $debug_html .= '<style>.prefill-errors-debug[open] .prefill-errors-debug-arrow{transform:rotate(90deg)}</style>';
             $style_output = true;
         }
@@ -954,9 +954,9 @@ class shopPrefillPluginDebugHelper
             }
             $debug_html .= '<ul style="margin: 5px 0; padding-left: 20px;">';
             foreach ($errors_info['regular_errors'] as $error) {
-                $field_name  = ifset($error, 'name', 'unknown');
-                $error_text  = ifset($error, 'text', 'Unknown error');
-                $section     = ifset($error, 'section', '');
+                $field_name = ifset($error, 'name', 'unknown');
+                $error_text = ifset($error, 'text', 'Unknown error');
+                $section = ifset($error, 'section', '');
                 $debug_html .= '<li><code>' . htmlspecialchars($field_name) . '</code>';
                 if ($section) {
                     $debug_html .= ' <span style="font-size: 11px; color: #666;">(' . htmlspecialchars($section) . ')</span>';
