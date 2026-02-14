@@ -537,21 +537,99 @@
               </div>
               {/if}
 
-              <details style="margin-top: 5px">
-                <summary style="cursor: pointer; color: #1976d2; font-size: 9px; user-select: none">📋 Дамп</summary>
-                <pre style="
-                  margin: 5px 0 0 0;
-                  padding: 5px;
-                  background: #f5f5f5;
-                  border: 1px solid #ddd;
-                  border-radius: 3px;
-                  overflow: auto;
-                  max-height: 150px;
-                  font-size: 9px;
-                  line-height: 1.2;
-                ">
-                                {$entry.data|@print_r}</pre>
-              </details>
+              <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 5px;">
+                <details>
+                  <summary style="cursor: pointer; color: #1976d2; font-size: 9px; user-select: none">📋 Дамп</summary>
+                  <pre style="
+                    margin: 5px 0 0 0;
+                    padding: 5px;
+                    background: #f5f5f5;
+                    border: 1px solid #ddd;
+                    border-radius: 3px;
+                    overflow: auto;
+                    max-height: 150px;
+                    font-size: 9px;
+                    line-height: 1.2;
+                  ">
+                                  {$entry.data|@print_r}</pre>
+                </details>
+                {if $entry.errors_info && $entry.errors_info.has_errors}
+                <details>
+                  <summary style="cursor: pointer; color: #dc3545; font-size: 9px; user-select: none">⚠️ Errors</summary>
+                  <div style="
+                    margin: 5px 0 0 0;
+                    padding: 5px;
+                    background: #fff5f5;
+                    border: 1px solid #fcc;
+                    border-radius: 3px;
+                    font-size: 9px;
+                    line-height: 1.2;
+                    max-height: 150px;
+                    overflow: auto;
+                  ">
+                    {if $entry.errors_info.error_step_id}
+                    <div style="margin-bottom: 5px; font-weight: bold; color: #721c24;">
+                      Шаг с ошибкой: <code>{$entry.errors_info.error_step_id|escape}</code>
+                    </div>
+                    {/if}
+                    {if $entry.errors_info.regular_errors && is_array($entry.errors_info.regular_errors) && count($entry.errors_info.regular_errors) > 0}
+                    <div style="margin-bottom: 5px;">
+                      <strong style="color: #dc3545;">🚨 Критические:</strong>
+                      <ul style="margin: 3px 0; padding-left: 15px;">
+                        {foreach $entry.errors_info.regular_errors as $error}
+                        <li style="margin: 2px 0;">
+                          {if isset($error.name) && $error.name}
+                            <code>{$error.name|escape}</code>
+                          {else}
+                            <code style="color: #999;">unknown</code>
+                          {/if}
+                          {if isset($error.section) && $error.section}
+                          <span style="color: #666; font-size: 8px;">({$error.section|escape})</span>
+                          {/if}
+                          : {if isset($error.text) && $error.text}{$error.text|escape}{else}<span style="color: #999;">Unknown error</span>{/if}
+                        </li>
+                        {/foreach}
+                      </ul>
+                      {* Отладочный вывод сырых данных *}
+                      <details style="margin-top: 5px; font-size: 8px;">
+                        <summary style="cursor: pointer; color: #999;">🔍 Raw data</summary>
+                        <pre style="margin: 3px 0 0 0; padding: 3px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 2px; font-size: 7px; max-height: 100px; overflow: auto;">{$entry.errors_info.regular_errors|@print_r}</pre>
+                      </details>
+                    </div>
+                    {/if}
+                    {if $entry.errors_info.auth_delayed_errors}
+                    <div style="margin-bottom: 5px;">
+                      <strong style="color: #856404;">📝 Auth delayed:</strong>
+                      <ul style="margin: 3px 0; padding-left: 15px;">
+                        {foreach $entry.errors_info.auth_delayed_errors as $field => $text}
+                        <li style="margin: 2px 0;">
+                          <code>{$field|escape}</code>: {$text|escape}
+                        </li>
+                        {/foreach}
+                      </ul>
+                    </div>
+                    {/if}
+                    {if $entry.errors_info.details_delayed_errors}
+                    <div style="margin-bottom: 5px;">
+                      <strong style="color: #856404;">🚚 Details delayed:</strong>
+                      <ul style="margin: 3px 0; padding-left: 15px;">
+                        {foreach $entry.errors_info.details_delayed_errors as $field => $text}
+                        <li style="margin: 2px 0;">
+                          <code>{$field|escape}</code>: {$text|escape}
+                        </li>
+                        {/foreach}
+                      </ul>
+                    </div>
+                    {/if}
+                    {if $entry.errors_info.service_agreement_error}
+                    <div style="margin-bottom: 5px; color: #c62828;">
+                      <strong>⚠️ Service Agreement:</strong> Требуется согласие с условиями
+                    </div>
+                    {/if}
+                  </div>
+                </details>
+                {/if}
+              </div>
               {/if}
             </div>
             {/foreach}

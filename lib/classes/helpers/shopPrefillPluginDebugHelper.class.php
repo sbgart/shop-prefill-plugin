@@ -128,12 +128,72 @@ class shopPrefillPluginDebugHelper
                     $grouped_stack[$hook_name] = [];
                 }
 
+                // Нормализуем errors_info для безопасного отображения в шаблоне
+                $errors_info = $entry['errors_info'] ?? null;
+                if ($errors_info && isset($errors_info['regular_errors']) && is_array($errors_info['regular_errors'])) {
+                    // Убеждаемся, что все элементы regular_errors имеют нужную структуру
+                    $normalized_errors = [];
+                    foreach ($errors_info['regular_errors'] as $key => $error) {
+                        $field_name = is_string($key) && !empty($key) ? $key : 'error';
+                        
+                        if (is_array($error)) {
+                            // Если это массив, проверяем структуру
+                            if (isset($error['name']) || isset($error['text']) || isset($error['message'])) {
+                                // Структурированная ошибка с полями name/text/message
+                                $normalized_errors[] = [
+                                    'name'     => $error['name'] ?? $field_name,
+                                    'text'     => $error['text'] ?? $error['message'] ?? 'Unknown error',
+                                    'section'  => $error['section'] ?? '',
+                                ];
+                            } elseif (!empty($error)) {
+                                // Массив без структуры, но не пустой - выводим содержимое
+                                $normalized_errors[] = [
+                                    'name'     => $field_name,
+                                    'text'     => json_encode($error, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
+                                    'section'  => '',
+                                ];
+                            } else {
+                                // Пустой массив - пропускаем или создаем информативное сообщение
+                                $normalized_errors[] = [
+                                    'name'     => $field_name,
+                                    'text'     => 'Empty error data',
+                                    'section'  => '',
+                                ];
+                            }
+                        } elseif (is_string($error) && !empty($error)) {
+                            // Если ошибка - строка, ключ - это имя поля
+                            $normalized_errors[] = [
+                                'name'     => $field_name,
+                                'text'     => $error,
+                                'section'  => '',
+                            ];
+                        } elseif (is_scalar($error)) {
+                            // Число, boolean и т.д.
+                            $normalized_errors[] = [
+                                'name'     => $field_name,
+                                'text'     => (string)$error,
+                                'section'  => '',
+                            ];
+                        } elseif (!empty($error)) {
+                            // Объект или другой тип
+                            $normalized_errors[] = [
+                                'name'     => $field_name,
+                                'text'     => json_encode($error, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
+                                'section'  => '',
+                            ];
+                        }
+                        // Пустые значения пропускаем
+                    }
+                    $errors_info['regular_errors'] = $normalized_errors;
+                }
+
                 $grouped_stack[$hook_name][] = [
                     'title'                   => $clean_title,
                     'data'                    => $entry['data'],
                     'color'                   => self::getEntryColor($entry['title']),
                     'sections_prefill_status' => $entry['sections_prefill_status'] ?? null,
                     'sections_filled_status'  => $entry['sections_filled_status'] ?? null,
+                    'errors_info'             => $errors_info,
                 ];
             }
 
@@ -870,8 +930,19 @@ class shopPrefillPluginDebugHelper
             return '';
         }
 
-        $debug_html  = '<div style="background: #f8d7da; padding: 15px; margin: 10px; border: 2px solid #dc3545; border-radius: 5px;">';
-        $debug_html .= '<strong>⚠️ ' . htmlspecialchars($hook_name) . ': Обнаружены незаполненные обязательные поля!</strong>';
+        static $style_output = false;
+        $debug_html = '';
+        if (! $style_output) {
+            $debug_html .= '<style>.prefill-errors-debug[open] .prefill-errors-debug-arrow{transform:rotate(90deg)}</style>';
+            $style_output = true;
+        }
+
+        $debug_html .= '<details class="prefill-errors-debug" style="background: #f8d7da; margin: 10px; border: 2px solid #dc3545; border-radius: 5px;">';
+        $debug_html .= '<summary style="padding: 12px 15px; cursor: pointer; font-weight: bold; user-select: none; list-style: none; display: flex; align-items: center; gap: 6px;">';
+        $debug_html .= '<span class="prefill-errors-debug-arrow" style="font-size: 14px; display: inline-block; transition: transform 0.2s;">▶</span>';
+        $debug_html .= '⚠️ ' . htmlspecialchars($hook_name) . ': Обнаружены незаполненные обязательные поля!';
+        $debug_html .= '</summary>';
+        $debug_html .= '<div style="padding: 0 15px 15px 15px; border-top: 1px solid #dc3545;">';
         $debug_html .= '<p style="margin: 5px 0 10px 0; color: #721c24;">Нельзя скрывать поля - пользователь не сможет их заполнить!</p>';
 
         // КРИТИЧЕСКИЕ ОШИБКИ (блокируют checkout, влияют на расчет доставки)
@@ -932,7 +1003,7 @@ class shopPrefillPluginDebugHelper
         $debug_html .= '<strong>💡 Решение:</strong> Не скрывать блоки формы, если есть ЛЮБЫЕ ошибки (критические или delayed)';
         $debug_html .= '</div>';
 
-        $debug_html .= '</div>';
+        $debug_html .= '</div></details>';
 
         return $debug_html;
     }

@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Хелпер для Zen-режима (сворачивание секций чекаута)
+ * Координатор Zen-режима (сворачивание секций чекаута)
  *
  * Предоставляет методы для:
  * - Проверки состояния группы (включена/развернута)
  * - Генерации CSS для скрытия секций
  * - Рендеринга header и summary групп
  */
-class shopPrefillPluginZenHelper
+class shopPrefillPluginZenMode
 {
     /**
      * Маппинг группа → секции чекаута
@@ -30,18 +30,28 @@ class shopPrefillPluginZenHelper
     private array $settings;
 
     /**
-     * @var shopPrefillPlugin|null Плагин для доступа к extractCheckoutErrors
+     * @var waResponse Response объект для работы с cookies
      */
-    private ?shopPrefillPlugin $plugin = null;
+    private waResponse $response;
+
+    /**
+     * @var waView View объект для рендеринга шаблонов
+     */
+    private waView $view;
 
     /**
      * @param array $zen_settings Настройки zen из storefront settings
-     * @param shopPrefillPlugin|null $plugin Плагин для проверки ошибок
+     * @param waResponse|null $response Response объект для cookies
+     * @param waView|null $view View объект для рендеринга
      */
-    public function __construct(array $zen_settings, ?shopPrefillPlugin $plugin = null)
-    {
+    public function __construct(
+        array $zen_settings,
+        ?waResponse $response = null,
+        ?waView $view = null
+    ) {
         $this->settings = $zen_settings;
-        $this->plugin = $plugin;
+        $this->response = $response ?? wa()->getResponse();
+        $this->view = $view ?? wa()->getView();
     }
 
     /**
@@ -378,15 +388,35 @@ class shopPrefillPluginZenHelper
         // Smart Collapse: обработка попытки сворачивания
         if ($cookie_state === 'collapsing') {
             if ($is_collapsed) {
-                // НЕТ ОШИБОК: удаляем cookie через inline JS
-                $output .= '<script>document.cookie = "' . self::COOKIE_PREFIX . $group . '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";</script>';
+                // НЕТ ОШИБОК: удаляем cookie через PHP
+                $this->response->setCookie(
+                    self::COOKIE_PREFIX . $group,
+                    '',
+                    -1,  // удаление
+                    '/'
+                );
             } else {
-                // ЕСТЬ ОШИБКИ: показываем alert и переключаем cookie в expanded
-                $output .= '<script>';
-                $output .= 'alert("Пожалуйста, исправьте ошибки перед сворачиванием.");';
-                $output .= 'document.cookie = "' . self::COOKIE_PREFIX . $group . '=expanded; path=/; SameSite=Lax";';
-                $output .= '</script>';
+                // ЕСТЬ ОШИБКИ: устанавливаем флаг для запуска валидации через JS
+                $this->response->setCookie(
+                    self::COOKIE_PREFIX . $group,
+                    'expanded',
+                    0,  // session cookie
+                    '/'
+                );
+                // Устанавливаем глобальный флаг для JS-обработчика
+                $output .= '<script>window.prefillZenTriggerValidation = true;</script>';
             }
+        }
+
+        // ФИКСАЦИЯ СОСТОЯНИЯ: если секция развёрнута и куки нет → устанавливаем expanded
+        // Это предотвращает случайное сворачивание при reload формы
+        if (!$is_collapsed && $cookie_state === null) {
+            $this->response->setCookie(
+                self::COOKIE_PREFIX . $group,
+                'expanded',
+                0,  // session cookie
+                '/'
+            );
         }
 
         if ($is_collapsed) {
@@ -430,7 +460,7 @@ class shopPrefillPluginZenHelper
 
         // Используем существующий View из Webasyst (не создаём новый Smarty!)
         try {
-            $view = wa()->getView();
+            $view = $this->view;
             $old_vars = [];
 
             // Сохраняем существующие переменные с теми же именами
@@ -549,41 +579,48 @@ class shopPrefillPluginZenHelper
             'payment_name' => '',
         ];
 
-        // Данные чекаута находятся в $params['data']
-        $checkout_data = $params['data'] ?? [];
+        // === ДАННЫЕ КОНТАКТА ===
+        // Приоритет: vars → input
+        $auth_fields = $params['vars']['auth']['fields'] ?? [];
+        $auth_input = $params['data']['input']['auth']['data'] ?? [];
 
-        // Данные контакта из $params['contact']
-        if (isset($params['contact'])) {
-            $contact = $params['contact'];
-            $data['firstname'] = $contact['firstname'] ?? '';
-            $data['lastname'] = $contact['lastname'] ?? '';
-            $data['phone'] = $contact['phone'] ?? '';
-            $data['email'] = $contact['email'] ?? '';
-            $data['company'] = $contact['company'] ?? '';
-        }
+        $data['firstname'] = $auth_fields['firstname']['value'] ?? $auth_input['firstname'] ?? '';
+        $data['lastname'] = $auth_fields['lastname']['value'] ?? $auth_input['lastname'] ?? '';
+        $data['phone'] = $auth_fields['phone']['value'] ?? $auth_input['phone'] ?? '';
+        $data['email'] = $auth_fields['email']['value'] ?? $auth_input['email'] ?? '';
+        $data['company'] = $auth_fields['company']['value'] ?? $auth_input['company'] ?? '';
 
-        // Данные доставки из $params['data']['shipping']
-        if (isset($checkout_data['shipping'])) {
-            $shipping = $checkout_data['shipping'];
-            $data['shipping_name'] = $shipping['name'] ?? '';
-            $data['shipping_rate'] = isset($shipping['rate']) ? $this->formatPrice($shipping['rate']) : '';
-        }
+        // === ДАННЫЕ ДОСТАВКИ ===
+        // Приоритет: data.shipping.selected_variant → vars.shipping.shipping_rate
+        $selected_variant = $params['data']['shipping']['selected_variant'] ?? [];
+        $shipping_rate_data = $params['vars']['shipping']['shipping_rate'] ?? [];
 
-        // Данные региона/адреса из $params['shipping_address'] или $params['data']
-        $shipping_address = $params['shipping_address'] ?? $checkout_data['shipping_address'] ?? [];
-        if (!empty($shipping_address)) {
-            $data['city'] = $shipping_address['city'] ?? '';
-            $data['region'] = $shipping_address['region'] ?? '';
-            $data['street'] = $shipping_address['street'] ?? '';
-            $data['building'] = $shipping_address['building'] ?? '';
-            $data['apartment'] = $shipping_address['apartment'] ?? '';
-            $data['zip'] = $shipping_address['zip'] ?? '';
-        }
+        $data['shipping_name'] = $selected_variant['name'] ?? $shipping_rate_data['name'] ?? '';
+        $shipping_rate_raw = $selected_variant['rate'] ?? $shipping_rate_data['rate'] ?? null;
+        $data['shipping_rate'] = $shipping_rate_raw !== null ? $this->formatPrice($shipping_rate_raw) : '';
 
-        // Данные оплаты из $params['data']['payment']
-        if (isset($checkout_data['payment'])) {
-            $payment = $checkout_data['payment'];
-            $data['payment_name'] = $payment['name'] ?? '';
+        // === ДАННЫЕ АДРЕСА ===
+        // Приоритет: data.shipping.address → input.region → vars.region.selected_values
+        $shipping_address = $params['data']['shipping']['address'] ?? [];
+        $region_input = $params['data']['input']['region'] ?? [];
+        $region_selected = $params['vars']['region']['selected_values'] ?? [];
+        $details_address = $params['data']['input']['details']['shipping_address'] ?? [];
+
+        $data['city'] = $shipping_address['city'] ?? $region_input['city'] ?? $region_selected['city'] ?? '';
+        $data['region'] = $shipping_address['region'] ?? $region_input['region'] ?? $region_selected['region_id'] ?? '';
+        $data['zip'] = $shipping_address['zip'] ?? $region_input['zip'] ?? $region_selected['zip'] ?? '';
+        $data['street'] = $shipping_address['street'] ?? $details_address['street'] ?? '';
+        $data['building'] = $shipping_address['building'] ?? $details_address['building'] ?? '';
+        $data['apartment'] = $shipping_address['apartment'] ?? $details_address['apartment'] ?? '';
+
+        // === ДАННЫЕ ОПЛАТЫ ===
+        // Извлекаем ID оплаты и находим название в methods
+        $payment_id = $params['data']['payment']['id'] ?? '';
+        if (!empty($payment_id)) {
+            $payment_methods = $params['vars']['payment']['methods'] ?? [];
+            if (isset($payment_methods[$payment_id])) {
+                $data['payment_name'] = $payment_methods[$payment_id]['name'] ?? '';
+            }
         }
 
         return $data;
@@ -601,6 +638,24 @@ class shopPrefillPluginZenHelper
             return 'Бесплатно';
         }
         return number_format((float) $price, 0, '', ' ') . ' ₽';
+    }
+
+    /**
+     * Очищает cookies состояния всех групп Zen Mode
+     * Вызывается после создания заказа для сброса состояния форм
+     */
+    public function clearCookies(): void
+    {
+        // Очищаем куки для всех групп (customer, delivery, payment)
+        // Куки могут содержать 'expanded', 'collapsing' или отсутствовать
+        foreach (array_keys(self::GROUP_SECTIONS) as $group) {
+            $this->response->setCookie(
+                self::COOKIE_PREFIX . $group,
+                '',
+                -1,  // отрицательное время = удаление
+                '/'
+            );
+        }
     }
 
     /**

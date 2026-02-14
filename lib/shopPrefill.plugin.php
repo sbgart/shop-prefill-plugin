@@ -35,7 +35,15 @@ class shopPrefillPlugin extends shopPlugin
     private ?shopPrefillPluginGuestHashStorage $guest_hash_storage = null;
     private ?shopPrefillPluginConsentStorage $consent_storage = null;
 
-    private ?shopPrefillPluginZenHelper $zen_helper = null;
+    private ?shopPrefillPluginZenMode $zen_mode = null;
+
+    private ?shopPrefillPluginOrderHooks $order_hooks = null;
+
+    private ?shopPrefillPluginFrontendHooks $frontend_hooks = null;
+
+    private ?shopPrefillPluginAssetsManager $assets_manager = null;
+
+    private ?shopPrefillPluginCheckoutHooks $checkout_hooks = null;
 
     public function __construct($info)
     {
@@ -207,6 +215,72 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
+     * Возвращает обработчик хуков заказов
+     *
+     * @return shopPrefillPluginOrderHooks
+     */
+    public function getOrderHooks(): shopPrefillPluginOrderHooks
+    {
+        return $this->order_hooks ??= new shopPrefillPluginOrderHooks(
+            $this->getSessionStorageProvider(),
+            $this->getOrderProvider(),
+            $this->getGuestHashStorage(),
+            $this->getZenMode(),
+            $this->getUserProvider(),
+            $this->getConsentStorage(),
+            $this->getStorefrontSettings()
+        );
+    }
+
+    /**
+     * Возвращает обработчик хуков фронтенда
+     *
+     * @return shopPrefillPluginFrontendHooks
+     */
+    public function getFrontendHooks(): shopPrefillPluginFrontendHooks
+    {
+        return $this->frontend_hooks ??= new shopPrefillPluginFrontendHooks(
+            $this->getSessionStorageProvider(),
+            $this->getFillParamsProvider(),
+            $this->getUserProvider(),
+            $this->getGuestHashStorage(),
+            $this->getConsentStorage(),
+            $this->getAssetsManager(),
+            $this->isDebug(),
+            $this->getStorefrontSettings(),
+            fn($path) => $this->addCss($path),
+            fn($path) => $this->addJs($path)
+        );
+    }
+
+    /**
+     * Возвращает менеджер управления CSS/JS ресурсами
+     *
+     * @return shopPrefillPluginAssetsManager
+     */
+    public function getAssetsManager(): shopPrefillPluginAssetsManager
+    {
+        return $this->assets_manager ??= new shopPrefillPluginAssetsManager(self::PLUGIN_ID);
+    }
+
+    /**
+     * Возвращает обработчик хуков checkout процесса
+     *
+     * @return shopPrefillPluginCheckoutHooks
+     */
+    public function getCheckoutHooks(): shopPrefillPluginCheckoutHooks
+    {
+        return $this->checkout_hooks ??= new shopPrefillPluginCheckoutHooks(
+            $this->getZenMode(),
+            $this->getUserProvider(),
+            $this->getConsentStorage(),
+            $this->isDebug(),
+            $this->getStorefrontSettings()
+        );
+    }
+
+
+    /**
      * @throws waException
      * @throws waDbException
      */
@@ -218,22 +292,23 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
-     * Возвращает хелпер для Zen Mode
+     * Возвращает координатор Zen Mode
      *
-     * @return shopPrefillPluginZenHelper
+     * @return shopPrefillPluginZenMode
      * @throws waException
      * @throws waDbException
      */
-    public function getZenHelper(): shopPrefillPluginZenHelper
+    public function getZenMode(): shopPrefillPluginZenMode
     {
-        if ($this->zen_helper === null) {
+        if ($this->zen_mode === null) {
             $storefront_settings = $this->getStorefrontSettings();
-            $this->zen_helper = new shopPrefillPluginZenHelper(
+            $this->zen_mode = new shopPrefillPluginZenMode(
                 $storefront_settings['zen'] ?? [],
-                $this
+                wa()->getResponse(),
+                wa()->getView()
             );
         }
-        return $this->zen_helper;
+        return $this->zen_mode;
     }
 
     /**
@@ -248,27 +323,16 @@ class shopPrefillPlugin extends shopPlugin
     /**
      * @throws waException
      */
-    private function frontendAssetsInit(array $css_variables = [], array $js_params = []): void
+    public function frontendAssetsInit(array $css_variables = [], array $js_params = []): void
     {
         if (!self::$frontend_assets_inited) {
-            $is_debug = $this->isDebug();
-            $this->addCss('css/frontend.' . (!$is_debug ? 'min.' : '') . 'css');
-            $this->addJs('js/frontend.' . (!$is_debug ? 'min.' : '') . 'js?');
-
-            if (!empty($css_variables)) {
-                $css_variables_filename = $this->generateCssVariablesFile($css_variables);
-                wa()->getResponse()->addCss(
-                    substr(wa()->getDataUrl('plugins/' . self::PLUGIN_ID . '/css/', true, 'shop'), 1)
-                    . $css_variables_filename
-                );
-            }
-
-            $js_initializer_filename = $this->generateJSInitializerFile($js_params);
-            wa()->getResponse()->addJs(
-                substr(wa()->getDataUrl('plugins/' . self::PLUGIN_ID . '/js/', true, 'shop'), 1)
-                . $js_initializer_filename
+            $this->getAssetsManager()->init(
+                $this->isDebug(),
+                $css_variables,
+                $js_params,
+                fn($path) => $this->addCss($path),
+                fn($path) => $this->addJs($path)
             );
-
             self::$frontend_assets_inited = true;
         }
     }
@@ -278,17 +342,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     private function generateCssVariablesFile(array $css_variables): string
     {
-        // Generate css variables file from the storefront settings and add it
-        //TODO: Возможно стоит переделать с md5 на дату обновления настроек витрины, тем самым если файла с датой настроек не будет, то сгенерировать новый файл.
-        $css_variables_map = shopPrefillPluginViewProvider::createCssVariablesString($css_variables);
-        $css_variables_filename = 'variables_' . md5($css_variables_map) . '.css';
-        $css_public_dir = wa()->getDataPath('plugins/' . self::PLUGIN_ID . '/css/', true, 'shop');
-
-        if (!file_exists($css_public_dir . $css_variables_filename)) {
-            file_put_contents($css_public_dir . $css_variables_filename, $css_variables_map);
-        }
-
-        return $css_variables_filename;
+        return $this->getAssetsManager()->generateCssVariablesFile($css_variables);
     }
 
     /**
@@ -296,26 +350,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     private function generateJSInitializerFile(array $params): string
     {
-        $json_params = json_encode(
-            $params,
-            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE
-            | JSON_UNESCAPED_SLASHES
-
-        );
-
-        $inline_script = <<<JS
-document.addEventListener('DOMContentLoaded', function() {
-    let params = $json_params;
-    window.prefill = new PrefillFrontendController(params);
-});
-JS;
-        $js_file_name = md5($inline_script) . '.js';
-        $js_public_dir = wa()->getDataPath('plugins/' . self::PLUGIN_ID . '/js/', true, 'shop');
-        if (!file_exists($js_public_dir . $js_file_name)) {
-            file_put_contents($js_public_dir . $js_file_name, $inline_script);
-        }
-
-        return $js_file_name;
+        return $this->getAssetsManager()->generateJSInitializerFile($params);
     }
 
 
@@ -331,79 +366,7 @@ JS;
             return;
         }
 
-        // DEBUG: Регистрируем вызов хука
-        if ($this->isDebug()) {
-            shopPrefillPluginDebugHelper::registerHookCall('frontendOrder');
-        }
-
-        $storefront_settings = $this->getStorefrontSettings();
-
-        if ($storefront_settings['active'] !== true) {
-            return;
-        }
-
-        // Получаем параметры для заполнения заранее DLYA DEBUG и предзаполнения
-        $fill_params = null;
-        if ($storefront_settings['prefill']['active']) {
-            $fill_params = $this->getFillParamsProvider()->getFillParams();
-        }
-
-        // DEBUG: Добавляем состояние хранилища ПЕРЕД предзаполнением
-        if ($this->isDebug()) {
-            $checkout_params_before = $this->getSessionStorageProvider()->getCheckoutParams();
-            $checkout_params_before = is_array($checkout_params_before) ? $checkout_params_before : [];
-
-            // Получаем статус секций для отображения в дебаге
-            $section_checker = $this->getSessionStorageProvider()->getSectionChecker();
-            $sections_prefill_status = [];
-            $sections_filled_status = []; // Оставляем для совместимости, но данные есть и в prefill_status
-            foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
-                // Собираем детальную информацию для UX цепочки
-                $sections_prefill_status[$section_id] = [
-                    'enabled' => $storefront_settings['prefill']['sections'][$section_id] ?? true,
-                    'filled' => $section_checker->isSectionFilled($section_id, $checkout_params_before),
-                    'has_data' => $fill_params ? $fill_params->hasDataForSection($section_id) : false,
-                    'result' => $section_checker->canPrefillSection($section_id, $checkout_params_before),
-                ];
-                $sections_filled_status[$section_id] = $sections_prefill_status[$section_id]['filled'];
-            }
-
-            shopPrefillPluginDebugHelper::addDebugEntry(
-                $checkout_params_before,
-                'BEFORE PREFILL (frontendOrder)',
-                [
-                    'sections_prefill_status' => $sections_prefill_status,
-                    'sections_filled_status' => $sections_filled_status,
-                ]
-            );
-        }
-
-        if ($storefront_settings['prefill']['active'] && $fill_params) {
-            $this->getSessionStorageProvider()->preFillCheckoutParams($fill_params);
-        }
-
-        // DEBUG: Добавляем состояние хранилища ПОСЛЕ предзаполнения и регистрируем отложенный рендер
-        if ($this->isDebug()) {
-            $checkout_params_after = $this->getSessionStorageProvider()->getCheckoutParams();
-            $checkout_params_after = is_array($checkout_params_after) ? $checkout_params_after : [];
-
-            // Получаем статус заполненности секций после предзаполнения
-            $section_checker = $this->getSessionStorageProvider()->getSectionChecker();
-            $sections_filled_status = [];
-            foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
-                $sections_filled_status[$section_id] = $section_checker->isSectionFilled($section_id, $checkout_params_after);
-            }
-
-            shopPrefillPluginDebugHelper::addDebugEntry(
-                $checkout_params_after,
-                'AFTER PREFILL (frontendOrder)',
-                ['sections_filled_status' => $sections_filled_status]
-            );
-
-            // Регистрируем отложенный вывод стека (будет выведен после всех хуков)
-            shopPrefillPluginDebugHelper::scheduleDebugStackRender();
-            shopPrefillPluginDebugHelper::renderDebugStack();
-        }
+        $this->getFrontendHooks()->handleFrontendOrder($params);
     }
 
     /**
@@ -419,113 +382,7 @@ JS;
             return;
         }
 
-        // DEBUG: Регистрируем вызов хука
-        if ($this->isDebug()) {
-            shopPrefillPluginDebugHelper::registerHookCall('frontendHead');
-        }
-        //wa()->getStorage()->set('shop/checkout', '');
-
-        $storefront_settings = $this->getStorefrontSettings();
-
-        if (!$storefront_settings['active']) {
-            return;
-        }
-
-        // Получаем параметры для заполнения заранее DLYA DEBUG и предзаполнения
-        $fill_params = null;
-        if ($storefront_settings['prefill']['active']) {
-            $fill_params = $this->getFillParamsProvider()->getFillParams();
-        }
-
-        // DEBUG: Добавляем состояние хранилища ПЕРЕД предзаполнением
-        if ($this->isDebug()) {
-            $checkout_params_before = $this->getSessionStorageProvider()->getCheckoutParams();
-            $checkout_params_before = is_array($checkout_params_before) ? $checkout_params_before : [];
-
-            // Получаем статус секций для отображения в дебаге
-            $section_checker = $this->getSessionStorageProvider()->getSectionChecker();
-            $sections_prefill_status = [];
-            $sections_filled_status = [];
-            foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
-                // Собираем детальную информацию для UX цепочки
-                $sections_prefill_status[$section_id] = [
-                    'enabled' => $storefront_settings['prefill']['sections'][$section_id] ?? true,
-                    'filled' => $section_checker->isSectionFilled($section_id, $checkout_params_before),
-                    'has_data' => $fill_params ? $fill_params->hasDataForSection($section_id) : false,
-                    'result' => $section_checker->canPrefillSection($section_id, $checkout_params_before),
-                ];
-                $sections_filled_status[$section_id] = $sections_prefill_status[$section_id]['filled'];
-            }
-
-            shopPrefillPluginDebugHelper::addDebugEntry(
-                $checkout_params_before,
-                'BEFORE PREFILL (frontendHead)',
-                [
-                    'sections_prefill_status' => $sections_prefill_status,
-                    'sections_filled_status' => $sections_filled_status,
-                ]
-            );
-        }
-
-        // Создаем или обновляем куки авторизации пользователя.
-        if ($storefront_settings['remember_me']['active'] && $this->getUserProvider()->isAuth()) {
-            $this->getUserProvider()->rememberMe($storefront_settings['remember_me']['expires']);
-        }
-
-        // Для неавторизованных: продлеваем cookie хеша гостя и согласия при каждом визите
-        // Это обеспечивает автоматическое продление срока жизни обоих cookies (1 год)
-        if (!$this->getUserProvider()->isAuth()) {
-            $this->getGuestHashStorage()->getOrCreateGuestHash();
-
-            // Продлеваем cookie согласия (если оно было дано)
-            // Вызов hasConsent() автоматически продлевает cookie
-            $this->getConsentStorage()->hasConsent();
-        }
-
-        // Предзаполнение включено, заполняем параметры корзины при входе на сайт
-        if ($storefront_settings['prefill']['active']) {
-            if ($storefront_settings['prefill']['on_entry']) {
-                $this->getSessionStorageProvider()->preFillCheckoutParams(
-                    $this->getFillParamsProvider()->getFillParams()
-                );
-            }
-        }
-
-        // DEBUG: Добавляем состояние хранилища ПОСЛЕ предзаполнения и регистрируем отложенный рендер
-        if ($this->isDebug()) {
-            $checkout_params_after = $this->getSessionStorageProvider()->getCheckoutParams();
-            $checkout_params_after = is_array($checkout_params_after) ? $checkout_params_after : [];
-
-            // Получаем статус заполненности секций после предзаполнения
-            $section_checker = $this->getSessionStorageProvider()->getSectionChecker();
-            $sections_filled_status = [];
-            foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
-                $sections_filled_status[$section_id] = $section_checker->isSectionFilled($section_id, $checkout_params_after);
-            }
-
-            shopPrefillPluginDebugHelper::addDebugEntry(
-                $checkout_params_after,
-                'AFTER PREFILL (frontendHead)',
-                ['sections_filled_status' => $sections_filled_status]
-            );
-
-            // Регистрируем отложенный вывод стека (будет выведен после всех хуков)
-            shopPrefillPluginDebugHelper::scheduleDebugStackRender();
-            shopPrefillPluginDebugHelper::renderDebugStack();
-        }
-
-        // Инициализируем стили и скрипты.
-        $css_variables = [
-            'prefill-accent-color' => $storefront_settings['styles']['accent_color'],
-        ];
-
-        $js_params = [
-            'pluginID' => $this::PLUGIN_ID,
-            'appUrl' => wa()->getAppUrl('shop'),  // Базовый URL приложения Shop-Script
-            'isDebug' => $this->isDebug(),
-        ];
-
-        self::frontendAssetsInit($css_variables, $js_params);
+        $this->getFrontendHooks()->handleFrontendHead($params);
     }
 
     /**
@@ -541,37 +398,7 @@ JS;
             return '';
         }
 
-        $output = '';
-
-        // === ZEN MODE: Генерируем CSS для ВСЕХ групп в первом хуке ===
-        try {
-            $zen = $this->getZenHelper();
-            $output .= $zen->generateAllStyles($params);
-
-            // Добавляем JavaScript только один раз (в первом хуке)
-            $output .= $zen->generateJavaScript();
-
-            // Рендерим блок управления для группы customer в КОНЦЕ секции
-            if ($zen->shouldCollapseGroup('customer', $params)) {
-                // СВЁРНУТО: сводка + "Изменить"
-                $output .= $zen->renderCollapseBlock('customer', $params, true);
-            } elseif ($zen->isGroupEnabled('customer')) {
-                // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                $output .= $zen->renderCollapseBlock('customer', $params, false);
-            }
-        } catch (Exception $e) {
-            // Игнорируем ошибки Zen Mode
-        }
-
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'AUTH SECTION');
-        }
-
-        return $output;
+        return $this->getCheckoutHooks()->handleCheckoutRenderAuth($params);
     }
 
     /**
@@ -587,17 +414,7 @@ JS;
             return '';
         }
 
-        $output = '';
-
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'REGION SECTION');
-        }
-
-        return $output;
+        return $this->getCheckoutHooks()->handleCheckoutRenderRegion($params);
     }
 
     /**
@@ -618,41 +435,11 @@ JS;
         $output = '';
 
         // === ZEN MODE: Проверяем, нужно ли выводить блок управления здесь ===
-        // Выводим здесь только если details пустой или не будет рендериться
-        try {
-            $zen = $this->getZenHelper();
-
-            if ($zen->isGroupEnabled('delivery')) {
-                // Проверяем, есть ли данные details
-                $has_details = $this->hasDetailsSection($params);
-
-                // Если details пустой/нет → выводим блок управления здесь
-                if (!$has_details) {
-                    if ($zen->shouldCollapseGroup('delivery', $params)) {
-                        // СВЁРНУТО: сводка + "Изменить"
-                        $output .= $zen->renderCollapseBlock('delivery', $params, true);
-                    } elseif ($zen->isGroupEnabled('delivery')) {
-                        // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                        $output .= $zen->renderCollapseBlock('delivery', $params, false);
-                    }
-                }
-            }
-        } catch (Exception $e) {
-            // Игнорируем ошибки Zen Mode
+        if (!$this->isActive()) {
+            return '';
         }
 
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // Если нет ошибок - возвращаем то что есть (может быть zen блок)
-        if (!$errors_info['has_errors']) {
-            return $output;
-        }
-
-        // Есть ошибки - добавляем debug информацию
-        $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'SHIPPING SECTION');
-
-        return $output;
+        return $this->getCheckoutHooks()->handleCheckoutRenderShipping($params);
     }
 
     /**
@@ -668,32 +455,7 @@ JS;
             return '';
         }
 
-        $output = '';
-
-        // === ZEN MODE: Рендерим блок управления для группы delivery в КОНЦЕ секции details ===
-        try {
-            $zen = $this->getZenHelper();
-
-            if ($zen->shouldCollapseGroup('delivery', $params)) {
-                // СВЁРНУТО: сводка + "Изменить"
-                $output .= $zen->renderCollapseBlock('delivery', $params, true);
-            } elseif ($zen->isGroupEnabled('delivery')) {
-                // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                $output .= $zen->renderCollapseBlock('delivery', $params, false);
-            }
-        } catch (Exception $e) {
-            // Игнорируем ошибки Zen Mode
-        }
-
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'DETAILS SECTION');
-        }
-
-        return $output;
+        return $this->getCheckoutHooks()->handleCheckoutRenderDetails($params);
     }
 
     /**
@@ -713,7 +475,7 @@ JS;
 
         // === ZEN MODE: Рендерим блок управления для группы payment в КОНЦЕ секции ===
         try {
-            $zen = $this->getZenHelper();
+            $zen = $this->getZenMode();
 
             if ($zen->shouldCollapseGroup('payment', $params)) {
                 // СВЁРНУТО: сводка + "Изменить"
@@ -742,120 +504,15 @@ JS;
             return '';
         }
 
-        $html = '';
-
-        // Показываем галочку согласия только для неавторизованных И если требуется согласие
-        try {
-            if (!$this->getUserProvider()->isAuth()) {
-                $storefront_settings = $this->getStorefrontSettings();
-                $consent_required = $storefront_settings['guest']['consent_required'];
-
-                // Показываем галочку только если согласие требуется
-                if ($consent_required) {
-                    $has_consent = $this->getConsentStorage()->hasConsent();
-                    $html .= shopPrefillPluginViewProvider::render(
-                        'checkout/ConsentCheckbox',
-                        ['has_consent' => $has_consent]
-                    );
-                }
-            }
-        } catch (Exception $e) {
-            // Игнорируем ошибки рендеринга галочки
-        }
-
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $html .= shopPrefillPluginDebugHelper::renderErrorsDebugHtml($errors_info, 'CONFIRM SECTION');
-        }
-
-        return $html;
-    }
-
-    /**
-     * Извлекает все типы ошибок из $params массива checkout хука.
-     * Используется для определения, можно ли безопасно скрывать поля формы.
-     *
-     * @param array $params Массив параметров из checkout хука
-     * @return array Структурированный массив с информацией об ошибках
-     */
-    public function extractCheckoutErrors(array $params): array
-    {
-        // Собираем ВСЕ delayed_errors из всех шагов
-        $auth_delayed_errors = ifset($params, 'data', 'auth', 'delayed_errors', []);
-        $details_delayed_errors = ifset($params, 'data', 'details', 'delayed_errors', []);
-
-        // Проверяем ОБЫЧНЫЕ ошибки (критические, блокирующие)
-        $regular_errors = ifset($params, 'errors', []);
-        $error_step_id = ifset($params, 'error_step_id', null);
-
-        // Проверяем auth[service_agreement] - чекбокс согласия с условиями
-        // Значение = 0 означает НЕ установлен, = 1 означает установлен
-        $service_agreement_error = false;
-        $service_agreement_value = ifset($params, 'vars', 'auth', 'service_agreement', null);
-
-        // Если service_agreement существует и равен 0 - пользователь НЕ согласился
-        if ($service_agreement_value !== null && $service_agreement_value == 0) {
-            $service_agreement_error = true;
-        }
-
-        $all_delayed_errors = array_merge($auth_delayed_errors, $details_delayed_errors);
-        $has_errors = !empty($all_delayed_errors) || !empty($regular_errors) || $service_agreement_error;
-
-        return [
-            'has_errors' => $has_errors,
-            'regular_errors' => $regular_errors,
-            'auth_delayed_errors' => $auth_delayed_errors,
-            'details_delayed_errors' => $details_delayed_errors,
-            'service_agreement_error' => $service_agreement_error,
-            'error_step_id' => $error_step_id,
-        ];
-    }
-
-
-    /**
-     * Проверяет, существует ли секция details (адресные поля доставки)
-     * 
-     * Секция details может отсутствовать если:
-     * - Доставка отключена (shipping.used = false)
-     * - Нет адресных полей для выбранной доставки
-     * - Выбран пункт выдачи без адресных полей
-     *
-     * @param array $params Параметры checkout хука
-     * @return bool
-     */
-    private function hasDetailsSection(array $params): bool
-    {
-        // Проверяем, используется ли доставка
-        $shipping_used = ifset($params, 'data', 'shipping', 'used', false);
-        if (!$shipping_used) {
-            return false;
-        }
-
-        // Проверяем наличие адресных полей в shipping_address
-        $shipping_address = ifset($params, 'shipping_address', []);
-        if (empty($shipping_address)) {
-            return false;
-        }
-
-        // Проверяем что хотя бы одно адресное поле есть
-        $address_fields = ['street', 'building', 'apartment', 'zip'];
-        foreach ($address_fields as $field) {
-            if (isset($shipping_address[$field])) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->getCheckoutHooks()->handleCheckoutRenderConfirm($params);
     }
 
 
     /**
      * Хук срабатывает при создании заказа.
-     * Сохраняем дополнительные параметры заказа и хеш гостя для предзаполнения.
+     * Делегирует выполнение в OrderHooks.
      *
+     * @param array $data Данные заказа
      * @throws waException
      */
     public function orderActionCreate($data)
@@ -864,42 +521,7 @@ JS;
             return;
         }
 
-        if (!isset($data['order_id'])) {
-            return;
-        }
-
-        $order_id = (int) $data['order_id'];
-        $checkout_params = $this->getSessionStorageProvider()->getCheckoutParams();
-
-        // Сохраняем shipping_type_id
-        $this->getOrderProvider()->storeShippingTypeId(
-            $order_id,
-            (int) ($checkout_params['order']['shipping']['type_id'] ?? 0)
-        );
-
-        // Сохраняем комментарий
-        $comment = $checkout_params['order']['confirm']['comment'] ?? '';
-        $this->getOrderProvider()->storeComment($order_id, $comment);
-
-        // Для неавторизованных: сохраняем хеш гостя
-        // Логика: если согласие не требуется ИЛИ оно получено - сохраняем хеш
-        if (!$this->getUserProvider()->isAuth()) {
-            $storefront_settings = $this->getStorefrontSettings();
-            $consent_required = $storefront_settings['guest']['consent_required'];
-            $has_consent = $this->getConsentStorage()->hasConsent();
-
-            // Сохраняем хеш если: согласие не требуется ИЛИ оно получено
-            if (!$consent_required || $has_consent) {
-                $guest_hash = $this->getGuestHashStorage()->getOrCreateGuestHash();
-                $this->getGuestHashStorage()->saveGuestHashToOrder($order_id, $guest_hash);
-            }
-        }
-
-        // === ZEN MODE: Очищаем cookies после создания заказа ===
-        $zen_cookies = ['prefill_zen_customer', 'prefill_zen_delivery', 'prefill_zen_payment'];
-        foreach ($zen_cookies as $cookie_name) {
-            wa()->getResponse()->setCookie($cookie_name, '', -1, '/');
-        }
+        $this->getOrderHooks()->handleOrderActionCreate($data);
     }
 
     /**
