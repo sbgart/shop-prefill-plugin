@@ -75,23 +75,19 @@ class OrderFormManager {
      */
     handleZenValidation(form) {
         if (window.prefillZenTriggerValidation) {
-            this.logger.log("Zen validation flag detected, triggering form validation");
+            this.logger.log("Zen validation flag detected, triggering full form validation");
 
-            // Вызываем валидацию напрямую через Shop-Script API
-            if (form && typeof form.validate === "function") {
-                var $form = form.$wrapper || $("#js-order-form");
-
-                if ($form.length) {
-                    // validate($wrapper, render_errors, focus)
-                    // render_errors: true - показывать ошибки визуально
-                    // focus: true - фокусироваться на первом поле с ошибкой
-                    form.validate($form, true, true);
-                    this.logger.log("Form validation executed");
-                } else {
-                    this.logger.warn("Form wrapper not found");
-                }
+            // Вызываем полную валидацию через update() (включая проверку доставки/оплаты)
+            if (form && typeof form.update === "function") {
+                form.update({
+                    render_errors: true
+                }).fail((state, errors) => {
+                    this.logger.log("Form validation detected errors: " + (errors ? errors.length : 0));
+                }).done(() => {
+                    this.logger.log("Form validation passed");
+                });
             } else {
-                this.logger.warn("Form validate method not available");
+                this.logger.warn("Form update method not available");
             }
 
             // Сбрасываем флаг

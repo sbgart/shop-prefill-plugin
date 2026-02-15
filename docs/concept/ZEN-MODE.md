@@ -1,8 +1,9 @@
 # Концепция: Zen Mode (Дзен-режим корзины)
 
 > **Нейминг:** Используем **"Дзен-режим"** в UI и **"zen"** в коде.
-> 
+>
 > Почему "Дзен"? Это не просто "сделали меньше" — это про:
+>
 > - ☮️ **Спокойствие** — не путаем пользователя полями
 > - 🎯 **Фокус** — только важное (кнопка "Оформить")
 > - ⚡ **Скорость** — не нужно скроллить через 20 полей
@@ -18,7 +19,6 @@
 | **Хук**    | PHP-точка расширения для вставки контента в секцию            | `checkout_render_auth`, `checkout_render_region`              |
 
 ---
-
 
 ## Проблема
 
@@ -65,12 +65,12 @@
 
 | Группа (ID в коде) | Секции чекаута                  | Хуки для кнопок                                 | Сворачивать? |
 | ------------------ | ------------------------------- | ----------------------------------------------- | ------------ |
-| `customer`         | `auth`                          | `checkout_render_auth` (в конце)                | ✅ Да         |
-| `delivery`         | `region`, `shipping`, `details` | последний хук группы (`details` или `shipping`) | ✅ Да         |
-| `payment`          | `payment`                       | `checkout_render_payment` (в конце)             | ✅ Да         |
-| —                  | `confirm`                       | —                                               | ❌ Нет*       |
+| `customer`         | `auth`                          | `checkout_render_auth` (в конце)                | ✅ Да        |
+| `delivery`         | `region`, `shipping`, `details` | последний хук группы (`details` или `shipping`) | ✅ Да        |
+| `payment`          | `payment`                       | `checkout_render_payment` (в конце)             | ✅ Да        |
+| —                  | `confirm`                       | —                                               | ❌ Нет\*     |
 
-> *Секция `confirm` содержит итоговую стоимость, галочку условий и кнопку "Оформить заказ" — её **не нужно сворачивать**.
+> \*Секция `confirm` содержит итоговую стоимость, галочку условий и кнопку "Оформить заказ" — её **не нужно сворачивать**.
 
 > [!NOTE]
 > **Секция `details` может быть пустой или не рендериться** — если доставка отключена (`shipping.used = false`) или нет адресных полей для выбранной доставки. **Хук `checkout_render_details` может не вызываться!** Поэтому кнопку для группы delivery размещаем в последнем существующем хуке: если `details` не пустой → в `checkout_render_details`, иначе → в `checkout_render_shipping`.
@@ -91,11 +91,11 @@
 
 ### Почему PHP-хук лучше JS-классов?
 
-| Проблема                | JS-классы                               | PHP-хук                             |
-| ----------------------- | --------------------------------------- | ----------------------------------- |
+| Проблема                | JS-классы                                | PHP-хук                              |
+| ----------------------- | ---------------------------------------- | ------------------------------------ |
 | AJAX перерисовал секцию | ❌ Класс потерян, нужен MutationObserver | ✅ Хук сработал снова, CSS вставился |
 | FOUC при загрузке       | ❌ Мелькание контента                    | ✅ CSS уже в HTML                    |
-| Сложность               | Средняя                                 | Низкая                              |
+| Сложность               | Средняя                                  | Низкая                               |
 
 ### Архитектура хуков ✅
 
@@ -112,6 +112,7 @@
 | `checkout_render_confirm`  | `<style>` для ВСЕХ групп (генерируется последним)    |
 
 **Преимущества:**
+
 - Один `<style>` тег — меньше DOM-элементов
 - CSS генерируется последним — гарантия наличия всех данных об ошибках
 - Кнопки в конце секций — логичное расположение для действия "свернуть/развернуть"
@@ -125,22 +126,24 @@
 
 ```html
 <section class="wa-step-section wa-step-auth-section">
-    <header class="wa-section-header">              <!-- Скрываем стандартный заголовок -->
-        <h3 class="wa-header">Покупатель:</h3>
-        <span class="wa-contact-name">Иван Иванов</span>
-        <a href="?logout">Выход</a>
-    </header>
-    <div class="wa-section-body">                   <!-- Скрываем ДЕТЕЙ, кроме wa-plugin-hook -->
-        <form>
-            <!-- Поля формы (скрываются) -->
-            <div class="wa-line wa-fields-group">...</div>
-            
-            <!-- Хук плагина ВНУТРИ формы! (остаётся видимым) -->
-            <div class="wa-plugin-hook">
-                <!-- Наша сводка и кнопка "Изменить" -->
-            </div>
-        </form>
-    </div>
+  <header class="wa-section-header">
+    <!-- Скрываем стандартный заголовок -->
+    <h3 class="wa-header">Покупатель:</h3>
+    <span class="wa-contact-name">Иван Иванов</span>
+    <a href="?logout">Выход</a>
+  </header>
+  <div class="wa-section-body">
+    <!-- Скрываем ДЕТЕЙ, кроме wa-plugin-hook -->
+    <form>
+      <!-- Поля формы (скрываются) -->
+      <div class="wa-line wa-fields-group">...</div>
+
+      <!-- Хук плагина ВНУТРИ формы! (остаётся видимым) -->
+      <div class="wa-plugin-hook">
+        <!-- Наша сводка и кнопка "Изменить" -->
+      </div>
+    </form>
+  </div>
 </section>
 ```
 
@@ -151,17 +154,27 @@
 ```html
 <!-- ОДИН style-тег для ВСЕХ групп (вставляется в checkout_render_auth) -->
 <style id="prefill-zen-styles">
-    /* === ГРУППА: Покупатель (auth) === */
-    /* Скрываем всё в форме, кроме хуков плагинов */
-    .wa-step-auth-section .wa-section-body form > *:not(.wa-plugin-hook) { display: none !important; }
-    
-    /* === ГРУППА: Доставка (region, shipping, details) === */
-    .wa-step-region-section .wa-section-body form > *:not(.wa-plugin-hook) { display: none !important; }
-    .wa-step-shipping-section .wa-section-body form > *:not(.wa-plugin-hook) { display: none !important; }
-    .wa-step-details-section .wa-section-body form > *:not(.wa-plugin-hook) { display: none !important; }
-    
-    /* === ГРУППА: Оплата (payment) === */
-    .wa-step-payment-section .wa-section-body form > *:not(.wa-plugin-hook) { display: none !important; }
+  /* === ГРУППА: Покупатель (auth) === */
+  /* Скрываем всё в форме, кроме хуков плагинов */
+  .wa-step-auth-section .wa-section-body form > *:not(.wa-plugin-hook) {
+    display: none !important;
+  }
+
+  /* === ГРУППА: Доставка (region, shipping, details) === */
+  .wa-step-region-section .wa-section-body form > *:not(.wa-plugin-hook) {
+    display: none !important;
+  }
+  .wa-step-shipping-section .wa-section-body form > *:not(.wa-plugin-hook) {
+    display: none !important;
+  }
+  .wa-step-details-section .wa-section-body form > *:not(.wa-plugin-hook) {
+    display: none !important;
+  }
+
+  /* === ГРУППА: Оплата (payment) === */
+  .wa-step-payment-section .wa-section-body form > *:not(.wa-plugin-hook) {
+    display: none !important;
+  }
 </style>
 ```
 
@@ -235,13 +248,14 @@
 ```javascript
 // Имена cookies
 const COOKIES = {
-    customer: 'prefill_zen_customer',
-    delivery: 'prefill_zen_delivery', 
-    payment: 'prefill_zen_payment'
+  customer: "prefill_zen_customer",
+  delivery: "prefill_zen_delivery",
+  payment: "prefill_zen_payment",
 };
 ```
 
 **Важные свойства cookies:**
+
 - **Session cookie** — без `expires`, удаляется при закрытии браузера
 - **path=/** — доступна на всём сайте
 - **SameSite=Lax** — безопасность
@@ -253,14 +267,14 @@ const COOKIES = {
 
 ```javascript
 // Клик на "Изменить" → установить cookie и перезагрузить форму
-document.querySelector('.prefill-zen-expand-customer').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    // 1. Cookie устанавливается СИНХРОННО (до AJAX)
-    document.cookie = 'prefill_zen_customer=expanded; path=/; SameSite=Lax';
-    
-    // 2. AJAX-запрос отправляется с этой cookie
-    window.waOrder.form.reload();
+document.querySelector(".prefill-zen-expand-customer").addEventListener("click", function (e) {
+  e.preventDefault();
+
+  // 1. Cookie устанавливается СИНХРОННО (до AJAX)
+  document.cookie = "prefill_zen_customer=expanded; path=/; SameSite=Lax";
+
+  // 2. AJAX-запрос отправляется с этой cookie
+  window.waOrder.form.reload();
 });
 ```
 
@@ -268,18 +282,18 @@ document.querySelector('.prefill-zen-expand-customer').addEventListener('click',
 
 ```javascript
 // Улучшенная версия с визуальным фидбеком
-document.querySelector('.prefill-zen-expand-customer').addEventListener('click', async function(e) {
-    e.preventDefault();
-    
-    // Защита от повторного клика (UX, не баг-фикс)
-    if (this.disabled) return;
-    this.disabled = true;
-    this.textContent = 'Загрузка...';
-    
-    document.cookie = 'prefill_zen_customer=expanded; path=/; SameSite=Lax';
-    
-    await window.waOrder.form.reload();
-    // После reload кнопка уже удалена из DOM (новый HTML)
+document.querySelector(".prefill-zen-expand-customer").addEventListener("click", async function (e) {
+  e.preventDefault();
+
+  // Защита от повторного клика (UX, не баг-фикс)
+  if (this.disabled) return;
+  this.disabled = true;
+  this.textContent = "Загрузка...";
+
+  document.cookie = "prefill_zen_customer=expanded; path=/; SameSite=Lax";
+
+  await window.waOrder.form.reload();
+  // После reload кнопка уже удалена из DOM (новый HTML)
 });
 ```
 
@@ -293,31 +307,83 @@ document.querySelector('.prefill-zen-expand-customer').addEventListener('click',
 1.  **Клик "Свернуть"** → JS устанавливает куку `prefill_zen_{group}=collapsing` (промежуточный статус).
 2.  **Перезагрузка формы** → `window.waOrder.form.reload()`.
 3.  **PHP-проверка (ZenHelper)**:
-    *   Видит статус `collapsing`.
-    *   Запускает валидацию (`extractCheckoutErrors`).
-    *   **Если есть ошибки**:
-        *   Вставляет JS-скрипт `alert('Пожалуйста, исправьте ошибки перед сворачиванием.')`.
-        *   Сбрасывает статус визуально на **Развёрнуто** (и куку на `expanded`).
-        *   Пользователь видит ошибки и остается в развёрнутой секции.
-    *   **Если нет ошибок**:
-        *   Сбрасывает куку (удаляет её или ставит пустой).
-        *   Рендерит секцию **Свёрнутой**.
+    - Видит статус `collapsing`.
+    - Запускает валидацию (`extractCheckoutErrors`).
+    - **Если есть ошибки**:
+      - Вставляет JS-скрипт `alert('Пожалуйста, исправьте ошибки перед сворачиванием.')`.
+      - Сбрасывает статус визуально на **Развёрнуто** (и куку на `expanded`).
+      - Пользователь видит ошибки и остается в развёрнутой секции.
+    - **Если нет ошибок**:
+      - Сбрасывает куку (удаляет её или ставит пустой).
+      - Рендерит секцию **Свёрнутой**.
 
 ```javascript
 // Клик на "Свернуть" → переходим в режим проверки (collapsing)
-document.querySelector('.prefill-zen-collapse-delivery').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    // 1. Устанавливаем статус "попытка свернуть"
-    document.cookie = 'prefill_zen_delivery=collapsing; path=/; SameSite=Lax';
-    
-    // 2. Перезагружаем форму для валидации на сервере
-    window.waOrder.form.reload();
+document.querySelector(".prefill-zen-collapse-delivery").addEventListener("click", function (e) {
+  e.preventDefault();
+
+  // 1. Устанавливаем статус "попытка свернуть"
+  document.cookie = "prefill_zen_delivery=collapsing; path=/; SameSite=Lax";
+
+  // 2. Перезагружаем форму для валидации на сервере
+  window.waOrder.form.reload();
 });
 ```
 
 > **Диалог ошибки:** Для начала используем стандартный `alert()`. В будущем можно заменить на красивый `wa-dialog` или кастомный модал.
 
+### JavaScript: Валидация при сворачивании
+
+> [!IMPORTANT]
+> **Изменение 2026-02-14:** Заменён `form.validate()` на `form.update({ render_errors: true })` для полной валидации.
+
+**Проблема:**
+
+- `form.validate()` проверяет только стандартные поля (required, email, phone)
+- НЕ проверяет выбор доставки (shipping type/variant) и оплаты (payment method)
+- Эти проверки выполняются только в методе `getData()` секций при submit
+
+**Решение:**
+
+```javascript
+// В OrderFormManager.js
+handleZenValidation(form) {
+    if (window.prefillZenTriggerValidation) {
+        // Используем form.update() вместо form.validate()
+        // update() выполняет полную валидацию включая доставку/оплату
+        form.update({
+            render_errors: true
+        }).fail((state, errors) => {
+            // Обрабатываем ошибки: скроллим к первой ошибке
+            if (errors && errors.length > 0) {
+                const firstError = errors[0];
+                if (firstError.$wrapper) {
+                    firstError.$wrapper[0].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }
+        });
+
+        window.prefillZenTriggerValidation = false;
+    }
+}
+```
+
+**Цепочка валидации при submit:**
+
+```
+Submit → update() → getFormData() → секции.getData() → проверка доставки/оплаты
+```
+
+**Почему form.update():**
+
+- Выполняет полную валидацию всех секций через `getFormData()`
+- Проверяет shipping type/variant в `Shipping.getData()`
+- Проверяет payment method в `Payment.getData()`
+- Показывает ошибки визуально через `render_errors: true`
+- Возвращает Promise с ошибками в `.fail()`
 
 ### Размещение кнопок в конце секции
 
@@ -325,6 +391,7 @@ document.querySelector('.prefill-zen-collapse-delivery').addEventListener('click
 > **Кнопки «Изменить» и «Свернуть» размещаются в конце секции через хуки**, а не в header. Это логичное расположение для действия "свернуть/развернуть" и не требует манипуляций со стандартным header Shop-Script.
 
 **Принцип:**
+
 - Стандартный `.wa-section-header` остается без изменений
 - В конце секции через хук выводится `.prefill-zen-collapse-block` с кнопкой и сводкой
 - Кнопка меняет текст в зависимости от состояния (свёрнуто/развёрнуто)
@@ -378,7 +445,7 @@ public function orderActionCreate($params)
 {
     // Удаляем все cookies дзен-режима
     $cookies = ['prefill_zen_customer', 'prefill_zen_delivery', 'prefill_zen_payment'];
-    
+
     foreach ($cookies as $name) {
         wa()->getResponse()->setCookie($name, '', -1, '/');
     }
@@ -386,6 +453,7 @@ public function orderActionCreate($params)
 ```
 
 **Почему PHP лучше JS:**
+
 - Работает даже если JS отключён
 - Не зависит от событий браузера
 - Гарантированно выполняется на сервере
@@ -397,15 +465,15 @@ public function orderActionCreate($params)
 public function checkoutRenderAuth($params)
 {
     $zen_settings = $this->getSettings('zen');
-    
+
     // Проверяем: включен ли дзен-режим и не развёрнута ли секция
     $is_expanded = waRequest::cookie('prefill_zen_customer') === 'expanded';
-    
+
     if ($zen_settings['active'] && $zen_settings['groups']['customer']['enabled'] && !$is_expanded) {
         // Секция должна быть свёрнута
         return $this->renderZenCollapsed('customer', $params);
     }
-    
+
     // Секция развёрнута — не добавляем CSS скрытия
     return '';
 }
@@ -414,6 +482,7 @@ public function checkoutRenderAuth($params)
 ### Кастомные заголовки секций
 
 **Проблема:** Стандартные заголовки Shop-Script содержат лишнюю информацию:
+
 - `Покупатель: Иван Иванов [Выход]` — дублирует сводку
 - `Регион` — просто текст без кнопки редактирования
 
@@ -422,6 +491,7 @@ public function checkoutRenderAuth($params)
 #### Что скрывается CSS
 
 Для **всех** сворачиваемых секций:
+
 ```css
 .wa-step-{section}-section .wa-section-header { display: none !important; }
 ```
@@ -430,10 +500,8 @@ public function checkoutRenderAuth($params)
 
 ```html
 <div class="prefill-zen-collapse-block">
-    <div class="prefill-zen-summary">
-        {$summary_html}
-    </div>
-    <a href="#" class="prefill-zen-btn js-prefill-zen-toggle" data-group="{$group}" data-action="expand">Изменить ▼</a>
+  <div class="prefill-zen-summary">{$summary_html}</div>
+  <a href="#" class="prefill-zen-btn js-prefill-zen-toggle" data-group="{$group}" data-action="expand">Изменить ▼</a>
 </div>
 ```
 
@@ -441,7 +509,7 @@ public function checkoutRenderAuth($params)
 
 ```html
 <div class="prefill-zen-collapse-block">
-    <a href="#" class="prefill-zen-btn js-prefill-zen-toggle" data-group="{$group}" data-action="collapse">Свернуть ▲</a>
+  <a href="#" class="prefill-zen-btn js-prefill-zen-toggle" data-group="{$group}" data-action="collapse">Свернуть ▲</a>
 </div>
 <!-- Сводка НЕ выводится -->
 ```
@@ -468,15 +536,19 @@ public function checkoutRenderAuth($params)
 #### 1. Секция auth (Покупатель)
 
 **Для физлица:**
+
 ```
 {firstname} {lastname} • {phone}
 ```
+
 Пример: `Артём Шамбергер • +7 923 705-63-78`
 
 **Для компании:**
+
 ```
 {company} • {firstname} {lastname} • {phone}
 ```
+
 Пример: `ООО "Ромашка" • Иван Петров • +7 999 123-45-67`
 
 > **Почему без email?** На маркетплейсах email не показывают в сводке — телефон важнее для связи. Email можно добавить как опцию.
@@ -488,6 +560,7 @@ public function checkoutRenderAuth($params)
 ```
 {city}, {region}
 ```
+
 Пример: `Новосибирск, Новосибирская область`
 
 > **Примечание:** Эту секцию часто объединяют с доставкой. Можно скрывать если город указан в доставке.
@@ -497,12 +570,15 @@ public function checkoutRenderAuth($params)
 #### 3. Секция shipping (Доставка)
 
 **Курьер (todoor):**
+
 ```
 {shipping_name} • {shipping_rate}
 {street}, д. {building}{if apartment}, кв. {apartment}{/if}
 {shipping_date}
 ```
-Пример:  
+
+Пример:
+
 ```
 СДЭК Курьер • 350 ₽
 ул. Ленина, д. 15, кв. 42
@@ -510,12 +586,15 @@ public function checkoutRenderAuth($params)
 ```
 
 **Пункт выдачи (pickup):**
+
 ```
 {shipping_name} • {shipping_rate}
 {possible_address}
 Срок хранения {storage_days} дней • {shipping_date}
 ```
-Пример:  
+
+Пример:
+
 ```
 В пункт выдачи • Бесплатно
 Новосибирск, Большевистская Улица 108, (Пункт выдачи)
@@ -523,6 +602,7 @@ public function checkoutRenderAuth($params)
 ```
 
 **Почта (post):**
+
 ```
 {shipping_name} • {shipping_rate}
 {zip}, {city}, {street}, д. {building}
@@ -538,6 +618,7 @@ public function checkoutRenderAuth($params)
 ```
 {street}, д. {building}{if apartment}, кв. {apartment}{/if}
 ```
+
 Пример: `ул. Ленина, д. 15, кв. 42`
 
 > **Примечание:** Если есть кастомные поля — добавлять их через `{custom.field_id}`.
@@ -549,12 +630,15 @@ public function checkoutRenderAuth($params)
 ```
 {payment_name}
 ```
+
 Пример: `Банковская карта`
 
 **С бонусом (если есть):**
+
 ```
 {payment_name} • {payment_bonus}
 ```
+
 Пример: `WB Кошелёк: 59 ₽ (-3%)`
 
 ---
@@ -577,6 +661,7 @@ public function checkoutRenderAuth($params)
 ### Минимальное оформление
 
 **Иконка группы:**
+
 - Берётся из настройки `groups.{group}.icon` (путь к файлу)
 - Если пусто → используется стандартная иконка плагина:
   - `img/zen/customer.svg` — для группы customer
@@ -586,10 +671,12 @@ public function checkoutRenderAuth($params)
 - Отображается слева от заголовка сводки
 
 **Текст сводки:**
+
 - Серый цвет, компактный шрифт
 - Рендерится через Smarty-шаблон из настроек
 
 **Ссылка "Изменить":**
+
 - Справа, на одной линии с заголовком
 - Текст из локализации: `_wp('zen.button.expand')`
 
@@ -644,10 +731,10 @@ CSS каждой группы добавляется в `<style>` блок че�
 
 ```html
 <style>
-/* CSS для группы customer */
-.wa-step-auth-section .prefill-zen-collapse-block {
-    <?php echo $zen_settings['groups']['customer']['custom_css']; ?>
-}
+  /* CSS для группы customer */
+  .wa-step-auth-section .prefill-zen-collapse-block {
+      <?php echo $zen_settings['groups']['customer']['custom_css']; ?>
+  }
 </style>
 ```
 
@@ -670,7 +757,7 @@ CSS каждой группы добавляется в `<style>` блок че�
 ```php
 'zen' => [
     'active' => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
-    
+
     // Группы секций (не отдельные секции!)
     'groups' => [
         'customer' => [  // auth
@@ -786,13 +873,13 @@ private function shouldCollapseGroup($group, $params)
     if (!$this->isZenEnabled($group)) {
         return false;
     }
-    
+
     $cookie_state = waRequest::cookie('prefill_zen_' . $group);
-    
+
     // 1. Обработка попытки сворачивания (COLLAPSING)
     if ($cookie_state === 'collapsing') {
         $errors = $this->extractCheckoutErrors($params);
-        
+
         if ($errors['has_errors']) {
             // ЕСТЬ ОШИБКИ:
             // 1. Инжектим JS-алерт (делается в методе рендера, не здесь)
@@ -806,35 +893,35 @@ private function shouldCollapseGroup($group, $params)
             return true;
         }
     }
-    
+
     // 2. Если кука EXPANDED — не сворачиваем
     if ($cookie_state === 'expanded') {
         return false;
     }
-    
+
     // 3. Если куки нет и ошибок нет — сворачиваем (дефолтное поведение)
-    // Но если ошибки есть при первой загрузке — лучше не сворачивать? 
+    // Но если ошибки есть при первой загрузке — лучше не сворачивать?
     // (Сейчас логика: если нет явного expanded — пытаемся свернуть, но проверка ошибок ниже блокирует)
-    
+
     // Проверка ошибок для пассивного режима
     $errors_info = $this->extractCheckoutErrors($params);
     if ($errors_info['has_errors']) {
         return false;
     }
-    
+
     return true;
 }
 ```
 
 ### Таблица сценариев (Состояния)
 
-| Кука (Cookie)                   | Ошибки валидации                | Действие PHP               | Результат UI            | Примечание                                    |
-| :------------------------------ | :------------------------------ | :------------------------- | :---------------------- | :-------------------------------------------- |
-| **(нет)**                       | Нет                             | Свернуть                   | **Свёрнуто**            | Чистый вход                                   |
-| **(нет)**                       | **Есть**                        | Не сворачивать             | **Развёрнуто**          | Видны ошибки (например, при попытке оформить) |
-| **expanded**                    | (любые)                         | Не сворачивать             | **Развёрнуто**          | Пользователь нажал "Изменить"                 |
-| **collapsing**                  | **Есть**                        | Не сворачивать + **Alert** | **Развёрнуто** + Диалог | Неудачная попытка свернуть                    |
-| **collapsing**                  | Нет                             | Свернуть + Clear Cookie    | **Свёрнуто**            | Успешное сворачивание                         |
+| Кука (Cookie)                   | Ошибки валидации                 | Действие PHP               | Результат UI            | Примечание                                    |
+| :------------------------------ | :------------------------------- | :------------------------- | :---------------------- | :-------------------------------------------- |
+| **(нет)**                       | Нет                              | Свернуть                   | **Свёрнуто**            | Чистый вход                                   |
+| **(нет)**                       | **Есть**                         | Не сворачивать             | **Развёрнуто**          | Видны ошибки (например, при попытке оформить) |
+| **expanded**                    | (любые)                          | Не сворачивать             | **Развёрнуто**          | Пользователь нажал "Изменить"                 |
+| **collapsing**                  | **Есть**                         | Не сворачивать + **Alert** | **Развёрнуто** + Диалог | Неудачная попытка свернуть                    |
+| **collapsing**                  | Нет                              | Свернуть + Clear Cookie    | **Свёрнуто**            | Успешное сворачивание                         |
 | Всё заполнено, ошибок нет       | ✅ Сворачиваем                   |
 | Ошибка валидации (любая)        | ❌ Не сворачиваем (видна ошибка) |
 | Пользователь кликнул "Изменить" | ❌ Не сворачиваем (cookie)       |
@@ -956,6 +1043,7 @@ private function shouldCollapseGroup($group, $params)
 > **Важно:** Переменные передаются без `$data.` — вместо `{$data.firstname}` используйте `{firstname}`.
 
 **Поддерживаемый синтаксис:**
+
 - ✅ Переменные: `{variable}`
 - ✅ Фильтры: `{variable|default:"значение"}`
 - ✅ Условия: `{if variable}...{else}...{/if}`
@@ -969,59 +1057,42 @@ private function shouldCollapseGroup($group, $params)
 ### Фаза 1: Базовая архитектура
 
 **Настройки:**
+
 1. [ ] Добавить секцию `zen` в `lib/config/storefront.settings.php`
 2. [ ] Настроить группы (`customer`, `delivery`, `payment`) с шаблонами по умолчанию
 3. [ ] Добавить глобальный переключатель `zen.active`
 
-**PHP-хуки:**
-4. [ ] Реализовать `checkoutRenderAuth()` — вставка `<style>` тега для ВСЕХ групп + кнопка/сводка в конце секции
-5. [ ] Реализовать `checkoutRenderShipping()` — проверка details и вывод кнопки/сводки для delivery если details пустой
-6. [ ] Реализовать `checkoutRenderDetails()` — вывод кнопки/сводки для delivery если details существует
-7. [ ] Реализовать `checkoutRenderPayment()` — кнопка/сводка в конце секции
-8. [ ] Реализовать `orderActionCreate()` — очистка zen cookies после создания заказа
+**PHP-хуки:** 4. [ ] Реализовать `checkoutRenderAuth()` — вставка `<style>` тега для ВСЕХ групп + кнопка/сводка в конце секции 5. [ ] Реализовать `checkoutRenderShipping()` — проверка details и вывод кнопки/сводки для delivery если details пустой 6. [ ] Реализовать `checkoutRenderDetails()` — вывод кнопки/сводки для delivery если details существует 7. [ ] Реализовать `checkoutRenderPayment()` — кнопка/сводка в конце секции 8. [ ] Реализовать `orderActionCreate()` — очистка zen cookies после создания заказа
 
-**Логика сворачивания:**
-9. [ ] Метод `shouldCollapseGroup($group, $params)` с использованием `extractCheckoutErrors()`
-10. [ ] Метод `isExpandedByUser($group)` — проверка session cookie
-11. [ ] Генератор CSS для скрытия `.wa-section-body form > *:not(.wa-plugin-hook)` (БЕЗ скрытия header)
+**Логика сворачивания:** 9. [ ] Метод `shouldCollapseGroup($group, $params)` с использованием `extractCheckoutErrors()` 10. [ ] Метод `isExpandedByUser($group)` — проверка session cookie 11. [ ] Генератор CSS для скрытия `.wa-section-body form > *:not(.wa-plugin-hook)` (БЕЗ скрытия header)
 
-**JavaScript:**
-12. [ ] Обработчик клика "Изменить" → установка cookie + `waOrder.form.reload()`
-13. [ ] Обработчик клика "Свернуть" → удаление cookie + `waOrder.form.reload()`
+**JavaScript:** 12. [ ] Обработчик клика "Изменить" → установка cookie + `waOrder.form.reload()` 13. [ ] Обработчик клика "Свернуть" → удаление cookie + `waOrder.form.reload()`
 
 ### Фаза 2: Шаблоны и настройки
 
 **UI админ-панели:**
+
 1. [ ] Вкладка "Дзен-режим" в настройках плагина
 2. [ ] Чекбоксы включения для каждой группы
 3. [ ] Текстовые поля для редактирования шаблонов сводки
 4. [ ] Добавить переводы в `.po` файлы ("Изменить", "Свернуть")
 5. [ ] Textarea для кастомного CSS каждой группы (опционально)
 
-**Парсер шаблонов:**
-6. [ ] Метод `parseTemplate($template, $data)` — замена `{variable}` на значения
-7. [ ] Поддержка fallback: `{variable|default:"текст"}`
-8. [ ] Поддержка условий: `{if variable}...{/if}` (опционально)
+**Парсер шаблонов:** 6. [ ] Метод `parseTemplate($template, $data)` — замена `{variable}` на значения 7. [ ] Поддержка fallback: `{variable|default:"текст"}` 8. [ ] Поддержка условий: `{if variable}...{/if}` (опционально)
 
-**Типы доставки:**
-9. [ ] Определение типа доставки (`todoor`, `pickup`, `post`, `default`)
-10. [ ] Выбор шаблона в зависимости от типа для группы `delivery`
+**Типы доставки:** 9. [ ] Определение типа доставки (`todoor`, `pickup`, `post`, `default`) 10. [ ] Выбор шаблона в зависимости от типа для группы `delivery`
 
 ### Фаза 3: Полировка и UX
 
 **Визуал:**
+
 1. [ ] Стили для блока управления `.prefill-zen-collapse-block`
 2. [ ] Стили для сводки (серый текст, компактный шрифт)
 3. [ ] Анимации сворачивания/разворачивания (CSS transitions)
 
-**Адаптация:**
-5. [ ] Мобильная вёрстка сводок
-6. [ ] Тестирование на разных темах оформления
+**Адаптация:** 5. [ ] Мобильная вёрстка сводок 6. [ ] Тестирование на разных темах оформления
 
-**Дополнительно:**
-7. [ ] Защита от двойного клика (disabled + "Загрузка...")
-8. [ ] Debug-панель: показывать состояние zen cookies
-9. [ ] Превью сводки в админ-панели (опционально)
+**Дополнительно:** 7. [ ] Защита от двойного клика (disabled + "Загрузка...") 8. [ ] Debug-панель: показывать состояние zen cookies 9. [ ] Превью сводки в админ-панели (опционально)
 
 ---
 
@@ -1041,23 +1112,24 @@ private function shouldCollapseGroup($group, $params)
    **Проблема:** Когда нажимаешь "Свернуть", страница прокручивается вверх, что сбивает пользователя с места редактирования.
 
    **Анализ причины:**
-   
+
    В коде `shopPrefillPluginZenHelper.class.php` (строка 656) при клике на кнопку "Свернуть" вызывается:
+
    ```javascript
    window.waOrder.form.reload();
    ```
-   
+
    **Что происходит:**
    1. `reload()` делает AJAX-запрос к серверу для получения обновлённого HTML формы
    2. Shop-Script заменяет содержимое формы новым HTML из ответа
    3. При замене DOM браузер **теряет позицию скролла** и возвращается в начало страницы
    4. Нет механизма сохранения/восстановления позиции скролла
-   
+
    **Почему это происходит:**
    - `reload()` не сохраняет позицию скролла перед AJAX-запросом
    - После замены HTML нет кода, который восстанавливает скролл
    - Shop-Script не предоставляет встроенного механизма для сохранения скролла при `reload()`
-   
+
    **Где проблема в коде:**
    - `lib/classes/helpers/shopPrefillPluginZenHelper.class.php:656` — вызов `reload()` без сохранения скролла
    - Отсутствует обработчик события `wa_order_form_ready` для восстановления скролла
@@ -1073,27 +1145,29 @@ private function shouldCollapseGroup($group, $params)
      - Добавить `id` к секции и использовать `scrollIntoView({ behavior: 'smooth', block: 'start' })` после reload
    - Добавить плавную анимацию сворачивания без полной перезагрузки
      - Использовать CSS transitions вместо AJAX reload (требует изменения архитектуры)
-   
+
    **Рекомендуемое решение:**
+
    ```javascript
    // Сохраняем позицию скролла перед reload
    var scrollPosition = window.scrollY || document.documentElement.scrollTop;
-   var sectionId = btn.closest('.wa-step-section')?.id; // или определяем по group
-   
+   var sectionId = btn.closest(".wa-step-section")?.id; // или определяем по group
+
    window.waOrder.form.reload();
-   
+
    // Восстанавливаем скролл после reload
-   $(document).one('wa_order_form_reloaded', function() {
-       if (sectionId) {
-           var section = document.getElementById(sectionId);
-           if (section) {
-               section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-           }
-       } else {
-           window.scrollTo(0, scrollPosition);
+   $(document).one("wa_order_form_reloaded", function () {
+     if (sectionId) {
+       var section = document.getElementById(sectionId);
+       if (section) {
+         section.scrollIntoView({ behavior: "smooth", block: "start" });
        }
+     } else {
+       window.scrollTo(0, scrollPosition);
+     }
    });
    ```
+
 4. **Контроль видимости полей при ошибках валидации** — нужно продумать возможность для админа сайта контролировать, какие поля должны оставаться видимыми даже при наличии ошибок валидации.
 
    **Проблема:** Сейчас система скрывает секции при наличии ошибок (обязательных полей), но может быть админ хочет, чтобы пользователь видел поля для заполнения ФИО и т.д., которые не обязательны, но желательны для заполнения.

@@ -14,6 +14,7 @@ return [
         'checkout_render_auth' => 'checkoutRenderAuth', //Добавляем контент в секцию авторизации
         'checkout_render_region' => 'checkoutRenderRegion', //Добавляем контент в секцию региона
         'checkout_render_shipping' => 'checkoutRenderShipping', //Для сворачивания блоков корзины
+        'checkout_render_details' => 'checkoutRenderDetails', //Добавляем контент в секцию details (Zen Mode для delivery)
         'checkout_render_payment' => 'checkoutRenderPayment', //Добавляем контент в секцию оплаты (Zen Mode)
         'checkout_render_confirm' => 'checkoutRenderConfirm', //DEBUG: Показываем все delayed_errors
         'order_action.create' => 'orderActionCreate', // Для сохранения shipping_type в параметры заказа

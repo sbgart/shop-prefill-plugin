@@ -427,8 +427,13 @@ class shopPrefillPluginZenMode
             }
             $output .= '<a href="#" class="prefill-zen-btn js-prefill-zen-toggle" data-group="' . $group . '" data-action="expand">Изменить ▼</a>';
         } else {
-            // Развёрнуто: только кнопка "Свернуть"
-            $output .= '<a href="#" class="prefill-zen-btn js-prefill-zen-toggle" data-group="' . $group . '" data-action="collapse">Свернуть ▲</a>';
+            // Развёрнуто: показываем кнопку "Свернуть" только если нет ошибок
+            $errors_info = $this->extractGroupErrors($params, $group);
+
+            if (!$errors_info['has_errors']) {
+                // Нет ошибок → показываем кнопку "Свернуть"
+                $output .= '<a href="#" class="prefill-zen-btn js-prefill-zen-toggle" data-group="' . $group . '" data-action="collapse">Свернуть ▲</a>';
+            }
         }
 
         $output .= '</div>';
@@ -693,10 +698,10 @@ class shopPrefillPluginZenMode
         }
 
         // Перезагружаем форму checkout
-        if (window.waOrder && window.waOrder.form && window.waOrder.form.reload) {
-            window.waOrder.form.reload();
+        if (window.waOrder && window.waOrder.form && window.waOrder.form.update) {
+            window.waOrder.form.update();
         } else {
-            location.reload();
+            location.update();
         }
     });
 })();

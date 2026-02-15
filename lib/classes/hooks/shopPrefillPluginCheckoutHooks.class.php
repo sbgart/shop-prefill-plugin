@@ -19,7 +19,7 @@ class shopPrefillPluginCheckoutHooks
         bool $is_debug,
         array $storefront_settings
     ) {
-        $this->zen_helper = $zen_mode;
+        $this->zen_mode = $zen_mode;
         $this->user_provider = $user_provider;
         $this->consent_storage = $consent_storage;
         $this->is_debug = $is_debug;
@@ -42,15 +42,15 @@ class shopPrefillPluginCheckoutHooks
         // === ZEN MODE: Добавляем JavaScript в первом хуке ===
         try {
             // Добавляем JavaScript только один раз (в первом хуке)
-            $output .= $this->zen_helper->generateJavaScript();
+            $output .= $this->zen_mode->generateJavaScript();
 
             // Рендерим блок управления для группы customer в КОНЦЕ секции
-            if ($this->zen_helper->shouldCollapseGroup('customer', $params)) {
+            if ($this->zen_mode->shouldCollapseGroup('customer', $params)) {
                 // СВЁРНУТО: сводка + "Изменить"
-                $output .= $this->zen_helper->renderCollapseBlock('customer', $params, true);
-            } elseif ($this->zen_helper->isGroupEnabled('customer')) {
+                $output .= $this->zen_mode->renderCollapseBlock('customer', $params, true);
+            } elseif ($this->zen_mode->isGroupEnabled('customer')) {
                 // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                $output .= $this->zen_helper->renderCollapseBlock('customer', $params, false);
+                $output .= $this->zen_mode->renderCollapseBlock('customer', $params, false);
             }
         } catch (Exception $e) {
             // Игнорируем ошибки Zen Mode
@@ -123,26 +123,6 @@ class shopPrefillPluginCheckoutHooks
     {
         $output = '';
 
-        // === ZEN MODE: Рендерим блок управления ===
-        // ВАЖНО: для группы delivery рендерим блок в details (если есть) или в shipping (если details нет)
-        try {
-            // Проверяем, будет ли хук checkoutRenderDetails вызван
-            $has_details = $this->hasDetailsSection($params);
-
-            // Если секции details НЕТ - рендерим блок управления delivery ЗДЕСЬ (в shipping)
-            if (!$has_details) {
-                if ($this->zen_helper->shouldCollapseGroup('delivery', $params)) {
-                    // СВЁРНУТО: сводка + "Изменить"
-                    $output .= $this->zen_helper->renderCollapseBlock('delivery', $params, true);
-                } elseif ($this->zen_helper->isGroupEnabled('delivery')) {
-                    // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                    $output .= $this->zen_helper->renderCollapseBlock('delivery', $params, false);
-                }
-            }
-        } catch (Exception $e) {
-            // Игнорируем ошибки Zen Mode
-        }
-
         // Извлекаем все типы ошибок
         $errors_info = $this->extractCheckoutErrors($params);
 
@@ -179,12 +159,12 @@ class shopPrefillPluginCheckoutHooks
 
         // === ZEN MODE: Рендерим блок управления для группы delivery в КОНЦЕ секции details ===
         try {
-            if ($this->zen_helper->shouldCollapseGroup('delivery', $params)) {
+            if ($this->zen_mode->shouldCollapseGroup('delivery', $params)) {
                 // СВЁРНУТО: сводка + "Изменить"
-                $output .= $this->zen_helper->renderCollapseBlock('delivery', $params, true);
-            } elseif ($this->zen_helper->isGroupEnabled('delivery')) {
+                $output .= $this->zen_mode->renderCollapseBlock('delivery', $params, true);
+            } elseif ($this->zen_mode->isGroupEnabled('delivery')) {
                 // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                $output .= $this->zen_helper->renderCollapseBlock('delivery', $params, false);
+                $output .= $this->zen_mode->renderCollapseBlock('delivery', $params, false);
             }
         } catch (Exception $e) {
             // Игнорируем ошибки Zen Mode
@@ -226,12 +206,12 @@ class shopPrefillPluginCheckoutHooks
 
         // === ZEN MODE: Рендерим блок управления для группы payment ===
         try {
-            if ($this->zen_helper->shouldCollapseGroup('payment', $params)) {
+            if ($this->zen_mode->shouldCollapseGroup('payment', $params)) {
                 // СВЁРНУТО: сводка + "Изменить"
-                $output .= $this->zen_helper->renderCollapseBlock('payment', $params, true);
-            } elseif ($this->zen_helper->isGroupEnabled('payment')) {
+                $output .= $this->zen_mode->renderCollapseBlock('payment', $params, true);
+            } elseif ($this->zen_mode->isGroupEnabled('payment')) {
                 // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                $output .= $this->zen_helper->renderCollapseBlock('payment', $params, false);
+                $output .= $this->zen_mode->renderCollapseBlock('payment', $params, false);
             }
         } catch (Exception $e) {
             // Игнорируем ошибки Zen Mode
@@ -274,7 +254,7 @@ class shopPrefillPluginCheckoutHooks
         // === ZEN MODE: Генерируем CSS для ВСЕХ групп в последнем хуке ===
         // Здесь у нас точно есть все данные об ошибках
         try {
-            $html .= $this->zen_helper->generateAllStyles($params);
+            $html .= $this->zen_mode->generateAllStyles($params);
         } catch (Exception $e) {
             // Игнорируем ошибки Zen Mode
         }
