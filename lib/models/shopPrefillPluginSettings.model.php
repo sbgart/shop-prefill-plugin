@@ -22,8 +22,8 @@ class shopPrefillPluginSettingsModel extends waModel
     {
         $fields = [
             'storefront_code' => $storefront_code,
-            'name'            => $name,
-            'groups'          => json_encode($groups),
+            'name' => $name,
+            'groups' => json_encode($groups),
         ];
 
         if ($this->getByField($fields)) {

@@ -1,0 +1,48 @@
+{* Параметры предзаполнения *}
+<div style="padding: 0; background: #e1f5fe; border-bottom: 1px solid #b3e5fc; flex-shrink: 0">
+    <details>
+        <summary style="
+            padding: 8px 15px;
+            cursor: pointer;
+            color: #0277bd;
+            font-weight: bold;
+            font-size: 10px;
+            user-select: none;
+            outline: none;
+          ">
+            📦 Параметры для предзаполнения (shopPrefillPluginFillParams)
+        </summary>
+        <div style="padding: 0 15px 15px 15px">
+            {* Метаинформация *}
+            <div style="
+              background: #fff3e0;
+              padding: 8px;
+              border: 1px solid #ffb74d;
+              border-radius: 4px;
+              margin-bottom: 10px;
+              font-size: 9px;
+            ">
+                <strong>ℹ️ Метаданные:</strong><br />
+                • Пользователь: {if $fill_params_meta.user_authorized}✅ Авторизован (ID:
+                {$fill_params_meta.user_id}){else}❌ Гость
+                {if $fill_params_meta.guest_hash} (hash:
+                {$fill_params_meta.guest_hash|escape}){/if}
+                {/if}<br />
+                • Заказов: {$fill_params_meta.orders_count}<br />
+                • Источник: {$fill_params_meta.source|escape}
+            </div>
+
+            <pre style="
+              margin: 0;
+              padding: 10px;
+              background: #fff;
+              border: 1px solid #b3e5fc;
+              border-radius: 4px;
+              font-size: 9px;
+              max-height: 150px;
+              overflow: auto;
+            ">
+  {$fill_params|@print_r}</pre>
+        </div>
+    </details>
+</div>

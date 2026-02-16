@@ -383,6 +383,7 @@ class shopPrefillPluginZenMode
      * @param array $params Данные чекаута
      * @param bool $is_collapsed Свёрнута ли группа
      * @return string HTML
+     * @throws waException
      */
     public function renderCollapseBlock(string $group, array $params, bool $is_collapsed = true): string
     {
@@ -445,6 +446,7 @@ class shopPrefillPluginZenMode
      * @param string $group Имя группы
      * @param bool $is_collapsed Состояние группы
      * @return string HTML
+     * @throws waException
      */
     private function renderToggleButton(string $group, bool $is_collapsed): string
     {
@@ -453,7 +455,8 @@ class shopPrefillPluginZenMode
             'is_collapsed' => $is_collapsed,
         ]);
 
-        return $this->view->fetch('plugins/prefill/templates/zenmode/ToggleButton.html');
+        $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/ToggleButton.html';
+        return $this->view->fetch('file:' . $template_path);
     }
 
     /**

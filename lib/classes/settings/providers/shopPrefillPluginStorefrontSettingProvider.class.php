@@ -10,7 +10,7 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
     {
         parent::__construct();
 
-        $config          = shopPrefillPlugin::getConfig('storefront.settings') ?? [];
+        $config = shopPrefillPlugin::getConfig('storefront.settings') ?? [];
         $this->structure = $this->buildStructure($config);
     }
 
@@ -44,6 +44,11 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
                 $this->setSetting($storefront_code, $k, $v, array_merge($groups, [$key]));
             }
         } else {
+            // Преобразуем bool в int (false -> 0, true -> 1) для корректного сохранения в БД
+            // Без этого false сохраняется как пустая строка и при чтении заменяется на default значение
+            if (is_bool($value)) {
+                $value = (int) $value;
+            }
             $this->getSettingsModel()->set($storefront_code, $key, $value, $groups);
         }
     }

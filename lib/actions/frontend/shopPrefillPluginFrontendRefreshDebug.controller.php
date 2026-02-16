@@ -15,55 +15,55 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
 
             // Получаем настройки витрины
             $storefront_settings = $plugin->getStorefrontSettings();
-            $plugin_enabled      = ! empty($storefront_settings['prefill']['active']);
+            $plugin_enabled = !empty($storefront_settings['prefill']['active']);
 
             // Получаем параметры предзаполнения
             $fill_params_data = [];
             $fill_params_meta = [
                 'user_authorized' => false,
-                'user_id'         => null,
-                'contact_id'      => null,
-                'guest_hash'      => null,
-                'orders_count'    => 0,
-                'source'          => 'empty',
+                'user_id' => null,
+                'contact_id' => null,
+                'guest_hash' => null,
+                'orders_count' => 0,
+                'source' => 'empty',
                 'source_order_id' => null,
             ];
 
             // Проверяем авторизацию
-            $user_provider                       = $plugin->getUserProvider();
-            $guest_hash_storage                  = $plugin->getGuestHashStorage();
+            $user_provider = $plugin->getUserProvider();
+            $guest_hash_storage = $plugin->getGuestHashStorage();
             $fill_params_meta['user_authorized'] = $user_provider->isAuth();
 
             if ($fill_params_meta['user_authorized']) {
                 // Авторизованный пользователь
-                $fill_params_meta['user_id']    = $user_provider->getId();
+                $fill_params_meta['user_id'] = $user_provider->getId();
                 $fill_params_meta['contact_id'] = $user_provider->getId();
 
                 // Получаем количество заказов
-                $order_provider                   = $plugin->getOrderProvider();
-                $orders_ids                       = $order_provider->getUserOrdersId($fill_params_meta['user_id']);
+                $order_provider = $plugin->getOrderProvider();
+                $orders_ids = $order_provider->getUserOrdersId($fill_params_meta['user_id']);
                 $fill_params_meta['orders_count'] = count($orders_ids ?: []);
             } else {
                 // Гость: показываем хеш
-                $guest_hash                     = $guest_hash_storage->getGuestHash();
+                $guest_hash = $guest_hash_storage->getGuestHash();
                 $fill_params_meta['guest_hash'] = $guest_hash ? substr($guest_hash, 0, 16) . '...' : null;
 
                 // Получаем количество заказов гостя
                 if ($guest_hash) {
-                    $order_provider                   = $plugin->getOrderProvider();
-                    $orders_ids                       = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
+                    $order_provider = $plugin->getOrderProvider();
+                    $orders_ids = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
                     $fill_params_meta['orders_count'] = count($orders_ids);
                 }
             }
 
             // Получаем параметры предзаполнения из БД
-            $fill_params      = $plugin->getFillParamsProvider()->getFillParams();
+            $fill_params = $plugin->getFillParamsProvider()->getFillParams();
             $fill_params_data = $fill_params->toArray();
 
             // Определяем источник данных
             $order_id = $fill_params->getId();
             if ($order_id) {
-                $fill_params_meta['source']          = 'order';
+                $fill_params_meta['source'] = 'order';
                 $fill_params_meta['source_order_id'] = $order_id;
             } elseif ($fill_params_meta['orders_count'] > 0) {
                 $fill_params_meta['source'] = 'orders (no data)';
@@ -76,13 +76,32 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
             $checkout_params = $session_storage->getCheckoutParams() ?: [];
 
             $this->response = [
-                'status'           => 'ok',
-                'plugin_enabled'   => $plugin_enabled,
-                'fill_params'      => $fill_params_data,
+                'status' => 'ok',
+                'plugin_enabled' => $plugin_enabled,
+                'zen_enabled' => !empty($storefront_settings['zen']['active']),
+                'fill_params' => $fill_params_data,
                 'fill_params_meta' => $fill_params_meta,
-                'checkout_params'  => $checkout_params,
-                'timestamp'        => date('H:i:s'),
+                'checkout_params' => $checkout_params,
+                'timestamp' => date('H:i:s'),
+                'errors' => [],
             ];
+
+            // Рендерим HTML шаблоны
+            $view = wa()->getView();
+            $view->assign([
+                'plugin_enabled' => $plugin_enabled,
+                'zen_enabled' => !empty($storefront_settings['zen']['active']),
+                'fill_params' => $fill_params_data,
+                'fill_params_meta' => $fill_params_meta,
+                'current_storage' => $checkout_params,
+                'show_validation' => waRequest::cookie('wa_prefill_debug_show_validation', 0),
+            ]);
+
+            $template_path = shopPrefillPlugin::getPluginPath() . '/templates/';
+
+            $this->response['html_status'] = $view->fetch('file:' . $template_path . 'DebugStatusPanel.html');
+            $this->response['html_storage'] = $view->fetch('file:' . $template_path . 'DebugStorageDetails.html');
+            $this->response['html_params'] = $view->fetch('file:' . $template_path . 'DebugFillParams.html');
         } catch (Exception $e) {
             $this->errors = ['error' => $e->getMessage()];
         }

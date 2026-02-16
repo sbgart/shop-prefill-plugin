@@ -46,7 +46,7 @@ class shopPrefillPluginStorefrontProvider
         $domain = $routing->getDomain();
         $url = $routing->getRoute('url');
 
-        $storefront_code = base64_encode($domain.'/'.$url);
+        $storefront_code = base64_encode($domain . '/' . $url);
 
         return $storefronts->getByCode($storefront_code);
     }

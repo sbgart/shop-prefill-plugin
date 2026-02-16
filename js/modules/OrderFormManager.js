@@ -47,11 +47,11 @@ class OrderFormManager {
      */
     handleFormReady(form) {
         this.paramsChoiceManager.renderLink();
-        this.logger.log("Order form ready, try render link");
 
         // Инициализируем Zen Mode при готовности формы
         if (this.zenModeToggle) {
             this.zenModeToggle.init();
+            this.zenModeToggle.forceDetailSectionVisible();
         }
     }
 
@@ -59,8 +59,6 @@ class OrderFormManager {
      * Обрабатывает событие изменения региона
      */
     handleRegionChanged() {
-        this.paramsChoiceManager.renderLink();
-        this.logger.log("Order form region changed, try render link");
 
     }
 
@@ -69,8 +67,9 @@ class OrderFormManager {
      */
     handleDetailsChanged() {
         this.paramsChoiceManager.renderLink();
-        this.logger.log("Order form region changed, try render link");
+
+        if (this.zenModeToggle) {
+            this.zenModeToggle.forceDetailSectionVisible();
+        }
     }
-
-
 }

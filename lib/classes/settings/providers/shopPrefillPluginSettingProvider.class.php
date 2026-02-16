@@ -41,6 +41,11 @@ class shopPrefillPluginSettingProvider extends shopPrefillPluginAbstractSettingP
                 $this->setSetting($k, $v, array_merge($groups, [$key]));
             }
         } else {
+            // Преобразуем bool в int (false -> 0, true -> 1) для корректного сохранения в БД
+            // Без этого false сохраняется как пустая строка и при чтении заменяется на default значение
+            if (is_bool($value)) {
+                $value = (int) $value;
+            }
             $this->getSettingsModel()->set('-', $key, $value, $groups);
         }
     }
