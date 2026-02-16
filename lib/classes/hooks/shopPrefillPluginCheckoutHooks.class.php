@@ -39,12 +39,14 @@ class shopPrefillPluginCheckoutHooks
     {
         $output = '';
 
-        // === ZEN MODE: Добавляем JavaScript в первом хуке ===
-        try {
-            // Добавляем JavaScript только один раз (в первом хуке)
-            $output .= $this->zen_mode->generateJavaScript();
+        // === ZEN MODE: Подключаем CSS только на чекауте (один раз) ===
+        if ($this->zen_mode->isActive()) {
+            $plugin_url = wa()->getAppStaticUrl('shop') . 'plugins/prefill/';
+            $output .= '<link rel="stylesheet" href="' . $plugin_url . 'css/zenmode.css">';
+        }
 
-            // Рендерим блок управления для группы customer в КОНЦЕ секции
+        // === ZEN MODE: Рендер блока управления для группы customer ===
+        try {
             if ($this->zen_mode->shouldCollapseGroup('customer', $params)) {
                 // СВЁРНУТО: сводка + "Изменить"
                 $output .= $this->zen_mode->renderCollapseBlock('customer', $params, true);

@@ -274,6 +274,7 @@ class shopPrefillPluginDebug
                 'fill_params' => $fill_params_data,
                 'fill_params_meta' => $fill_params_meta,
                 'current_storage' => $current_storage,
+                'show_validation' => waRequest::cookie('wa_prefill_debug_show_validation', 0),
             ];
 
             // Рендерим шаблон
@@ -619,6 +620,7 @@ class shopPrefillPluginDebug
                 });
             };
 
+
             // Функция для переключения Zen Mode
             window.PrefillDebugHelper.toggleZen = function() {
                 if (!confirm('Переключить статус Zen Mode?')) {
@@ -648,6 +650,22 @@ class shopPrefillPluginDebug
                     alert('❌ Ошибка запроса: ' + err.message);
                     location.reload();
                 });
+            };
+
+            // Функция для переключения отображения ошибок валидации
+            window.PrefillDebugHelper.toggleValidationErrors = function() {
+                var cookieName = 'wa_prefill_debug_show_validation';
+                var currentVal = window.PrefillDebugHelper.getCookie(cookieName);
+                if (currentVal === '1') {
+                    // Сейчас включено, выключаем
+                    window.PrefillDebugHelper.setCookie(cookieName, '0', 365);
+                    alert('🚫 Ошибки валидации СКРЫТЫ');
+                } else {
+                    // Сейчас выключено, включаем
+                    window.PrefillDebugHelper.setCookie(cookieName, '1', 365);
+                    alert('✅ Ошибки валидации ВКЛЮЧЕНЫ');
+                }
+                location.reload();
             };
 
             // Функция управления меню действий
@@ -747,6 +765,7 @@ class shopPrefillPluginDebug
                                     '</span>' +
                                 '</div>' +
                             '</div>' +
+                            '</div>' +
                             '<div style=\"display: flex; gap: 5px; position: relative;\">' +
                                 '<button onclick=\"PrefillDebugHelper.toggleActionsMenu(event)\" class=\"prefill-debug-btn\" style=\"background: #0277bd; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 10px; font-weight: bold;\" title=\"Меню действий\">⚡ Actions ▼</button>' +
                                 '<div id=\"prefill-debug-actions-menu\" style=\"display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 100000; min-width: 200px; margin-top: 5px; color: #333; text-align: left;\">' +
@@ -774,9 +793,16 @@ class shopPrefillPluginDebug
                                     '</div>' +
                                     '<!-- ZEN MODE -->' +
                                     '<div style=\"padding: 6px 12px; background: #f3e5f5; border-bottom: 2px solid #9c27b0; font-weight: bold; font-size: 10px; color: #6a1b9a; text-transform: uppercase; letter-spacing: 0.5px;\">🧘 Zen Mode</div>' +
-                                    '<div onclick=\"PrefillDebugHelper.toggleZen()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer;\">' +
+                                    '<div onclick=\"PrefillDebugHelper.toggleZen()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;\">' +
                                         '<div style=\"font-weight: bold; font-size: 11px; color: #673ab7;\">🧘 Toggle Zen Mode</div>' +
                                         '<div style=\"font-size: 9px; color: #666;\">Вкл/Выкл режим сворачивания</div>' +
+                                    '</div>' +
+                                    '<!-- VALIDATION -->' +
+                                    '<div style=\"padding: 6px 12px; background: #ffebee; border-bottom: 2px solid #ef5350; font-weight: bold; font-size: 10px; color: #c62828; text-transform: uppercase; letter-spacing: 0.5px;\">⚠️ Validation</div>' +
+                                    '<div onclick=\"PrefillDebugHelper.toggleValidationErrors()\" onmouseover=\"this.style.background=\\'#f5f5f5\\'\" onmouseout=\"this.style.background=\\'white\\'\" style=\"padding: 8px 12px; cursor: pointer;\">' +
+                                        (window.PrefillDebugHelper.getCookie('wa_prefill_debug_show_validation') === '1'
+                                            ? '<div style=\"font-weight: bold; font-size: 11px; color: #c62828;\">🚫 Disable Validation Debug</div><div style=\"font-size: 9px; color: #666;\">Выключить отображение ошибок</div>'
+                                            : '<div style=\"font-weight: bold; font-size: 11px; color: #2e7d32;\">👁️ Enable Validation Debug</div><div style=\"font-size: 9px; color: #666;\">Включить отображение ошибок</div>') +
                                     '</div>' +
                                 '</div>' +
                             '</div>' +
@@ -930,6 +956,12 @@ class shopPrefillPluginDebug
             return '';
         }
 
+        // Проверяем куку отображения ошибок валидации (по умолчанию скрыто)
+        $show_validation = waRequest::cookie('wa_prefill_debug_show_validation', 0);
+        if (!$show_validation) {
+            return '';
+        }
+
         static $style_output = false;
         $debug_html = '';
         if (!$style_output) {
@@ -941,6 +973,7 @@ class shopPrefillPluginDebug
         $debug_html .= '<summary style="padding: 12px 15px; cursor: pointer; font-weight: bold; user-select: none; list-style: none; display: flex; align-items: center; gap: 6px;">';
         $debug_html .= '<span class="prefill-errors-debug-arrow" style="font-size: 14px; display: inline-block; transition: transform 0.2s;">▶</span>';
         $debug_html .= '⚠️ ' . htmlspecialchars($hook_name) . ': Обнаружены незаполненные обязательные поля!';
+        $debug_html .= '<span style="font-size: 10px; font-weight: normal; color: #666; margin-left: auto;">(Debug info)</span>';
         $debug_html .= '</summary>';
         $debug_html .= '<div style="padding: 0 15px 15px 15px; border-top: 1px solid #dc3545;">';
         $debug_html .= '<p style="margin: 5px 0 10px 0; color: #721c24;">Нельзя скрывать поля - пользователь не сможет их заполнить!</p>';

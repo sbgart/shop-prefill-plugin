@@ -259,6 +259,11 @@ class shopPrefillPluginFrontendHooks
             'pluginID' => shopPrefillPlugin::PLUGIN_ID,
             'appUrl' => wa()->getAppUrl('shop'),
             'isDebug' => $this->is_debug,
+            'messages' => [
+                'validation_error_title' => _wp('zen.validation.error.title'),
+                'validation_error_message' => _wp('zen.validation.error.message'),
+                'validation_error_button' => _wp('zen.validation.error.button'),
+            ],
         ];
 
         $this->assets_manager->init(

@@ -7,7 +7,10 @@
     border-radius: 1.5em;
     padding: 0;
     max-width: 50em;
-    width: calc(100% - 2em - 6px);
+    overflow: hidden;
+    /* Чтобы хедер не вылезал за border-radius */
+    outline: none;
+    /* Убираем стандартную обводку фокуса */
 }
 
 .prefill-dialog::backdrop {
@@ -16,30 +19,50 @@
 
 .prefill-dialog__content {
     height: 100%;
-    padding: 1.5em;
+    padding: 0.5em 1.5em 2em;
+    /* Уменьшены отступы */
 }
 
 .prefill-dialog__loading {
     font-size: 1em;
 }
 
+
+.prefill-dialog__header {
+    display: flex;
+    align-items: flex-start;
+    /* Выравнивание по верхнему краю */
+    justify-content: space-between;
+    padding: 1.5em 1.5em 0.5em;
+    /* Уменьшены боковые отступы */
+}
+
+.prefill-dialog__title {
+    margin: 0;
+    font-size: 1.4em;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
 .prefill-dialog__close-button {
     cursor: pointer;
-    position: absolute;
+    position: relative;
+    /* Больше не absolute */
     width: 2em;
     height: 2em;
-    top: .8em;
-    right: .8em;
     background-color: #f1f1f1;
     border-radius: 50%;
     transition: .3s;
+    flex-shrink: 0;
+    margin-left: 1em;
 }
 
 .prefill-dialog__close-button:hover {
     background-color: #ececec;
 }
 
-.prefill-dialog__close-button:before, .prefill-dialog__close-button:after {
+.prefill-dialog__close-button:before,
+.prefill-dialog__close-button:after {
     content: "";
     position: absolute;
     width: 0.9em;
@@ -80,7 +103,7 @@
 }
 
 .prefill-params__card:hover {
- border-color: var(--prefill-accent-color);
+    border-color: var(--prefill-accent-color);
 }
 
 .prefill-params__card-title {

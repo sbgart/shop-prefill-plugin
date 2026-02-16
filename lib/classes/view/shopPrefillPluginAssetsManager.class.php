@@ -51,6 +51,7 @@ class shopPrefillPluginAssetsManager
         $add_js('js/modules/ConsentManager.js'); // зависит от HttpClient, Logger
         $add_js('js/modules/ParamsChoiceManager.js'); // зависит от HttpClient, DialogManager, Logger
         $add_js('js/modules/OrderFormManager.js'); // зависит от ParamsChoiceManager, Logger
+        $add_js('js/modules/ZenModeToggle.js'); // управление Zen Mode (без зависимостей)
 
         // Главный контроллер (координатор)
         $add_js('js/frontend.' . (!$is_debug ? 'min.' : '') . 'js?');

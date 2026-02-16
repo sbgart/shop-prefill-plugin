@@ -214,6 +214,35 @@
               <div style="font-weight: bold; font-size: 11px; color: #673ab7;">🧘 Toggle Zen Mode</div>
               <div style="font-size: 9px; color: #666;">Вкл/Выкл режим сворачивания</div>
             </div>
+
+            {* === VALIDATION === *}
+            <div style="
+                padding: 6px 12px;
+                background: #ffebee;
+                border-bottom: 2px solid #ef5350;
+                font-weight: bold;
+                font-size: 10px;
+                color: #c62828;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              ">
+              ⚠️ Validation
+            </div>
+
+            {* Toggle Validation *}
+            <div onclick="PrefillDebugHelper.toggleValidationErrors()" onmouseover="this.style.background='#f5f5f5'"
+              onmouseout="this.style.background='white'" style="
+                padding: 8px 12px;
+                cursor: pointer;
+              ">
+              {if $show_validation}
+              <div style="font-weight: bold; font-size: 11px; color: #c62828;">🚫 Disable Validation Debug</div>
+              <div style="font-size: 9px; color: #666;">Выключить отображение ошибок</div>
+              {else}
+              <div style="font-weight: bold; font-size: 11px; color: #2e7d32;">👁️ Enable Validation Debug</div>
+              <div style="font-size: 9px; color: #666;">Включить отображение ошибок</div>
+              {/if}
+            </div>
           </div>
         </div>
       </div>
@@ -555,7 +584,8 @@
                 </details>
                 {if $entry.errors_info && $entry.errors_info.has_errors}
                 <details>
-                  <summary style="cursor: pointer; color: #dc3545; font-size: 9px; user-select: none">⚠️ Errors</summary>
+                  <summary style="cursor: pointer; color: #dc3545; font-size: 9px; user-select: none">⚠️ Errors
+                  </summary>
                   <div style="
                     margin: 5px 0 0 0;
                     padding: 5px;
@@ -572,28 +602,31 @@
                       Шаг с ошибкой: <code>{$entry.errors_info.error_step_id|escape}</code>
                     </div>
                     {/if}
-                    {if $entry.errors_info.regular_errors && is_array($entry.errors_info.regular_errors) && count($entry.errors_info.regular_errors) > 0}
+                    {if $entry.errors_info.regular_errors && is_array($entry.errors_info.regular_errors) &&
+                    count($entry.errors_info.regular_errors) > 0}
                     <div style="margin-bottom: 5px;">
                       <strong style="color: #dc3545;">🚨 Критические:</strong>
                       <ul style="margin: 3px 0; padding-left: 15px;">
                         {foreach $entry.errors_info.regular_errors as $error}
                         <li style="margin: 2px 0;">
                           {if isset($error.name) && $error.name}
-                            <code>{$error.name|escape}</code>
+                          <code>{$error.name|escape}</code>
                           {else}
-                            <code style="color: #999;">unknown</code>
+                          <code style="color: #999;">unknown</code>
                           {/if}
                           {if isset($error.section) && $error.section}
                           <span style="color: #666; font-size: 8px;">({$error.section|escape})</span>
                           {/if}
-                          : {if isset($error.text) && $error.text}{$error.text|escape}{else}<span style="color: #999;">Unknown error</span>{/if}
+                          : {if isset($error.text) && $error.text}{$error.text|escape}{else}<span
+                            style="color: #999;">Unknown error</span>{/if}
                         </li>
                         {/foreach}
                       </ul>
                       {* Отладочный вывод сырых данных *}
                       <details style="margin-top: 5px; font-size: 8px;">
                         <summary style="cursor: pointer; color: #999;">🔍 Raw data</summary>
-                        <pre style="margin: 3px 0 0 0; padding: 3px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 2px; font-size: 7px; max-height: 100px; overflow: auto;">{$entry.errors_info.regular_errors|@print_r}</pre>
+                        <pre
+                          style="margin: 3px 0 0 0; padding: 3px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 2px; font-size: 7px; max-height: 100px; overflow: auto;">{$entry.errors_info.regular_errors|@print_r}</pre>
                       </details>
                     </div>
                     {/if}

@@ -23,10 +23,20 @@ class DialogManager {
             dialog.id = id;
             dialog.className = "prefill-dialog";
 
-            // Добавляем кнопку закрытия
+            // Добавляем хедер
+            const headerDiv = document.createElement("div");
+            headerDiv.className = "prefill-dialog__header";
+            dialog.appendChild(headerDiv);
+
+            // Добавляем заголовок в хедер
+            const titleElem = document.createElement("h3");
+            titleElem.className = "prefill-dialog__title";
+            headerDiv.appendChild(titleElem);
+
+            // Добавляем кнопку закрытия в хедер
             const closeButton = document.createElement("span");
             closeButton.className = "prefill-dialog__close-button";
-            dialog.prepend(closeButton);
+            headerDiv.appendChild(closeButton);
 
             this.attachCloseHandler(dialog, closeButton);
 
@@ -39,6 +49,20 @@ class DialogManager {
         }
 
         return dialog;
+    }
+
+    /**
+     * Устанавливает заголовок диалога
+     * 
+     * @param {string} id - ID диалога
+     * @param {string} titleText - Текст заголовка
+     */
+    setHeader(id, titleText) {
+        const dialog = this.getDialog(id);
+        const titleElem = dialog.querySelector(".prefill-dialog__title");
+        if (titleElem) {
+            titleElem.innerText = titleText || "";
+        }
     }
 
     /**
@@ -82,13 +106,6 @@ class DialogManager {
      * @param {HTMLElement} closeButton - Кнопка закрытия
      */
     attachCloseHandler(dialog, closeButton) {
-        // Закрытие при клике вне диалога
-        dialog.addEventListener("click", (event) => {
-            if (event.target === dialog) {
-                dialog.close();
-            }
-        });
-
         // Закрытие при клике на кнопку закрытия
         closeButton.addEventListener("click", () => {
             dialog.close();

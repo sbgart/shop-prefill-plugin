@@ -40,11 +40,6 @@ class shopPrefillPluginZenMode
     private waView $view;
 
     /**
-     * @var string Валюта магазина (кешируется для оптимизации)
-     */
-    private string $currency;
-
-    /**
      * @param array $zen_settings Настройки zen из storefront settings
      * @param waResponse|null $response Response объект для cookies
      * @param waView|null $view View объект для рендеринга
@@ -57,7 +52,6 @@ class shopPrefillPluginZenMode
         $this->settings = $zen_settings;
         $this->response = $response ?? wa()->getResponse();
         $this->view = $view ?? wa()->getView();
-        $this->currency = wa('shop')->getConfig()->getCurrency();
     }
 
     /**
@@ -470,9 +464,13 @@ class shopPrefillPluginZenMode
         // Подготавливаем данные для подстановки
         $data = $this->extractSummaryData($group, $params);
 
-        // Если шаблон пустой — ничего не выводим
+        // Если шаблон пустой — используем fallback
         if (empty($template)) {
-            return '';
+            $fallback = $this->renderFallbackSummary($group, $data);
+            if (empty(trim(strip_tags($fallback)))) {
+                return '';
+            }
+            return '<div class="prefill-zen-summary">' . $fallback . '</div>';
         }
 
         // Используем существующий View из Webasyst (не создаём новый Smarty!)
@@ -505,10 +503,19 @@ class shopPrefillPluginZenMode
                 }
             }
         } catch (Exception $e) {
-            return '';
+            // В случае ошибки используем fallback
+            $fallback = $this->renderFallbackSummary($group, $data);
+            if (empty(trim(strip_tags($fallback)))) {
+                return '';
+            }
+            return '<div class="prefill-zen-summary">' . $fallback . '</div>';
         }
 
-        // Проверяем, что сводка не пустая после рендеринга
+        // Очищаем лишние пробелы и разделители
+        $summary = preg_replace('/\s*•\s*$/', '', trim($summary));
+        $summary = preg_replace('/^\s*•\s*/', '', $summary);
+        $summary = preg_replace('/\s*•\s*•\s*/', ' • ', $summary);
+
         if (empty(trim(strip_tags($summary)))) {
             return '';
         }
@@ -516,6 +523,49 @@ class shopPrefillPluginZenMode
         return '<div class="prefill-zen-summary">' . $summary . '</div>';
     }
 
+    /**
+     * Fallback-рендер сводки на основе данных
+     *
+     * @param string $group Имя группы
+     * @param array $data Данные для подстановки
+     * @return string
+     */
+    private function renderFallbackSummary(string $group, array $data): string
+    {
+        switch ($group) {
+            case 'customer':
+                $parts = [];
+                if (!empty($data['company'])) {
+                    $parts[] = htmlspecialchars($data['company']);
+                }
+                $name = trim(($data['firstname'] ?? '') . ' ' . ($data['lastname'] ?? ''));
+                if (!empty($name)) {
+                    $parts[] = htmlspecialchars($name);
+                }
+                if (!empty($data['phone'])) {
+                    $parts[] = htmlspecialchars($data['phone']);
+                }
+                return implode(' • ', $parts);
+
+            case 'delivery':
+                $parts = [];
+                if (!empty($data['shipping_name'])) {
+                    $parts[] = htmlspecialchars($data['shipping_name']);
+                }
+                if (!empty($data['shipping_rate'])) {
+                    $parts[] = htmlspecialchars($data['shipping_rate']);
+                }
+                $line1 = implode(' • ', $parts);
+                $line2 = htmlspecialchars($data['city'] ?? '');
+                return $line1 . (!empty($line2) ? '<br>' . $line2 : '');
+
+            case 'payment':
+                return htmlspecialchars($data['payment_name'] ?? '');
+
+            default:
+                return '';
+        }
+    }
 
     /**
      * Извлекает данные для сводки из params чекаута
@@ -592,27 +642,17 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Форматирует цену для отображения в сводке
-     *
-     * Использует API Webasyst для форматирования с учётом валюты магазина.
-     * HTML-классы для стилизации:
-     * - <span class="prefill-zen-price-free"> - для "Бесплатно"
-     * - <span class="prefill-zen-price"> - для обычной цены
+     * Форматирует цену
      *
      * @param float|string $price Цена
-     * @return string HTML с форматированной ценой
+     * @return string
      */
     private function formatPrice($price): string
     {
         if (empty($price) || $price == 0) {
-            $free_text = _wp('zen.price.free');
-            return '<span class="prefill-zen-price-free">' . htmlspecialchars($free_text) . '</span>';
+            return 'Бесплатно';
         }
-        // Используем wa_currency_html() для правильного форматирования с учётом валюты
-        // %t - убирает trailing zeros (350.00 → 350)
-        // {h} - использует HTML-версию знака валюты
-        $formatted = wa_currency_html($price, $this->currency, '%t{h}');
-        return '<span class="prefill-zen-price">' . $formatted . '</span>';
+        return number_format((float) $price, 0, '', ' ') . ' ₽';
     }
 
     /**
@@ -633,5 +673,89 @@ class shopPrefillPluginZenMode
         }
     }
 
+    /**
+     * Генерирует JavaScript для обработки кликов на кнопках toggle
+     *
+     * @return string HTML с тегом <script>
+     */
+    public function generateJavaScript(): string
+    {
+        if (!$this->isActive()) {
+            return '';
+        }
+
+        return <<<'SCRIPT'
+<script id="prefill-zen-js">
+(function() {
+    'use strict';
+
+    // Проверяем, инициализирован ли уже обработчик, чтобы избежать множественных вызовов
+    if (window.prefillZenInitialized) {
+        return;
+    }
+    window.prefillZenInitialized = true;
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.js-prefill-zen-toggle');
+        if (!btn) return;
+
+        e.preventDefault();
+
+        var group = btn.dataset.group;
+        var action = btn.dataset.action;
+        var cookieName = 'prefill_zen_' + group;
+
+        if (action === 'expand') {
+            // Разворачивание: просто устанавливаем cookie и обновляем
+            document.cookie = cookieName + '=expanded; path=/; SameSite=Lax';
+            if (window.waOrder && window.waOrder.form) {
+                window.waOrder.form.update();
+            }
+        } else {
+            // Сворачивание: сначала валидация
+            if (!window.waOrder || !window.waOrder.form) {
+                return;
+            }
+
+            var form = window.waOrder.form;
+            var sections = getSectionsForGroup(group);
+            console.log(sections);
+            // Валидируем только нужную секцию вручную, чтобы избежать перерисовки других секций
+            var hasErrors = false;
+            sections.forEach(function(sectionName) {
+                var section = form.sections[sectionName];
+                if (section && typeof section.getData === 'function') {
+                    var sectionData = section.getData({
+                        clean: false,
+                        render_errors: true
+                    });
+                    if (sectionData.errors && sectionData.errors.length > 0) {
+                        hasErrors = true;
+                    }
+                }
+            });
+
+            if (!hasErrors) {
+                // Валидация успешна → устанавливаем cookie и делаем полный update
+                document.cookie = cookieName + '=collapsing; path=/; SameSite=Lax';
+                form.update();
+            }
+
+        }
+
+        // Маппинг групп → секций
+        function getSectionsForGroup(group) {
+            var mapping = {
+                'customer': ['auth'],
+                'delivery': ['region', 'shipping', 'details'],
+                'payment': ['payment']
+            };
+            return mapping[group] || [];
+        }
+    });
+})();
+</script>
+SCRIPT;
+    }
 }
 

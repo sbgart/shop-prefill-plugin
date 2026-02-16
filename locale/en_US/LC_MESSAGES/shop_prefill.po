@@ -125,3 +125,12 @@ msgstr ""
 
 msgid "Неизвестное действие"
 msgstr ""
+
+msgid "Edit"
+msgstr "Edit"
+
+msgid "Collapse"
+msgstr "Collapse"
+
+msgid "zen.price.free"
+msgstr "Free"

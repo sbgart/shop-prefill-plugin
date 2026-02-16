@@ -3,7 +3,6 @@
  * 
  * Ответственность:
  * - Обработка событий формы заказа (ready, region_changed, details_changed)
- * - Управление валидацией для Zen Mode
  * 
  * Зависимости: ParamsChoiceManager, Logger
  */
@@ -11,10 +10,12 @@ class OrderFormManager {
     /**
      * @param {ParamsChoiceManager} paramsChoiceManager - Менеджер выбора параметров
      * @param {Logger} logger - Логгер
+     * @param {ZenModeToggle} zenModeToggle - Менеджер Zen Mode
      */
-    constructor(paramsChoiceManager, logger) {
+    constructor(paramsChoiceManager, logger, zenModeToggle) {
         this.paramsChoiceManager = paramsChoiceManager;
         this.logger = logger;
+        this.zenModeToggle = zenModeToggle;
     }
 
     /**
@@ -48,8 +49,10 @@ class OrderFormManager {
         this.paramsChoiceManager.renderLink();
         this.logger.log("Order form ready, try render link");
 
-        // Проверяем флаг для запуска валидации при ошибках сворачивания
-        this.handleZenValidation(form);
+        // Инициализируем Zen Mode при готовности формы
+        if (this.zenModeToggle) {
+            this.zenModeToggle.init();
+        }
     }
 
     /**
@@ -58,6 +61,7 @@ class OrderFormManager {
     handleRegionChanged() {
         this.paramsChoiceManager.renderLink();
         this.logger.log("Order form region changed, try render link");
+
     }
 
     /**
@@ -66,33 +70,6 @@ class OrderFormManager {
     handleDetailsChanged() {
         this.paramsChoiceManager.renderLink();
         this.logger.log("Order form region changed, try render link");
-    }
-
-    /**
-     * Обрабатывает валидацию для Zen Mode
-     * 
-     * @param {Object} form - Объект формы Shop-Script
-     */
-    handleZenValidation(form) {
-        if (window.prefillZenTriggerValidation) {
-            this.logger.log("Zen validation flag detected, triggering full form validation");
-
-            // Вызываем полную валидацию через update() (включая проверку доставки/оплаты)
-            if (form && typeof form.update === "function") {
-                form.update({
-                    render_errors: true
-                }).fail((state, errors) => {
-                    this.logger.log("Form validation detected errors: " + (errors ? errors.length : 0));
-                }).done(() => {
-                    this.logger.log("Form validation passed");
-                });
-            } else {
-                this.logger.warn("Form update method not available");
-            }
-
-            // Сбрасываем флаг
-            window.prefillZenTriggerValidation = false;
-        }
     }
 
 

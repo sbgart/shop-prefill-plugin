@@ -163,3 +163,21 @@ msgstr "Шаблон сводки: Доставка"
 
 msgid "zen.template.payment"
 msgstr "Шаблон сводки: Оплата"
+
+msgid "Edit"
+msgstr "Изменить"
+
+msgid "Collapse"
+msgstr "Свернуть"
+
+msgid "zen.price.free"
+msgstr "Бесплатно"
+
+msgid "zen.validation.error.title"
+msgstr "Ой! Кажется, не все поля заполнены"
+
+msgid "zen.validation.error.message"
+msgstr "Проверьте форму — под некоторыми полями есть подсказки."
+
+msgid "zen.validation.error.button"
+msgstr "Сейчас проверю"

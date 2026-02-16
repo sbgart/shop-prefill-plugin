@@ -335,41 +335,56 @@ document.querySelector(".prefill-zen-collapse-delivery").addEventListener("click
 ### JavaScript: Валидация при сворачивании
 
 > [!IMPORTANT]
-> **Изменение 2026-02-14:** Заменён `form.validate()` на `form.update({ render_errors: true })` для полной валидации.
+> **Изменение 2026-02-15:** Реализована JS-валидация с двойной защитой. Кнопка "Свернуть" теперь **всегда видна** в развёрнутой секции.
 
-**Проблема:**
+### JavaScript: Валидация при сворачивании с двойной защитой
 
-- `form.validate()` проверяет только стандартные поля (required, email, phone)
-- НЕ проверяет выбор доставки (shipping type/variant) и оплаты (payment method)
-- Эти проверки выполняются только в методе `getData()` секций при submit
+**Архитектура:**
+
+- **JS-валидация** (UX) — проверяет перед установкой cookie, показывает ошибки сразу
+- **PHP-валидация** (безопасность) — проверяет при рендере, защита от race conditions
 
 **Решение:**
 
 ```javascript
-// В OrderFormManager.js
-handleZenValidation(form) {
-    if (window.prefillZenTriggerValidation) {
-        // Используем form.update() вместо form.validate()
-        // update() выполняет полную валидацию включая доставку/оплату
-        form.update({
-            render_errors: true
-        }).fail((state, errors) => {
-            // Обрабатываем ошибки: скроллим к первой ошибке
-            if (errors && errors.length > 0) {
-                const firstError = errors[0];
-                if (firstError.$wrapper) {
-                    firstError.$wrapper[0].scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }
-            }
+// Встроено в generateJavaScript() - не требует отдельного модуля
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.js-prefill-zen-toggle');
+    if (!btn) return;
+    
+    var group = btn.dataset.group;
+    var action = btn.dataset.action;
+    
+    if (action === 'collapse') {
+        var sections = getSectionsForGroup(group);
+        
+        // 1. JS-валидация группы секций
+        window.waOrder.form.update({
+            render_errors: true,
+            sections: sections
+        }).done(function() {
+            // 2. Нет ошибок → устанавливаем cookie
+            document.cookie = 'prefill_zen_' + group + '=collapsing; path=/; SameSite=Lax';
+            
+            // 3. Обновляем форму → PHP отрендерит свёрнутую секцию
+            // PHP повторно проверит ошибки (защита от race conditions)
+            window.waOrder.form.update();
         });
-
-        window.prefillZenTriggerValidation = false;
+        // .fail() обрабатывать не нужно — ошибки уже показаны
     }
-}
+});
 ```
+
+**Преимущества:**
+
+- Валидация на клиенте перед установкой cookie (UX)
+- PHP повторно проверяет при рендере (безопасность)
+- Кнопка "Свернуть" всегда видна → лучший UX
+- Защита от race conditions между запросами
+
+**Почему двойная проверка?**
+
+JS может проверить → ошибок нет → установить cookie → но между запросами данные изменились → PHP проверяет заново при рендере.
 
 **Цепочка валидации при submit:**
 
@@ -385,10 +400,48 @@ Submit → update() → getFormData() → секции.getData() → прове�
 - Показывает ошибки визуально через `render_errors: true`
 - Возвращает Promise с ошибками в `.fail()`
 
+### Поток сворачивания с JS-валидацией
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant JS
+    participant formValidate as form.update(validate)
+    participant formUpdate as form.update()
+    participant PHP
+
+    User->>JS: Клик "Свернуть"
+    JS->>formValidate: validate(sections)
+    
+    alt Есть ошибки (JS)
+        formValidate-->>JS: fail(errors)
+        Note over JS: Cookie НЕ установлена<br/>Секция остаётся развёрнутой<br/>Ошибки показаны
+    else Нет ошибок (JS)
+        formValidate-->>JS: done()
+        JS->>JS: Set cookie=collapsing
+        JS->>formUpdate: update()
+        formUpdate->>PHP: request
+        PHP->>PHP: shouldCollapseGroup()<br/>проверка ошибок
+        
+        alt Есть ошибки (PHP)
+            PHP->>PHP: return false (не сворачивать)
+            Note over PHP: Защита от race conditions
+            PHP-->>formUpdate: HTML развёрнутой секции
+        else Нет ошибок (PHP)
+            PHP->>PHP: return true (свернуть)
+            PHP-->>formUpdate: HTML свёрнутой секции
+        end
+        
+        formUpdate-->>JS: Перерисовка DOM
+    end
+```
+
 ### Размещение кнопок в конце секции
 
 > [!IMPORTANT]
-> **Кнопки «Изменить» и «Свернуть» размещаются в конце секции через хуки**, а не в header. Это логичное расположение для действия "свернуть/развернуть" и не требует манипуляций со стандартным header Shop-Script.
+> **Изменение 2026-02-15:** Кнопка "Свернуть" теперь **всегда видна** в развёрнутой секции, независимо от ошибок.
+
+**Кнопки «Изменить» и «Свернуть» размещаются в конце секции через хуки**, а не в header. Это логичное расположение для действия "свернуть/развернуть" и не требует манипуляций со стандартным header Shop-Script.
 
 **Принцип:**
 
@@ -396,10 +449,10 @@ Submit → update() → getFormData() → секции.getData() → прове�
 - В конце секции через хук выводится `.prefill-zen-collapse-block` с кнопкой и сводкой
 - Кнопка меняет текст в зависимости от состояния (свёрнуто/развёрнуто)
 
-| Состояние  | Что показывает блок управления               |
-| ---------- | -------------------------------------------- |
-| Свёрнуто   | Сводка данных + кнопка «Изменить»            |
-| Развёрнуто | Только кнопка «Свернуть» (сводка скрывается) |
+| Состояние  | Что показывает блок управления    |
+| ---------- | --------------------------------- |
+| Свёрнуто   | Сводка данных + кнопка «Изменить» |
+| Развёрнуто | Кнопка «Свернуть» (всегда)        |
 
 ### Поведение сводки
 
