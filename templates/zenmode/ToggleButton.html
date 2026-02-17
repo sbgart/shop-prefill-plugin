@@ -1,25 +1,27 @@
 {*
- * Zen Mode Toggle Button
- * Кнопка сворачивания/разворачивания группы
- *
- * @param string $group Имя группы (customer, delivery, payment)
- * @param bool $is_collapsed Состояние группы (свёрнута/развёрнута)
- *}
+* Zen Mode Toggle Button
+* Кнопка сворачивания/разворачивания группы
+*
+* @param string $group Имя группы (customer, delivery, payment)
+* @param bool $is_collapsed Состояние группы (свёрнута/развёрнута)
+*}
 
 {if $is_collapsed}
-  {* Свёрнуто: кнопка "Изменить", стрелка вниз *}
-  <span class="wa-link js-prefill-zen-toggle prefill-zen-expand" data-group="{$group|escape}" data-action="expand">
-    {_wp("Edit")}&nbsp;&nbsp;
-    <svg class="wa-icon size-8 prefill-zen-arrow" style="vertical-align: middle;">
-      <use xlink:href="/wa-apps/shop/img/frontend/order/svg/sprite.svg?v{$wa->version(true)}#arrow-bottom"></use>
-    </svg>
-  </span>
+{* Свёрнуто: кнопка "Изменить", стрелка вниз *}
+<span class="wa-link prefill-zen-toggle-btn js-prefill-zen-toggle prefill-zen-expand" data-group="{$group|escape}"
+  data-action="expand">
+  {_wp("Edit")}&nbsp;&nbsp;
+  <svg class="wa-icon size-8 prefill-zen-arrow" style="vertical-align: middle;">
+    <use xlink:href="/wa-apps/shop/img/frontend/order/svg/sprite.svg?v{$wa->version(true)}#arrow-bottom"></use>
+  </svg>
+</span>
 {else}
-  {* Развёрнуто: кнопка "Свернуть", стрелка вверх (перевёрнута) *}
-  <span class="wa-link js-prefill-zen-toggle prefill-zen-collapse" data-group="{$group|escape}" data-action="collapse">
-    {_wp("Collapse")}&nbsp;
-    <svg class="wa-icon size-8 prefill-zen-arrow prefill-zen-arrow-up" style="vertical-align: middle;">
-      <use xlink:href="/wa-apps/shop/img/frontend/order/svg/sprite.svg?v{$wa->version(true)}#arrow-bottom"></use>
-    </svg>
-  </span>
+{* Развёрнуто: кнопка "Свернуть", стрелка вверх (перевёрнута) *}
+<span class="wa-link prefill-zen-toggle-btn js-prefill-zen-toggle prefill-zen-collapse" data-group="{$group|escape}"
+  data-action="collapse">
+  {_wp("Collapse")}&nbsp;&nbsp;
+  <svg class="wa-icon size-8 prefill-zen-arrow prefill-zen-arrow-up" style="vertical-align: middle;">
+    <use xlink:href="/wa-apps/shop/img/frontend/order/svg/sprite.svg?v{$wa->version(true)}#arrow-bottom"></use>
+  </svg>
+</span>
 {/if}

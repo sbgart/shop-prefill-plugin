@@ -302,10 +302,12 @@ class shopPrefillPlugin extends shopPlugin
     {
         if ($this->zen_mode === null) {
             $storefront_settings = $this->getStorefrontSettings();
+            $view = wa()->getView();
             $this->zen_mode = new shopPrefillPluginZenMode(
                 $storefront_settings['zen'] ?? [],
                 wa()->getResponse(),
-                wa()->getView()
+                $view,
+                new shopPrefillPluginZenData($view)
             );
         }
         return $this->zen_mode;

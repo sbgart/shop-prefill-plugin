@@ -33,6 +33,7 @@ return [
     // Zen Mode — сворачивание секций чекаута
     'zen' => [
         'active' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+        'show_icons' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'groups' => [
             'customer' => [
                 'enabled' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
@@ -42,12 +43,15 @@ return [
             'delivery' => [
                 'enabled' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon' => ['value' => ''],
-                'summary_template' => ['value' => '{$shipping_name} • {$shipping_rate}'],
+                'summary_template' => ['value' => '<strong>{$delivery_service_name}</strong><br />{$shipping_name} • {$shipping_rate}'],
+                'summary_template_pickup' => ['value' => '<strong>{$delivery_service_name}</strong><br />{$shipping_name} • {$shipping_rate} <br />Срок хранения заказа — {$delivery_storage_days} дней'],
+                'summary_template_todoor' => ['value' => '<strong>{$delivery_service_name}</strong><br />{$shipping_name} • {$shipping_rate}'],
+                'summary_template_post' => ['value' => '<strong>{$delivery_service_name}</strong><br />{$shipping_name} • {$shipping_rate} <br /> {$street}'],
             ],
             'payment' => [
                 'enabled' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon' => ['value' => ''],
-                'summary_template' => ['value' => '{$payment_name}'],
+                'summary_template' => ['value' => '<strong>{$payment_name}</strong><br />{$payment_description}'],
             ],
         ],
     ],

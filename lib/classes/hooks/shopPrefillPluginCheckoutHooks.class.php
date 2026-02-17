@@ -340,28 +340,4 @@ class shopPrefillPluginCheckoutHooks
         ];
     }
 
-    /**
-     * Проверяет, существует ли секция details (адресные поля доставки)
-     *
-     * Секция details может отсутствовать если:
-     * - Доставка отключена (shipping.used = false)
-     * - Нет адресных полей для выбранной доставки
-     * - Выбран пункт выдачи без адресных полей
-     *
-     * @param array $params Параметры checkout хука
-     * @return bool
-     */
-    private function hasDetailsSection(array $params): bool
-    {
-        // Проверяем, используется ли доставка
-        $shipping_used = ifset($params, 'data', 'shipping', 'used', false);
-        if (!$shipping_used) {
-            return false;
-        }
-
-        // Проверяем, существует ли секция details в $params['steps']
-        // Если она существует - значит Webasyst планирует её рендерить
-        $steps = ifset($params, 'steps', []);
-        return in_array('details', $steps, true);
-    }
 }

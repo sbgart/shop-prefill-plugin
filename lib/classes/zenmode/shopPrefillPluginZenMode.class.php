@@ -40,9 +40,9 @@ class shopPrefillPluginZenMode
     private waView $view;
 
     /**
-     * @var string Валюта магазина (кешируется для оптимизации)
+     * @var shopPrefillPluginZenData Объект для подготовки данных шаблонов
      */
-    private string $currency;
+    private shopPrefillPluginZenData $zen_data;
 
     /**
      * @param array $zen_settings Настройки zen из storefront settings
@@ -52,12 +52,13 @@ class shopPrefillPluginZenMode
     public function __construct(
         array $zen_settings,
         ?waResponse $response = null,
-        ?waView $view = null
+        ?waView $view = null,
+        ?shopPrefillPluginZenData $zen_data = null
     ) {
         $this->settings = $zen_settings;
         $this->response = $response ?? wa()->getResponse();
         $this->view = $view ?? wa()->getView();
-        $this->currency = wa('shop')->getConfig()->getCurrency();
+        $this->zen_data = $zen_data ?? new shopPrefillPluginZenData($this->view);
     }
 
     /**
@@ -68,6 +69,16 @@ class shopPrefillPluginZenMode
     public function isActive(): bool
     {
         return !empty($this->settings['active']);
+    }
+
+    /**
+     * Проверяет, нужно ли показывать иконки в свернутом состоянии
+     *
+     * @return bool
+     */
+    public function shouldShowIcons(): bool
+    {
+        return isset($this->settings['show_icons']) && !empty($this->settings['show_icons']);
     }
 
     /**
@@ -83,17 +94,7 @@ class shopPrefillPluginZenMode
             && !empty($this->settings['groups'][$group]['enabled']);
     }
 
-    /**
-     * Проверяет, развернута ли группа пользователем (по cookie)
-     *
-     * @param string $group Имя группы
-     * @return bool
-     */
-    public function isExpandedByUser(string $group): bool
-    {
-        $cookie_name = self::COOKIE_PREFIX . $group;
-        return waRequest::cookie($cookie_name) === 'expanded';
-    }
+
 
     /**
      * Определяет, нужно ли сворачивать группу
@@ -343,37 +344,51 @@ class shopPrefillPluginZenMode
 
     // ==================== COLLAPSE BLOCK ====================
 
-    /**
-     * Локализованные имена групп
-     */
-    const GROUP_NAMES = [
-        'customer' => 'Покупатель',
-        'delivery' => 'Доставка',
-        'payment' => 'Оплата',
-    ];
-
-    /**
-     * Возвращает локализованное имя группы
-     *
-     * @param string $group Имя группы
-     * @return string
-     */
-    public function getGroupName(string $group): string
-    {
-        // TODO: использовать _wp() для локализации
-        return self::GROUP_NAMES[$group] ?? ucfirst($group);
-    }
 
     /**
      * Возвращает шаблон сводки для группы
      *
      * @param string $group Имя группы
+     * @param array $params Данные чекаута (нужны для определения типа доставки)
      * @return string
      */
-    public function getSummaryTemplate(string $group): string
+    public function getSummaryTemplate(string $group, array $params = []): string
     {
         $group_settings = $this->getGroupSettings($group);
+
+        // Для delivery пытаемся найти специфичный шаблон
+        if ($group === 'delivery' && !empty($params)) {
+            $delivery_type = $this->getDeliveryType($params);
+            if (!empty($delivery_type)) {
+                $type_template_key = 'summary_template_' . $delivery_type;
+                if (!empty($group_settings[$type_template_key])) {
+                    return $group_settings[$type_template_key];
+                }
+            }
+        }
+
         return $group_settings['summary_template'] ?? '';
+    }
+
+    /**
+     * Определяет тип доставки из параметров чекаута
+     *
+     * @param array $params
+     * @return string 'pickup', 'todoor', 'post' или пустая строка
+     */
+    private function getDeliveryType(array $params): string
+    {
+        // 1. Пробуем получить из selected_variant (массив или объект)
+        $selected_variant = $params['data']['shipping']['selected_variant'] ?? $params['vars']['shipping']['selected_variant'] ?? null;
+
+        if (!empty($selected_variant)) {
+            // Если это массив
+            if (is_array($selected_variant)) {
+                return $selected_variant['type'] ?? '';
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -387,7 +402,7 @@ class shopPrefillPluginZenMode
      */
     public function renderCollapseBlock(string $group, array $params, bool $is_collapsed = true): string
     {
-        $output = '<div class="prefill-zen-collapse-block">';
+
 
         // Проверяем состояние cookie для обработки collapsing
         $cookie_state = waRequest::cookie(self::COOKIE_PREFIX . $group);
@@ -425,37 +440,25 @@ class shopPrefillPluginZenMode
             );
         }
 
+
         if ($is_collapsed) {
-            // Свёрнуто: сводка + кнопка "Изменить"
-            $summary = $this->renderGroupSummary($group, $params);
-            if (!empty($summary)) {
-                $output .= $summary;
+            // Иконка группы (если включена)
+            if ($this->shouldShowIcons()) {
+                $icon_url = $this->getGroupIcon($group);
             }
+
+            // Свёрнуто: сводка + кнопка "Изменить"
+            $summary_html = $this->renderGroupSummary($group, $params);
         }
 
-        // Рендерим кнопку через шаблон
-        $output .= $this->renderToggleButton($group, $is_collapsed);
-
-        $output .= '</div>';
-        return $output;
-    }
-
-    /**
-     * Рендерит кнопку toggle через шаблон
-     *
-     * @param string $group Имя группы
-     * @param bool $is_collapsed Состояние группы
-     * @return string HTML
-     * @throws waException
-     */
-    private function renderToggleButton(string $group, bool $is_collapsed): string
-    {
         $this->view->assign([
             'group' => $group,
             'is_collapsed' => $is_collapsed,
+            'icon_url' => $icon_url ?? null,
+            'summary_html' => $summary_html ?? null,
         ]);
 
-        $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/ToggleButton.html';
+        $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/CollapseBlock.html';
         return $this->view->fetch('file:' . $template_path);
     }
 
@@ -468,10 +471,10 @@ class shopPrefillPluginZenMode
      */
     public function renderGroupSummary(string $group, array $params): string
     {
-        $template = $this->getSummaryTemplate($group);
+        $template = $this->getSummaryTemplate($group, $params);
 
-        // Подготавливаем данные для подстановки
-        $data = $this->extractSummaryData($group, $params);
+        // Подготавливаем данные для подстановки через ZenData
+        $data = $this->zen_data->extractSummaryData($group, $params);
 
         // Если шаблон пустой — ничего не выводим
         if (empty($template)) {
@@ -516,107 +519,11 @@ class shopPrefillPluginZenMode
             return '';
         }
 
-        return '<div class="prefill-zen-summary">' . $summary . '</div>';
+        return $summary;
     }
 
 
-    /**
-     * Извлекает данные для сводки из params чекаута
-     *
-     * @param string $group Имя группы
-     * @param array $params Данные чекаута
-     * @return array
-     */
-    private function extractSummaryData(string $group, array $params): array
-    {
-        // Инициализируем все ключи по умолчанию
-        $data = [
-            'firstname' => '',
-            'lastname' => '',
-            'phone' => '',
-            'email' => '',
-            'company' => '',
-            'shipping_name' => '',
-            'shipping_rate' => '',
-            'city' => '',
-            'region' => '',
-            'street' => '',
-            'building' => '',
-            'apartment' => '',
-            'zip' => '',
-            'payment_name' => '',
-        ];
 
-        // === ДАННЫЕ КОНТАКТА ===
-        // Приоритет: vars → input
-        $auth_fields = $params['vars']['auth']['fields'] ?? [];
-        $auth_input = $params['data']['input']['auth']['data'] ?? [];
-
-        $data['firstname'] = $auth_fields['firstname']['value'] ?? $auth_input['firstname'] ?? '';
-        $data['lastname'] = $auth_fields['lastname']['value'] ?? $auth_input['lastname'] ?? '';
-        $data['phone'] = $auth_fields['phone']['value'] ?? $auth_input['phone'] ?? '';
-        $data['email'] = $auth_fields['email']['value'] ?? $auth_input['email'] ?? '';
-        $data['company'] = $auth_fields['company']['value'] ?? $auth_input['company'] ?? '';
-
-        // === ДАННЫЕ ДОСТАВКИ ===
-        // Приоритет: data.shipping.selected_variant → vars.shipping.shipping_rate
-        $selected_variant = $params['data']['shipping']['selected_variant'] ?? [];
-        $shipping_rate_data = $params['vars']['shipping']['shipping_rate'] ?? [];
-
-        $data['shipping_name'] = $selected_variant['name'] ?? $shipping_rate_data['name'] ?? '';
-        $shipping_rate_raw = $selected_variant['rate'] ?? $shipping_rate_data['rate'] ?? null;
-        $data['shipping_rate'] = $shipping_rate_raw !== null ? $this->formatPrice($shipping_rate_raw) : '';
-
-        // === ДАННЫЕ АДРЕСА ===
-        // Приоритет: data.shipping.address → input.region → vars.region.selected_values
-        $shipping_address = $params['data']['shipping']['address'] ?? [];
-        $region_input = $params['data']['input']['region'] ?? [];
-        $region_selected = $params['vars']['region']['selected_values'] ?? [];
-        $details_address = $params['data']['input']['details']['shipping_address'] ?? [];
-
-        $data['city'] = $shipping_address['city'] ?? $region_input['city'] ?? $region_selected['city'] ?? '';
-        $data['region'] = $shipping_address['region'] ?? $region_input['region'] ?? $region_selected['region_id'] ?? '';
-        $data['zip'] = $shipping_address['zip'] ?? $region_input['zip'] ?? $region_selected['zip'] ?? '';
-        $data['street'] = $shipping_address['street'] ?? $details_address['street'] ?? '';
-        $data['building'] = $shipping_address['building'] ?? $details_address['building'] ?? '';
-        $data['apartment'] = $shipping_address['apartment'] ?? $details_address['apartment'] ?? '';
-
-        // === ДАННЫЕ ОПЛАТЫ ===
-        // Извлекаем ID оплаты и находим название в methods
-        $payment_id = $params['data']['payment']['id'] ?? '';
-        if (!empty($payment_id)) {
-            $payment_methods = $params['vars']['payment']['methods'] ?? [];
-            if (isset($payment_methods[$payment_id])) {
-                $data['payment_name'] = $payment_methods[$payment_id]['name'] ?? '';
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * Форматирует цену для отображения в сводке
-     *
-     * Использует API Webasyst для форматирования с учётом валюты магазина.
-     * HTML-классы для стилизации:
-     * - <span class="prefill-zen-price-free"> - для "Бесплатно"
-     * - <span class="prefill-zen-price"> - для обычной цены
-     *
-     * @param float|string $price Цена
-     * @return string HTML с форматированной ценой
-     */
-    private function formatPrice($price): string
-    {
-        if (empty($price) || $price == 0) {
-            $free_text = _wp('zen.price.free');
-            return '<span class="prefill-zen-price-free">' . htmlspecialchars($free_text) . '</span>';
-        }
-        // Используем wa_currency_html() для правильного форматирования с учётом валюты
-        // %t - убирает trailing zeros (350.00 → 350)
-        // {h} - использует HTML-версию знака валюты
-        $formatted = wa_currency_html($price, $this->currency, '%t{h}');
-        return '<span class="prefill-zen-price">' . $formatted . '</span>';
-    }
 
     /**
      * Очищает cookies состояния всех групп Zen Mode

@@ -6,15 +6,34 @@
 .prefill-zen-collapse-block {
   margin-top: 16px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
+}
+
+.js-prefill-zen-toggle {
+  cursor: pointer;
+}
+
+.prefill-zen-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Сводка данных (когда свёрнуто) */
 .prefill-zen-summary {
-  flex: 1;
   color: var(--text-color-secondary, #777);
   font-size: 14px;
+  line-height: 1.5em;
+}
+
+/* Иконка секции */
+.prefill-zen-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 
@@ -22,7 +41,7 @@
 
 
 /* Иконка стрелки в кнопках */
-.js-prefill-zen-toggle .wa-icon.prefill-zen-arrow {
+.prefill-zen-toggle-btn .wa-icon.prefill-zen-arrow {
   display: inline-block;
   width: 8px;
   height: 8px;
@@ -35,13 +54,25 @@
 }
 
 /* SVG внутри иконки */
-.js-prefill-zen-toggle .wa-icon svg {
+.prefill-zen-toggle-btn .wa-icon svg {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-.js-prefill-zen-toggle:hover .prefill-zen-arrow-up {
+/* Кнопка переключения Zen-режима (Изменить / Свернуть) увеличенная область клика */
+.prefill-zen-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 5px 6px;
+  margin: -5px -6px;
+  /* cursor: pointer; -- курсор есть уже у родителя, но можно оставить для явности, хотя не обязательно */
+}
+
+/* При наведении на весь блок (так как он теперь триггер) или на саму кнопку */
+.prefill-zen-collapse-block:hover .prefill-zen-arrow-up,
+.prefill-zen-toggle-btn:hover .prefill-zen-arrow-up {
   transform: rotate(180deg);
 }
 
