@@ -97,7 +97,7 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
                 'show_validation' => waRequest::cookie('wa_prefill_debug_show_validation', 0),
             ]);
 
-            $template_path = shopPrefillPlugin::getPluginPath() . '/templates/';
+            $template_path = shopPrefillPlugin::getPluginPath() . '/templates/debug/';
 
             $this->response['html_status'] = $view->fetch('file:' . $template_path . 'DebugStatusPanel.html');
             $this->response['html_storage'] = $view->fetch('file:' . $template_path . 'DebugStorageDetails.html');

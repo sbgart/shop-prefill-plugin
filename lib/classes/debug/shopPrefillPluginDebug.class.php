@@ -281,7 +281,7 @@ class shopPrefillPluginDebug
             $view = wa()->getView();
             $view->assign($template_vars);
             $debug_html = $view->fetch('string:' . file_get_contents(
-                shopPrefillPlugin::getPluginPath() . '/templates/DebugStack.html'
+                shopPrefillPlugin::getPluginPath() . '/templates/debug/DebugStack.html'
             ));
 
             // Экранируем HTML для JavaScript
