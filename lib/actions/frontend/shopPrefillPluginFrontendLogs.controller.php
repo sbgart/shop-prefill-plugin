@@ -7,12 +7,22 @@ class shopPrefillPluginFrontendLogsController extends waJsonController
         $message = waRequest::post('message', null);
         $type = waRequest::post('type', 'log');
 
-        $file_name = shopPrefillPlugin::PLUGIN_ID . "." . shopPrefillPlugin::APP_ID;
-
-        if ($type !== 'log') {
-            $file_name .= ".{$type}";
+        switch ($type) {
+            case 'error':
+                shopPrefillPluginLog::error("[Frontend] {$message}");
+                break;
+            case 'warn':
+            case 'warning':
+                shopPrefillPluginLog::warning("[Frontend] {$message}");
+                break;
+            case 'info':
+                shopPrefillPluginLog::info("[Frontend] {$message}");
+                break;
+            case 'debug':
+            case 'log':
+            default:
+                shopPrefillPluginLog::debug("[Frontend] {$message}");
+                break;
         }
-
-        waLog::log($message, "{$file_name}.log");
     }
 }

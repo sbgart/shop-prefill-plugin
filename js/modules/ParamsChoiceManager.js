@@ -84,9 +84,9 @@ class ParamsChoiceManager {
             };
 
             sectionHeader.appendChild(paramsChoiceLink);
-            this.logger.info("Link has been successfully added");
+            this.logger.info("'My Addresses' link has been successfully added to the Region section");
         } else {
-            this.logger.info("Link already exists");
+            this.logger.debug("'My Addresses' link already exists in the Region section");
         }
     }
 }

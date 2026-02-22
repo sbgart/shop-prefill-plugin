@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Контроллер для сброса флага first_prefill_done
+ * Контроллер для сброса checkout сессии (ранее сбрасывал флаг first_prefill_done)
  * Используется для дебага через кнопку в debug окне
  */
 class shopPrefillPluginFrontendResetFirstPrefillDoneController extends waJsonController
@@ -16,20 +16,20 @@ class shopPrefillPluginFrontendResetFirstPrefillDoneController extends waJsonCon
             /** @var shopPrefillPlugin $plugin */
             $plugin = wa('shop')->getPlugin('prefill');
             $session_storage = $plugin->getSessionStorageProvider();
-            
-            $success = $session_storage->resetFirstPrefillDoneFlag();
 
-            if ($success) {
-                $this->response = [
-                    'status' => 'ok',
-                    'message' => 'First prefill done flag reset.'
-                ];
-            } else {
-                $this->errors = [
-                    'error' => 'Failed to reset flag or session is empty'
-                ];
-            }
+            // Флага first_prefill_done больше нет — секции контролируются через isSectionFilled().
+            // Для сброса достаточно очистить checkout сессию целиком.
+            $session_storage->getStorage()->remove('shop/checkout');
+            $session_storage->prefilled = false;
+
+            $this->response = [
+                'status' => 'ok',
+                'message' => 'Checkout session cleared. Prefill will run on next request.'
+            ];
         } catch (Exception $e) {
+            shopPrefillPluginLog::error('Failed resetting checkout session in shopPrefillPluginFrontendResetFirstPrefillDoneController', [
+                'message' => $e->getMessage()
+            ]);
             $this->errors = [
                 'error' => $e->getMessage()
             ];

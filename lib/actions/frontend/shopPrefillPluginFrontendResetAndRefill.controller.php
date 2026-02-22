@@ -26,6 +26,9 @@ class shopPrefillPluginFrontendResetAndRefillController extends waJsonController
                 'message' => 'Form cleared and refilled successfully'
             ];
         } catch (Exception $e) {
+            shopPrefillPluginLog::error('Failed resetting and refilling form in shopPrefillPluginFrontendResetAndRefillController', [
+                'message' => $e->getMessage()
+            ]);
             $this->errors = [
                 'error' => $e->getMessage()
             ];

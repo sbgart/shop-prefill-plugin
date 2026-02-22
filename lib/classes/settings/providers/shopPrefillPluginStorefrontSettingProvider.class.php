@@ -68,5 +68,10 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
         // Очищаем кэш после сохранения
         $cache = new waRuntimeCache('prefill_settings_' . $storefront_code);
         $cache->delete();
+
+        shopPrefillPluginLog::info('Storefront settings saved', [
+            'storefront_code' => $storefront_code,
+            'updated_by' => wa()->getUser()->getId()
+        ]);
     }
 }

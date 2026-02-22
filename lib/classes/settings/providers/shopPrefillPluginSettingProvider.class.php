@@ -61,5 +61,9 @@ class shopPrefillPluginSettingProvider extends shopPrefillPluginAbstractSettingP
 
         $this->setSetting('update_time', time());
         $this->setSetting('updated_by', wa()->getUser()->getId() ?? []);
+
+        shopPrefillPluginLog::info('Global plugin settings saved', [
+            'updated_by' => wa()->getUser()->getId() ?? 'system'
+        ]);
     }
 }

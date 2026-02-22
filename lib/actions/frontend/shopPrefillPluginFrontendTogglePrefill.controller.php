@@ -40,6 +40,9 @@ class shopPrefillPluginFrontendTogglePrefillController extends waJsonController
                 'message' => $new_state ? 'Prefill enabled' : 'Prefill disabled'
             ];
         } catch (Exception $e) {
+            shopPrefillPluginLog::error('Failed toggling prefill state in shopPrefillPluginFrontendTogglePrefillController', [
+                'message' => $e->getMessage()
+            ]);
             $this->errors = [
                 'error' => $e->getMessage()
             ];

@@ -13,10 +13,12 @@ class ZenModeToggle {
     /**
      * @param {DialogManager} dialogManager - Менеджер диалоговых окон
      * @param {Object} messages - Объект с сообщениями локализации
+     * @param {Logger} logger - Экземпляр логгера
      */
-    constructor(dialogManager, messages) {
+    constructor(dialogManager, messages, logger) {
         this.dialogManager = dialogManager;
         this.messages = messages || {};
+        this.logger = logger;
         this.initialized = false;
 
         // Маппинг групп → секций чекаута
@@ -75,6 +77,9 @@ class ZenModeToggle {
 
         // Обновляем форму заказа
         if (window.waOrder && window.waOrder.form) {
+            if (this.logger) {
+                this.logger.info("User expanded the " + group + " group section");
+            }
             window.waOrder.form.update();
         }
     }
@@ -100,8 +105,16 @@ class ZenModeToggle {
 
             // Валидация успешна → устанавливаем cookie и обновляем форму
             document.cookie = cookieName + '=collapsing; path=/; SameSite=Lax';
+
+            if (this.logger) {
+                this.logger.info("User collapsed the " + group + " group section");
+            }
+
             form.update();
         } else {
+            if (this.logger) {
+                this.logger.warn("User attempted to collapse the " + group + " group section, but validation failed");
+            }
             // Валидация не прошла → показываем модальное окно с warning
             this.showValidationErrorDialog();
         }

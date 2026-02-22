@@ -9,9 +9,10 @@ return [
     'custom_settings' => true,
     'frontend' => true,
     'handlers' => [
-        'frontend_order' => "frontendOrder", //Предзаполняем форму только в корзине
         'frontend_head' => 'frontendHead', //Предзаполняем форму при входе на сайт
+        'checkout_before_auth' => 'checkoutBeforeAuth', // Предзаполняем при каждом AJAX-обновлении формы
         'checkout_render_auth' => 'checkoutRenderAuth', //Добавляем контент в секцию авторизации
+
         'checkout_render_region' => 'checkoutRenderRegion', //Добавляем контент в секцию региона
         'checkout_render_shipping' => 'checkoutRenderShipping', //Для сворачивания блоков корзины
         'checkout_render_details' => 'checkoutRenderDetails', //Добавляем контент в секцию details (Zen Mode для delivery)

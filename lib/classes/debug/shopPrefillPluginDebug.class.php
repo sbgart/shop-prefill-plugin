@@ -253,6 +253,9 @@ class shopPrefillPluginDebug
                     $fill_params_meta['source'] = 'empty (no orders)';
                 }
             } catch (Exception $e) {
+                shopPrefillPluginLog::error('Failed preparing debug info for fill params in shopPrefillPluginDebug', [
+                    'message' => $e->getMessage()
+                ]);
                 $fill_params_meta['source'] = 'error: ' . $e->getMessage();
             }
 
@@ -262,7 +265,9 @@ class shopPrefillPluginDebug
                 $session_storage = $plugin->getSessionStorageProvider();
                 $current_storage = $session_storage->getCheckoutParams() ?: [];
             } catch (Exception $e) {
-                // Игнорируем ошибки
+                shopPrefillPluginLog::warning('Failed fetching session storage in shopPrefillPluginDebug', [
+                    'message' => $e->getMessage()
+                ]);
             }
 
             // Подготавливаем данные для шаблона
@@ -309,6 +314,9 @@ class shopPrefillPluginDebug
             </script>";
         } catch (Exception $e) {
             // Фоллбэк - выводим ошибку
+            shopPrefillPluginLog::error('Critical error rendering debug stack in shopPrefillPluginDebug', [
+                'message' => $e->getMessage()
+            ]);
             echo "<script>console.error('Debug render error:', " . json_encode($e->getMessage()) . ");</script>";
         }
 

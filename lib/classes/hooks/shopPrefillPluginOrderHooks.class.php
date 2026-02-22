@@ -58,6 +58,10 @@ class shopPrefillPluginOrderHooks
 
         // Очищаем cookies Zen Mode
         $this->clearZenModeCookies();
+
+        shopPrefillPluginLog::info('Order creation hook processed successfully', [
+            'order_id' => $order_id
+        ]);
     }
 
     /**

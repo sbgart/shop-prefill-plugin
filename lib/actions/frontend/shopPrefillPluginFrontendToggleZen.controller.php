@@ -40,6 +40,9 @@ class shopPrefillPluginFrontendToggleZenController extends waJsonController
                 'message' => $new_state ? 'Zen Mode enabled' : 'Zen Mode disabled'
             ];
         } catch (Exception $e) {
+            shopPrefillPluginLog::error('Failed toggling Zen Mode state in shopPrefillPluginFrontendToggleZenController', [
+                'message' => $e->getMessage()
+            ]);
             $this->errors = [
                 'error' => $e->getMessage()
             ];

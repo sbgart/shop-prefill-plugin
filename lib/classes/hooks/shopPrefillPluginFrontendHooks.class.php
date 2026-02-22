@@ -43,40 +43,7 @@ class shopPrefillPluginFrontendHooks
         $this->add_js_callback = $add_js_callback;
     }
 
-    /**
-     * Хук срабатывает на странице оформления заказа в корзине.
-     * Выполняет предзаполнение параметров checkout.
-     *
-     * @param array|null $params Параметры хука
-     * @throws waException
-     * @throws waDbException
-     */
-    public function handleFrontendOrder(?array $params = null): void
-    {
-        // DEBUG: Регистрируем вызов хука
-        $this->registerDebugHookCall('frontendOrder');
 
-        if ($this->storefront_settings['active'] !== true) {
-            return;
-        }
-
-        // Получаем параметры для заполнения
-        $fill_params = null;
-        if ($this->storefront_settings['prefill']['active']) {
-            $fill_params = $this->fill_params_provider->getFillParams();
-        }
-
-        // DEBUG: Состояние ПЕРЕД предзаполнением
-        $this->logDebugBeforePrefill('frontendOrder', $fill_params);
-
-        // Выполняем предзаполнение
-        if ($this->storefront_settings['prefill']['active'] && $fill_params) {
-            $this->session_storage->preFillCheckoutParams($fill_params);
-        }
-
-        // DEBUG: Состояние ПОСЛЕ предзаполнения
-        $this->logDebugAfterPrefill('frontendOrder');
-    }
 
     /**
      * Хук срабатывает на всех страницах магазина.

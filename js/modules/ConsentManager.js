@@ -32,10 +32,10 @@ class ConsentManager {
 
             $.post(that.httpClient.baseUrl + that.pluginID + "/consent", { action: action })
                 .done(function (response) {
-                    that.logger.log("Consent " + action + ": " + (response.data?.message || "ok"));
+                    that.logger.info("Consent " + action + " action completed: " + (response.data?.message || "ok"));
                 })
                 .fail(function () {
-                    that.logger.error("Failed to update consent");
+                    that.logger.error("Failed to update user consent state for action: " + action);
                 });
         });
     }

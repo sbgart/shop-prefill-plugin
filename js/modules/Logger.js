@@ -37,9 +37,8 @@ class Logger {
         }
 
         // Отправка лога на сервер (асинхронно, не ждём ответа)
-        const serverMessage = `[frontend] ${message}`;
         this.httpClient.post(`${this.pluginID}/logs`, {
-            message: serverMessage,
+            message: message,
             type: type,
         });
     }

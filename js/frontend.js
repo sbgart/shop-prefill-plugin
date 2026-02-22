@@ -40,7 +40,7 @@ class PrefillFrontendController {
     );
 
     // Создаём ZenModeToggle для управления сворачиванием секций чекаута
-    this.zenModeToggle = new ZenModeToggle(this.dialogManager, params.messages);
+    this.zenModeToggle = new ZenModeToggle(this.dialogManager, params.messages, this.logger);
 
     this.orderFormManager = new OrderFormManager(
       this.paramsChoiceManager,

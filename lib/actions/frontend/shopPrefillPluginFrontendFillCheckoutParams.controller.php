@@ -12,12 +12,21 @@ class shopPrefillPluginFrontendFillCheckoutParamsController extends waJsonContro
 
         $instance = shopPrefillPlugin::getInstance();
 
-        $instance->getSessionStorageProvider()->fillCheckoutParams(
-            $instance->getFillParamsProvider()->getFillParams($fill_params_id)
-        );
-        $tt = wa()->getStorage()->get('shop/checkout');
-        $ttt = $tt;
+        try {
+            $fill_params = $instance->getFillParamsProvider()->getFillParams($fill_params_id);
+            $instance->getSessionStorageProvider()->preFillCheckoutParams($fill_params);
 
-        return json_encode(array('test' => 'test'));
+            shopPrefillPluginLog::info('Manually applied checkout params via FillCheckoutParamsController', [
+                'fill_params_id' => $fill_params_id
+            ]);
+
+            return json_encode(array('status' => 'success'));
+        } catch (Exception $e) {
+            shopPrefillPluginLog::error('Failed manually applying checkout params', [
+                'fill_params_id' => $fill_params_id,
+                'message' => $e->getMessage()
+            ]);
+            return json_encode(array('status' => 'error', 'message' => $e->getMessage()));
+        }
     }
 }

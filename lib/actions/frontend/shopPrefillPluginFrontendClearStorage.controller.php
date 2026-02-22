@@ -11,7 +11,7 @@ class shopPrefillPluginFrontendClearStorageController extends waJsonController
     public function execute()
     {
         // Устанавливаем правильный заголовок
-        if (! headers_sent()) {
+        if (!headers_sent()) {
             header('Content-Type: application/json; charset=utf-8');
         }
 
@@ -20,10 +20,13 @@ class shopPrefillPluginFrontendClearStorageController extends waJsonController
             wa()->getStorage()->remove('shop/checkout');
 
             $this->response = [
-                'status'  => 'ok',
+                'status' => 'ok',
                 'message' => 'Checkout session cleared. Order data preserved in database.'
             ];
         } catch (Exception $e) {
+            shopPrefillPluginLog::error('Failed clearing session storage in shopPrefillPluginFrontendClearStorageController', [
+                'message' => $e->getMessage()
+            ]);
             $this->errors = [
                 'error' => $e->getMessage()
             ];

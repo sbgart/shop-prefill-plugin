@@ -25,11 +25,15 @@ class shopPrefillPluginContactProvider
         try {
             $contact = new waContact($contact_id);
             // Проверяем что контакт существует
-            if (! $contact->exists()) {
+            if (!$contact->exists()) {
                 return null;
             }
             return $contact;
         } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed loading contact in shopPrefillPluginContactProvider::getContact', [
+                'contact_id' => $contact_id,
+                'message' => $e->getMessage()
+            ]);
             return null;
         }
     }
@@ -90,6 +94,10 @@ class shopPrefillPluginContactProvider
 
             return is_string($value) ? $value : null;
         } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed getting contact field in shopPrefillPluginContactProvider::getContactFieldValue', [
+                'field_id' => $field_id,
+                'message' => $e->getMessage()
+            ]);
             return null;
         }
     }
@@ -119,7 +127,7 @@ class shopPrefillPluginContactProvider
             }
 
             // Добавляем кастомные поля (не системные)
-            if ($field instanceof waContactField && ! $field->getParameter('system')) {
+            if ($field instanceof waContactField && !$field->getParameter('system')) {
                 $result[] = $field_id;
             }
         }

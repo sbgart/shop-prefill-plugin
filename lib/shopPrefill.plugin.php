@@ -274,6 +274,8 @@ class shopPrefillPlugin extends shopPlugin
             $this->getZenMode(),
             $this->getUserProvider(),
             $this->getConsentStorage(),
+            $this->getSessionStorageProvider(),
+            $this->getFillParamsProvider(),
             $this->isDebug(),
             $this->getStorefrontSettings()
         );
@@ -356,20 +358,8 @@ class shopPrefillPlugin extends shopPlugin
     }
 
 
-    /**
-     * Хук срабатывает на странице оформления заказа в корзине.
-     *
-     * @throws waException
-     * @throws waDbException
-     */
-    public function frontendOrder($params)
-    {
-        if (!$this->isActive()) {
-            return;
-        }
 
-        $this->getFrontendHooks()->handleFrontendOrder($params);
-    }
+
 
     /**
      * Хук срабатывает на всех страницах магазина.
@@ -388,6 +378,22 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
+     * Хук вызывается перед обработкой шага auth в processAll().
+     * Срабатывает при каждом AJAX-запросе calculate/create.
+     *
+     * @param array $params ['data' => &$data] где $data['input'] — текущий $input processAll
+     */
+    public function checkoutBeforeAuth(&$params): void
+    {
+        if (!$this->isActive()) {
+            return;
+        }
+
+        $this->getCheckoutHooks()->handleCheckoutBeforeAuth($params);
+    }
+
+    /**
+
      * Хук срабатывает при рендере секции авторизации на странице оформления заказа.
      * Выводит CSS для Zen Mode и показывает информацию об ошибках.
      *
@@ -402,6 +408,7 @@ class shopPrefillPlugin extends shopPlugin
 
         return $this->getCheckoutHooks()->handleCheckoutRenderAuth($params);
     }
+
 
     /**
      * Хук срабатывает при рендере секции региона на странице оформления заказа.
@@ -487,7 +494,11 @@ class shopPrefillPlugin extends shopPlugin
                 $output .= $zen->renderCollapseBlock('payment', $params, false);
             }
         } catch (Exception $e) {
-            // Игнорируем ошибки Zen Mode
+            shopPrefillPluginLog::error('Zen Mode error in checkoutRenderPayment', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
         }
 
         return $output;

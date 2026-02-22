@@ -488,8 +488,8 @@ class shopPrefillPluginZenMode
 
             // Сохраняем существующие переменные с теми же именами
             foreach ($data as $key => $value) {
-                if (isset($view->tpl_vars[$key])) {
-                    $old_vars[$key] = $view->tpl_vars[$key];
+                if (isset($view->getVars()[$key])) {
+                    $old_vars[$key] = $view->getVars()[$key];
                 }
             }
 
@@ -500,17 +500,19 @@ class shopPrefillPluginZenMode
             $summary = $view->fetch('string:' . $template);
 
             // Восстанавливаем оригинальные переменные
-            foreach ($old_vars as $key => $value) {
-                $view->tpl_vars[$key] = $value;
-            }
+            $view->assign($old_vars);
 
             // Удаляем временные переменные, которых не было
             foreach ($data as $key => $value) {
                 if (!isset($old_vars[$key])) {
-                    unset($view->tpl_vars[$key]);
+                    $view->clearAssign($key);
                 }
             }
         } catch (Exception $e) {
+            shopPrefillPluginLog::error('Template rendering failed in shopPrefillPluginZenMode::renderGroupSummary', [
+                'group' => $group,
+                'message' => $e->getMessage()
+            ]);
             return '';
         }
 

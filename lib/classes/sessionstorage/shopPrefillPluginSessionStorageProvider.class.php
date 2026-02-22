@@ -4,16 +4,16 @@ class shopPrefillPluginSessionStorageProvider
 {
     public bool $prefilled = false;
 
-    private array                            $storefront_settings;
-    private waSessionStorage                 $storage;
-    private ?shopPrefillPluginSectionChecker $section_checker     = null;
+    private array $storefront_settings;
+    private waSessionStorage $storage;
+    private ?shopPrefillPluginSectionChecker $section_checker = null;
 
     /**
      * @throws waException
      */
     public function __construct(array $storefront_settings = [])
     {
-        $this->storage             = wa()->getStorage();
+        $this->storage = wa()->getStorage();
         $this->storefront_settings = $storefront_settings;
     }
 
@@ -49,6 +49,9 @@ class shopPrefillPluginSessionStorageProvider
 
             return true;
         } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed setting checkout params in shopPrefillPluginSessionStorageProvider::setCheckoutParams', [
+                'message' => $e->getMessage()
+            ]);
             return false;
         }
     }
@@ -60,23 +63,19 @@ class shopPrefillPluginSessionStorageProvider
      * @throws waException
      * @throws waDbException
      */
-    public function preFillCheckoutParams(shopPrefillPluginFillParams $params): void
+    public function preFillCheckoutParams(shopPrefillPluginFillParams $params): array
     {
         if ($this->prefilled) {
-            return;
+            shopPrefillPluginLog::debug('Skipped prefill because it was already prefilled in the current request');
+            return [];
         }
 
         $checkout_params = $this->getCheckoutParams();
         $checkout_params = is_array($checkout_params) ? $checkout_params : [];
 
-        // Проверка флага first_prefill_done - не предзаполняем повторно
-        if ($checkout_params['prefill_metadata']['first_prefill_done'] ?? false) {
-            $this->prefilled = true;
-            return;
-        }
 
         $final_params = [];
-        $checker      = $this->getSectionChecker();
+        $checker = $this->getSectionChecker();
 
         // Каждая секция проверяется НЕЗАВИСИМО
         if ($checker->canPrefillSection('auth', $checkout_params)) {
@@ -103,14 +102,18 @@ class shopPrefillPluginSessionStorageProvider
             $this->prepareConfirmSectionParams($params, $final_params);
         }
 
-        if (! empty($final_params)) {
-            // Устанавливаем флаг первого предзаполнения
-            $final_params['prefill_metadata']['first_prefill_done'] = true;
-
+        if (!empty($final_params)) {
             $this->setCheckoutParams(shopPrefillPluginHelper::deepMergeArrays($checkout_params, $final_params));
+            shopPrefillPluginLog::info('Successfully prefilled checkout params', [
+                'filled_sections' => array_keys($final_params['order'] ?? []),
+                'final_params_size' => strlen(json_encode($final_params))
+            ]);
+        } else {
+            shopPrefillPluginLog::debug('Prefill was evaluated but no params were filled (empty final_params)');
         }
 
         $this->prefilled = true;
+        return $final_params['order'] ?? [];
     }
 
     /**
@@ -152,6 +155,9 @@ class shopPrefillPluginSessionStorageProvider
         try {
             return wa()->getUser()->isAuth();
         } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed checking user authentication in shopPrefillPluginSessionStorageProvider::isUserAuthenticated', [
+                'message' => $e->getMessage()
+            ]);
             return false;
         }
     }
@@ -163,9 +169,9 @@ class shopPrefillPluginSessionStorageProvider
         }
 
         $final_params['order']['region']['country'] = $fill_params->getCountry();
-        $final_params['order']['region']['region']  = $fill_params->getRegion();
-        $final_params['order']['region']['city']    = $fill_params->getCity();
-        $final_params['order']['region']['zip']     = $fill_params->getZip();
+        $final_params['order']['region']['region'] = $fill_params->getRegion();
+        $final_params['order']['region']['city'] = $fill_params->getCity();
+        $final_params['order']['region']['zip'] = $fill_params->getZip();
     }
 
     private function prepareShippingSectionParams(?shopPrefillPluginFillParams $fill_params, array &$final_params): void
@@ -174,7 +180,7 @@ class shopPrefillPluginSessionStorageProvider
             return;
         }
 
-        $final_params['order']['shipping']['type_id']    = $fill_params->getShippingTypeId();
+        $final_params['order']['shipping']['type_id'] = $fill_params->getShippingTypeId();
         $final_params['order']['shipping']['variant_id'] = $fill_params->getShippingVariantId();
 
         if ($fill_params->getShippingCustom()) {
@@ -242,27 +248,10 @@ class shopPrefillPluginSessionStorageProvider
         // Шаг 2: Сбрасываем флаг prefilled (для текущего запроса)
         $this->prefilled = false;
 
-        // Шаг 3: Заново предзаполняем (флаг first_prefill_done отсутствует)
+        shopPrefillPluginLog::info('Initiating Reset & Refill procedure');
+
+        // Шаг 3: Заново предзаполняем
         $this->preFillCheckoutParams($params);
     }
 
-    /**
-     * Сбрасывает только флаг first_prefill_done в метаданных
-     *
-     * @return bool
-     */
-    public function resetFirstPrefillDoneFlag(): bool
-    {
-        $checkout_params = $this->getCheckoutParams();
-        if (! is_array($checkout_params)) {
-            return false;
-        }
-
-        if (isset($checkout_params['prefill_metadata']['first_prefill_done'])) {
-            unset($checkout_params['prefill_metadata']['first_prefill_done']);
-            return $this->setCheckoutParams($checkout_params);
-        }
-
-        return true;
-    }
 }

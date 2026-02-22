@@ -14,11 +14,14 @@ class shopPrefillPluginFrontendForcePrefillController extends waJsonController
             $plugin->getSessionStorageProvider()->preFillCheckoutParams($fill_params);
 
             $this->response = [
-                'status'  => 'ok',
+                'status' => 'ok',
                 'message' => 'Checkout params prefilled successfully',
-                'params'  => $fill_params->toArray()
+                'params' => $fill_params->toArray()
             ];
         } catch (Exception $e) {
+            shopPrefillPluginLog::error('Failed force prefilling checkout params in shopPrefillPluginFrontendForcePrefillController', [
+                'message' => $e->getMessage()
+            ]);
             $this->errors = [
                 'error' => $e->getMessage()
             ];

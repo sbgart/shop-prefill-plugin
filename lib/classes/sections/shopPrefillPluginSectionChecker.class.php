@@ -15,12 +15,12 @@ class shopPrefillPluginSectionChecker
      * Если хотя бы одно поле заполнено — секция считается предзаполненной
      */
     private const SECTION_KEY_FIELDS = [
-        'auth' => ['data.email', 'data.phone', 'data.firstname'],
-        'region' => ['city'],
+        'auth' => ['data.email', 'data.phone', 'data.firstname', 'html'],
+        'region' => ['city', 'html'],
         'shipping' => ['type_id'],
-        'details' => ['shipping_address.street'],
+        'details' => ['shipping_address.street', 'html'],
         'payment' => ['id'],
-        'confirm' => ['comment'],
+        'confirm' => ['comment', 'html'],
     ];
 
     public function __construct(array $enabled_sections)

@@ -9,6 +9,8 @@ class shopPrefillPluginCheckoutHooks
     private shopPrefillPluginZenMode $zen_mode;
     private shopPrefillPluginUserProvider $user_provider;
     private shopPrefillPluginConsentStorage $consent_storage;
+    private shopPrefillPluginSessionStorageProvider $session_storage;
+    private shopPrefillPluginFillParamsProvider $fill_params_provider;
     private bool $is_debug;
     private array $storefront_settings;
 
@@ -16,14 +18,49 @@ class shopPrefillPluginCheckoutHooks
         shopPrefillPluginZenMode $zen_mode,
         shopPrefillPluginUserProvider $user_provider,
         shopPrefillPluginConsentStorage $consent_storage,
+        shopPrefillPluginSessionStorageProvider $session_storage,
+        shopPrefillPluginFillParamsProvider $fill_params_provider,
         bool $is_debug,
         array $storefront_settings
     ) {
         $this->zen_mode = $zen_mode;
         $this->user_provider = $user_provider;
         $this->consent_storage = $consent_storage;
+        $this->session_storage = $session_storage;
+        $this->fill_params_provider = $fill_params_provider;
         $this->is_debug = $is_debug;
         $this->storefront_settings = $storefront_settings;
+    }
+
+    /**
+     * Хук вызывается перед обработкой шага auth в processAll().
+     * Срабатывает при каждом AJAX-запросе calculate/create.
+     *
+     * Выполняет две задачи:
+     * 1. Записывает prefill-данные в сессию (для следующего use_session_input запроса)
+     * 2. Применяет prefill-данные к $params['data']['input'] для ТЕКУЩЕГО processAll
+     *
+     * @param array $params ['data' => &$data] где $data['input'] — текущий $input processAll
+     */
+    public function handleCheckoutBeforeAuth(array &$params): void
+    {
+        if (!($this->storefront_settings['prefill']['active'] ?? false)) {
+            return;
+        }
+
+        $fill_params = $this->fill_params_provider->getFillParams();
+        if (!$fill_params) {
+            return;
+        }
+
+        $filled_order = $this->session_storage->preFillCheckoutParams($fill_params);
+
+        if (!empty($filled_order) && isset($params['data']['input'])) {
+            $params['data']['input'] = shopPrefillPluginHelper::deepMergeArrays(
+                $params['data']['input'],
+                $filled_order
+            );
+        }
     }
 
     /**
@@ -55,7 +92,9 @@ class shopPrefillPluginCheckoutHooks
                 $output .= $this->zen_mode->renderCollapseBlock('customer', $params, false);
             }
         } catch (Exception $e) {
-            // Игнорируем ошибки Zen Mode
+            shopPrefillPluginLog::error('Zen Mode error in checkoutRenderAuth', [
+                'message' => $e->getMessage()
+            ]);
         }
 
         // Извлекаем все типы ошибок
@@ -169,7 +208,9 @@ class shopPrefillPluginCheckoutHooks
                 $output .= $this->zen_mode->renderCollapseBlock('delivery', $params, false);
             }
         } catch (Exception $e) {
-            // Игнорируем ошибки Zen Mode
+            shopPrefillPluginLog::error('Zen Mode error in checkoutRenderDetails', [
+                'message' => $e->getMessage()
+            ]);
         }
 
         // Извлекаем все типы ошибок
@@ -216,7 +257,9 @@ class shopPrefillPluginCheckoutHooks
                 $output .= $this->zen_mode->renderCollapseBlock('payment', $params, false);
             }
         } catch (Exception $e) {
-            // Игнорируем ошибки Zen Mode
+            shopPrefillPluginLog::error('Zen Mode error in checkoutRenderPayment', [
+                'message' => $e->getMessage()
+            ]);
         }
 
         // Извлекаем все типы ошибок
@@ -258,7 +301,9 @@ class shopPrefillPluginCheckoutHooks
         try {
             $html .= $this->zen_mode->generateAllStyles($params);
         } catch (Exception $e) {
-            // Игнорируем ошибки Zen Mode
+            shopPrefillPluginLog::error('Zen Mode styling error in checkoutRenderConfirm', [
+                'message' => $e->getMessage()
+            ]);
         }
 
         // Показываем галочку согласия только для неавторизованных И если требуется согласие
@@ -276,7 +321,9 @@ class shopPrefillPluginCheckoutHooks
                 }
             }
         } catch (Exception $e) {
-            // Игнорируем ошибки рендеринга галочки
+            shopPrefillPluginLog::error('Consent checkbox rendering error in checkoutRenderConfirm', [
+                'message' => $e->getMessage()
+            ]);
         }
 
         // Извлекаем все типы ошибок

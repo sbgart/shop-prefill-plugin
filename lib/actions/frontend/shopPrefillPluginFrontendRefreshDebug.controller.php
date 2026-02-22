@@ -41,7 +41,7 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
 
                 // Получаем количество заказов
                 $order_provider = $plugin->getOrderProvider();
-                $orders_ids = $order_provider->getUserOrdersId($fill_params_meta['user_id']);
+                $orders_ids = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
                 $fill_params_meta['orders_count'] = count($orders_ids ?: []);
             } else {
                 // Гость: показываем хеш
@@ -103,6 +103,9 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
             $this->response['html_storage'] = $view->fetch('file:' . $template_path . 'DebugStorageDetails.html');
             $this->response['html_params'] = $view->fetch('file:' . $template_path . 'DebugFillParams.html');
         } catch (Exception $e) {
+            shopPrefillPluginLog::error('Failed refreshing debug panel data in shopPrefillPluginFrontendRefreshDebugController', [
+                'message' => $e->getMessage()
+            ]);
             $this->errors = ['error' => $e->getMessage()];
         }
     }
