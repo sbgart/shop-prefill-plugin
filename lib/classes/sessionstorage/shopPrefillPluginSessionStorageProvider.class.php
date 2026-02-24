@@ -4,6 +4,8 @@ class shopPrefillPluginSessionStorageProvider
 {
     public bool $prefilled = false;
 
+    private const SNAPSHOT_KEY = 'shop/prefill_snapshot';
+
     private array $storefront_settings;
     private waSessionStorage $storage;
     private ?shopPrefillPluginSectionChecker $section_checker = null;
@@ -57,7 +59,70 @@ class shopPrefillPluginSessionStorageProvider
     }
 
     /**
-     * Заполняет параметры checkout с проверкой через SectionChecker
+     * Получает снимок предыдущего состояния checkout
+     *
+     * @return array|null Снимок или null если отсутствует
+     */
+    public function getSnapshot(): ?array
+    {
+        $snapshot = $this->getStorage()->get(self::SNAPSHOT_KEY);
+        return is_array($snapshot) ? $snapshot : null;
+    }
+
+    /**
+     * Сохраняет снимок текущего состояния checkout
+     *
+     * @param array $checkout_params Актуальные параметры checkout
+     */
+    public function saveSnapshot(array $checkout_params): void
+    {
+        try {
+            $this->getStorage()->set(self::SNAPSHOT_KEY, $checkout_params);
+            shopPrefillPluginLog::debug('Snapshot saved', [
+                'sections' => array_keys($checkout_params['order'] ?? [])
+            ]);
+        } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed saving prefill snapshot', [
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Извлекает секцию из snapshot только если она содержит данные.
+     * Использует isSectionFilled чтобы не подставлять пустые секции из snapshot.
+     *
+     * @param string $section_id ID секции
+     * @param array|null $snapshot Снимок сессии
+     * @param shopPrefillPluginSectionChecker $checker
+     * @return array|null Данные секции или null если пустые/отсутствуют
+     */
+    private function getSnapshotSection(
+        string $section_id,
+        ?array $snapshot,
+        shopPrefillPluginSectionChecker $checker
+    ): ?array {
+        if ($snapshot === null) {
+            return null;
+        }
+
+        $section_data = $snapshot['order'][$section_id] ?? null;
+        if ($section_data === null) {
+            return null;
+        }
+
+        // Проверяем что в snapshot реально есть данные (не пустая секция)
+        if (!$checker->isSectionFilled($section_id, $snapshot)) {
+            return null;
+        }
+
+        return $section_data;
+    }
+
+    /**
+     * Заполняет параметры checkout с проверкой через SectionChecker.
+     * Использует snapshot как промежуточный источник — приоритетнее fill_params,
+     * но уступает текущим данным в checkout.
      *
      * @param shopPrefillPluginFillParams $params Параметры для предзаполнения
      * @throws waException
@@ -73,78 +138,61 @@ class shopPrefillPluginSessionStorageProvider
         $checkout_params = $this->getCheckoutParams();
         $checkout_params = is_array($checkout_params) ? $checkout_params : [];
 
+        $snapshot = $this->getSnapshot();
 
         $final_params = [];
         $checker = $this->getSectionChecker();
 
-        // Каждая секция проверяется НЕЗАВИСИМО
+        // Каждая секция проверяется НЕЗАВИСИМО.
+        // Если секция пуста в checkout — пробуем сначала snapshot, потом fill_params.
         if ($checker->canPrefillSection('auth', $checkout_params)) {
-            $this->prepareAuthSectionParams($params, $final_params);
+            $snapshot_section = $this->getSnapshotSection('auth', $snapshot, $checker);
+            $this->prepareAuthSectionParams($params, $final_params, $snapshot_section);
         }
 
         if ($checker->canPrefillSection('region', $checkout_params)) {
-            $this->prepareRegionSectionParams($params, $final_params);
+            $snapshot_section = $this->getSnapshotSection('region', $snapshot, $checker);
+            $this->prepareRegionSectionParams($params, $final_params, $snapshot_section);
         }
 
         if ($checker->canPrefillSection('shipping', $checkout_params)) {
-            $this->prepareShippingSectionParams($params, $final_params);
+            $snapshot_section = $this->getSnapshotSection('shipping', $snapshot, $checker);
+            $this->prepareShippingSectionParams($params, $final_params, $snapshot_section);
         }
 
         if ($checker->canPrefillSection('details', $checkout_params)) {
-            $this->prepareDetailsSectionParams($params, $final_params);
+            $snapshot_section = $this->getSnapshotSection('details', $snapshot, $checker);
+            $this->prepareDetailsSectionParams($params, $final_params, $snapshot_section);
         }
 
         if ($checker->canPrefillSection('payment', $checkout_params)) {
-            $this->preparePaymentSectionParams($params, $final_params);
+            $snapshot_section = $this->getSnapshotSection('payment', $snapshot, $checker);
+            $this->preparePaymentSectionParams($params, $final_params, $snapshot_section);
         }
 
         if ($checker->canPrefillSection('confirm', $checkout_params)) {
-            $this->prepareConfirmSectionParams($params, $final_params);
+            $snapshot_section = $this->getSnapshotSection('confirm', $snapshot, $checker);
+            $this->prepareConfirmSectionParams($params, $final_params, $snapshot_section);
         }
 
         if (!empty($final_params)) {
-            $this->setCheckoutParams(shopPrefillPluginHelper::deepMergeArrays($checkout_params, $final_params));
+            $merged = shopPrefillPluginHelper::deepMergeArrays($checkout_params, $final_params);
+            $this->setCheckoutParams($merged);
+            $this->saveSnapshot($merged);
             shopPrefillPluginLog::info('Successfully prefilled checkout params', [
                 'filled_sections' => array_keys($final_params['order'] ?? []),
                 'final_params_size' => strlen(json_encode($final_params))
             ]);
         } else {
+            // Checkout уже полностью заполнен — обновляем snapshot актуальным состоянием
+            if (!empty($checkout_params)) {
+                $this->saveSnapshot($checkout_params);
+            }
             shopPrefillPluginLog::debug('Prefill was evaluated but no params were filled (empty final_params)');
         }
 
         $this->prefilled = true;
         return $final_params['order'] ?? [];
-    }
-
-    /**
-     * Подготавливает параметры auth секции для предзаполнения
-     *
-     * Предзаполняет только для неавторизованных пользователей:
-     * - Тип покупателя (auth[mode])
-     * - Поля контакта (auth[data][*])
-     */
-    private function prepareAuthSectionParams(?shopPrefillPluginFillParams $fill_params, array &$final_params): void
-    {
-        if ($fill_params === null) {
-            return;
-        }
-
-        // Для авторизованных пользователей auth данные берутся из контакта автоматически
-        if ($this->isUserAuthenticated()) {
-            return;
-        }
-
-        // Тип покупателя (person/company)
-        $customer_type = $fill_params->getCustomerType();
-        if ($customer_type) {
-            $final_params['order']['auth']['mode'] = $customer_type;
-        }
-
-        // Поля auth[data] (email, phone, кастомные поля)
-        $auth_data = $fill_params->getAuthData();
-        foreach ($auth_data as $field_id => $value) {
-            $final_params['order']['auth']['data'][$field_id] = $value;
-        }
     }
 
     /**
@@ -162,9 +210,61 @@ class shopPrefillPluginSessionStorageProvider
         }
     }
 
-    private function prepareRegionSectionParams(?shopPrefillPluginFillParams $fill_params, array &$final_params): void
-    {
+    /**
+     * Подготавливает параметры auth секции для предзаполнения.
+     * Приоритет: snapshot > fill_params
+     *
+     * Предзаполняет только для неавторизованных пользователей.
+     */
+    private function prepareAuthSectionParams(
+        ?shopPrefillPluginFillParams $fill_params,
+        array &$final_params,
+        ?array $snapshot_section
+    ): void {
         if ($fill_params === null) {
+            return;
+        }
+
+        // Для авторизованных пользователей auth данные берутся из контакта автоматически
+        if ($this->isUserAuthenticated()) {
+            return;
+        }
+
+        // Если есть snapshot — восстанавливаем из него
+        if ($snapshot_section !== null) {
+            shopPrefillPluginLog::debug('Auth section restored from snapshot');
+            $final_params['order']['auth'] = $snapshot_section;
+            return;
+        }
+
+        // Fallback: данные из прошлого заказа
+        $customer_type = $fill_params->getCustomerType();
+        if ($customer_type) {
+            $final_params['order']['auth']['mode'] = $customer_type;
+        }
+
+        $auth_data = $fill_params->getAuthData();
+        foreach ($auth_data as $field_id => $value) {
+            $final_params['order']['auth']['data'][$field_id] = $value;
+        }
+    }
+
+    /**
+     * Подготавливает параметры region секции.
+     * Приоритет: snapshot > fill_params
+     */
+    private function prepareRegionSectionParams(
+        ?shopPrefillPluginFillParams $fill_params,
+        array &$final_params,
+        ?array $snapshot_section
+    ): void {
+        if ($fill_params === null) {
+            return;
+        }
+
+        if ($snapshot_section !== null) {
+            shopPrefillPluginLog::debug('Region section restored from snapshot');
+            $final_params['order']['region'] = $snapshot_section;
             return;
         }
 
@@ -174,9 +274,22 @@ class shopPrefillPluginSessionStorageProvider
         $final_params['order']['region']['zip'] = $fill_params->getZip();
     }
 
-    private function prepareShippingSectionParams(?shopPrefillPluginFillParams $fill_params, array &$final_params): void
-    {
+    /**
+     * Подготавливает параметры shipping секции.
+     * Приоритет: snapshot > fill_params
+     */
+    private function prepareShippingSectionParams(
+        ?shopPrefillPluginFillParams $fill_params,
+        array &$final_params,
+        ?array $snapshot_section
+    ): void {
         if ($fill_params === null) {
+            return;
+        }
+
+        if ($snapshot_section !== null) {
+            shopPrefillPluginLog::debug('Shipping section restored from snapshot');
+            $final_params['order']['shipping'] = $snapshot_section;
             return;
         }
 
@@ -191,11 +304,21 @@ class shopPrefillPluginSessionStorageProvider
     }
 
     /**
-     * Подготавливает параметры details секции (адрес доставки)
+     * Подготавливает параметры details секции (адрес доставки).
+     * Приоритет: snapshot > fill_params
      */
-    private function prepareDetailsSectionParams(?shopPrefillPluginFillParams $fill_params, array &$final_params): void
-    {
+    private function prepareDetailsSectionParams(
+        ?shopPrefillPluginFillParams $fill_params,
+        array &$final_params,
+        ?array $snapshot_section
+    ): void {
         if ($fill_params === null) {
+            return;
+        }
+
+        if ($snapshot_section !== null) {
+            shopPrefillPluginLog::debug('Details section restored from snapshot');
+            $final_params['order']['details'] = $snapshot_section;
             return;
         }
 
@@ -205,9 +328,22 @@ class shopPrefillPluginSessionStorageProvider
         }
     }
 
-    private function preparePaymentSectionParams(?shopPrefillPluginFillParams $fill_params, array &$final_params): void
-    {
+    /**
+     * Подготавливает параметры payment секции.
+     * Приоритет: snapshot > fill_params
+     */
+    private function preparePaymentSectionParams(
+        ?shopPrefillPluginFillParams $fill_params,
+        array &$final_params,
+        ?array $snapshot_section
+    ): void {
         if ($fill_params === null) {
+            return;
+        }
+
+        if ($snapshot_section !== null) {
+            shopPrefillPluginLog::debug('Payment section restored from snapshot');
+            $final_params['order']['payment'] = $snapshot_section;
             return;
         }
 
@@ -219,9 +355,22 @@ class shopPrefillPluginSessionStorageProvider
         }
     }
 
-    private function prepareConfirmSectionParams(?shopPrefillPluginFillParams $fill_params, array &$final_params): void
-    {
+    /**
+     * Подготавливает параметры confirm секции.
+     * Приоритет: snapshot > fill_params
+     */
+    private function prepareConfirmSectionParams(
+        ?shopPrefillPluginFillParams $fill_params,
+        array &$final_params,
+        ?array $snapshot_section
+    ): void {
         if ($fill_params === null) {
+            return;
+        }
+
+        if ($snapshot_section !== null) {
+            shopPrefillPluginLog::debug('Confirm section restored from snapshot');
+            $final_params['order']['confirm'] = $snapshot_section;
             return;
         }
 
@@ -232,7 +381,7 @@ class shopPrefillPluginSessionStorageProvider
     }
 
     /**
-     * Очищает форму, сбрасывает флаг first_prefill_done и заново предзаполняет
+     * Очищает форму, сбрасывает snapshot и заново предзаполняет.
      * Используется для debug кнопки "Reset & Refill"
      *
      * @param shopPrefillPluginFillParams $params Параметры для предзаполнения
@@ -242,8 +391,9 @@ class shopPrefillPluginSessionStorageProvider
      */
     public function resetAndRefill(shopPrefillPluginFillParams $params): void
     {
-        // Шаг 1: Очищаем всё хранилище checkout через внедренную зависимость
+        // Шаг 1: Очищаем хранилище checkout и snapshot
         $this->getStorage()->remove('shop/checkout');
+        $this->getStorage()->remove(self::SNAPSHOT_KEY);
 
         // Шаг 2: Сбрасываем флаг prefilled (для текущего запроса)
         $this->prefilled = false;

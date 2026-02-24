@@ -56,6 +56,7 @@ class shopPrefillPluginCheckoutHooks
         $filled_order = $this->session_storage->preFillCheckoutParams($fill_params);
 
         if (!empty($filled_order) && isset($params['data']['input'])) {
+            shopPrefillPluginLog::info('Prefill applied in checkoutBeforeAuth');
             $params['data']['input'] = shopPrefillPluginHelper::deepMergeArrays(
                 $params['data']['input'],
                 $filled_order
@@ -258,7 +259,9 @@ class shopPrefillPluginCheckoutHooks
             }
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Zen Mode error in checkoutRenderPayment', [
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
             ]);
         }
 
@@ -296,20 +299,20 @@ class shopPrefillPluginCheckoutHooks
     {
         $html = '';
 
-        // === ZEN MODE: Генерируем CSS для ВСЕХ групп в последнем хуке ===
-        // Здесь у нас точно есть все данные об ошибках
+        // === ZEN MODE: Генерируем CSS для свернутых групп в последнем хуке ===
         try {
-            $html .= $this->zen_mode->generateAllStyles($params);
+            $groups_to_collapse = $this->zen_mode->getGroupsToCollapse($params);
+            $html .= $this->zen_mode->generateAllStyles($groups_to_collapse);
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Zen Mode styling error in checkoutRenderConfirm', [
                 'message' => $e->getMessage()
             ]);
         }
 
-        // Показываем галочку согласия только для неавторизованных И если требуется согласие
+        // Показываем галочку согласия только для неавторизованных, если prefill и consent_required включены
         try {
-            if (!$this->user_provider->isAuth()) {
-                $consent_required = $this->storefront_settings['guest']['consent_required'];
+            if ($this->storefront_settings['prefill']['active'] && !$this->user_provider->isAuth()) {
+                $consent_required = $this->storefront_settings['prefill']['guest']['consent_required'];
 
                 // Показываем галочку только если согласие требуется
                 if ($consent_required) {

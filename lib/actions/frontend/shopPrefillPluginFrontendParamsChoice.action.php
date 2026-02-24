@@ -15,9 +15,9 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
         $tt = $instance->getPluginsProvider()->getShippingMethods();
 
         $this->view->assign([
-            'app_id'            => shopPrefillPlugin::APP_ID,
-            'plugin_id'         => shopPrefillPlugin::PLUGIN_ID,
-            'plugin_url'        => shopPrefillPlugin::getStaticUrl(),
+            'app_id' => shopPrefillPlugin::APP_ID,
+            'plugin_id' => shopPrefillPlugin::PLUGIN_ID,
+            'plugin_url' => shopPrefillPlugin::getStaticUrl(),
             'fill_params_array' => $fill_params_array,
         ]);
     }

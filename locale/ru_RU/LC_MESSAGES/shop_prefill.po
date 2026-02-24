@@ -181,3 +181,15 @@ msgstr "Проверьте форму — под некоторыми полям
 
 msgid "zen.validation.error.button"
 msgstr "Сейчас проверю"
+
+msgid "dialog.header.choose_delivery"
+msgstr "Выберите адрес доставки"
+
+msgid "zen.delivery.type.pickup"
+msgstr "Самовывоз"
+
+msgid "zen.delivery.type.courier"
+msgstr "Курьер"
+
+msgid "zen.delivery.type.post"
+msgstr "Почта"

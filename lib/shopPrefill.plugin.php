@@ -436,14 +436,6 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderShipping(&$params)
     {
-        // Check if plugin is active
-        if (!$this->isActive()) {
-            return '';
-        }
-
-        $output = '';
-
-        // === ZEN MODE: Проверяем, нужно ли выводить блок управления здесь ===
         if (!$this->isActive()) {
             return '';
         }
@@ -480,28 +472,7 @@ class shopPrefillPlugin extends shopPlugin
             return '';
         }
 
-        $output = '';
-
-        // === ZEN MODE: Рендерим блок управления для группы payment в КОНЦЕ секции ===
-        try {
-            $zen = $this->getZenMode();
-
-            if ($zen->shouldCollapseGroup('payment', $params)) {
-                // СВЁРНУТО: сводка + "Изменить"
-                $output .= $zen->renderCollapseBlock('payment', $params, true);
-            } elseif ($zen->isGroupEnabled('payment')) {
-                // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                $output .= $zen->renderCollapseBlock('payment', $params, false);
-            }
-        } catch (Exception $e) {
-            shopPrefillPluginLog::error('Zen Mode error in checkoutRenderPayment', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-        }
-
-        return $output;
+        return $this->getCheckoutHooks()->handleCheckoutRenderPayment($params);
     }
 
     /**

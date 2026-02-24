@@ -19,13 +19,13 @@ return [
             'cityselect' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
             'dp' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         ],
-    ],
-    'remember_me' => [
-        'active' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
-        'expires' => ['value' => 90, 'filter' => FILTER_VALIDATE_INT], // 90 days
-    ],
-    'guest' => [
-        'consent_required' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN], // Требовать согласие гостя
+        'remember_me' => [
+            'active' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'expires' => ['value' => 90, 'filter' => FILTER_VALIDATE_INT], // 90 days
+        ],
+        'guest' => [
+            'consent_required' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN], // Требовать согласие гостя
+        ],
     ],
     'styles' => [
         'accent_color' => ['value' => '#000'],
@@ -43,10 +43,8 @@ return [
             'delivery' => [
                 'enabled' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon' => ['value' => ''],
-                'summary_template' => ['value' => '<strong>{$delivery_service_name}</strong><br />{$shipping_name} • {$shipping_rate}'],
-                'summary_template_pickup' => ['value' => '<strong>{$delivery_service_name}</strong><br />{$shipping_name} • {$shipping_rate} <br />Срок хранения заказа — {$delivery_storage_days} дней'],
-                'summary_template_todoor' => ['value' => '<strong>{$delivery_service_name}</strong><br />{$shipping_name} • {$shipping_rate}'],
-                'summary_template_post' => ['value' => '<strong>{$delivery_service_name}</strong><br />{$shipping_name} • {$shipping_rate} <br /> {$street}'],
+                'summary_template' => ['value' => '<strong>{$delivery_plugin}</strong><br />{$shipping_name} • {$shipping_rate}'],
+                'custom_templates' => ['value' => []],
             ],
             'payment' => [
                 'enabled' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],

@@ -67,13 +67,28 @@ class shopPrefillPluginZenData
                 'description' => _wp('Formatted shipping cost'),
                 'example' => '300 rub',
             ],
-            'delivery_service_name' => [
-                'name' => _wp('Delivery service'),
-                'description' => _wp('Name of the delivery plugin/service'),
-                'example' => 'CDEK',
+            'delivery_method_name' => [
+                'name' => _wp('Delivery method name'),
+                'description' => _wp('Name of the shipping method in store settings'),
+                'example' => 'Delivery by CDEK',
             ],
 
             // === ДОСТАВКА (Детали) ===
+            'delivery_plugin' => [
+                'name' => _wp('Plugin name'),
+                'description' => _wp('Delivery plugin name'),
+                'example' => _wp('Pickup point'),
+            ],
+            'delivery_tariff' => [
+                'name' => _wp('Delivery tariff'),
+                'description' => _wp('Delivery tariff/service name'),
+                'example' => _wp('Store pickup'),
+            ],
+            'delivery_type' => [
+                'name' => _wp('Delivery type'),
+                'description' => _wp('Delivery type (e.g. pickup, courier, post)'),
+                'example' => 'pickup',
+            ],
             'delivery_est_delivery' => [
                 'name' => _wp('Estimated delivery'),
                 'description' => _wp('Estimated delivery time'),
@@ -254,7 +269,7 @@ class shopPrefillPluginZenData
 
             $shipping_methods = shopPrefillPluginPluginsProvider::getShippingMethods();
             if (isset($shipping_methods[$service_id])) {
-                $data['delivery_service_name'] = $shipping_methods[$service_id]['name'];
+                $data['delivery_method_name'] = $shipping_methods[$service_id]['name'];
             }
         }
 
@@ -265,6 +280,12 @@ class shopPrefillPluginZenData
         // Est Delivery
         $est_delivery = $selected_variant['est_delivery'] ?? $shipping_rate_data['est_delivery'] ?? '';
         $data['delivery_est_delivery'] = $est_delivery;
+
+        $data['delivery_plugin'] = $selected_variant['plugin_name'] ?? $shipping_rate_data['plugin_name'] ?? '';
+        $data['delivery_tariff'] = $selected_variant['service'] ?? $shipping_rate_data['service'] ?? '';
+
+        $raw_type = $selected_variant['type'] ?? $shipping_rate_data['type'] ?? '';
+        $data['delivery_type'] = $this->formatDeliveryType($raw_type);
 
         // Description
         $description = $selected_variant['description'] ?? $shipping_rate_data['description'] ?? '';
@@ -403,5 +424,27 @@ class shopPrefillPluginZenData
 
         $formatted = wa_currency_html($price, $this->currency, '%t{h}');
         return '<span class="prefill-zen-price">' . $formatted . '</span>';
+    }
+
+    /**
+     * Форматирует тип доставки с использованием локализации
+     *
+     * @param string $type Строковый тип доставки (pickup, courier, post, todoor)
+     * @return string Локализованное название типа
+     */
+    private function formatDeliveryType(string $type): string
+    {
+        switch ($type) {
+            case 'pickup':
+                return _wp('zen.delivery.type.pickup');
+            case 'todoor':
+            case 'courier':
+                return _wp('zen.delivery.type.courier');
+            case 'post':
+                return _wp('zen.delivery.type.post');
+            default:
+                // Если тип неизвестен, пытаемся вернуть как есть или с Заглавной буквы
+                return mb_convert_case($type, MB_CASE_TITLE, 'UTF-8');
+        }
     }
 }

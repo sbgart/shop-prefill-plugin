@@ -71,9 +71,10 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
                 $fill_params_meta['source'] = 'empty (no orders)';
             }
 
-            // Получаем текущее состояние хранилища checkout
+            // Получаем текущее состояние хранилища checkout и снапшот
             $session_storage = $plugin->getSessionStorageProvider();
             $checkout_params = $session_storage->getCheckoutParams() ?: [];
+            $snapshot_storage = $session_storage->getSnapshot() ?: [];
 
             $this->response = [
                 'status' => 'ok',
@@ -94,6 +95,7 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
                 'fill_params' => $fill_params_data,
                 'fill_params_meta' => $fill_params_meta,
                 'current_storage' => $checkout_params,
+                'snapshot_storage' => $snapshot_storage,
                 'show_validation' => waRequest::cookie('wa_prefill_debug_show_validation', 0),
             ]);
 

@@ -5,12 +5,15 @@
 ### Zen Mode
 
 - [ ] [Zen Mode](concept/ZEN-MODE.md)
+- [ ] [Кастомные шаблоны сводки доставки (UI настроек)](todo/zen-mode-custom-delivery-templates-ui.md)
+- [ ] [Кастомные шаблоны сводки оплаты](todo/zen-mode-custom-payment-templates.md)
+- [ ] [CSS-классы для баннеров в кастомных шаблонах](todo/zen-mode-template-banners.md)
 
 ### Другие задачи
 
 - [ ] [Очистка сохранённых данных предзаполнения](todo/clear-prefill-data.md)
 - [ ] [Выбор места доставки в любом месте сайта](todo/delivery-point-anywhere.md)
-- [ ] [Посекционные флаги предзаполнения](todo/per-section-prefill-flags.md)
+- [x] [Посекционные флаги предзаполнения](todo/per-section-prefill-flags.md)
 - [ ] [Общая деактивация предзаполнения](todo/global-prefill-disable.md)
 - [ ] [Опция «Оплата после получения»](todo/payment-after-receive.md)
 - [ ] [Опции доставки курьером](todo/courier-options.md)

@@ -36,7 +36,8 @@ class PrefillFrontendController {
     this.paramsChoiceManager = new ParamsChoiceManager(
       this.httpClient,
       this.dialogManager,
-      this.logger
+      this.logger,
+      params.messages
     );
 
     // Создаём ZenModeToggle для управления сворачиванием секций чекаута

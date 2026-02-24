@@ -45,19 +45,23 @@ class shopPrefillPluginOrderHooks
         }
 
         $order_id = (int) $data['order_id'];
-        $checkout_params = $this->session_storage->getCheckoutParams();
 
-        // Сохраняем shipping_type_id
-        $this->saveShippingType($order_id, $checkout_params);
+        // Операции предзаполнения — только если prefill активен
+        if ($this->storefront_settings['prefill']['active'] ?? false) {
+            $checkout_params = $this->session_storage->getCheckoutParams();
 
-        // Сохраняем комментарий
-        $this->saveComment($order_id, $checkout_params);
+            // Сохраняем shipping_type_id (для предзаполнения следующего заказа)
+            $this->saveShippingType($order_id, $checkout_params);
 
-        // Для неавторизованных: сохраняем хеш гостя
-        $this->saveGuestHash($order_id);
+            // Сохраняем комментарий (для предзаполнения следующего заказа)
+            $this->saveComment($order_id, $checkout_params);
 
-        // Очищаем cookies Zen Mode
-        $this->clearZenModeCookies();
+            // Для неавторизованных: сохраняем хеш гостя
+            $this->saveGuestHash($order_id);
+        }
+
+        // Очищаем cookies Zen Mode (независимо от prefill.active)
+        $this->zen_mode->clearCookies();
 
         shopPrefillPluginLog::info('Order creation hook processed successfully', [
             'order_id' => $order_id
@@ -102,7 +106,7 @@ class shopPrefillPluginOrderHooks
             return;
         }
 
-        $consent_required = $this->storefront_settings['guest']['consent_required'];
+        $consent_required = $this->storefront_settings['prefill']['guest']['consent_required'];
         $has_consent = $this->consent_storage->hasConsent();
 
         // Сохраняем хеш если: согласие не требуется ИЛИ оно получено
@@ -112,14 +116,4 @@ class shopPrefillPluginOrderHooks
         }
     }
 
-    /**
-     * Очищает cookies Zen Mode после создания заказа
-     * Делегирует вызов в ZenHelper
-     *
-     * @throws waException
-     */
-    private function clearZenModeCookies(): void
-    {
-        $this->zen_mode->clearCookies();
-    }
 }

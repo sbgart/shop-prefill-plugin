@@ -59,6 +59,7 @@ class shopPrefillPluginFrontendHooks
         $this->registerDebugHookCall('frontendHead');
 
         if (!$this->storefront_settings['active']) {
+            shopPrefillPluginLog::info('Skipping frontendHead: storefront is inactive');
             return;
         }
 
@@ -71,14 +72,17 @@ class shopPrefillPluginFrontendHooks
         // DEBUG: Состояние ПЕРЕД предзаполнением
         $this->logDebugBeforePrefill('frontendHead', $fill_params);
 
-        // Управление cookies авторизации
-        $this->handleRememberMeCookie();
+        // Управление cookies авторизации (только если prefill активен)
+        if ($this->storefront_settings['prefill']['active']) {
+            $this->handleRememberMeCookie();
 
-        // Для гостей: управление cookies хеша и согласия
-        $this->handleGuestCookies();
+            // Для гостей: управление cookies хеша и согласия
+            $this->handleGuestCookies();
+        }
 
         // Предзаполнение при входе на сайт
         if ($this->storefront_settings['prefill']['active'] && $this->storefront_settings['prefill']['on_entry']) {
+            shopPrefillPluginLog::info('Prefill on_entry triggered in frontendHead');
             $this->session_storage->preFillCheckoutParams(
                 $this->fill_params_provider->getFillParams()
             );
@@ -185,8 +189,8 @@ class shopPrefillPluginFrontendHooks
      */
     private function handleRememberMeCookie(): void
     {
-        if ($this->storefront_settings['remember_me']['active'] && $this->user_provider->isAuth()) {
-            $this->user_provider->rememberMe($this->storefront_settings['remember_me']['expires']);
+        if ($this->storefront_settings['prefill']['remember_me']['active'] && $this->user_provider->isAuth()) {
+            $this->user_provider->rememberMe($this->storefront_settings['prefill']['remember_me']['expires']);
         }
     }
 
@@ -230,6 +234,7 @@ class shopPrefillPluginFrontendHooks
                 'validation_error_title' => _wp('zen.validation.error.title'),
                 'validation_error_message' => _wp('zen.validation.error.message'),
                 'validation_error_button' => _wp('zen.validation.error.button'),
+                'dialog_choose_delivery' => _wp('dialog.header.choose_delivery'),
             ],
         ];
 

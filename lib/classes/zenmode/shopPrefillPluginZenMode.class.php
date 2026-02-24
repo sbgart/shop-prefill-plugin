@@ -312,26 +312,45 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Генерирует ОДИН блок CSS для всех активных групп
+     * Возвращает список групп, которые нужно визуально свернуть (скрыть содержимое).
+     * Учитывает настройки, cookie и ошибки в данных чекаута.
      *
-     * Вызывается в первом хуке (checkoutRenderAuth) и генерирует
-     * единый <style> тег для всех групп, которые нужно свернуть.
-     *
-     * @param array $params Данные чекаута для проверки ошибок
-     * @return string HTML с тегом <style> или пустая строка
+     * @param array $params Данные чекаута для проверки ошибок в группах
+     * @return string[] Имена групп (customer, delivery, payment)
      */
-    public function generateAllStyles(array $params = []): string
+    public function getGroupsToCollapse(array $params = []): array
     {
         if (!$this->isActive()) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($this->getGroups() as $group) {
+            if ($this->shouldCollapseGroup($group, $params)) {
+                $result[] = $group;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Генерирует один блок CSS для переданных групп (скрытие содержимого секций).
+     *
+     * @param string[] $groups Имена групп (customer, delivery, payment)
+     * @return string HTML с тегом <style> или пустая строка
+     */
+    public function generateAllStyles(array $groups = []): string
+    {
+        if (empty($groups)) {
             return '';
         }
 
         $styles = [];
-
-        foreach ($this->getGroups() as $group) {
-            if ($this->shouldCollapseGroup($group, $params)) {
+        foreach ($groups as $group) {
+            $css = $this->generateGroupStyles($group);
+            if ($css !== '') {
                 $styles[] = "/* === GROUP: {$group} === */";
-                $styles[] = $this->generateGroupStyles($group);
+                $styles[] = $css;
             }
         }
 
@@ -358,38 +377,19 @@ class shopPrefillPluginZenMode
 
         // Для delivery пытаемся найти специфичный шаблон
         if ($group === 'delivery' && !empty($params)) {
-            $delivery_type = $this->getDeliveryType($params);
-            if (!empty($delivery_type)) {
-                $type_template_key = 'summary_template_' . $delivery_type;
-                if (!empty($group_settings[$type_template_key])) {
-                    return $group_settings[$type_template_key];
-                }
+            // Получаем ID выбранного инстанса доставки
+            $shipping_id = $params['data']['shipping']['id'] ?? $params['vars']['shipping']['selected_variant']['id'] ?? null;
+
+            // Если для данного инстанса задан кастомный шаблон, используем его
+            if ($shipping_id && !empty($group_settings['custom_templates'][$shipping_id])) {
+                return $group_settings['custom_templates'][$shipping_id];
             }
         }
 
         return $group_settings['summary_template'] ?? '';
     }
 
-    /**
-     * Определяет тип доставки из параметров чекаута
-     *
-     * @param array $params
-     * @return string 'pickup', 'todoor', 'post' или пустая строка
-     */
-    private function getDeliveryType(array $params): string
-    {
-        // 1. Пробуем получить из selected_variant (массив или объект)
-        $selected_variant = $params['data']['shipping']['selected_variant'] ?? $params['vars']['shipping']['selected_variant'] ?? null;
 
-        if (!empty($selected_variant)) {
-            // Если это массив
-            if (is_array($selected_variant)) {
-                return $selected_variant['type'] ?? '';
-            }
-        }
-
-        return '';
-    }
 
     /**
      * Рендерит блок управления группой с кнопкой toggle и сводкой
@@ -428,18 +428,6 @@ class shopPrefillPluginZenMode
                 // Флаг prefillZenTriggerValidation больше не нужен — валидация была в JS
             }
         }
-
-        // ФИКСАЦИЯ СОСТОЯНИЯ: если секция развёрнута и куки нет → устанавливаем expanded
-        // Это предотвращает случайное сворачивание при reload формы
-        if (!$is_collapsed && $cookie_state === null) {
-            $this->response->setCookie(
-                self::COOKIE_PREFIX . $group,
-                'expanded',
-                0,  // session cookie
-                '/'
-            );
-        }
-
 
         if ($is_collapsed) {
             // Иконка группы (если включена)
@@ -543,6 +531,8 @@ class shopPrefillPluginZenMode
                 '/'
             );
         }
+
+        shopPrefillPluginLog::info('Zen Mode cookies cleared after order creation');
     }
 
 }

@@ -1,7 +1,9 @@
-{* Актуальные данные хранилища *}
-<div style="padding: 0; background: #e8f5e9; border-bottom: 1px solid #a5d6a7; flex-shrink: 0">
-    <details id="prefill-debug-storage-details" open ontoggle="PrefillDebugHelper.toggleStorageDetails(this)">
-        <summary style="
+{* Актуальные данные хранилища и снапшот *}
+<div class="prefill-debug-storage-wrapper" style="display: flex; flex-direction: column; flex-shrink: 0;">
+  {* Актуальные данные хранилища *}
+  <div style="padding: 0; background: #e8f5e9; border-bottom: 1px solid #a5d6a7; flex-shrink: 0">
+    <details id="prefill-debug-storage-details" ontoggle="PrefillDebugHelper.toggleStorageDetails(this)">
+      <summary style="
             padding: 8px 15px;
             cursor: pointer;
             color: #2e7d32;
@@ -10,11 +12,11 @@
             user-select: none;
             outline: none;
           ">
-            💾 Актуальное состояние хранилища (Session Storage)
-        </summary>
-        <div style="padding: 0 15px 15px 15px">
-            {if empty($current_storage)}
-            <p style="
+        💾 Актуальное состояние хранилища (Session Storage)
+      </summary>
+      <div style="padding: 0 15px 15px 15px">
+        {if empty($current_storage)}
+        <p style="
               color: #ff5722;
               font-weight: bold;
               font-size: 10px;
@@ -24,18 +26,18 @@
               border: 1px solid #ffcdd2;
               border-radius: 4px;
             ">
-                ❌ Хранилище пустое
-            </p>
-            {else} {assign var="has_order" value=isset($current_storage.order)} {assign var="has_auth"
-            value=isset($current_storage.order.auth)} {assign var="has_auth_data"
-            value=isset($current_storage.order.auth.data)} {assign var="has_region"
-            value=isset($current_storage.order.region)} {assign var="has_shipping"
-            value=isset($current_storage.order.shipping)} {assign var="has_details"
-            value=isset($current_storage.order.details)} {assign var="has_payment"
-            value=isset($current_storage.order.payment)} {assign var="has_confirm"
-            value=isset($current_storage.order.confirm)}
+          ❌ Хранилище пустое
+        </p>
+        {else} {assign var="has_order" value=isset($current_storage.order)} {assign var="has_auth"
+        value=isset($current_storage.order.auth)} {assign var="has_auth_data"
+        value=isset($current_storage.order.auth.data)} {assign var="has_region"
+        value=isset($current_storage.order.region)} {assign var="has_shipping"
+        value=isset($current_storage.order.shipping)} {assign var="has_details"
+        value=isset($current_storage.order.details)} {assign var="has_payment"
+        value=isset($current_storage.order.payment)} {assign var="has_confirm"
+        value=isset($current_storage.order.confirm)}
 
-            <div style="
+        <div style="
               background: #fff;
               padding: 10px;
               border: 1px solid #a5d6a7;
@@ -44,23 +46,23 @@
               font-size: 10px;
               line-height: 1.6;
             ">
-                <strong style="color: #2e7d32">📊 Структура данных:</strong><br />
-                {if isset($current_storage.prefill_metadata.first_prefill_done)}
-                first_prefill_done: {if $current_storage.prefill_metadata.first_prefill_done}✅{else}❌{/if}<br />
-                {/if}
-                order: {if $has_order}✅{else}❌{/if}<br />
-                {if $has_order} └─ auth: {if $has_auth}✅{else}❌{/if} {if $has_auth} → data: {if
-                $has_auth_data}✅{else}❌
-                {/if}
-                {/if}<br />
-                └─ region: {if $has_region}✅{else}❌{/if}<br />
-                └─ shipping: {if $has_shipping}✅{else}❌{/if}<br />
-                {/if} └─ details: {if $has_details}✅{else}❌{/if}<br />
-                └─ payment: {if $has_payment}✅{else}❌{/if}<br />
-                └─ confirm: {if $has_confirm}✅{else}❌{/if}
-            </div>
+          <strong style="color: #2e7d32">📊 Структура данных:</strong><br />
+          {if isset($current_storage.prefill_metadata.first_prefill_done)}
+          first_prefill_done: {if $current_storage.prefill_metadata.first_prefill_done}✅{else}❌{/if}<br />
+          {/if}
+          order: {if $has_order}✅{else}❌{/if}<br />
+          {if $has_order} └─ auth: {if $has_auth}✅{else}❌{/if} {if $has_auth} → data: {if
+          $has_auth_data}✅{else}❌
+          {/if}
+          {/if}<br />
+          └─ region: {if $has_region}✅{else}❌{/if}<br />
+          └─ shipping: {if $has_shipping}✅{else}❌{/if}<br />
+          {/if} └─ details: {if $has_details}✅{else}❌{/if}<br />
+          └─ payment: {if $has_payment}✅{else}❌{/if}<br />
+          └─ confirm: {if $has_confirm}✅{else}❌{/if}
+        </div>
 
-            <pre style="
+        <pre style="
               margin: 0;
               padding: 10px;
               background: #fff;
@@ -71,7 +73,86 @@
               overflow: auto;
             ">
   {$current_storage|@print_r}</pre>
-            {/if}
-        </div>
+        {/if}
+      </div>
     </details>
+  </div>
+
+  {* Снапшот хранилища *}
+  <div style="padding: 0; background: #fff8e1; border-bottom: 1px solid #ffe082; flex-shrink: 0">
+    <details id="prefill-debug-snapshot-details" ontoggle="PrefillDebugHelper.toggleStorageDetails(this)">
+      <summary style="
+            padding: 8px 15px;
+            cursor: pointer;
+            color: #f57f17;
+            font-weight: bold;
+            font-size: 10px;
+            user-select: none;
+            outline: none;
+          ">
+        📸 Снапшот хранилища (Prefill Snapshot)
+      </summary>
+      <div style="padding: 0 15px 15px 15px">
+        {if empty($snapshot_storage)}
+        <p style="
+              color: #ff5722;
+              font-weight: bold;
+              font-size: 10px;
+              margin: 0;
+              padding: 10px;
+              background: #fff;
+              border: 1px solid #ffcdd2;
+              border-radius: 4px;
+            ">
+          ❌ Снапшот пуст
+        </p>
+        {else} {assign var="s_has_order" value=isset($snapshot_storage.order)} {assign var="s_has_auth"
+        value=isset($snapshot_storage.order.auth)} {assign var="s_has_auth_data"
+        value=isset($snapshot_storage.order.auth.data)} {assign var="s_has_region"
+        value=isset($snapshot_storage.order.region)} {assign var="s_has_shipping"
+        value=isset($snapshot_storage.order.shipping)} {assign var="s_has_details"
+        value=isset($snapshot_storage.order.details)} {assign var="s_has_payment"
+        value=isset($snapshot_storage.order.payment)} {assign var="s_has_confirm"
+        value=isset($snapshot_storage.order.confirm)}
+
+        <div style="
+              background: #fff;
+              padding: 10px;
+              border: 1px solid #ffe082;
+              border-radius: 4px;
+              margin-bottom: 10px;
+              font-size: 10px;
+              line-height: 1.6;
+            ">
+          <strong style="color: #f57f17">📊 Структура данных снапшота:</strong><br />
+          {if isset($snapshot_storage.prefill_metadata.first_prefill_done)}
+          first_prefill_done: {if $snapshot_storage.prefill_metadata.first_prefill_done}✅{else}❌{/if}<br />
+          {/if}
+          order: {if $s_has_order}✅{else}❌{/if}<br />
+          {if $s_has_order} └─ auth: {if $s_has_auth}✅{else}❌{/if} {if $s_has_auth} → data: {if
+          $s_has_auth_data}✅{else}❌
+          {/if}
+          {/if}<br />
+          └─ region: {if $s_has_region}✅{else}❌{/if}<br />
+          └─ shipping: {if $s_has_shipping}✅{else}❌{/if}<br />
+          {/if} └─ details: {if $s_has_details}✅{else}❌{/if}<br />
+          └─ payment: {if $s_has_payment}✅{else}❌{/if}<br />
+          └─ confirm: {if $s_has_confirm}✅{else}❌{/if}
+        </div>
+
+        <pre style="
+              margin: 0;
+              padding: 10px;
+              background: #fff;
+              border: 1px solid #ffe082;
+              border-radius: 4px;
+              font-size: 9px;
+              max-height: 200px;
+              overflow: auto;
+            ">
+  {$snapshot_storage|@print_r}</pre>
+        {/if}
+      </div>
+    </details>
+  </div>
 </div>

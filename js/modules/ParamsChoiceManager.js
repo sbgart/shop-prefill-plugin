@@ -13,11 +13,13 @@ class ParamsChoiceManager {
      * @param {HttpClient} httpClient - HTTP клиент
      * @param {DialogManager} dialogManager - Менеджер диалогов
      * @param {Logger} logger - Логгер
+     * @param {Object} messages - Локализованные сообщения
      */
-    constructor(httpClient, dialogManager, logger) {
+    constructor(httpClient, dialogManager, logger, messages) {
         this.httpClient = httpClient;
         this.dialogManager = dialogManager;
         this.logger = logger;
+        this.messages = messages || {};
     }
 
     /**
@@ -47,8 +49,14 @@ class ParamsChoiceManager {
      * @returns {Promise<HTMLDialogElement>}
      */
     async displayDialog() {
+        const dialogId = "prefill-params-choice-dialog";
         const content = this.httpClient.fetchView("prefill/params-choice");
-        return await this.dialogManager.showDialog("prefill-params-choice-dialog", content);
+        const dialog = await this.dialogManager.showDialog(dialogId, content);
+
+        // Устанавливаем локализованный заголовок
+        this.dialogManager.setHeader(dialogId, this.messages.dialog_choose_delivery || "Choose delivery address");
+
+        return dialog;
     }
 
     /**
@@ -68,7 +76,7 @@ class ParamsChoiceManager {
         if (!paramsChoiceLink) {
             paramsChoiceLink = document.createElement("a");
             paramsChoiceLink.id = linkId;
-            paramsChoiceLink.className = "wa-tooltip bottom";
+            paramsChoiceLink.className = "wa-tooltip bottom prefill-params-choice-link";
             paramsChoiceLink.textContent = "Мои адреса";
             paramsChoiceLink.href = "javascript:void(0);";
             paramsChoiceLink.setAttribute("data-title", "Мои адреса на основе прошлых заказов");

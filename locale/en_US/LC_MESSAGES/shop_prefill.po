@@ -134,3 +134,6 @@ msgstr "Collapse"
 
 msgid "zen.price.free"
 msgstr "Free"
+
+msgid "dialog.header.choose_delivery"
+msgstr "Choose delivery address"
