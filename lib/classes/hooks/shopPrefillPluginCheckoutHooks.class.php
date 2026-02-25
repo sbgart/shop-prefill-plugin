@@ -70,53 +70,12 @@ class shopPrefillPluginCheckoutHooks
      *
      * @param array $params Параметры хука
      * @return string HTML для вставки в секцию авторизации
-     * @throws waException
-     * @throws SmartyException
      */
     public function handleCheckoutRenderAuth(array &$params): string
     {
-        $output = '';
-
-        // === ZEN MODE: Подключаем CSS только на чекауте (один раз) ===
-        if ($this->zen_mode->isActive()) {
-            $plugin_url = wa()->getAppStaticUrl('shop') . 'plugins/prefill/';
-            $output .= '<link rel="stylesheet" href="' . $plugin_url . 'css/zenmode.css">';
-        }
-
-        // === ZEN MODE: Рендер блока управления для группы customer ===
-        try {
-            if ($this->zen_mode->shouldCollapseGroup('customer', $params)) {
-                // СВЁРНУТО: сводка + "Изменить"
-                $output .= $this->zen_mode->renderCollapseBlock('customer', $params, true);
-            } elseif ($this->zen_mode->isGroupEnabled('customer')) {
-                // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                $output .= $this->zen_mode->renderCollapseBlock('customer', $params, false);
-            }
-        } catch (Exception $e) {
-            shopPrefillPluginLog::error('Zen Mode error in checkoutRenderAuth', [
-                'message' => $e->getMessage()
-            ]);
-        }
-
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // DEBUG: Добавляем запись в debug stack с данными об ошибках
-        if ($this->is_debug) {
-            $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebug::addDebugEntry(
-                $checkout_params,
-                'CHECKOUT HOOK (checkoutRenderAuth)',
-                ['errors_info' => $errors_info]
-            );
-        }
-
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'AUTH SECTION');
-        }
-
-        return $output;
+        return $this->renderZenModeStylesheet()
+            . $this->renderZenModeGroupBlock('customer', $params, 'checkoutRenderAuth')
+            . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderAuth', 'AUTH SECTION');
     }
 
     /**
@@ -128,62 +87,19 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderRegion(array &$params): string
     {
-        $output = '';
-
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // DEBUG: Добавляем запись в debug stack с данными об ошибках
-        if ($this->is_debug) {
-            $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebug::addDebugEntry(
-                $checkout_params,
-                'CHECKOUT HOOK (checkoutRenderRegion)',
-                ['errors_info' => $errors_info]
-            );
-        }
-
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'REGION SECTION');
-        }
-
-        return $output;
+        return $this->renderSectionErrorsAndDebug($params, 'checkoutRenderRegion', 'REGION SECTION');
     }
 
     /**
      * Хук срабатывает перед формированием HTML-кода шага оформления заказа «выбор способа доставки».
-     * Выполняет предзаполнение параметров формы заказа и показывает информацию об ошибках.
-     * Также может выводить блок управления zen-режимом для группы delivery, если details пустой/не существует.
+     * Показывает информацию об ошибках.
      *
      * @param array $params Параметры хука
      * @return string HTML для вставки в секцию доставки
-     * @throws waException
-     * @throws SmartyException
      */
     public function handleCheckoutRenderShipping(array &$params): string
     {
-        $output = '';
-
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // DEBUG: Добавляем запись в debug stack с данными об ошибках
-        if ($this->is_debug) {
-            $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebug::addDebugEntry(
-                $checkout_params,
-                'CHECKOUT HOOK (checkoutRenderShipping)',
-                ['errors_info' => $errors_info]
-            );
-        }
-
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'SHIPPING SECTION');
-        }
-
-        return $output;
+        return $this->renderSectionErrorsAndDebug($params, 'checkoutRenderShipping', 'SHIPPING SECTION');
     }
 
     /**
@@ -192,47 +108,11 @@ class shopPrefillPluginCheckoutHooks
      *
      * @param array $params Параметры хука
      * @return string HTML для вставки в секцию адреса
-     * @throws waException
-     * @throws SmartyException
      */
     public function handleCheckoutRenderDetails(array &$params): string
     {
-        $output = '';
-
-        // === ZEN MODE: Рендерим блок управления для группы delivery в КОНЦЕ секции details ===
-        try {
-            if ($this->zen_mode->shouldCollapseGroup('delivery', $params)) {
-                // СВЁРНУТО: сводка + "Изменить"
-                $output .= $this->zen_mode->renderCollapseBlock('delivery', $params, true);
-            } elseif ($this->zen_mode->isGroupEnabled('delivery')) {
-                // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                $output .= $this->zen_mode->renderCollapseBlock('delivery', $params, false);
-            }
-        } catch (Exception $e) {
-            shopPrefillPluginLog::error('Zen Mode error in checkoutRenderDetails', [
-                'message' => $e->getMessage()
-            ]);
-        }
-
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // DEBUG: Добавляем запись в debug stack с данными об ошибках
-        if ($this->is_debug) {
-            $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebug::addDebugEntry(
-                $checkout_params,
-                'CHECKOUT HOOK (checkoutRenderDetails)',
-                ['errors_info' => $errors_info]
-            );
-        }
-
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'DETAILS SECTION');
-        }
-
-        return $output;
+        return $this->renderZenModeGroupBlock('delivery', $params, 'checkoutRenderDetails')
+            . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderDetails', 'DETAILS SECTION');
     }
 
     /**
@@ -241,49 +121,11 @@ class shopPrefillPluginCheckoutHooks
      *
      * @param array $params Параметры хука
      * @return string HTML для вставки в секцию оплаты
-     * @throws waException
-     * @throws SmartyException
      */
     public function handleCheckoutRenderPayment(array &$params): string
     {
-        $output = '';
-
-        // === ZEN MODE: Рендерим блок управления для группы payment ===
-        try {
-            if ($this->zen_mode->shouldCollapseGroup('payment', $params)) {
-                // СВЁРНУТО: сводка + "Изменить"
-                $output .= $this->zen_mode->renderCollapseBlock('payment', $params, true);
-            } elseif ($this->zen_mode->isGroupEnabled('payment')) {
-                // РАЗВЁРНУТО (любая причина): только "Свернуть"
-                $output .= $this->zen_mode->renderCollapseBlock('payment', $params, false);
-            }
-        } catch (Exception $e) {
-            shopPrefillPluginLog::error('Zen Mode error in checkoutRenderPayment', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-        }
-
-        // Извлекаем все типы ошибок
-        $errors_info = $this->extractCheckoutErrors($params);
-
-        // DEBUG: Добавляем запись в debug stack
-        if ($this->is_debug) {
-            $checkout_params = ifset($params, 'data', []);
-            shopPrefillPluginDebug::addDebugEntry(
-                $checkout_params,
-                'CHECKOUT HOOK (checkoutRenderPayment)',
-                ['errors_info' => $errors_info]
-            );
-        }
-
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $output .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'PAYMENT SECTION');
-        }
-
-        return $output;
+        return $this->renderZenModeGroupBlock('payment', $params, 'checkoutRenderPayment')
+            . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderPayment', 'PAYMENT SECTION');
     }
 
     /**
@@ -292,62 +134,136 @@ class shopPrefillPluginCheckoutHooks
      *
      * @param array $params Параметры хука
      * @return string HTML для вставки в секцию подтверждения
-     * @throws waException
-     * @throws SmartyException
      */
     public function handleCheckoutRenderConfirm(array &$params): string
     {
-        $html = '';
+        return $this->renderZenModeConfirmStyles($params)
+            . $this->renderConsentCheckbox()
+            . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderConfirm', 'CONFIRM SECTION');
+    }
 
-        // === ZEN MODE: Генерируем CSS для свернутых групп в последнем хуке ===
+    /**
+     * Рендерит тег <link> для подключения zenmode.css если Zen Mode активен.
+     *
+     * @return string HTML-тег подключения стилей или пустая строка
+     */
+    private function renderZenModeStylesheet(): string
+    {
+        if (!$this->zen_mode->isActive()) {
+            return '';
+        }
+
+        $plugin_url = wa()->getAppStaticUrl('shop') . 'plugins/prefill/';
+        return '<link rel="stylesheet" href="' . $plugin_url . 'css/zenmode.css">';
+    }
+
+    /**
+     * Рендерит блок управления Zen Mode для указанной группы.
+     * Определяет должна ли группа быть свёрнута и вызывает соответствующий рендер.
+     *
+     * @param string $group Имя группы (customer, delivery, payment)
+     * @param array $params Параметры хука
+     * @param string $log_context Контекст для логирования ошибок
+     * @return string HTML блока управления или пустая строка
+     */
+    private function renderZenModeGroupBlock(string $group, array &$params, string $log_context): string
+    {
+        try {
+            // Свёрнуто: сводка + кнопка «Изменить»
+            if ($this->zen_mode->shouldCollapseGroup($group, $params)) {
+                return $this->zen_mode->renderCollapseBlock($group, $params, true);
+            }
+            // Развёрнуто: только кнопка «Свернуть»
+            if ($this->zen_mode->isGroupEnabled($group)) {
+                return $this->zen_mode->renderCollapseBlock($group, $params, false);
+            }
+            return '';
+        } catch (Exception $e) {
+            shopPrefillPluginLog::error('Zen Mode error in ' . $log_context, [
+                'message' => $e->getMessage()
+            ]);
+            return '';
+        }
+    }
+
+    /**
+     * Генерирует CSS стили для свернутых групп Zen Mode.
+     * Вызывается в последнем хуке (Confirm) для генерации всех стилей сразу.
+     *
+     * @param array $params Параметры хука
+     * @return string HTML с <style> тегом или пустая строка
+     */
+    private function renderZenModeConfirmStyles(array $params): string
+    {
         try {
             $groups_to_collapse = $this->zen_mode->getGroupsToCollapse($params);
-            $html .= $this->zen_mode->generateAllStyles($groups_to_collapse);
+            return $this->zen_mode->generateAllStyles($groups_to_collapse);
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Zen Mode styling error in checkoutRenderConfirm', [
                 'message' => $e->getMessage()
             ]);
+            return '';
         }
+    }
 
-        // Показываем галочку согласия только для неавторизованных, если prefill и consent_required включены
+    /**
+     * Рендерит галочку согласия на сохранение данных для гостей.
+     * Показывается только если prefill активен, пользователь не авторизован и требуется согласие.
+     *
+     * @return string HTML чекбокса согласия или пустая строка
+     */
+    private function renderConsentCheckbox(): string
+    {
         try {
-            if ($this->storefront_settings['prefill']['active'] && !$this->user_provider->isAuth()) {
-                $consent_required = $this->storefront_settings['prefill']['guest']['consent_required'];
-
-                // Показываем галочку только если согласие требуется
-                if ($consent_required) {
-                    $has_consent = $this->consent_storage->hasConsent();
-                    $html .= shopPrefillPluginViewProvider::render(
-                        'checkout/ConsentCheckbox',
-                        ['has_consent' => $has_consent]
-                    );
-                }
+            if (!$this->storefront_settings['prefill']['active'] || $this->user_provider->isAuth()) {
+                return '';
             }
+
+            $consent_required = $this->storefront_settings['prefill']['guest']['consent_required'];
+            if (!$consent_required) {
+                return '';
+            }
+
+            $has_consent = $this->consent_storage->hasConsent();
+            return shopPrefillPluginViewProvider::render(
+                'checkout/ConsentCheckbox',
+                ['has_consent' => $has_consent]
+            );
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Consent checkbox rendering error in checkoutRenderConfirm', [
                 'message' => $e->getMessage()
             ]);
+            return '';
         }
+    }
 
-        // Извлекаем все типы ошибок
+    /**
+     * Извлекает ошибки, добавляет debug запись и возвращает HTML блока ошибок.
+     * Единый метод для всех render-хуков для обработки ошибок и debug информации.
+     *
+     * @param array $params Параметры хука
+     * @param string $hook_name Имя хука для debug записи (например checkoutRenderAuth)
+     * @param string $section_label Метка секции для вывода (например AUTH SECTION)
+     * @return string HTML блока debug информации или пустая строка
+     */
+    private function renderSectionErrorsAndDebug(array $params, string $hook_name, string $section_label): string
+    {
         $errors_info = $this->extractCheckoutErrors($params);
 
-        // DEBUG: Добавляем запись в debug stack с данными об ошибках
         if ($this->is_debug) {
             $checkout_params = ifset($params, 'data', []);
             shopPrefillPluginDebug::addDebugEntry(
                 $checkout_params,
-                'CHECKOUT HOOK (checkoutRenderConfirm)',
+                'CHECKOUT HOOK (' . $hook_name . ')',
                 ['errors_info' => $errors_info]
             );
         }
 
-        // Если есть ошибки - показываем debug информацию
-        if ($errors_info['has_errors']) {
-            $html .= shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, 'CONFIRM SECTION');
+        if (!$errors_info['has_errors']) {
+            return '';
         }
 
-        return $html;
+        return shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, $section_label);
     }
 
     /**

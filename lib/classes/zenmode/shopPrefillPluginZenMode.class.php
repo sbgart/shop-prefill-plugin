@@ -286,32 +286,6 @@ class shopPrefillPluginZenMode
     // ==================== CSS GENERATION ====================
 
     /**
-     * Генерирует CSS для скрытия секций одной группы
-     *
-     * Скрывает только содержимое формы, кроме plugin hooks (.wa-plugin-hook).
-     * Header секции остается видимым.
-     *
-     * @param string $group Имя группы
-     * @return string CSS-правила
-     */
-    public function generateGroupStyles(string $group): string
-    {
-        if (!isset(self::GROUP_SECTIONS[$group])) {
-            return '';
-        }
-
-        $sections = self::GROUP_SECTIONS[$group];
-        $css = [];
-
-        foreach ($sections as $section) {
-            // Скрываем содержимое формы, кроме plugin hooks
-            $css[] = ".wa-step-{$section}-section .wa-section-body form > *:not(.wa-plugin-hook) { display: none !important; }";
-        }
-
-        return implode("\n", $css);
-    }
-
-    /**
      * Возвращает список групп, которые нужно визуально свернуть (скрыть содержимое).
      * Учитывает настройки, cookie и ошибки в данных чекаута.
      *
@@ -334,7 +308,7 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Генерирует один блок CSS для переданных групп (скрытие содержимого секций).
+     * Генерирует CSS для переданных групп: скрывает содержимое секций (кроме .wa-plugin-hook).
      *
      * @param string[] $groups Имена групп (customer, delivery, payment)
      * @return string HTML с тегом <style> или пустая строка
@@ -347,10 +321,16 @@ class shopPrefillPluginZenMode
 
         $styles = [];
         foreach ($groups as $group) {
-            $css = $this->generateGroupStyles($group);
-            if ($css !== '') {
+            if (!isset(self::GROUP_SECTIONS[$group])) {
+                continue;
+            }
+            $css = [];
+            foreach (self::GROUP_SECTIONS[$group] as $section) {
+                $css[] = ".wa-step-{$section}-section .wa-section-body form > *:not(.wa-plugin-hook) { display: none !important; }";
+            }
+            if ($css !== []) {
                 $styles[] = "/* === GROUP: {$group} === */";
-                $styles[] = $css;
+                $styles[] = implode("\n", $css);
             }
         }
 
