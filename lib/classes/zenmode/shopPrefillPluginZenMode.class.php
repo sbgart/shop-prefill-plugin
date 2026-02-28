@@ -111,7 +111,7 @@ class shopPrefillPluginZenMode
      * @param array $params Данные чекаута для проверки ошибок
      * @return bool
      */
-    public function shouldCollapseGroup(string $group, array $params = []): bool
+    public function shouldCollapseGroup(string $group, shopPrefillCheckoutState $state): bool
     {
         if (!$this->isGroupEnabled($group)) {
             return false;
@@ -121,16 +121,12 @@ class shopPrefillPluginZenMode
 
         // 1. Обработка попытки сворачивания (COLLAPSING)
         if ($cookie_state === 'collapsing') {
-            if (!empty($params)) {
-                $errors = $this->extractGroupErrors($params, $group);
-
-                if ($errors['has_errors']) {
-                    // ЕСТЬ ОШИБКИ В ГРУППЕ: не сворачивать, alert будет показан в renderCollapseBlock
-                    return false;
-                } else {
-                    // НЕТ ОШИБОК: свернуть, cookie будет удалена в renderCollapseBlock
-                    return true;
-                }
+            if ($state->hasGroupErrors($group)) {
+                // ЕСТЬ ОШИБКИ В ГРУППЕ: не сворачивать
+                return false;
+            } else {
+                // НЕТ ОШИБОК: свернуть, cookie будет удалена в renderCollapseBlock
+                return true;
             }
         }
 
@@ -140,11 +136,8 @@ class shopPrefillPluginZenMode
         }
 
         // 3. Дефолтное поведение: проверяем ошибки В ГРУППЕ
-        if (!empty($params)) {
-            $errors_info = $this->extractGroupErrors($params, $group);
-            if ($errors_info['has_errors']) {
-                return false;
-            }
+        if ($state->hasGroupErrors($group)) {
+            return false;
         }
 
         return true;
@@ -172,88 +165,7 @@ class shopPrefillPluginZenMode
         return $this->settings['groups'][$group] ?? [];
     }
 
-    /**
-     * Извлекает ошибки для конкретной группы секций
-     *
-     * Маппинг групп → секций:
-     * - customer → auth (включая service_agreement)
-     * - delivery → region, shipping, details
-     * - payment → payment
-     *
-     * @param array $params Массив параметров из checkout хука
-     * @param string $group Имя группы (customer, delivery, payment)
-     * @return array Структурированный массив с информацией об ошибках группы
-     */
-    private function extractGroupErrors(array $params, string $group): array
-    {
-        $has_errors = false;
-        $group_errors = [];
 
-        switch ($group) {
-            case 'customer':
-                // Проверяем ошибки в auth
-                $auth_delayed_errors = ifset($params, 'data', 'auth', 'delayed_errors', []);
-                if (!empty($auth_delayed_errors)) {
-                    $has_errors = true;
-                    $group_errors['auth_delayed_errors'] = $auth_delayed_errors;
-                }
-
-                // Проверяем service_agreement
-                $service_agreement_value = ifset($params, 'vars', 'auth', 'service_agreement', null);
-                if ($service_agreement_value !== null && $service_agreement_value == 0) {
-                    $has_errors = true;
-                    $group_errors['service_agreement_error'] = true;
-                }
-
-                // Проверяем regular_errors если error_step_id = 'auth'
-                $error_step_id = ifset($params, 'error_step_id', null);
-                if ($error_step_id === 'auth') {
-                    $regular_errors = ifset($params, 'errors', []);
-                    if (!empty($regular_errors)) {
-                        $has_errors = true;
-                        $group_errors['regular_errors'] = $regular_errors;
-                    }
-                }
-                break;
-
-            case 'delivery':
-                // Проверяем ошибки в region, shipping, details
-                $details_delayed_errors = ifset($params, 'data', 'details', 'delayed_errors', []);
-                if (!empty($details_delayed_errors)) {
-                    $has_errors = true;
-                    $group_errors['details_delayed_errors'] = $details_delayed_errors;
-                }
-
-                // Проверяем regular_errors если error_step_id в группе delivery
-                $error_step_id = ifset($params, 'error_step_id', null);
-                if (in_array($error_step_id, ['region', 'shipping', 'details'])) {
-                    $regular_errors = ifset($params, 'errors', []);
-                    if (!empty($regular_errors)) {
-                        $has_errors = true;
-                        $group_errors['regular_errors'] = $regular_errors;
-                    }
-                }
-                break;
-
-            case 'payment':
-                // Проверяем ошибки в payment
-                $error_step_id = ifset($params, 'error_step_id', null);
-                if ($error_step_id === 'payment') {
-                    $regular_errors = ifset($params, 'errors', []);
-                    if (!empty($regular_errors)) {
-                        $has_errors = true;
-                        $group_errors['regular_errors'] = $regular_errors;
-                    }
-                }
-                break;
-        }
-
-        return [
-            'has_errors' => $has_errors,
-            'group' => $group,
-            'errors' => $group_errors,
-        ];
-    }
 
     /**
      * Возвращает путь к иконке группы
@@ -292,7 +204,7 @@ class shopPrefillPluginZenMode
      * @param array $params Данные чекаута для проверки ошибок в группах
      * @return string[] Имена групп (customer, delivery, payment)
      */
-    public function getGroupsToCollapse(array $params = []): array
+    public function getGroupsToCollapse(shopPrefillCheckoutState $state): array
     {
         if (!$this->isActive()) {
             return [];
@@ -300,7 +212,7 @@ class shopPrefillPluginZenMode
 
         $result = [];
         foreach ($this->getGroups() as $group) {
-            if ($this->shouldCollapseGroup($group, $params)) {
+            if ($this->shouldCollapseGroup($group, $state)) {
                 $result[] = $group;
             }
         }
@@ -351,16 +263,13 @@ class shopPrefillPluginZenMode
      * @param array $params Данные чекаута (нужны для определения типа доставки)
      * @return string
      */
-    public function getSummaryTemplate(string $group, array $params = []): string
+    public function getSummaryTemplate(string $group, shopPrefillCheckoutState $state): string
     {
         $group_settings = $this->getGroupSettings($group);
 
-        // Для delivery пытаемся найти специфичный шаблон
-        if ($group === 'delivery' && !empty($params)) {
-            // Получаем ID выбранного инстанса доставки
-            $shipping_id = $params['data']['shipping']['id'] ?? $params['vars']['shipping']['selected_variant']['id'] ?? null;
-
-            // Если для данного инстанса задан кастомный шаблон, используем его
+        // Для delivery пытаемся найти специфичный шаблон по ID инстанса
+        if ($group === 'delivery') {
+            $shipping_id = $state->getShippingInstanceId();
             if ($shipping_id && !empty($group_settings['custom_templates'][$shipping_id])) {
                 return $group_settings['custom_templates'][$shipping_id];
             }
@@ -380,10 +289,8 @@ class shopPrefillPluginZenMode
      * @return string HTML
      * @throws waException
      */
-    public function renderCollapseBlock(string $group, array $params, bool $is_collapsed = true): string
+    public function renderCollapseBlock(string $group, shopPrefillCheckoutState $state, bool $is_collapsed = true): string
     {
-
-
         // Проверяем состояние cookie для обработки collapsing
         $cookie_state = waRequest::cookie(self::COOKIE_PREFIX . $group);
 
@@ -394,7 +301,7 @@ class shopPrefillPluginZenMode
                 $this->response->setCookie(
                     self::COOKIE_PREFIX . $group,
                     '',
-                    -1,  // удаление
+                    -1,
                     '/'
                 );
             } else {
@@ -402,10 +309,9 @@ class shopPrefillPluginZenMode
                 $this->response->setCookie(
                     self::COOKIE_PREFIX . $group,
                     'expanded',
-                    0,  // session cookie
+                    0,
                     '/'
                 );
-                // Флаг prefillZenTriggerValidation больше не нужен — валидация была в JS
             }
         }
 
@@ -416,7 +322,7 @@ class shopPrefillPluginZenMode
             }
 
             // Свёрнуто: сводка + кнопка "Изменить"
-            $summary_html = $this->renderGroupSummary($group, $params);
+            $summary_html = $this->renderGroupSummary($group, $state);
         }
 
         $this->view->assign([
@@ -437,12 +343,12 @@ class shopPrefillPluginZenMode
      * @param array $params Данные чекаута
      * @return string HTML
      */
-    public function renderGroupSummary(string $group, array $params): string
+    public function renderGroupSummary(string $group, shopPrefillCheckoutState $state): string
     {
-        $template = $this->getSummaryTemplate($group, $params);
+        $template = $this->getSummaryTemplate($group, $state);
 
         // Подготавливаем данные для подстановки через ZenData
-        $data = $this->zen_data->extractSummaryData($group, $params);
+        $data = $this->zen_data->extractSummaryData($group, $state);
 
         // Если шаблон пустой — ничего не выводим
         if (empty($template)) {

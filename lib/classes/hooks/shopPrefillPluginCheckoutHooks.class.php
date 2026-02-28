@@ -55,12 +55,12 @@ class shopPrefillPluginCheckoutHooks
 
         $filled_order = $this->session_storage->preFillCheckoutParams($fill_params);
 
-        if (!empty($filled_order) && isset($params['data']['input'])) {
-            shopPrefillPluginLog::info('Prefill applied in checkoutBeforeAuth');
-            $params['data']['input'] = shopPrefillPluginHelper::deepMergeArrays(
-                $params['data']['input'],
-                $filled_order
-            );
+        if (!empty($filled_order)) {
+            $state = new shopPrefillCheckoutState($params);
+            $state->applyPrefillInput($filled_order);
+            if ($state->isPrefilled()) {
+                shopPrefillPluginLog::info('Prefill applied in checkoutBeforeAuth');
+            }
         }
     }
 
@@ -169,13 +169,14 @@ class shopPrefillPluginCheckoutHooks
     private function renderZenModeGroupBlock(string $group, array &$params, string $log_context): string
     {
         try {
+            $state = new shopPrefillCheckoutState($params);
             // Свёрнуто: сводка + кнопка «Изменить»
-            if ($this->zen_mode->shouldCollapseGroup($group, $params)) {
-                return $this->zen_mode->renderCollapseBlock($group, $params, true);
+            if ($this->zen_mode->shouldCollapseGroup($group, $state)) {
+                return $this->zen_mode->renderCollapseBlock($group, $state, true);
             }
             // Развёрнуто: только кнопка «Свернуть»
             if ($this->zen_mode->isGroupEnabled($group)) {
-                return $this->zen_mode->renderCollapseBlock($group, $params, false);
+                return $this->zen_mode->renderCollapseBlock($group, $state, false);
             }
             return '';
         } catch (Exception $e) {
@@ -196,7 +197,8 @@ class shopPrefillPluginCheckoutHooks
     private function renderZenModeConfirmStyles(array $params): string
     {
         try {
-            $groups_to_collapse = $this->zen_mode->getGroupsToCollapse($params);
+            $state = new shopPrefillCheckoutState($params);
+            $groups_to_collapse = $this->zen_mode->getGroupsToCollapse($state);
             return $this->zen_mode->generateAllStyles($groups_to_collapse);
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Zen Mode styling error in checkoutRenderConfirm', [
@@ -248,12 +250,12 @@ class shopPrefillPluginCheckoutHooks
      */
     private function renderSectionErrorsAndDebug(array $params, string $hook_name, string $section_label): string
     {
-        $errors_info = $this->extractCheckoutErrors($params);
+        $state = new shopPrefillCheckoutState($params);
+        $errors_info = $state->getAllErrorsInfo();
 
         if ($this->is_debug) {
-            $checkout_params = ifset($params, 'data', []);
             shopPrefillPluginDebug::addDebugEntry(
-                $checkout_params,
+                $state->getData(),
                 'CHECKOUT HOOK (' . $hook_name . ')',
                 ['errors_info' => $errors_info]
             );
@@ -266,44 +268,5 @@ class shopPrefillPluginCheckoutHooks
         return shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, $section_label);
     }
 
-    /**
-     * Извлекает все типы ошибок из $params массива checkout хука.
-     * Используется для определения, можно ли безопасно скрывать поля формы.
-     *
-     * @param array $params Массив параметров из checkout хука
-     * @return array Структурированный массив с информацией об ошибках
-     */
-    private function extractCheckoutErrors(array $params): array
-    {
-        // Собираем ВСЕ delayed_errors из всех шагов
-        $auth_delayed_errors = ifset($params, 'data', 'auth', 'delayed_errors', []);
-        $details_delayed_errors = ifset($params, 'data', 'details', 'delayed_errors', []);
-
-        // Проверяем ОБЫЧНЫЕ ошибки (критические, блокирующие)
-        $regular_errors = ifset($params, 'errors', []);
-        $error_step_id = ifset($params, 'error_step_id', null);
-
-        // Проверяем auth[service_agreement] - чекбокс согласия с условиями
-        // Значение = 0 означает НЕ установлен, = 1 означает установлен
-        $service_agreement_error = false;
-        $service_agreement_value = ifset($params, 'vars', 'auth', 'service_agreement', null);
-
-        // Если service_agreement существует и равен 0 - пользователь НЕ согласился
-        if ($service_agreement_value !== null && $service_agreement_value == 0) {
-            $service_agreement_error = true;
-        }
-
-        $all_delayed_errors = array_merge($auth_delayed_errors, $details_delayed_errors);
-        $has_errors = !empty($all_delayed_errors) || !empty($regular_errors) || $service_agreement_error;
-
-        return [
-            'has_errors' => $has_errors,
-            'regular_errors' => $regular_errors,
-            'auth_delayed_errors' => $auth_delayed_errors,
-            'details_delayed_errors' => $details_delayed_errors,
-            'service_agreement_error' => $service_agreement_error,
-            'error_step_id' => $error_step_id,
-        ];
-    }
-
 }
+

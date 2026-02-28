@@ -54,7 +54,7 @@ class shopPrefillPluginAssetsManager
         $add_js('js/modules/ZenModeToggle.js'); // управление Zen Mode (без зависимостей)
 
         // Главный контроллер (координатор)
-        $add_js('js/frontend.' . (!$is_debug ? 'min.' : '') . 'js?');
+        $add_js('js/prefill.frontend.' . (!$is_debug ? 'min.' : '') . 'js?');
 
         // Генерируем и подключаем CSS переменные
         if (!empty($css_variables)) {

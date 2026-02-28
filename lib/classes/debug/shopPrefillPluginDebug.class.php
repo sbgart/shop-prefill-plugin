@@ -305,7 +305,7 @@ class shopPrefillPluginDebug
 
             // Подключаем JS файл
             $plugin_id = 'prefill';
-            $js_url = wa()->getAppStaticUrl('shop') . "plugins/{$plugin_id}/js/prefillDebug.js?v=" . date('YmdHi');
+            $js_url = wa()->getAppStaticUrl('shop') . "plugins/{$plugin_id}/js/prefill.debug.js?v=" . date('YmdHi');
 
             // Определяем базовый URL для AJAX запросов
             $base_url = wa()->getRouteUrl('shop/frontend');

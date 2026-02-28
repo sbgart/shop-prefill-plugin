@@ -184,229 +184,85 @@ class shopPrefillPluginZenData
     }
 
     /**
-     * Извлекает данные для сводки из params чекаута
+     * Извлекает данные для сводки из состояния чекаута
      *
      * @param string $group Имя группы
-     * @param array $params Данные чекаута
+     * @param shopPrefillCheckoutState $state Адаптер параметров чекаута
      * @return array
      * @throws waException
      */
-    public function extractSummaryData(string $group, array $params): array
+    public function extractSummaryData(string $group, shopPrefillCheckoutState $state): array
     {
-        // Инициализируем массив данными по умолчанию (из списка доступных полей)
+        // Инициализируем массив данными по умолчанию
         $data = array_fill_keys(array_keys($this->getAvailableFields()), '');
 
-        // Заполняем данными в зависимости от группы
-        // Можно было бы разделить на разные методы, но пока оставим в одном для простоты,
-        // так как некоторые данные могут пересекаться или требоваться глобально.
-
-        $this->extractContactData($params, $data);
-        $this->extractDeliveryData($params, $data); // Включая адрес
-        $this->extractPaymentData($params, $data);
+        $this->extractContactData($state, $data);
+        $this->extractDeliveryData($state, $data);
+        $this->extractPaymentData($state, $data);
 
         return $data;
     }
 
-    private function extractContactData(array $params, array &$data): void
+    private function extractContactData(shopPrefillCheckoutState $state, array &$data): void
     {
-        // Приоритет: vars → input
-        $auth_fields = $params['vars']['auth']['fields'] ?? [];
-        $auth_input = $params['data']['input']['auth']['data'] ?? [];
-
-        $data['firstname'] = $auth_fields['firstname']['value'] ?? $auth_input['firstname'] ?? '';
-        $data['lastname'] = $auth_fields['lastname']['value'] ?? $auth_input['lastname'] ?? '';
-        $data['phone'] = $auth_fields['phone']['value'] ?? $auth_input['phone'] ?? '';
-        $data['email'] = $auth_fields['email']['value'] ?? $auth_input['email'] ?? '';
-        $data['company'] = $auth_fields['company']['value'] ?? $auth_input['company'] ?? '';
-
-        // --- Custom Contact Fields ---
-        $standard_fields = ['firstname', 'lastname', 'phone', 'email', 'company', 'password', 'confirm_password'];
-        $custom_fields = [];
-
-        // Собираем все поля из инпута, исключая стандартные
-        if (!empty($auth_input)) {
-            foreach ($auth_input as $key => $value) {
-                if (!in_array($key, $standard_fields)) {
-                    $custom_fields[$key] = $value;
-                }
-            }
-        }
-
-        // Дополняем из fields (для отображения лейблов можно было бы использовать fields configuration, 
-        // но пока просто берем значения)
-        if (!empty($auth_fields)) {
-            foreach ($auth_fields as $key => $field_data) {
-                if (!in_array($key, $standard_fields) && !isset($custom_fields[$key])) {
-                    $custom_fields[$key] = $field_data['value'] ?? '';
-                }
-            }
-        }
-
-        $data['contact_custom'] = $custom_fields;
+        $data['firstname'] = $state->getFirstName();
+        $data['lastname'] = $state->getLastName();
+        $data['phone'] = $state->getPhone();
+        $data['email'] = $state->getEmail();
+        $data['company'] = $state->getCompany();
+        $data['contact_custom'] = $state->getCustomContactFields();
     }
 
     /**
      * @throws waException
      */
-    private function extractDeliveryData(array $params, array &$data): void
+    private function extractDeliveryData(shopPrefillCheckoutState $state, array &$data): void
     {
-        // Приоритет: data.shipping.selected_variant → vars.shipping.shipping_rate
-        $selected_variant = $params['data']['shipping']['selected_variant'] ?? [];
-        $shipping_rate_data = $params['vars']['shipping']['shipping_rate'] ?? [];
-
         // 1. Основные данные тарифа
-        $data['shipping_name'] = $selected_variant['name'] ?? $shipping_rate_data['name'] ?? '';
+        $data['shipping_name'] = $state->getShippingName();
 
-        $shipping_rate_raw = $selected_variant['rate'] ?? $shipping_rate_data['rate'] ?? null;
-        $data['shipping_rate'] = $shipping_rate_raw !== null ? $this->formatPrice($shipping_rate_raw) : '';
+        $rate = $state->getShippingRate();
+        $data['shipping_rate'] = $rate !== null ? $this->formatPrice($rate) : '';
 
-        // 2. Имя службы доставки (Плагина)
-        $variant_id = $selected_variant['variant_id'] ?? $shipping_rate_data['variant_id'] ?? '';
-        if (!empty($variant_id)) {
-            // variant_id обычно имеет формат "plugin_id.method_id" или просто "plugin_id"
-            $parts = explode('.', $variant_id);
-            $service_id = $parts[0];
-
+        // 2. Имя службы доставки (плагина)
+        $service_id = $state->getShippingServiceId();
+        if ($service_id !== null) {
             $shipping_methods = shopPrefillPluginPluginsProvider::getShippingMethods();
             if (isset($shipping_methods[$service_id])) {
                 $data['delivery_method_name'] = $shipping_methods[$service_id]['name'];
             }
         }
 
-        // 3. Расширенные данные доставки (из custom_data или корня варианта)
-        // Обычно Webasyst кладет всё самое вкусное (est_delivery, description) в корень варианта, 
-        // а специфику (way, schedule) в custom_data.
-
-        // Est Delivery
-        $est_delivery = $selected_variant['est_delivery'] ?? $shipping_rate_data['est_delivery'] ?? '';
-        $data['delivery_est_delivery'] = $est_delivery;
-
-        $data['delivery_plugin'] = $selected_variant['plugin_name'] ?? $shipping_rate_data['plugin_name'] ?? '';
-        $data['delivery_tariff'] = $selected_variant['service'] ?? $shipping_rate_data['service'] ?? '';
-
-        $raw_type = $selected_variant['type'] ?? $shipping_rate_data['type'] ?? '';
-        $data['delivery_type'] = $this->formatDeliveryType($raw_type);
-
-        // Description
-        $description = $selected_variant['description'] ?? $shipping_rate_data['description'] ?? '';
-        // Иногда description лежит в custom_data
-        if (empty($description)) {
-            $custom_data = $selected_variant['custom_data'] ?? $shipping_rate_data['custom_data'] ?? [];
-            // custom_data имеет структуру [service_type => [...data...]]
-            // Нам нужно найти первый непустой массив или по типу сервиса, если бы мы его знали наверняка.
-            // Но обычно там только один ключ с типом.
-            foreach ($custom_data as $type_data) {
-                if (is_array($type_data) && !empty($type_data['description'])) {
-                    $description = $type_data['description'];
-                    break;
-                }
-            }
-        }
-        $data['delivery_description'] = $description;
-
-        // Custom Data Parsing (Schedule, Way, Storage, Photos)
-        $custom_data = $selected_variant['custom_data'] ?? $shipping_rate_data['custom_data'] ?? [];
-        // Берем данные из первого попавшегося типа сервиса (todoor, pickup, post)
-        // Так как выбран только один вариант
-        $service_data = null;
-        if (!empty($custom_data)) {
-            $service_data = reset($custom_data);
-        }
-
-        if ($service_data) {
-            $data['delivery_way'] = $service_data['way'] ?? '';
-            $data['delivery_storage_days'] = $service_data['storage']['storage_days'] ?? '';
-            $data['delivery_photos'] = $service_data['photos'] ?? []; // Array
-        }
-
-        // Schedule (Часы работы)
-        // Может быть html (pickup_schedule_html) или структурой (pickup_schedule)
-        // Обычно это лежит в корне shipping_rate
-        $pickup_schedule_html = $selected_variant['pickup_schedule_html'] ?? $shipping_rate_data['pickup_schedule_html'] ?? '';
-        if (!empty($pickup_schedule_html)) {
-            $data['delivery_schedule'] = $pickup_schedule_html;
-        } else {
-            // Если html нет, но есть структура дней - можно было бы сгенерировать html, 
-            // но это сложная логика шаблона. Пока оставим пустым или попробуем найти pre-rendered.
-            // В details.html есть логика рендера. Мы не будем её дублировать сейчас.
-        }
-
-        // --- Custom Shipping Fields ---
-        // Плагины доставки могут просить доп поля, которые лежат в shipping[id][custom]
-        // Но структура params сложная. Обычно:
-        // $params['data']['shipping']['custom'] или внутри selected_variant?
-        // Чаще всего это shipping[service_id][custom_field].
-        // Попробуем найти 'custom' в корне shipping data
-
-        $data['shipping_custom'] = $params['data']['shipping']['custom'] ?? [];
-
+        // 3. Расширенные данные доставки
+        $data['delivery_est_delivery'] = $state->getShippingEstDelivery();
+        $data['delivery_plugin'] = $state->getShippingPluginName();
+        $data['delivery_tariff'] = $state->getShippingService();
+        $data['delivery_type'] = $this->formatDeliveryType($state->getShippingType());
+        $data['delivery_description'] = $state->getShippingDescription();
+        $data['delivery_way'] = $state->getShippingWay();
+        $data['delivery_storage_days'] = $state->getShippingStorageDays();
+        $data['delivery_photos'] = $state->getShippingPhotos();
+        $data['delivery_schedule'] = $state->getShippingScheduleHtml();
+        $data['shipping_custom'] = $state->getShippingCustomFields();
 
         // 4. Адресные данные
-        $shipping_address = $params['data']['shipping']['address'] ?? [];
-        $region_input = $params['data']['input']['region'] ?? [];
-        $region_selected = $params['vars']['region']['selected_values'] ?? [];
-        $details_address = $params['data']['input']['details']['shipping_address'] ?? [];
-
-        // Объединяем источники адреса (приоритет: shipping > details > region)
-        // Но для формирования финального массива address_custom нам нужно знать что есть что.
-        // Проще всего взять $shipping_address как наиболее полный, если он есть.
-
-        // Helper to find value across sources
-        $findAddr = fn($k) => $shipping_address[$k] ?? $details_address[$k] ?? $region_input[$k] ?? $region_selected[$k] ?? '';
-
-        $data['city'] = $findAddr('city');
-        $data['region'] = $shipping_address['region'] ?? $region_input['region'] ?? $region_selected['region_id'] ?? '';
-        $data['zip'] = $findAddr('zip');
-        $data['street'] = $findAddr('street');
-        $data['building'] = $findAddr('building');
-        $data['apartment'] = $findAddr('apartment');
-
-        // --- Custom Address Fields ---
-        $standard_addr_fields = ['city', 'region', 'zip', 'street', 'building', 'apartment', 'country', 'lat', 'lng'];
-        $custom_addr_fields = [];
-
-        // Собираем из shipping_address (самый надежный источник после сохранения)
-        foreach ($shipping_address as $k => $v) {
-            if (!in_array($k, $standard_addr_fields)) {
-                $custom_addr_fields[$k] = $v;
-            }
-        }
-
-        // Дополняем из input details если чего-то нет
-        foreach ($details_address as $k => $v) {
-            if (!in_array($k, $standard_addr_fields) && !isset($custom_addr_fields[$k])) {
-                $custom_addr_fields[$k] = $v;
-            }
-        }
-
-        $data['address_custom'] = $custom_addr_fields;
+        $data['city'] = $state->getCity();
+        $data['region'] = $state->getRegion();
+        $data['zip'] = $state->getZip();
+        $data['street'] = $state->getStreet();
+        $data['building'] = $state->getBuilding();
+        $data['apartment'] = $state->getApartment();
+        $data['address_custom'] = $state->getCustomAddressFields();
     }
 
     /**
      * @throws waException
      */
-    private function extractPaymentData(array $params, array &$data): void
+    private function extractPaymentData(shopPrefillCheckoutState $state, array &$data): void
     {
-        $payment_id = $params['data']['payment']['id'] ?? '';
-        if (!empty($payment_id)) {
-            // Пытаемся получить имя из methods в vars
-            $payment_methods = $params['vars']['payment']['methods'] ?? [];
-            if (isset($payment_methods[$payment_id])) {
-                $data['payment_name'] = $payment_methods[$payment_id]['name'] ?? '';
-                $data['payment_description'] = $payment_methods[$payment_id]['description'] ?? '';
-                // Custom fields from input or vars
-                $data['payment_custom'] = $params['data']['input']['payment']['custom'] ?? $params['data']['payment']['custom'] ?? [];
-                return;
-            }
-
-            // Если нет в vars, пробуем через провайдер плагинов (закэшированный)
-            $all_payments = shopPrefillPluginPluginsProvider::getPaymentMethods();
-            if (isset($all_payments[$payment_id])) {
-                $data['payment_name'] = $all_payments[$payment_id]['name'] ?? '';
-                $data['payment_description'] = $all_payments[$payment_id]['description'] ?? '';
-            }
-        }
-
+        $data['payment_name'] = $state->getPaymentName();
+        $data['payment_description'] = $state->getPaymentDescription();
+        $data['payment_custom'] = $state->getCustomPaymentFields();
     }
 
     /**

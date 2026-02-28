@@ -476,7 +476,20 @@ class shopPrefillCheckoutState
     public function hasServiceAgreementError(): bool
     {
         $value = $this->params['vars']['auth']['service_agreement'] ?? null;
-        return $value !== null && $value == 0;
+        if ($value === null) {
+            return false;
+        }
+
+        // ЗНАЧЕНИЕ: Shop-Script принудительно ставит значение 0,
+        // если чекбокса нет в POST (он отключен в админке или просто не нажат).
+        // Поэтому мы должны убедиться, что он вообще включен в настройках чекаута.
+        // В checkout v2 настройки лежат в ['customer']['service_agreement'].
+        if (empty($this->params['vars']['config']['customer']['service_agreement'])) {
+            return false;
+        }
+
+        // Ошибка только если опция включена, но пользователь явно не согласился (значение 0)
+        return $value === 0 || $value === '0';
     }
 
     /**

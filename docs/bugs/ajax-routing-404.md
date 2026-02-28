@@ -53,4 +53,4 @@ $.post(this.appUrl + this.pluginID + '/consent', data)
 ## Файлы
 
 - `lib/shopPrefill.plugin.php` (строка 408)
-- `js/frontend.js` (строки 3, 109, 115, 200)
+- `js/prefill.frontend.js` (строки 3, 109, 115, 200)
