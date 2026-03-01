@@ -8,6 +8,7 @@
 - [ ] [Кастомные шаблоны сводки доставки (UI настроек)](todo/zen-mode-custom-delivery-templates-ui.md)
 - [ ] [Кастомные шаблоны сводки оплаты](todo/zen-mode-custom-payment-templates.md)
 - [ ] [CSS-классы для баннеров в кастомных шаблонах](todo/zen-mode-template-banners.md)
+- [ ] Сделать выбор между выводом иконок или картонок способов оплаты и доставки.
 
 ### Другие задачи
 

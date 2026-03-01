@@ -1,13 +1,13 @@
 {strip}
 <div class="prefill-params__wrapper">
     {foreach $fill_params_array as $fill_params}
-    <div class="prefill-params__card">
+    <div class="prefill-params__card{if $fill_params.is_current} is-active{/if}" data-order-id="{$fill_params.id}">
         <header class="prefill-params__card-title">
             {$fill_params.shipping_name}
         </header>
         <div class="prefill-params__card-content">
-            {$fill_params.zip}, {$fill_params.country_name}, {$fill_params.region_name}, {$fill_params.city}
-            , {$fill_params.street}
+            {$fill_params.zip}, {$fill_params.country_name}, {$fill_params.region_name},
+            {$fill_params.city}, {$fill_params.street}
         </div>
     </div>
     {/foreach}

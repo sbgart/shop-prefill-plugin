@@ -12,7 +12,21 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
         $fill_params_collection = $instance->getFillParamsProvider()->getFillParamsCollection();
         $fill_params_array = $fill_params_collection->toArray(false, 5);
 
-        $tt = $instance->getPluginsProvider()->getShippingMethods();
+        // Определяем текущий сценарий доставки для подсветки активной карточки
+        $checkout_params = $instance->getSessionStorageProvider()->getCheckoutParams() ?: [];
+        $current = $instance->getFillParamsProvider()->getFillParamsByCheckoutParams($checkout_params);
+
+        foreach ($fill_params_array as &$item) {
+            $item['is_current'] =
+                $item['country'] === $current->getCountry() &&
+                $item['region'] === $current->getRegion() &&
+                $item['city'] === $current->getCity() &&
+                $item['zip'] === $current->getZip() &&
+                $item['street'] === $current->getStreet() &&
+                $item['shipping_type_id'] == $current->getShippingTypeId() &&
+                $item['shipping_rate_id'] === $current->getShippingRateId();
+        }
+        unset($item);
 
         $this->view->assign([
             'app_id' => shopPrefillPlugin::APP_ID,

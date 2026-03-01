@@ -9,12 +9,12 @@
  */
 class shopPrefillPluginFillParamsProvider
 {
-    private shopPrefillPluginOrderProvider    $order_provider;
-    private shopPrefillPluginUserProvider     $user_provider;
-    private shopPrefillPluginContactProvider  $contact_provider;
+    private shopPrefillPluginOrderProvider $order_provider;
+    private shopPrefillPluginUserProvider $user_provider;
+    private shopPrefillPluginContactProvider $contact_provider;
     private shopPrefillPluginGuestHashStorage $guest_hash_storage;
     private shopPrefillPluginLocationProvider $location_provider;
-    private waResponse                        $response;
+    private waResponse $response;
 
     /** @var shopPrefillPluginFillParamsCollection|null Коллекция параметров предзаполнения */
     private ?shopPrefillPluginFillParamsCollection $fill_params_collection = null;
@@ -27,12 +27,12 @@ class shopPrefillPluginFillParamsProvider
         shopPrefillPluginLocationProvider $location_provider,
         waResponse $response
     ) {
-        $this->order_provider     = $order_provider;
-        $this->user_provider      = $user_provider;
-        $this->contact_provider   = $contact_provider;
+        $this->order_provider = $order_provider;
+        $this->user_provider = $user_provider;
+        $this->contact_provider = $contact_provider;
         $this->guest_hash_storage = $guest_hash_storage;
-        $this->location_provider  = $location_provider;
-        $this->response           = $response;
+        $this->location_provider = $location_provider;
+        $this->response = $response;
     }
 
     /** Возвращает провайдер заказов */
@@ -102,24 +102,27 @@ class shopPrefillPluginFillParamsProvider
     {
         $contact_id = $this->getUserProvider()->getId();
 
-        // Если указан конкретный заказ — используем его
+        // Если указан конкретный заказ — используем его только если он принадлежит пользователю
         if ($order_id) {
-            $order_params = $this->getOrderProvider()->getOrderParams($order_id);
-            if ($order_params) {
-                return $this->getFillParamsByOrderParams($order_params, $order_id);
+            $order_contact_id = $this->getOrderProvider()->getContactIdFromOrder($order_id);
+            if ($order_contact_id && (int) $order_contact_id === (int) $contact_id) {
+                $order_params = $this->getOrderProvider()->getOrderParams($order_id);
+                if ($order_params) {
+                    return $this->getFillParamsByOrderParams($order_params, $order_id);
+                }
             }
         }
 
         // Иначе берем последний заказ пользователя
         $last_order_id = $this->getOrderProvider()->getLastOrderIdByContactId($contact_id);
 
-        if (! $last_order_id) {
+        if (!$last_order_id) {
             return new shopPrefillPluginFillParams();
         }
 
         $order_params = $this->getOrderProvider()->getOrderParams($last_order_id);
 
-        if (! $order_params) {
+        if (!$order_params) {
             return new shopPrefillPluginFillParams();
         }
 
@@ -139,14 +142,14 @@ class shopPrefillPluginFillParamsProvider
         // Ищем последний заказ с этим хешем через OrderProvider
         $order_id = $this->getOrderProvider()->getLastOrderIdByGuestHash($guest_hash);
 
-        if (! $order_id) {
+        if (!$order_id) {
             // Нет заказов с этим хешем — возвращаем пустой объект
             return new shopPrefillPluginFillParams();
         }
 
         $order_params = $this->getOrderProvider()->getOrderParams($order_id);
 
-        if (! $order_params) {
+        if (!$order_params) {
             return new shopPrefillPluginFillParams();
         }
 
@@ -200,6 +203,11 @@ class shopPrefillPluginFillParamsProvider
         );
 
         foreach ($unique_orders_params as $order_id => $order_params) {
+            // Пропускаем адреса без важных параметров доставки (защита от старых заказов или сбоев)
+            if (empty($order_params['shipping_id']) || empty($order_params['shipping_type_id'])) {
+                continue;
+            }
+
             $fill_params = $this->getFillParamsByOrderParams($order_params, $order_id);
             $this->fill_params_collection->add($fill_params);
         }
@@ -365,13 +373,13 @@ class shopPrefillPluginFillParamsProvider
 
         // Кастомные параметры доставки
         $shipping_params = shopPrefillPluginFillParamsHelper::filteredOrderParams($order_params, 'shipping_params_');
-        if (! empty($shipping_params)) {
+        if (!empty($shipping_params)) {
             $fill_params->setShippingCustom($shipping_params);
         }
 
         // Кастомные параметры оплаты
         $payment_params = shopPrefillPluginFillParamsHelper::filteredOrderParams($order_params, 'payment_params_');
-        if (! empty($payment_params)) {
+        if (!empty($payment_params)) {
             $fill_params->setPaymentCustom($payment_params);
         }
         if (isset($order_params['payment_id'])) {
@@ -400,12 +408,12 @@ class shopPrefillPluginFillParamsProvider
     private function fillAuthDataFromOrder(shopPrefillPluginFillParams $fill_params, int $order_id): void
     {
         $contact_id = $this->getOrderProvider()->getContactIdFromOrder($order_id);
-        if (! $contact_id) {
+        if (!$contact_id) {
             return;
         }
 
         $contact = $this->getContactProvider()->getContact($contact_id);
-        if (! $contact) {
+        if (!$contact) {
             return;
         }
 

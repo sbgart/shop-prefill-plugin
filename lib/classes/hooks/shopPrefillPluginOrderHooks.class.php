@@ -76,8 +76,16 @@ class shopPrefillPluginOrderHooks
      */
     private function saveShippingType(int $order_id, array $checkout_params): void
     {
-        $shipping_type_id = (int) ($checkout_params['order']['shipping']['type_id'] ?? 0);
-        $this->order_provider->storeShippingTypeId($order_id, $shipping_type_id);
+        $shipping_type_id = $checkout_params['order']['shipping']['type_id'] ?? '';
+
+        if (!$shipping_type_id) {
+            $shipping_post = waRequest::post('shipping', [], waRequest::TYPE_ARRAY_TRIM);
+            if (!empty($shipping_post['type_id'])) {
+                $shipping_type_id = $shipping_post['type_id'];
+            }
+        }
+
+        $this->order_provider->storeShippingTypeId($order_id, (string) $shipping_type_id);
     }
 
     /**

@@ -106,6 +106,12 @@
     border-color: var(--prefill-accent-color);
 }
 
+.prefill-params__card.is-active {
+    background-color: color-mix(in srgb, var(--prefill-accent-color) 20%, transparent);
+    border-color: var(--prefill-accent-color);
+    cursor: default;
+}
+
 .prefill-params__card-title {
     font-weight: 600;
     line-height: 1.2em;

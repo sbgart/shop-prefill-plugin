@@ -16,7 +16,7 @@ class shopPrefillPluginZenMode
     const GROUP_SECTIONS = [
         'customer' => ['auth'],
         'delivery' => ['region', 'shipping', 'details'],
-        'payment' => ['payment'],
+        'payment'  => ['payment'],
     ];
 
     /**
@@ -30,7 +30,12 @@ class shopPrefillPluginZenMode
     private array $settings;
 
     /**
-     * @var waResponse Response объект для работы с cookies
+     * @var waRequest Request для чтения cookies
+     */
+    private waRequest $request;
+
+    /**
+     * @var waResponse Response объект для записи cookies
      */
     private waResponse $response;
 
@@ -46,19 +51,23 @@ class shopPrefillPluginZenMode
 
     /**
      * @param array $zen_settings Настройки zen из storefront settings
-     * @param waResponse|null $response Response объект для cookies
+     * @param waResponse|null $response Response для записи cookies
      * @param waView|null $view View объект для рендеринга
+     * @param shopPrefillPluginZenData|null $zen_data Данные для шаблонов сводки
+     * @param waRequest|null $request Request для чтения cookies
      */
     public function __construct(
         array $zen_settings,
         ?waResponse $response = null,
         ?waView $view = null,
-        ?shopPrefillPluginZenData $zen_data = null
+        ?shopPrefillPluginZenData $zen_data = null,
+        ?waRequest $request = null
     ) {
         $this->settings = $zen_settings;
         $this->response = $response ?? wa()->getResponse();
-        $this->view = $view ?? wa()->getView();
+        $this->view     = $view ?? wa()->getView();
         $this->zen_data = $zen_data ?? new shopPrefillPluginZenData($this->view);
+        $this->request  = $request ?? wa()->getRequest();
     }
 
     /**
@@ -68,7 +77,7 @@ class shopPrefillPluginZenMode
      */
     public function isActive(): bool
     {
-        return !empty($this->settings['active']);
+        return ! empty($this->settings['active']);
     }
 
     /**
@@ -78,7 +87,7 @@ class shopPrefillPluginZenMode
      */
     public function shouldShowIcons(): bool
     {
-        return isset($this->settings['show_icons']) && !empty($this->settings['show_icons']);
+        return isset($this->settings['show_icons']) && ! empty($this->settings['show_icons']);
     }
 
     /**
@@ -91,7 +100,7 @@ class shopPrefillPluginZenMode
     {
         return $this->isActive()
             && isset($this->settings['groups'][$group])
-            && !empty($this->settings['groups'][$group]['enabled']);
+            && ! empty($this->settings['groups'][$group]['enabled']);
     }
 
 
@@ -113,11 +122,11 @@ class shopPrefillPluginZenMode
      */
     public function shouldCollapseGroup(string $group, shopPrefillCheckoutState $state): bool
     {
-        if (!$this->isGroupEnabled($group)) {
+        if (! $this->isGroupEnabled($group)) {
             return false;
         }
 
-        $cookie_state = waRequest::cookie(self::COOKIE_PREFIX . $group);
+        $cookie_state = $this->request->cookie(self::COOKIE_PREFIX . $group);
 
         // 1. Обработка попытки сворачивания (COLLAPSING)
         if ($cookie_state === 'collapsing') {
@@ -177,7 +186,7 @@ class shopPrefillPluginZenMode
     public function getGroupIcon(string $group): string
     {
         $custom_icon = $this->settings['groups'][$group]['icon'] ?? '';
-        if (!empty($custom_icon)) {
+        if (! empty($custom_icon)) {
             return $custom_icon;
         }
 
@@ -206,7 +215,7 @@ class shopPrefillPluginZenMode
      */
     public function getGroupsToCollapse(shopPrefillCheckoutState $state): array
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return [];
         }
 
@@ -233,7 +242,7 @@ class shopPrefillPluginZenMode
 
         $styles = [];
         foreach ($groups as $group) {
-            if (!isset(self::GROUP_SECTIONS[$group])) {
+            if (! isset(self::GROUP_SECTIONS[$group])) {
                 continue;
             }
             $css = [];
@@ -270,7 +279,7 @@ class shopPrefillPluginZenMode
         // Для delivery пытаемся найти специфичный шаблон по ID инстанса
         if ($group === 'delivery') {
             $shipping_id = $state->getShippingInstanceId();
-            if ($shipping_id && !empty($group_settings['custom_templates'][$shipping_id])) {
+            if ($shipping_id && ! empty($group_settings['custom_templates'][$shipping_id])) {
                 return $group_settings['custom_templates'][$shipping_id];
             }
         }
@@ -280,6 +289,15 @@ class shopPrefillPluginZenMode
 
 
 
+
+    /**
+     * Рендерит блок управления группой с кнопкой toggle и сводкой
+     *
+     * @param string $group Имя группы
+     * @param bool $is_collapsed Свёрнута ли группа
+     * @return string HTML
+     * @throws waException
+     */
     /**
      * Рендерит блок управления группой с кнопкой toggle и сводкой
      *
@@ -326,15 +344,16 @@ class shopPrefillPluginZenMode
         }
 
         $this->view->assign([
-            'group' => $group,
+            'group'        => $group,
             'is_collapsed' => $is_collapsed,
-            'icon_url' => $icon_url ?? null,
+            'icon_url'     => $icon_url ?? null,
             'summary_html' => $summary_html ?? null,
         ]);
 
         $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/CollapseBlock.html';
         return $this->view->fetch('file:' . $template_path);
     }
+
 
     /**
      * Рендерит сводку данных для группы
@@ -357,7 +376,7 @@ class shopPrefillPluginZenMode
 
         // Используем существующий View из Webasyst (не создаём новый Smarty!)
         try {
-            $view = $this->view;
+            $view     = $this->view;
             $old_vars = [];
 
             // Сохраняем существующие переменные с теми же именами
@@ -378,13 +397,13 @@ class shopPrefillPluginZenMode
 
             // Удаляем временные переменные, которых не было
             foreach ($data as $key => $value) {
-                if (!isset($old_vars[$key])) {
+                if (! isset($old_vars[$key])) {
                     $view->clearAssign($key);
                 }
             }
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Template rendering failed in shopPrefillPluginZenMode::renderGroupSummary', [
-                'group' => $group,
+                'group'   => $group,
                 'message' => $e->getMessage()
             ]);
             return '';

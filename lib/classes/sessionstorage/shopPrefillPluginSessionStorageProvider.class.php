@@ -381,6 +381,34 @@ class shopPrefillPluginSessionStorageProvider
     }
 
     /**
+     * Применяет выбранный сценарий доставки к сессии.
+     *
+     * Замещает только секции region, details, shipping — не затрагивает auth, payment, confirm.
+     * Передача null в качестве snapshot_section заставляет prepare-методы брать данные напрямую из $fill_params.
+     *
+     * @param shopPrefillPluginFillParams $fill_params Параметры выбранного сценария доставки
+     */
+    public function applyDeliveryAddress(shopPrefillPluginFillParams $fill_params): void
+    {
+        $checkout_params = $this->getCheckoutParams() ?: [];
+        $final_params = [];
+
+        $this->prepareRegionSectionParams($fill_params, $final_params, null);
+        $this->prepareDetailsSectionParams($fill_params, $final_params, null);
+        $this->prepareShippingSectionParams($fill_params, $final_params, null);
+
+        $merged = shopPrefillPluginHelper::deepMergeArrays($checkout_params, $final_params);
+
+        if ($this->setCheckoutParams($merged)) {
+            $this->saveSnapshot($merged);
+            shopPrefillPluginLog::info('Delivery scenario applied via applyDeliveryAddress', [
+                'shipping_type_id' => $fill_params->getShippingTypeId(),
+                'shipping_variant_id' => $fill_params->getShippingVariantId(),
+            ]);
+        }
+    }
+
+    /**
      * Очищает форму, сбрасывает snapshot и заново предзаполняет.
      * Используется для debug кнопки "Reset & Refill"
      *

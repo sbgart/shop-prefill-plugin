@@ -265,7 +265,8 @@ class shopPrefillCheckoutState
     public function getShippingPhotos(): array
     {
         $service_data = $this->getFirstCustomData();
-        return $service_data['photos'] ?? [];
+        $photos = $service_data['photos'] ?? [];
+        return is_array($photos) ? $photos : [];
     }
 
     /**
@@ -480,12 +481,25 @@ class shopPrefillCheckoutState
             return false;
         }
 
-        // ЗНАЧЕНИЕ: Shop-Script принудительно ставит значение 0,
-        // если чекбокса нет в POST (он отключен в админке или просто не нажат).
-        // Поэтому мы должны убедиться, что он вообще включен в настройках чекаута.
-        // В checkout v2 настройки лежат в ['customer']['service_agreement'].
-        if (empty($this->params['vars']['config']['customer']['service_agreement'])) {
-            return false;
+        $checkout_config = $this->params['vars']['config'] ?? null;
+
+        // В некоторых хуках (например, checkout_render_auth) ядро не прокидывает $checkout_config
+        if ($checkout_config === null && class_exists('shopCheckoutConfig')) {
+            try {
+                $checkout_config = new shopCheckoutConfig(true);
+            } catch (Exception $e) {
+                // Игнорируем ошибки (например, если нет нужных параметров роутинга)
+            }
+        }
+
+        if ($checkout_config !== null) {
+            // ВАЖНО: Мы должны убедиться, что администратор включил чекбокс.
+            // Если настройка отключена или стоит режим 'notice' (просто текст),
+            // то ошибки чекбокса быть не может.
+            $agreement = $checkout_config['customer']['service_agreement'] ?? null;
+            if ($agreement !== 'checkbox') {
+                return false;
+            }
         }
 
         // Ошибка только если опция включена, но пользователь явно не согласился (значение 0)

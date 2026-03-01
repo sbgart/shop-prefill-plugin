@@ -12,4 +12,5 @@ return array(
     'prefill/refresh-debug' => 'frontend/RefreshDebug',
     'prefill/consent' => 'frontend/Consent',
     'prefill/toggle-zen' => 'frontend/ToggleZen',
+    'prefill/apply-delivery' => 'frontend/ApplyDelivery',
 );

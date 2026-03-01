@@ -2,14 +2,14 @@
 
 class shopPrefillPluginOrderProvider
 {
-    private ?shopOrderModel       $order_model        = null;
+    private ?shopOrderModel $order_model = null;
     private ?shopOrderParamsModel $order_params_model = null;
 
     private ?array $last_user_order = null;
 
     public function __construct(shopOrderModel $order_model, shopOrderParamsModel $order_params_model)
     {
-        $this->order_model        = $order_model;
+        $this->order_model = $order_model;
         $this->order_params_model = $order_params_model;
     }
 
@@ -77,9 +77,9 @@ class shopPrefillPluginOrderProvider
     }
 
 
-    public function storeShippingTypeId(int $order_id, int $shipping_type_id): bool
+    public function storeShippingTypeId(int $order_id, string $shipping_type_id): bool
     {
-        if ($shipping_type_id <= 0 && $order_id <= 0) {
+        if (empty($shipping_type_id) && $order_id <= 0) {
             return false;
         }
 
