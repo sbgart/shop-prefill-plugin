@@ -110,11 +110,8 @@ class shopPrefillPluginZenMode
      *
      * Smart Collapse:
      * 1. Дзен-режим включен для этой группы
-     * 2. Обработка состояния collapsing (попытка свернуть):
-     *    - Есть ошибки В ГРУППЕ → не сворачивать (alert будет показан)
-     *    - Нет ошибок → свернуть (cookie будет удалена)
-     * 3. Если expanded пользователем → не сворачивать
-     * 4. Дефолт: проверка ошибок В ГРУППЕ
+     * 2. Если expanded (пользователь развернул) → не сворачивать
+     * 3. Иначе: сворачиваем только если нет ошибок в группе
      *
      * @param string $group Имя группы
      * @param array $params Данные чекаута для проверки ошибок
@@ -128,27 +125,14 @@ class shopPrefillPluginZenMode
 
         $cookie_state = $this->request->cookie(self::COOKIE_PREFIX . $group);
 
-        // 1. Обработка попытки сворачивания (COLLAPSING)
-        if ($cookie_state === 'collapsing') {
-            if ($state->hasGroupErrors($group)) {
-                // ЕСТЬ ОШИБКИ В ГРУППЕ: не сворачивать
-                return false;
-            } else {
-                // НЕТ ОШИБОК: свернуть, cookie будет удалена в renderCollapseBlock
-                return true;
-            }
-        }
-
-        // 2. Развернуто пользователем — не сворачиваем
         if ($cookie_state === 'expanded') {
             return false;
         }
 
-        // 3. Дефолтное поведение: проверяем ошибки В ГРУППЕ
+        // Пусто или иное: сворачиваем только если нет ошибок в группе
         if ($state->hasGroupErrors($group)) {
             return false;
         }
-
         return true;
     }
 
@@ -291,48 +275,46 @@ class shopPrefillPluginZenMode
 
 
     /**
-     * Рендерит блок управления группой с кнопкой toggle и сводкой
+     * Синхронизирует cookie группы с фактическим состоянием при каждом обновлении формы.
+     * При ошибках в секции бэкенд проставит 'expanded'; при сворачивании кука сбрасывается.
      *
      * @param string $group Имя группы
-     * @param bool $is_collapsed Свёрнута ли группа
-     * @return string HTML
-     * @throws waException
+     * @param bool $is_collapsed Свёрнута ли группа (нет ошибок валидации)
      */
+    protected function syncCollapseCookieState(string $group, bool $is_collapsed): void
+    {
+        if ($is_collapsed) {
+            $this->response->setCookie(self::COOKIE_PREFIX . $group, '', -1, '/');
+        } else {
+            $this->response->setCookie(self::COOKIE_PREFIX . $group, 'expanded', 0, '/');
+        }
+    }
+
     /**
-     * Рендерит блок управления группой с кнопкой toggle и сводкой
+     * Определяет состояние группы, синхронизирует cookie и рендерит блок.
+     * Публичный API для вывода блока (управление состоянием + рендер).
      *
      * @param string $group Имя группы
-     * @param array $params Данные чекаута
+     * @param shopPrefillCheckoutState $state Состояние чекаута
+     * @return string HTML
+     */
+    public function buildCollapseBlock(string $group, shopPrefillCheckoutState $state): string
+    {
+        $is_collapsed = $this->shouldCollapseGroup($group, $state);
+        $this->syncCollapseCookieState($group, $is_collapsed);
+        return $this->renderCollapseBlock($group, $state, $is_collapsed);
+    }
+
+    /**
+     * Рендерит блок управления группой (только вывод HTML, без изменения cookie).
+     *
+     * @param string $group Имя группы
+     * @param shopPrefillCheckoutState $state Данные чекаута
      * @param bool $is_collapsed Свёрнута ли группа
      * @return string HTML
-     * @throws waException
      */
     public function renderCollapseBlock(string $group, shopPrefillCheckoutState $state, bool $is_collapsed = true): string
     {
-        // Проверяем состояние cookie для обработки collapsing
-        $cookie_state = waRequest::cookie(self::COOKIE_PREFIX . $group);
-
-        // Smart Collapse: обработка попытки сворачивания
-        if ($cookie_state === 'collapsing') {
-            if ($is_collapsed) {
-                // НЕТ ОШИБОК: удаляем cookie через PHP
-                $this->response->setCookie(
-                    self::COOKIE_PREFIX . $group,
-                    '',
-                    -1,
-                    '/'
-                );
-            } else {
-                // ЕСТЬ ОШИБКИ (PHP нашёл при race condition): возвращаем expanded
-                $this->response->setCookie(
-                    self::COOKIE_PREFIX . $group,
-                    'expanded',
-                    0,
-                    '/'
-                );
-            }
-        }
-
         if ($is_collapsed) {
             // Иконка группы (если включена)
             if ($this->shouldShowIcons()) {
@@ -427,7 +409,7 @@ class shopPrefillPluginZenMode
     public function clearCookies(): void
     {
         // Очищаем куки для всех групп (customer, delivery, payment)
-        // Куки могут содержать 'expanded', 'collapsing' или отсутствовать
+        // Куки: 'expanded' или отсутствовать
         foreach (array_keys(self::GROUP_SECTIONS) as $group) {
             $this->response->setCookie(
                 self::COOKIE_PREFIX . $group,

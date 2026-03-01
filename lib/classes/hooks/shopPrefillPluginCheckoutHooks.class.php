@@ -74,7 +74,7 @@ class shopPrefillPluginCheckoutHooks
     public function handleCheckoutRenderAuth(array &$params): string
     {
         return $this->renderZenModeStylesheet()
-            . $this->renderZenModeGroupBlock('customer', $params, 'checkoutRenderAuth')
+            . $this->buildZenModeGroupBlock('customer', $params, 'checkoutRenderAuth')
             . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderAuth', 'AUTH SECTION');
     }
 
@@ -111,7 +111,7 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderDetails(array &$params): string
     {
-        return $this->renderZenModeGroupBlock('delivery', $params, 'checkoutRenderDetails')
+        return $this->buildZenModeGroupBlock('delivery', $params, 'checkoutRenderDetails')
             . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderDetails', 'DETAILS SECTION');
     }
 
@@ -124,7 +124,7 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderPayment(array &$params): string
     {
-        return $this->renderZenModeGroupBlock('payment', $params, 'checkoutRenderPayment')
+        return $this->buildZenModeGroupBlock('payment', $params, 'checkoutRenderPayment')
             . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderPayment', 'PAYMENT SECTION');
     }
 
@@ -158,27 +158,21 @@ class shopPrefillPluginCheckoutHooks
     }
 
     /**
-     * Рендерит блок управления Zen Mode для указанной группы.
-     * Определяет должна ли группа быть свёрнута и вызывает соответствующий рендер.
+     * Строит блок Zen Mode для группы: синхронизация cookie + рендер.
      *
      * @param string $group Имя группы (customer, delivery, payment)
      * @param array $params Параметры хука
      * @param string $log_context Контекст для логирования ошибок
      * @return string HTML блока управления или пустая строка
      */
-    private function renderZenModeGroupBlock(string $group, array &$params, string $log_context): string
+    private function buildZenModeGroupBlock(string $group, array &$params, string $log_context): string
     {
         try {
+            if (! $this->zen_mode->isGroupEnabled($group)) {
+                return '';
+            }
             $state = new shopPrefillCheckoutState($params);
-            // Свёрнуто: сводка + кнопка «Изменить»
-            if ($this->zen_mode->shouldCollapseGroup($group, $state)) {
-                return $this->zen_mode->renderCollapseBlock($group, $state, true);
-            }
-            // Развёрнуто: только кнопка «Свернуть»
-            if ($this->zen_mode->isGroupEnabled($group)) {
-                return $this->zen_mode->renderCollapseBlock($group, $state, false);
-            }
-            return '';
+            return $this->zen_mode->buildCollapseBlock($group, $state);
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Zen Mode error in ' . $log_context, [
                 'message' => $e->getMessage()

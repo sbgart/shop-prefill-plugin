@@ -103,8 +103,8 @@ class ZenModeToggle {
     if (!hasErrors) {
       var cookieName = "prefill_zen_" + group;
 
-      // Валидация успешна → устанавливаем cookie и обновляем форму
-      document.cookie = cookieName + "=collapsing; path=/; SameSite=Lax";
+      // Валидация успешна → удаляем cookie и обновляем форму (бэкенд при ошибках снова проставит expanded)
+      document.cookie = cookieName + "=; path=/; SameSite=Lax; max-age=0";
 
       if (this.logger) {
         this.logger.info("User collapsed the " + group + " group section");

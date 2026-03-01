@@ -452,13 +452,25 @@ class shopPrefillCheckoutState
     }
 
     /**
-     * Возвращает обычные (критические) ошибки.
+     * Возвращает обычные (критические) ошибки. Исключает маркер fast_render (Shop-Script).
      *
      * @return array<int|string, mixed>
      */
     public function getRegularErrors(): array
     {
-        return $this->params['errors'] ?? [];
+        $errors = $this->params['errors'] ?? [];
+
+        // Shop-Script при fast_render добавляет в errors элемент ['fast_render' => true] —
+        // это не ошибка валидации, а служебный маркер ответа шага доставки.
+        $is_fast_render_sentinel = static function ($item): bool {
+            return is_array($item)
+                && count($item) === 1
+                && array_key_exists('fast_render', $item);
+        };
+
+        $real_errors = array_filter($errors, fn($e) => !$is_fast_render_sentinel($e));
+
+        return array_values($real_errors);
     }
 
     /**
