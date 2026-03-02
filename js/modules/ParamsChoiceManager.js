@@ -71,8 +71,8 @@ class ParamsChoiceManager {
                     // и перезаписывает сессию, сводя на нет изменения от apply-delivery.
                     // trigger("wa_order_reload_start") блокирует форму визуально, затем
                     // location.reload() перезагружает страницу уже из обновлённой сессии.
-                    //$(document).trigger("wa_order_reload_start");
-                    //window.location.reload();
+                    $(document).trigger("wa_order_reload_start");
+                    window.location.reload();
                 } else {
                     this.logger.error("apply-delivery: unexpected response", result);
                     card.style.pointerEvents = "";

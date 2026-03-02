@@ -10,23 +10,21 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
     {
         $instance = shopPrefillPlugin::getInstance();
         $fill_params_collection = $instance->getFillParamsProvider()->getFillParamsCollection();
-        $fill_params_array = $fill_params_collection->toArray(false, 5);
+        $fill_params_array = [];
+        $items = $fill_params_collection->get();
+
+        // Ограничиваем до 5 элементов, как это делал toArray(false, 5)
+        $items = array_slice($items, 0, 5);
 
         // Определяем текущий сценарий доставки для подсветки активной карточки
         $checkout_params = $instance->getSessionStorageProvider()->getCheckoutParams() ?: [];
         $current = $instance->getFillParamsProvider()->getFillParamsByCheckoutParams($checkout_params);
 
-        foreach ($fill_params_array as &$item) {
-            $item['is_current'] =
-                $item['country'] === $current->getCountry() &&
-                $item['region'] === $current->getRegion() &&
-                $item['city'] === $current->getCity() &&
-                $item['zip'] === $current->getZip() &&
-                $item['street'] === $current->getStreet() &&
-                $item['shipping_type_id'] == $current->getShippingTypeId() &&
-                $item['shipping_rate_id'] === $current->getShippingRateId();
+        foreach ($items as $item_obj) {
+            $item_array = $item_obj->toArray();
+            $item_array['is_current'] = $item_obj->isSameDeliveryOption($current);
+            $fill_params_array[] = $item_array;
         }
-        unset($item);
 
         $this->view->assign([
             'app_id' => shopPrefillPlugin::APP_ID,

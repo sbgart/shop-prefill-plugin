@@ -89,6 +89,15 @@ class shopPrefillPluginSessionStorageProvider
     }
 
     /**
+     * Очищает хранилище снапшота (Prefill Snapshot).
+     * Используется для debug-панели «Сброс снапшота».
+     */
+    public function clearSnapshot(): void
+    {
+        $this->getStorage()->remove(self::SNAPSHOT_KEY);
+    }
+
+    /**
      * Извлекает секцию из snapshot только если она содержит данные.
      * Использует isSectionFilled чтобы не подставлять пустые секции из snapshot.
      *
@@ -323,9 +332,7 @@ class shopPrefillPluginSessionStorageProvider
         }
 
         $street = $fill_params->getStreet();
-        if ($street) {
-            $final_params['order']['details']['shipping_address']['street'] = $street;
-        }
+        $final_params['order']['details']['shipping_address']['street'] = $street;
     }
 
     /**

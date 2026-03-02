@@ -553,6 +553,42 @@ class shopPrefillPluginFillParams
         return get_object_vars($this);
     }
 
+    /**
+     * @return bool Возвращает true при полном совпадении параметров доставки
+     */
+    public function isSameDeliveryOption(shopPrefillPluginFillParams $other): bool
+    {
+        $delivery_properties = array_merge($this->region_params, $this->shipping_params);
+
+        foreach ($delivery_properties as $property) {
+            // Имя доставки - это лишь текстовое описание, его нет в сессии
+            if ($property === 'shipping_name') {
+                continue;
+            }
+
+            $this_value = $this->$property;
+            $other_value = $other->$property;
+
+            if (is_array($this_value)) {
+                if (!is_array($other_value)) {
+                    return false;
+                }
+                foreach ($this_value as $key => $val) {
+                    if (!isset($other_value[$key]) || $other_value[$key] != $val) {
+                        return false;
+                    }
+                }
+            } else {
+                // Строгое (но без приведения типов) сравнение
+                if ($this_value !== null && $this_value != $other_value) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     public function mergePaymentParams(shopPrefillPluginFillParams $other): void
     {
         $this->mergeWith($other, $this->payment_params);

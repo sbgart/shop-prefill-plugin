@@ -212,10 +212,12 @@
         });
     };
 
-    window.PrefillDebugHelper.resetFirstPrefillDone = function () {
-        var url = (window.PrefillDebugHelper.baseUrl || '/shop/') + 'prefill/reset-first-prefill-done';
+    window.PrefillDebugHelper.resetSnapshot = function () {
+        if (!confirm('Clear Prefill Snapshot storage?')) return;
+
+        var url = (window.PrefillDebugHelper.baseUrl || '/shop/') + 'prefill/reset-snapshot';
         fetchAction(url, function (data) {
-            alert('✅ Флаг сброшен! Страница будет перезагружена.');
+            alert('✅ Snapshot cleared! Page will reload.');
             location.reload();
         });
     };
