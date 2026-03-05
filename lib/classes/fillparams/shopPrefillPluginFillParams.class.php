@@ -20,6 +20,7 @@ class shopPrefillPluginFillParams
     private ?string $shipping_name = null;
     private ?string $shipping_plugin = null;
     private ?array $shipping_custom = null;
+    private array $shipping_address_custom = [];
 
     private ?int $payment_id = null;
     private ?string $payment_name = null;
@@ -67,7 +68,8 @@ class shopPrefillPluginFillParams
                 return !empty($this->shipping_id) || !empty($this->shipping_type_id) || !empty($this->shipping_plugin);
             case 'details':
                 // Проверяем хотя бы одно поле из адреса или контактов (кроме емейла/телефона, которые в auth)
-                return !empty($this->street) || !empty($this->zip) || !empty($this->lastname) || !empty($this->company);
+                return !empty($this->street) || !empty($this->zip) || !empty($this->lastname) || !empty($this->company)
+                    || !empty($this->shipping_address_custom);
             case 'payment':
                 return !empty($this->payment_id) || !empty($this->payment_plugin);
             case 'confirm':
@@ -297,6 +299,26 @@ class shopPrefillPluginFillParams
     public function setShippingCustom(?array $shipping_custom): void
     {
         $this->shipping_custom = $shipping_custom;
+    }
+
+    /**
+     * Возвращает кастомные поля адреса доставки (подъезд, этаж, домофон и т.д.)
+     *
+     * @return array Ассоциативный массив [field_id => value]
+     */
+    public function getShippingAddressCustom(): array
+    {
+        return $this->shipping_address_custom;
+    }
+
+    /**
+     * Устанавливает кастомные поля адреса доставки
+     *
+     * @param array $shipping_address_custom Массив [field_id => value]
+     */
+    public function setShippingAddressCustom(array $shipping_address_custom): void
+    {
+        $this->shipping_address_custom = $shipping_address_custom;
     }
 
     /**
@@ -583,6 +605,15 @@ class shopPrefillPluginFillParams
                 if ($this_value !== null && $this_value != $other_value) {
                     return false;
                 }
+            }
+        }
+
+        // Сравниваем кастомные поля адреса доставки
+        $this_custom = $this->shipping_address_custom;
+        $other_custom = $other->shipping_address_custom;
+        foreach ($this_custom as $key => $val) {
+            if (!isset($other_custom[$key]) || $other_custom[$key] != $val) {
+                return false;
             }
         }
 

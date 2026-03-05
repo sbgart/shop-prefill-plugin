@@ -137,3 +137,14 @@ msgstr "Free"
 
 msgid "dialog.header.choose_delivery"
 msgstr "Choose delivery address"
+
+# === DELIVERY UNAVAILABLE DIALOG ===
+
+msgid "dialog.delivery_unavailable.title"
+msgstr "Delivery method unavailable"
+
+msgid "dialog.delivery_unavailable.text"
+msgstr "The selected delivery method is not available for the current order. Please choose another one."
+
+msgid "dialog.delivery_unavailable.button"
+msgstr "Choose another method"

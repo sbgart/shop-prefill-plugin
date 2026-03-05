@@ -135,11 +135,9 @@ class ZenModeToggle {
 
     // Используем HTML для контента диалога
     const content = `
-            <div class="prefill-zen-validation-alert">
-                <p>${message}</p>
-                <div class="prefill-dialog__actions">
-                    <button class="prefill-button prefill-button--primary js-close-dialog">${buttonText}</button>
-                </div>
+            <div class="prefill-warning">
+                <p class="prefill-warning__text">${message}</p>
+                <button class="button prefill-warning__btn js-close-dialog">${buttonText}</button>
             </div>
         `;
 
@@ -147,7 +145,7 @@ class ZenModeToggle {
       // Добавляем обработчик на кнопку OK внутри диалога
       const okBtn = dialog.querySelector(".js-close-dialog");
       if (okBtn) {
-        okBtn.addEventListener("click", () => dialog.close());
+        okBtn.addEventListener("click", () => this.dialogManager.closeDialog(dialog));
       }
     });
   }

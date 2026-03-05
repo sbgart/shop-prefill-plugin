@@ -193,3 +193,14 @@ msgstr "Курьер"
 
 msgid "zen.delivery.type.post"
 msgstr "Почта"
+
+# === DELIVERY UNAVAILABLE DIALOG ===
+
+msgid "dialog.delivery_unavailable.title"
+msgstr "Способ доставки недоступен"
+
+msgid "dialog.delivery_unavailable.text"
+msgstr "Выбранный способ доставки недоступен для текущего заказа. Пожалуйста, выберите другой."
+
+msgid "dialog.delivery_unavailable.button"
+msgstr "Выбрать другой способ"

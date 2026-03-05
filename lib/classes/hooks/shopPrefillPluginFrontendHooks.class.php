@@ -226,6 +226,11 @@ class shopPrefillPluginFrontendHooks
             'prefill-accent-color' => $this->storefront_settings['styles']['accent_color'],
         ];
 
+        // Добавляем переменную для скрытия элементов шапки авторизации в Дзен-режиме
+        if ($this->isAuthHeaderHidden()) {
+            $css_variables['prefill-auth-header-display'] = 'none';
+        }
+
         $js_params = [
             'pluginID' => shopPrefillPlugin::PLUGIN_ID,
             'appUrl' => wa()->getAppUrl('shop'),
@@ -235,6 +240,9 @@ class shopPrefillPluginFrontendHooks
                 'validation_error_message' => _wp('zen.validation.error.message'),
                 'validation_error_button' => _wp('zen.validation.error.button'),
                 'dialog_choose_delivery' => _wp('dialog.header.choose_delivery'),
+                'delivery_unavailable_title' => _wp('dialog.delivery_unavailable.title'),
+                'delivery_unavailable_text' => _wp('dialog.delivery_unavailable.text'),
+                'delivery_unavailable_button' => _wp('dialog.delivery_unavailable.button'),
             ],
         ];
 
@@ -246,4 +254,17 @@ class shopPrefillPluginFrontendHooks
             $this->add_js_callback
         );
     }
+
+    /**
+     * Проверяет, нужно ли скрывать элементы шапки авторизации (только в Zen Mode и для авторизованных)
+     *
+     * @return bool
+     */
+    private function isAuthHeaderHidden(): bool
+    {
+        return !empty($this->storefront_settings['zen']['active'])
+            && !empty($this->storefront_settings['zen']['hide_auth_header'])
+            && $this->user_provider->isAuth();
+    }
 }
+

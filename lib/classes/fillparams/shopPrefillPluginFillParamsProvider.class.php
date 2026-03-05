@@ -196,15 +196,22 @@ class shopPrefillPluginFillParamsProvider
             }
         }
 
-        // Удаляем дубликаты по параметрам доставки
         $unique_orders_params = shopPrefillPluginFillParamsHelper::removeDuplicateSubarrays(
             $orders_params,
             "shipping_"
         );
 
+        $active_shipping_instances = shopPrefillPluginPluginsProvider::getShippingMethods();
+
         foreach ($unique_orders_params as $order_id => $order_params) {
             // Пропускаем адреса без важных параметров доставки (защита от старых заказов или сбоев)
             if (empty($order_params['shipping_id']) || empty($order_params['shipping_type_id'])) {
+                continue;
+            }
+
+            // Пропускаем, если инстанс доставки был отключен или удален администратором
+            $shipping_instance_id = (int) $order_params['shipping_id'];
+            if (!isset($active_shipping_instances[$shipping_instance_id])) {
                 continue;
             }
 
@@ -274,11 +281,29 @@ class shopPrefillPluginFillParamsProvider
             }
         }
 
-        // Получаем данные о деталях доставки
-        $shipping_details_params = $checkout_params['order']['details'] ?? [];
-        if ($shipping_details_params) {
-            if (isset($shipping_details_params['shipping_address']['street'])) {
-                $fill_params->setStreet($shipping_details_params['shipping_address']['street']);
+        // Получаем данные о деталях доставки (адрес и кастомные поля)
+        $shipping_address_params = $checkout_params['order']['details']['shipping_address'] ?? [];
+        if ($shipping_address_params) {
+            $standard_address_fields = ['country', 'region', 'city', 'zip', 'street'];
+
+            // Извлекаем стандартные поля
+            if (isset($shipping_address_params['street'])) {
+                $fill_params->setStreet($shipping_address_params['street']);
+            }
+
+            // zip может быть в details вместо region (зависит от настройки администратора).
+            // Устанавливаем только если ещё не было установлено из секции region.
+            if (!$fill_params->getZip() && isset($shipping_address_params['zip'])) {
+                $fill_params->setZip($shipping_address_params['zip']);
+            }
+
+            // Всё остальное — кастомные поля (building, apartment, podezd, floor, и т.д.)
+            $custom_address_fields = array_diff_key(
+                $shipping_address_params,
+                array_flip($standard_address_fields)
+            );
+            if (!empty($custom_address_fields)) {
+                $fill_params->setShippingAddressCustom($custom_address_fields);
             }
         }
 
@@ -354,6 +379,21 @@ class shopPrefillPluginFillParamsProvider
         // Улица
         if (isset($order_params['shipping_address.street'])) {
             $fill_params->setStreet($order_params['shipping_address.street']);
+        }
+
+        // Кастомные поля адреса доставки (building, apartment, podezd, floor, и т.д.)
+        $standard_address_suffixes = ['country', 'region', 'city', 'zip', 'street'];
+        $custom_address_fields = [];
+        foreach ($order_params as $key => $value) {
+            if (strpos($key, 'shipping_address.') === 0) {
+                $field = substr($key, strlen('shipping_address.'));
+                if (!in_array($field, $standard_address_suffixes, true)) {
+                    $custom_address_fields[$field] = $value;
+                }
+            }
+        }
+        if (!empty($custom_address_fields)) {
+            $fill_params->setShippingAddressCustom($custom_address_fields);
         }
 
         // Параметры доставки

@@ -33,6 +33,7 @@ return [
     // Zen Mode — сворачивание секций чекаута
     'zen' => [
         'active' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+        'hide_auth_header' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'show_icons' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'groups' => [
             'customer' => [

@@ -42,6 +42,11 @@ class ParamsChoiceManager {
             });
         }
 
+        // Слушаем событие от PHP: shipping[type_id] не заполнился после выбора варианта
+        $(document).on('prefill_delivery_unavailable', () => {
+            this.showDeliveryUnavailableDialog();
+        });
+
         // Делегирование кликов по карточкам вариантов доставки.
         // Карточки рендерятся динамически внутри диалога, поэтому слушаем на document.
         document.addEventListener("click", async (event) => {
@@ -64,7 +69,11 @@ class ParamsChoiceManager {
 
                 if (result && result.status === "ok") {
                     const dialog = document.getElementById("prefill-params-choice-dialog");
-                    if (dialog) dialog.close();
+                    if (dialog) this.dialogManager.closeDialog(dialog);
+
+                    // Ставим одноразовую куку-флаг: после перезагрузки PHP проверит
+                    // shipping[type_id] и при необходимости вызовет предупреждение.
+                    document.cookie = 'prefill_user_selected=1; path=/; SameSite=Lax';
 
                     // Используем официальный паттерн ядра Shop-Script для перезагрузки чекаута.
                     // waOrder.form.update() не подходит: он сериализует текущие DOM-инпуты
@@ -100,6 +109,44 @@ class ParamsChoiceManager {
         this.dialogManager.setHeader(dialogId, this.messages.dialog_choose_delivery || "Choose delivery address");
 
         return dialog;
+    }
+
+
+    /**
+     * Показывает диалог-предупреждение о недоступности выбранного способа доставки.
+     * Содержит кнопку «Выбрать другой способ», которая открывает основной dialog выбора.
+     */
+    async showDeliveryUnavailableDialog() {
+        // Гасим куку сразу — PHP не делает этого в failure-ветке, поэтому скрипт есть
+        // во всех AJAX-ответах checkout до финального рендера. Гасим при первом срабатывании.
+        document.cookie = 'prefill_user_selected=; max-age=0; path=/';
+
+        // Защита от повторного показа: если диалог уже открыт — выходим.
+        // Edge-case: несколько параллельных AJAX-ответов с <script> до гашения куки.
+        const existing = document.getElementById('prefill-delivery-unavailable-dialog');
+        if (existing?.open) return;
+
+        const dialogId = 'prefill-delivery-unavailable-dialog';
+        const title = this.messages.delivery_unavailable_title || 'Delivery unavailable';
+        const text = this.messages.delivery_unavailable_text || 'The selected delivery method is not available.';
+        const btnLabel = this.messages.delivery_unavailable_button || 'Choose another method';
+
+        const html = `
+            <div class="prefill-warning">
+                <p class="prefill-warning__text">${text}</p>
+                <button class="button prefill-warning__btn" id="prefill-choose-another-delivery">${btnLabel}</button>
+            </div>`;
+
+
+        const dialog = await this.dialogManager.showDialog(dialogId, Promise.resolve(html));
+        this.dialogManager.setHeader(dialogId, title);
+
+        // Кнопка «Выбрать другой способ» → закрываем и открываем dialog вариантов
+        dialog.querySelector('#prefill-choose-another-delivery')
+            ?.addEventListener('click', async () => {
+                this.dialogManager.closeDialog(dialog);
+                await this.displayDialog();
+            });
     }
 
     /**

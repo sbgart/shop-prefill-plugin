@@ -277,7 +277,9 @@ class shopPrefillPlugin extends shopPlugin
             $this->getSessionStorageProvider(),
             $this->getFillParamsProvider(),
             $this->isDebug(),
-            $this->getStorefrontSettings()
+            $this->getStorefrontSettings(),
+            wa()->getRequest(),
+            wa()->getResponse()
         );
     }
 

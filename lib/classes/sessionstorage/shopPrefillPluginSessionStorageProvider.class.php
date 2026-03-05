@@ -333,6 +333,19 @@ class shopPrefillPluginSessionStorageProvider
 
         $street = $fill_params->getStreet();
         $final_params['order']['details']['shipping_address']['street'] = $street;
+
+        // zip может быть в details вместо region (зависит от настройки администратора).
+        // Пишем в обе секции — region.zip уже устанавливается в prepareRegionSectionParams,
+        // здесь дублируем в details.shipping_address.zip чтобы предзаполниться в любом случае.
+        $zip = $fill_params->getZip();
+        if ($zip) {
+            $final_params['order']['details']['shipping_address']['zip'] = $zip;
+        }
+
+        // Кастомные поля адреса доставки (building, apartment, podezd, floor и т.д.)
+        foreach ($fill_params->getShippingAddressCustom() as $field => $value) {
+            $final_params['order']['details']['shipping_address'][$field] = $value;
+        }
     }
 
     /**

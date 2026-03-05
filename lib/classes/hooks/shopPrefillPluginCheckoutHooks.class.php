@@ -13,6 +13,8 @@ class shopPrefillPluginCheckoutHooks
     private shopPrefillPluginFillParamsProvider $fill_params_provider;
     private bool $is_debug;
     private array $storefront_settings;
+    private waRequest $request;
+    private waResponse $response;
 
     public function __construct(
         shopPrefillPluginZenMode $zen_mode,
@@ -21,7 +23,9 @@ class shopPrefillPluginCheckoutHooks
         shopPrefillPluginSessionStorageProvider $session_storage,
         shopPrefillPluginFillParamsProvider $fill_params_provider,
         bool $is_debug,
-        array $storefront_settings
+        array $storefront_settings,
+        waRequest $request,
+        waResponse $response
     ) {
         $this->zen_mode = $zen_mode;
         $this->user_provider = $user_provider;
@@ -30,6 +34,8 @@ class shopPrefillPluginCheckoutHooks
         $this->fill_params_provider = $fill_params_provider;
         $this->is_debug = $is_debug;
         $this->storefront_settings = $storefront_settings;
+        $this->request = $request;
+        $this->response = $response;
     }
 
     /**
@@ -137,9 +143,36 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderConfirm(array &$params): string
     {
-        return $this->renderZenModeConfirmStyles($params)
+        return $this->renderDeliveryUnavailableScript($params)
+            . $this->renderZenModeConfirmStyles($params)
             . $this->renderConsentCheckbox()
             . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderConfirm', 'CONFIRM SECTION');
+    }
+
+    /**
+     * Проверяет, был ли выбран вариант доставки пользователем (кука prefill_user_selected),
+     * и если shipping[type_id] после этого не заполнился — выдаёт inline script
+     * с триггером события prefill_delivery_unavailable для JS.
+     *
+     * Куку гасит PHP только при успешном предзаполнении (shipping заполнен).
+     * В случае сигнала куку гасит JS при показе диалога — это позволяет скрипту
+     * дожить в HTML через несколько AJAX-запросов checkout до финального рендера.
+     */
+    private function renderDeliveryUnavailableScript(array &$params): string
+    {
+        if ($this->request->cookie('prefill_user_selected') !== '1') {
+            return '';
+        }
+
+        $state = new shopPrefillCheckoutState($params);
+        if ($state->getShippingType() !== '') {
+            // Доставка успешно заполнена — гасим куку server-side
+            $this->response->setCookie('prefill_user_selected', '', -1, '/');
+            return '';
+        }
+
+        // Shipping не применим — сигнализируем JS; куку гасит JS при показе диалога
+        return '<script>$(document).trigger("prefill_delivery_unavailable");</script>';
     }
 
     /**
@@ -168,7 +201,7 @@ class shopPrefillPluginCheckoutHooks
     private function buildZenModeGroupBlock(string $group, array &$params, string $log_context): string
     {
         try {
-            if (! $this->zen_mode->isGroupEnabled($group)) {
+            if (!$this->zen_mode->isGroupEnabled($group)) {
                 return '';
             }
             $state = new shopPrefillCheckoutState($params);

@@ -7,14 +7,80 @@
     border-radius: 1.5em;
     padding: 0;
     max-width: 50em;
+    /* Сузили диалог на десктопе */
     overflow: hidden;
     /* Чтобы хедер не вылезал за border-radius */
     outline: none;
     /* Убираем стандартную обводку фокуса */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    /* Анимация появления для десктопа (плавное проявление) */
+    animation: fadeIn 0.15s ease-out forwards;
+}
+
+/* Анимация исчезновения для десктопа */
+.prefill-dialog.is-closing {
+    animation: fadeOut 0.1s ease-in forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: scale(0.98);
+    }
 }
 
 .prefill-dialog::backdrop {
     background-color: rgb(0 0 0 / 0.6);
+    animation: fadeInBackdrop 0.2s ease-out forwards;
+}
+
+.prefill-dialog.is-closing::backdrop {
+    animation: fadeOutBackdrop 0.1s ease-in forwards;
+}
+
+@keyframes fadeInBackdrop {
+    from {
+        background-color: transparent;
+    }
+
+    to {
+        background-color: rgb(0 0 0 / 0.6);
+    }
+}
+
+@keyframes fadeOutBackdrop {
+    from {
+        background-color: rgb(0 0 0 / 0.6);
+    }
+
+    to {
+        background-color: transparent;
+    }
+}
+
+.prefill-dialog__loading {
+    font-size: 1em;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .prefill-dialog__content {
@@ -23,8 +89,19 @@
     /* Уменьшены отступы */
 }
 
-.prefill-dialog__loading {
-    font-size: 1em;
+/* Плавное проявление контента внутри диалога */
+.prefill-dialog__content>* {
+    animation: fadeInContent 0.2s ease-out forwards;
+}
+
+@keyframes fadeInContent {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 
@@ -87,7 +164,7 @@
 
 .prefill-params__wrapper {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 1em;
 }
 
@@ -100,6 +177,8 @@
     border-radius: 0.6em;
     cursor: pointer;
     box-sizing: border-box;
+    max-width: 30em;
+    /* Ограничиваем растягивание карточек на ПК */
 }
 
 .prefill-params__card:hover {
@@ -125,12 +204,6 @@
     line-height: 1.4em;
 }
 
-@media (min-width: 480px) {
-    .prefill-params__card {
-        flex: 0 0 calc(50% - 1.2em);
-    }
-}
-
 /* Переопределение цвета ссылки в заголовке секции (отмена white из дефолтной темы) */
 .prefill-params-choice-link,
 .prefill-params-choice-link:visited {
@@ -139,4 +212,84 @@
 
 .prefill-params-choice-link:hover {
     color: var(--link-hover-color);
+}
+
+/* === DELIVERY UNAVAILABLE WARNING DIALOG === */
+
+.prefill-warning {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.2em;
+}
+
+
+.prefill-warning__text {
+    margin: 0.8em 0;
+    color: #555;
+    line-height: 1.5;
+    max-width: 22em;
+}
+
+.prefill-warning__btn {
+    width: 100%;
+    max-width: 20em;
+    justify-content: center;
+}
+
+body.prefill-dialog-open {
+    overflow: hidden;
+}
+
+@media (max-width: 480px) {
+    .prefill-dialog {
+        /* Делаем во всю ширину */
+        width: 100%;
+        max-width: 100%;
+        max-height: 90vh;
+        /* Максимальная высота, чтобы не перекрывало 100% */
+        /* Позиционируем в самом низу (по спецификации <dialog> auto margin его центрирует, поэтому перезаписываем margin) */
+        margin: auto 0 0 0;
+        /* Скругляем только верхние углы */
+        border-radius: 1.5em 1.5em 0 0;
+        /* Тень, направленная вверх для эффекта карточки */
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+        /* Анимация появления снизу вверх с эффектом выпрыгивания */
+        animation: slideUp 0.35s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    }
+
+    @keyframes slideUp {
+        0% {
+            transform: translateY(100%);
+        }
+
+        100% {
+            transform: translateY(0);
+        }
+    }
+
+    /* Анимация исчезновения карточки (вниз) с ускорением */
+    .prefill-dialog.is-closing {
+        animation: slideDown 0.2s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+    }
+
+    @keyframes slideDown {
+        0% {
+            transform: translateY(0);
+        }
+
+        100% {
+            transform: translateY(100%);
+        }
+    }
+}
+
+/* Скрываем дублирующееся имя авторизованного пользователя и кнопку "Выход" в шапке секции auth 
+ * Управляется через переменную --prefill-auth-header-display, которая задается 
+ * при включенной настройке zen.hide_auth_header 
+ */
+.wa-step-auth-section .wa-section-header .wa-contact-name,
+.wa-step-auth-section .wa-section-header .wa-logout-link {
+    display: var(--prefill-auth-header-display, inline) !important;
 }
