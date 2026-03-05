@@ -9,6 +9,14 @@
 
 <div class="fields">
     {include file='../../components/Field.html'
+    name="{$name_prefix}[prefill][my_delivery_variants]"
+    type='Switcher'
+    label='[`setting.prefill.my_delivery_variants`]'
+    value=$settings['prefill']['my_delivery_variants']}
+</div>
+
+<div class="fields">
+    {include file='../../components/Field.html'
     name="{$name_prefix}[prefill][active]"
     type='Switcher'
     label='[`setting.prefill.active`]'

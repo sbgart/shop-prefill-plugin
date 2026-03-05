@@ -135,6 +135,12 @@ msgstr "Collapse"
 msgid "zen.price.free"
 msgstr "Free"
 
+msgid "zen.service_agreement.yes"
+msgstr "Yes"
+
+msgid "zen.service_agreement.no"
+msgstr "No"
+
 msgid "dialog.header.choose_delivery"
 msgstr "Choose delivery address"
 
@@ -148,3 +154,6 @@ msgstr "The selected delivery method is not available for the current order. Ple
 
 msgid "dialog.delivery_unavailable.button"
 msgstr "Choose another method"
+
+msgid "dialog.params_choice.empty"
+msgstr "You have no saved delivery variants yet."

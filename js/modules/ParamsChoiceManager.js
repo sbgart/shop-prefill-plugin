@@ -14,12 +14,16 @@ class ParamsChoiceManager {
      * @param {DialogManager} dialogManager - Менеджер диалогов
      * @param {Logger} logger - Логгер
      * @param {Object} messages - Локализованные сообщения
+     * @param {boolean} isAuth - Авторизован ли пользователь
+     * @param {boolean} isFeatureEnabled - Включена ли опция глобально
      */
-    constructor(httpClient, dialogManager, logger, messages) {
+    constructor(httpClient, dialogManager, logger, messages, isAuth = false, isFeatureEnabled = true) {
         this.httpClient = httpClient;
         this.dialogManager = dialogManager;
         this.logger = logger;
         this.messages = messages || {};
+        this.isAuth = isAuth;
+        this.isFeatureEnabled = isFeatureEnabled;
     }
 
     /**
@@ -153,6 +157,11 @@ class ParamsChoiceManager {
      * Рендерит ссылку "Мои адреса" в заголовке секции доставки
      */
     renderLink() {
+        if (!this.isAuth || !this.isFeatureEnabled) {
+            this.logger.debug("renderLink aborted: user is disabled or feature is turned off");
+            return;
+        }
+
         const sectionHeader = document.querySelector("#wa-step-region-section .wa-section-header");
 
         if (!sectionHeader) {

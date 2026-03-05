@@ -10,6 +10,10 @@
             {$fill_params.city}, {$fill_params.street}
         </div>
     </div>
+    {foreachelse}
+    <div class="prefill-params__empty">
+        [`dialog.params_choice.empty`]
+    </div>
     {/foreach}
 </div>
 {/strip}

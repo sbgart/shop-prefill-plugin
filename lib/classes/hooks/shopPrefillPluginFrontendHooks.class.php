@@ -7,13 +7,13 @@
 class shopPrefillPluginFrontendHooks
 {
     private shopPrefillPluginSessionStorageProvider $session_storage;
-    private shopPrefillPluginFillParamsProvider $fill_params_provider;
-    private shopPrefillPluginUserProvider $user_provider;
-    private shopPrefillPluginGuestHashStorage $guest_hash_storage;
-    private shopPrefillPluginConsentStorage $consent_storage;
-    private shopPrefillPluginAssetsManager $assets_manager;
-    private bool $is_debug;
-    private array $storefront_settings;
+    private shopPrefillPluginFillParamsProvider     $fill_params_provider;
+    private shopPrefillPluginUserProvider           $user_provider;
+    private shopPrefillPluginGuestHashStorage       $guest_hash_storage;
+    private shopPrefillPluginConsentStorage         $consent_storage;
+    private shopPrefillPluginAssetsManager          $assets_manager;
+    private bool                                    $is_debug;
+    private array                                   $storefront_settings;
     /** @var callable */
     private $add_css_callback;
     /** @var callable */
@@ -31,16 +31,16 @@ class shopPrefillPluginFrontendHooks
         callable $add_css_callback,
         callable $add_js_callback
     ) {
-        $this->session_storage = $session_storage;
+        $this->session_storage      = $session_storage;
         $this->fill_params_provider = $fill_params_provider;
-        $this->user_provider = $user_provider;
-        $this->guest_hash_storage = $guest_hash_storage;
-        $this->consent_storage = $consent_storage;
-        $this->assets_manager = $assets_manager;
-        $this->is_debug = $is_debug;
-        $this->storefront_settings = $storefront_settings;
-        $this->add_css_callback = $add_css_callback;
-        $this->add_js_callback = $add_js_callback;
+        $this->user_provider        = $user_provider;
+        $this->guest_hash_storage   = $guest_hash_storage;
+        $this->consent_storage      = $consent_storage;
+        $this->assets_manager       = $assets_manager;
+        $this->is_debug             = $is_debug;
+        $this->storefront_settings  = $storefront_settings;
+        $this->add_css_callback     = $add_css_callback;
+        $this->add_js_callback      = $add_js_callback;
     }
 
 
@@ -58,7 +58,7 @@ class shopPrefillPluginFrontendHooks
         // DEBUG: Регистрируем вызов хука
         $this->registerDebugHookCall('frontendHead');
 
-        if (!$this->storefront_settings['active']) {
+        if (! $this->storefront_settings['active']) {
             shopPrefillPluginLog::info('Skipping frontendHead: storefront is inactive');
             return;
         }
@@ -116,7 +116,7 @@ class shopPrefillPluginFrontendHooks
      */
     private function logDebugBeforePrefill(string $hook_name, ?shopPrefillPluginFillParams $fill_params): void
     {
-        if (!$this->is_debug) {
+        if (! $this->is_debug) {
             return;
         }
 
@@ -124,19 +124,19 @@ class shopPrefillPluginFrontendHooks
         $checkout_params_before = is_array($checkout_params_before) ? $checkout_params_before : [];
 
         // Получаем статус секций для отображения в дебаге
-        $section_checker = $this->session_storage->getSectionChecker();
+        $section_checker         = $this->session_storage->getSectionChecker();
         $sections_prefill_status = [];
-        $sections_filled_status = [];
+        $sections_filled_status  = [];
 
         foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
             // Собираем детальную информацию для UX цепочки
             $sections_prefill_status[$section_id] = [
-                'enabled' => $this->storefront_settings['prefill']['sections'][$section_id] ?? true,
-                'filled' => $section_checker->isSectionFilled($section_id, $checkout_params_before),
+                'enabled'  => $this->storefront_settings['prefill']['sections'][$section_id] ?? true,
+                'filled'   => $section_checker->isSectionFilled($section_id, $checkout_params_before),
                 'has_data' => $fill_params ? $fill_params->hasDataForSection($section_id) : false,
-                'result' => $section_checker->canPrefillSection($section_id, $checkout_params_before),
+                'result'   => $section_checker->canPrefillSection($section_id, $checkout_params_before),
             ];
-            $sections_filled_status[$section_id] = $sections_prefill_status[$section_id]['filled'];
+            $sections_filled_status[$section_id]  = $sections_prefill_status[$section_id]['filled'];
         }
 
         shopPrefillPluginDebug::addDebugEntry(
@@ -144,7 +144,7 @@ class shopPrefillPluginFrontendHooks
             "BEFORE PREFILL ($hook_name)",
             [
                 'sections_prefill_status' => $sections_prefill_status,
-                'sections_filled_status' => $sections_filled_status,
+                'sections_filled_status'  => $sections_filled_status,
             ]
         );
     }
@@ -157,7 +157,7 @@ class shopPrefillPluginFrontendHooks
      */
     private function logDebugAfterPrefill(string $hook_name): void
     {
-        if (!$this->is_debug) {
+        if (! $this->is_debug) {
             return;
         }
 
@@ -165,7 +165,7 @@ class shopPrefillPluginFrontendHooks
         $checkout_params_after = is_array($checkout_params_after) ? $checkout_params_after : [];
 
         // Получаем статус заполненности секций после предзаполнения
-        $section_checker = $this->session_storage->getSectionChecker();
+        $section_checker        = $this->session_storage->getSectionChecker();
         $sections_filled_status = [];
         foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
             $sections_filled_status[$section_id] = $section_checker->isSectionFilled($section_id, $checkout_params_after);
@@ -232,16 +232,18 @@ class shopPrefillPluginFrontendHooks
         }
 
         $js_params = [
-            'pluginID' => shopPrefillPlugin::PLUGIN_ID,
-            'appUrl' => wa()->getAppUrl('shop'),
-            'isDebug' => $this->is_debug,
-            'messages' => [
-                'validation_error_title' => _wp('zen.validation.error.title'),
-                'validation_error_message' => _wp('zen.validation.error.message'),
-                'validation_error_button' => _wp('zen.validation.error.button'),
-                'dialog_choose_delivery' => _wp('dialog.header.choose_delivery'),
-                'delivery_unavailable_title' => _wp('dialog.delivery_unavailable.title'),
-                'delivery_unavailable_text' => _wp('dialog.delivery_unavailable.text'),
+            'pluginID'                  => shopPrefillPlugin::PLUGIN_ID,
+            'appUrl'                    => wa()->getAppUrl('shop'),
+            'isDebug'                   => $this->is_debug,
+            'isAuth'                    => $this->user_provider->isAuth(),
+            'myDeliveryVariantsEnabled' => $this->storefront_settings['prefill']['my_delivery_variants'] ?? true,
+            'messages'                  => [
+                'validation_error_title'      => _wp('zen.validation.error.title'),
+                'validation_error_message'    => _wp('zen.validation.error.message'),
+                'validation_error_button'     => _wp('zen.validation.error.button'),
+                'dialog_choose_delivery'      => _wp('dialog.header.choose_delivery'),
+                'delivery_unavailable_title'  => _wp('dialog.delivery_unavailable.title'),
+                'delivery_unavailable_text'   => _wp('dialog.delivery_unavailable.text'),
                 'delivery_unavailable_button' => _wp('dialog.delivery_unavailable.button'),
             ],
         ];
@@ -262,8 +264,8 @@ class shopPrefillPluginFrontendHooks
      */
     private function isAuthHeaderHidden(): bool
     {
-        return !empty($this->storefront_settings['zen']['active'])
-            && !empty($this->storefront_settings['zen']['hide_auth_header'])
+        return ! empty($this->storefront_settings['zen']['active'])
+            && ! empty($this->storefront_settings['zen']['hide_auth_header'])
             && $this->user_provider->isAuth();
     }
 }

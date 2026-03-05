@@ -60,6 +60,14 @@ class Logger {
     }
 
     /**
+     * Отладка
+     * @param {string} message
+     */
+    debug(message) {
+        this.log(message, "debug");
+    }
+
+    /**
      * Ошибка
      * @param {string} message
      */

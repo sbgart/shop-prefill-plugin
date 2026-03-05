@@ -55,6 +55,16 @@ class shopPrefillPluginZenData
                 'description' => _wp('Array of custom contact fields (e.g. birthday)'),
                 'example' => '{$contact_custom.birthday}',
             ],
+            'service_agreement' => [
+                'name' => _wp('Service agreement'),
+                'description' => _wp('Consent to personal data processing (auth[service_agreement]). Localized Yes/No or empty.'),
+                'example' => '{$service_agreement}',
+            ],
+            'service_agreement_hint' => [
+                'name' => _wp('Service agreement hint'),
+                'description' => _wp('Text of the consent hint (data[customer][service_agreement_hint]) from checkout config.'),
+                'example' => '{$service_agreement_hint}',
+            ],
 
             // === ДОСТАВКА (Основные) ===
             'shipping_name' => [
@@ -211,6 +221,13 @@ class shopPrefillPluginZenData
         $data['email'] = $state->getEmail();
         $data['company'] = $state->getCompany();
         $data['contact_custom'] = $state->getCustomContactFields();
+
+        $agreement = $state->getServiceAgreement();
+        $data['service_agreement'] = $agreement === 1
+            ? _wp('zen.service_agreement.yes')
+            : ($agreement === 0 ? _wp('zen.service_agreement.no') : '');
+
+        $data['service_agreement_hint'] = $state->getServiceAgreementHint();
     }
 
     /**

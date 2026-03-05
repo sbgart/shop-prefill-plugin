@@ -80,6 +80,46 @@ class shopPrefillCheckoutState
     }
 
     /**
+     * Возвращает значение чекбокса «Согласие на обработку персональных данных» (auth[service_agreement]).
+     * Для вывода в саммари Zen Mode. 1 = согласен, 0 = не согласен, '' = не задано/чекбокс отключён.
+     *
+     * @return int|string 1, 0 или ''
+     */
+    public function getServiceAgreement()
+    {
+        $value = $this->params['vars']['auth']['service_agreement'] ?? null;
+        if ($value === null || $value === '') {
+            return '';
+        }
+        return $value === 1 || $value === '1' ? 1 : 0;
+    }
+
+    /**
+     * Возвращает текст подсказки согласия на обработку персональных данных (data[customer][service_agreement_hint]).
+     * Для вывода в саммари Zen Mode. Приоритет: data.customer → vars.config → shopCheckoutConfig.
+     *
+     * @return string
+     */
+    public function getServiceAgreementHint(): string
+    {
+        $hint = $this->params['data']['customer']['service_agreement_hint'] ?? null;
+        if ($hint !== null && $hint !== '') {
+            return is_string($hint) ? $hint : '';
+        }
+
+        $config = $this->params['vars']['config'] ?? null;
+        if ($config === null && class_exists('shopCheckoutConfig')) {
+            try {
+                $config = new shopCheckoutConfig(true);
+            } catch (Exception $e) {
+                return '';
+            }
+        }
+        $hint = $config['customer']['service_agreement_hint'] ?? '';
+        return is_string($hint) ? $hint : '';
+    }
+
+    /**
      * Возвращает кастомные поля контакта (всё, кроме стандартных).
      *
      * @return array<string, mixed>

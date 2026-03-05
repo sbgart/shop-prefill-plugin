@@ -3,6 +3,7 @@
 return [
     'active' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
     'prefill' => [
+        'my_delivery_variants' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'active' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'on_entry' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'source' => ['value' => 'last_order'],
