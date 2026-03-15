@@ -93,9 +93,6 @@ msgstr ""
 msgid "tooltip.storefront_active"
 msgstr ""
 
-msgid "setting.prefill.active"
-msgstr ""
-
 msgid "tab.{$tab|lower}"
 msgstr ""
 
@@ -144,8 +141,6 @@ msgstr "No"
 msgid "dialog.header.choose_delivery"
 msgstr "Choose delivery address"
 
-# === DELIVERY UNAVAILABLE DIALOG ===
-
 msgid "dialog.delivery_unavailable.title"
 msgstr "Delivery method unavailable"
 
@@ -157,3 +152,300 @@ msgstr "Choose another method"
 
 msgid "dialog.params_choice.empty"
 msgstr "You have no saved delivery variants yet."
+
+msgid "dialog.consent_revoke.title"
+msgstr "Clear form data?"
+
+msgid "dialog.consent_revoke.text"
+msgstr "The checkout form is already filled. Clear the entered data?"
+
+msgid "dialog.consent_revoke.confirm"
+msgstr "Yes, clear"
+
+msgid "dialog.consent_revoke.cancel"
+msgstr "No"
+
+msgid "Данные формы очищены"
+msgstr "Form data cleared"
+
+msgid "tab.design"
+msgstr "Design"
+
+msgid "zen.icon_display"
+msgstr "Icons in collapsed sections"
+
+msgid "zen.icon_display.plugin"
+msgstr "Delivery and payment method logos"
+
+msgid "zen.icon_display.default"
+msgstr "Default group icons"
+
+msgid "zen.icon_display.none"
+msgstr "No icons"
+
+msgid "zen.icon_display.hint"
+msgstr "When «No icons» is selected, the icon block is not shown in collapsed sections."
+
+msgid "zen.icon_source.delivery"
+msgstr "Delivery section icon"
+
+msgid "zen.icon_source.payment"
+msgstr "Payment section icon"
+
+msgid "zen.icon_source.plugin_logos"
+msgstr "Plugin logos"
+
+msgid "zen.icon_source.plugin_logos.hint"
+msgstr "Show delivery/payment plugin logos (e.g. CDEK, Stripe)"
+
+msgid "zen.icon_source.default_icons"
+msgstr "Default icons"
+
+msgid "zen.icon_source.default_icons.hint"
+msgstr "Show generic group icons (delivery.svg, payment.svg) or custom uploaded icon"
+
+msgid "zen.icon_size"
+msgstr "Icon size"
+
+msgid "zen.icon_size.small"
+msgstr "Small"
+
+msgid "zen.icon_size.medium"
+msgstr "Medium"
+
+msgid "zen.icon_size.large"
+msgstr "Large"
+
+msgid "zen.icon_size.hint"
+msgstr "Fixed width and height of the icon block across all sections for consistent spacing"
+
+msgid "setting.prefill.my_delivery_variants"
+msgstr ""
+
+msgid "First name"
+msgstr ""
+
+msgid "Customer first name"
+msgstr ""
+
+msgid "Last name"
+msgstr ""
+
+msgid "Customer last name"
+msgstr ""
+
+msgid "Phone"
+msgstr ""
+
+msgid "Customer phone number"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "Customer email"
+msgstr ""
+
+msgid "Company"
+msgstr ""
+
+msgid "Company name"
+msgstr ""
+
+msgid "Custom contact fields"
+msgstr ""
+
+msgid "Array of custom contact fields (e.g. birthday)"
+msgstr ""
+
+msgid "Service agreement"
+msgstr ""
+
+msgid "Consent to personal data processing (auth[service_agreement]). Localized Yes/No or empty."
+msgstr ""
+
+msgid "Service agreement hint"
+msgstr ""
+
+msgid "Text of the consent hint (data[customer][service_agreement_hint]) from checkout config."
+msgstr ""
+
+msgid "Shipping rate name"
+msgstr ""
+
+msgid "Selected shipping rate name"
+msgstr ""
+
+msgid "Shipping cost"
+msgstr ""
+
+msgid "Formatted shipping cost"
+msgstr ""
+
+msgid "Delivery method name"
+msgstr ""
+
+msgid "Name of the shipping method in store settings"
+msgstr ""
+
+msgid "Shipping logo URL"
+msgstr ""
+
+msgid "URL of the selected shipping plugin logo (from checkout vars)"
+msgstr ""
+
+msgid "Plugin name"
+msgstr ""
+
+msgid "Delivery plugin name"
+msgstr ""
+
+msgid "Pickup point"
+msgstr ""
+
+msgid "Delivery tariff"
+msgstr ""
+
+msgid "Delivery tariff/service name"
+msgstr ""
+
+msgid "Store pickup"
+msgstr ""
+
+msgid "Delivery type"
+msgstr ""
+
+msgid "Delivery type (e.g. pickup, courier, post)"
+msgstr ""
+
+msgid "Estimated delivery"
+msgstr ""
+
+msgid "Estimated delivery time"
+msgstr ""
+
+msgid "Description"
+msgstr ""
+
+msgid "Description of the delivery method"
+msgstr ""
+
+msgid "Business hours"
+msgstr ""
+
+msgid "Pickup point business hours (HTML structure)"
+msgstr ""
+
+msgid "Way to reach"
+msgstr ""
+
+msgid "Instructions on how to reach the pickup point"
+msgstr ""
+
+msgid "Storage days"
+msgstr ""
+
+msgid "Number of days the order is stored"
+msgstr ""
+
+msgid "Photos"
+msgstr ""
+
+msgid "Array of pickup point photos"
+msgstr ""
+
+msgid "Custom shipping fields"
+msgstr ""
+
+msgid "Array of custom shipping fields"
+msgstr ""
+
+msgid "City"
+msgstr ""
+
+msgid "Delivery city"
+msgstr ""
+
+msgid "Region"
+msgstr ""
+
+msgid "Delivery region code or name"
+msgstr ""
+
+msgid "Street"
+msgstr ""
+
+msgid "Street address"
+msgstr ""
+
+msgid "Building"
+msgstr ""
+
+msgid "Building number"
+msgstr ""
+
+msgid "Apartment"
+msgstr ""
+
+msgid "Apartment/Office number"
+msgstr ""
+
+msgid "ZIP"
+msgstr ""
+
+msgid "Postal code"
+msgstr ""
+
+msgid "Custom address fields"
+msgstr ""
+
+msgid "Array of custom address fields (e.g. metro)"
+msgstr ""
+
+msgid "Payment method"
+msgstr ""
+
+msgid "Selected payment method name"
+msgstr ""
+
+msgid "Payment logo URL"
+msgstr ""
+
+msgid "URL of the selected payment plugin logo (from checkout vars)"
+msgstr ""
+
+msgid "Payment description"
+msgstr ""
+
+msgid "Payment method description"
+msgstr ""
+
+msgid "Payment upon receipt"
+msgstr ""
+
+msgid "Custom payment fields"
+msgstr ""
+
+msgid "Array of custom payment fields (e.g. INN, Company)"
+msgstr ""
+
+msgid "zen.delivery.type.pickup"
+msgstr ""
+
+msgid "zen.delivery.type.courier"
+msgstr ""
+
+msgid "zen.delivery.type.post"
+msgstr ""
+
+msgid "zen.validation.error.title"
+msgstr ""
+
+msgid "zen.validation.error.message"
+msgstr ""
+
+msgid "zen.validation.error.button"
+msgstr ""
+
+msgid "Внутренняя ошибка"
+msgstr ""

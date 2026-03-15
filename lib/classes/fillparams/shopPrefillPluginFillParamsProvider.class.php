@@ -320,7 +320,7 @@ class shopPrefillPluginFillParamsProvider
         }
 
         // Получаем данные о подтверждении
-        $confirm_params = $checkout_params['order']['payment'] ?? [];
+        $confirm_params = $checkout_params['order']['confirm'] ?? [];
         if (isset($confirm_params['comment'])) {
             $fill_params->setComment($confirm_params['comment']);
         }
@@ -426,9 +426,13 @@ class shopPrefillPluginFillParamsProvider
             $fill_params->setPaymentId((int) $order_params['payment_id']);
         }
 
-        // Комментарий к заказу
-        if (isset($order_params['comment'])) {
-            $fill_params->setComment($order_params['comment']);
+        // Комментарий читаем напрямую из shop_order — единый источник истины.
+        // Это позволяет подхватить правки, сделанные администратором в бэкенде.
+        if ($order_id) {
+            $comment = $this->getOrderProvider()->getOrderComment($order_id);
+            if ($comment !== null && $comment !== '') {
+                $fill_params->setComment($comment);
+            }
         }
 
         // Auth данные из контакта

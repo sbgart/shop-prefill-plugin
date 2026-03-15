@@ -81,13 +81,24 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Проверяет, нужно ли показывать иконки в свернутом состоянии
+     * Проверяет, нужно ли показывать иконки в свернутом состоянии.
      *
      * @return bool
      */
     public function shouldShowIcons(): bool
     {
-        return isset($this->settings['show_icons']) && ! empty($this->settings['show_icons']);
+        return $this->getIconDisplayMode() !== 'none';
+    }
+
+    /**
+     * Режим отображения иконок: 'default' | 'plugin' | 'none'.
+     *
+     * @return string
+     */
+    private function getIconDisplayMode(): string
+    {
+        $mode = $this->settings['icon_display'] ?? 'plugin';
+        return in_array($mode, ['default', 'plugin', 'none'], true) ? $mode : 'plugin';
     }
 
     /**
@@ -161,7 +172,26 @@ class shopPrefillPluginZenMode
 
 
     /**
-     * Возвращает путь к иконке группы
+     * Возвращает логотип активного плагина доставки/оплаты из данных чекаута.
+     * Только для групп delivery и payment.
+     *
+     * @param string $group Имя группы (delivery | payment)
+     * @param shopPrefillCheckoutState $state Состояние чекаута
+     * @return string|null URL логотипа или null
+     */
+    private function getGroupPluginLogo(string $group, shopPrefillCheckoutState $state): ?string
+    {
+        if ($group === 'delivery') {
+            return $state->getShippingLogoUrl();
+        }
+        if ($group === 'payment') {
+            return $state->getPaymentLogoUrl();
+        }
+        return null;
+    }
+
+    /**
+     * Возвращает путь к иконке группы (дефолтная или кастомная из настроек)
      *
      * @param string $group Имя группы
      * @return string URL иконки
@@ -315,10 +345,20 @@ class shopPrefillPluginZenMode
      */
     public function renderCollapseBlock(string $group, shopPrefillCheckoutState $state, bool $is_collapsed = true): string
     {
+        $icon_url     = null;
+        $summary_html = null;
+
         if ($is_collapsed) {
-            // Иконка группы (если включена)
-            if ($this->shouldShowIcons()) {
-                $icon_url = $this->getGroupIcon($group);
+            // Иконка группы: только если режим не 'none' (default или plugin)
+            $icon_mode = $this->getIconDisplayMode();
+            if ($icon_mode !== 'none') {
+                if ($icon_mode === 'plugin') {
+                    $icon_url = $this->getGroupPluginLogo($group, $state);
+                }
+                // При 'default' или если plugin-логотип не найден — берём групповую иконку
+                if (empty($icon_url)) {
+                    $icon_url = $this->getGroupIcon($group);
+                }
             }
 
             // Свёрнуто: сводка + кнопка "Изменить"
@@ -326,10 +366,11 @@ class shopPrefillPluginZenMode
         }
 
         $this->view->assign([
-            'group'        => $group,
-            'is_collapsed' => $is_collapsed,
-            'icon_url'     => $icon_url ?? null,
-            'summary_html' => $summary_html ?? null,
+            'group'                           => $group,
+            'is_collapsed'                    => $is_collapsed,
+            'icon_url'                        => $icon_url ?? null,
+            'summary_html'                    => $summary_html ?? null,
+            'zen_toggle_button_extra_classes' => $this->settings['toggle_button_classes'] ?? '',
         ]);
 
         $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/CollapseBlock.html';

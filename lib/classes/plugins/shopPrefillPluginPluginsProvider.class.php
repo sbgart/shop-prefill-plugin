@@ -65,8 +65,9 @@ class shopPrefillPluginPluginsProvider
     private static function checkInstancePlugins(array $plugins, array $instances): array
     {
         foreach ($instances as $key => $instance) {
+            // Удаляем инстанс, если плагин физически не установлен (нет файлов на диске)
             if (!isset($plugins[$instance['plugin']])) {
-                unset($instance[$key]);
+                unset($instances[$key]);
             }
         }
 

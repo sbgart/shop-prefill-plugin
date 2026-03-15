@@ -82,6 +82,11 @@ class shopPrefillPluginZenData
                 'description' => _wp('Name of the shipping method in store settings'),
                 'example' => 'Delivery by CDEK',
             ],
+            'shipping_logo' => [
+                'name' => _wp('Shipping logo URL'),
+                'description' => _wp('URL of the selected shipping plugin logo (from checkout vars)'),
+                'example' => '{$shipping_logo}',
+            ],
 
             // === ДОСТАВКА (Детали) ===
             'delivery_plugin' => [
@@ -179,6 +184,11 @@ class shopPrefillPluginZenData
                 'description' => _wp('Selected payment method name'),
                 'example' => 'Cash on delivery',
             ],
+            'payment_logo' => [
+                'name' => _wp('Payment logo URL'),
+                'description' => _wp('URL of the selected payment plugin logo (from checkout vars)'),
+                'example' => '{$payment_logo}',
+            ],
             'payment_description' => [
                 'name' => _wp('Payment description'),
                 'description' => _wp('Payment method description'),
@@ -261,6 +271,7 @@ class shopPrefillPluginZenData
         $data['delivery_photos'] = $state->getShippingPhotos();
         $data['delivery_schedule'] = $state->getShippingScheduleHtml();
         $data['shipping_custom'] = $state->getShippingCustomFields();
+        $data['shipping_logo'] = $state->getShippingLogoUrl();
 
         // 4. Адресные данные
         $data['city'] = $state->getCity();
@@ -280,6 +291,7 @@ class shopPrefillPluginZenData
         $data['payment_name'] = $state->getPaymentName();
         $data['payment_description'] = $state->getPaymentDescription();
         $data['payment_custom'] = $state->getCustomPaymentFields();
+        $data['payment_logo'] = $state->getPaymentLogoUrl();
     }
 
     /**

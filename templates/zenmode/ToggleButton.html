@@ -8,7 +8,7 @@
 
 {if $is_collapsed}
 {* Свёрнуто: кнопка "Изменить", стрелка вниз *}
-<span class="wa-link prefill-zen-toggle-btn js-prefill-zen-toggle prefill-zen-expand" data-group="{$group|escape}"
+<span class="wa-link prefill-zen-toggle-btn js-prefill-zen-toggle prefill-zen-expand{if $zen_toggle_button_extra_classes} {$zen_toggle_button_extra_classes|escape:'html'}{/if}" data-group="{$group|escape}"
   data-action="expand">
   {_wp("Edit")}&nbsp;&nbsp;
   <svg class="wa-icon size-8 prefill-zen-arrow" style="vertical-align: middle;">
@@ -17,7 +17,7 @@
 </span>
 {else}
 {* Развёрнуто: кнопка "Свернуть", стрелка вверх (перевёрнута) *}
-<span class="wa-link prefill-zen-toggle-btn js-prefill-zen-toggle prefill-zen-collapse" data-group="{$group|escape}"
+<span class="wa-link prefill-zen-toggle-btn js-prefill-zen-toggle prefill-zen-collapse{if $zen_toggle_button_extra_classes} {$zen_toggle_button_extra_classes|escape:'html'}{/if}" data-group="{$group|escape}"
   data-action="collapse">
   {_wp("Collapse")}&nbsp;&nbsp;
   <svg class="wa-icon size-8 prefill-zen-arrow prefill-zen-arrow-up" style="vertical-align: middle;">

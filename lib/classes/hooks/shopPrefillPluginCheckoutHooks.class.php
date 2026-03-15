@@ -50,10 +50,6 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutBeforeAuth(array &$params): void
     {
-        if (!($this->storefront_settings['prefill']['active'] ?? false)) {
-            return;
-        }
-
         $fill_params = $this->fill_params_provider->getFillParams();
         if (!$fill_params) {
             return;
@@ -244,7 +240,7 @@ class shopPrefillPluginCheckoutHooks
     private function renderConsentCheckbox(): string
     {
         try {
-            if (!$this->storefront_settings['prefill']['active'] || $this->user_provider->isAuth()) {
+            if ($this->user_provider->isAuth()) {
                 return '';
             }
 

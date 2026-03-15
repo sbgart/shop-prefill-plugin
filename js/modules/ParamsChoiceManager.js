@@ -16,14 +16,16 @@ class ParamsChoiceManager {
      * @param {Object} messages - Локализованные сообщения
      * @param {boolean} isAuth - Авторизован ли пользователь
      * @param {boolean} isFeatureEnabled - Включена ли опция глобально
+     * @param {string} buttonClasses - Дополнительные CSS-классы для кнопки "Мои варианты"
      */
-    constructor(httpClient, dialogManager, logger, messages, isAuth = false, isFeatureEnabled = true) {
+    constructor(httpClient, dialogManager, logger, messages, isAuth = false, isFeatureEnabled = true, buttonClasses = '') {
         this.httpClient = httpClient;
         this.dialogManager = dialogManager;
         this.logger = logger;
         this.messages = messages || {};
         this.isAuth = isAuth;
         this.isFeatureEnabled = isFeatureEnabled;
+        this.buttonClasses = buttonClasses;
     }
 
     /**
@@ -175,7 +177,14 @@ class ParamsChoiceManager {
         if (!paramsChoiceLink) {
             paramsChoiceLink = document.createElement("a");
             paramsChoiceLink.id = linkId;
-            paramsChoiceLink.className = "wa-tooltip bottom prefill-params-choice-link";
+            
+            // Формируем список классов
+            const classes = [
+                "wa-tooltip bottom prefill-params-choice-link",
+                this.buttonClasses
+            ].filter(Boolean).join(" ");
+            
+            paramsChoiceLink.className = classes;
             paramsChoiceLink.textContent = this.messages.params_choice_link || "Мои варианты";
             paramsChoiceLink.href = "javascript:void(0);";
             paramsChoiceLink.setAttribute("data-title", this.messages.params_choice_link_tooltip || "Мои варианты доставки из прошлых заказов");

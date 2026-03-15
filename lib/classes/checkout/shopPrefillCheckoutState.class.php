@@ -464,6 +464,46 @@ class shopPrefillCheckoutState
     }
 
     /**
+     * Возвращает URL логотипа/иконки выбранного метода доставки.
+     * Данные берутся из selected_variant (data.shipping.selected_variant или vars.shipping.shipping_rate).
+     * Приоритет: logo → img → icon[48] → icon[24] → icon[16].
+     *
+     * @return string|null URL логотипа или null если недоступен
+     */
+    public function getShippingLogoUrl(): ?string
+    {
+        $variant = $this->getSelectedVariant();
+        if (empty($variant)) {
+            return null;
+        }
+
+        // logo — кастомный из БД (shop_plugin.logo), img — дефолтный из конфига плагина (= icon[48])
+        return ($variant['logo'] ?: $variant['img']) ?: null;
+    }
+
+    /**
+     * Возвращает URL логотипа выбранного метода оплаты.
+     * Приоритет: logo → img из $params['vars']['payment']['methods'].
+     *
+     * @return string|null URL логотипа или null если недоступен
+     */
+    public function getPaymentLogoUrl(): ?string
+    {
+        $payment_id = $this->getPaymentId();
+        if ($payment_id === '') {
+            return null;
+        }
+
+        $methods = $this->params['vars']['payment']['methods'] ?? [];
+        if (!isset($methods[$payment_id])) {
+            return null;
+        }
+
+        $method = $methods[$payment_id];
+        return $method['logo'] ?? $method['img'] ?? null;
+    }
+
+    /**
      * Возвращает кастомные поля оплаты.
      * Приоритет: data.input.payment.custom → data.payment.custom
      *

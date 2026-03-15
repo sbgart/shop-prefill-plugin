@@ -30,7 +30,9 @@ class PrefillFrontendController {
     this.consentManager = new ConsentManager(
       params.pluginID,
       this.httpClient,
-      this.logger
+      this.logger,
+      this.dialogManager,
+      params.messages
     );
 
     this.paramsChoiceManager = new ParamsChoiceManager(
@@ -39,7 +41,8 @@ class PrefillFrontendController {
       this.logger,
       params.messages,
       params.isAuth,
-      params.myDeliveryVariantsEnabled
+      params.myDeliveryVariantsEnabled,
+      params.zenButtonClasses
     );
 
     // Создаём ZenModeToggle для управления сворачиванием секций чекаута

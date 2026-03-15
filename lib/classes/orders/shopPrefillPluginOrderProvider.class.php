@@ -92,18 +92,9 @@ class shopPrefillPluginOrderProvider
             return null;
         }
 
-        $comment = $this->getOrderModel()->select("*")->where('id=?', $order_id)->fetchField('comment');
+        $comment = $this->getOrderModel()->select('comment')->where('id=?', $order_id)->fetchField('comment');
 
         return $comment !== false ? $comment : '';
-    }
-
-    public function storeComment(int $order_id, ?string $comment): bool
-    {
-        if (empty($comment) || $order_id <= 0) {
-            return false;
-        }
-
-        return $this->getOrderParamsModel()->setOne($order_id, 'comment', $comment);
     }
 
     /**

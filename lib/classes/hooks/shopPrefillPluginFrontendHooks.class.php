@@ -64,24 +64,17 @@ class shopPrefillPluginFrontendHooks
         }
 
         // Получаем параметры для заполнения
-        $fill_params = null;
-        if ($this->storefront_settings['prefill']['active']) {
-            $fill_params = $this->fill_params_provider->getFillParams();
-        }
+        $fill_params = $this->fill_params_provider->getFillParams();
 
         // DEBUG: Состояние ПЕРЕД предзаполнением
         $this->logDebugBeforePrefill('frontendHead', $fill_params);
 
-        // Управление cookies авторизации (только если prefill активен)
-        if ($this->storefront_settings['prefill']['active']) {
-            $this->handleRememberMeCookie();
-
-            // Для гостей: управление cookies хеша и согласия
-            $this->handleGuestCookies();
-        }
+        // Управление cookies авторизации и гостевых cookies
+        $this->handleRememberMeCookie();
+        $this->handleGuestCookies();
 
         // Предзаполнение при входе на сайт
-        if ($this->storefront_settings['prefill']['active'] && $this->storefront_settings['prefill']['on_entry']) {
+        if ($this->storefront_settings['prefill']['on_entry']) {
             shopPrefillPluginLog::info('Prefill on_entry triggered in frontendHead');
             $this->session_storage->preFillCheckoutParams(
                 $this->fill_params_provider->getFillParams()
@@ -231,12 +224,23 @@ class shopPrefillPluginFrontendHooks
             $css_variables['prefill-auth-header-display'] = 'none';
         }
 
+        // Добавляем переменные для размера иконок в Zen Mode (если активен и иконки отображаются)
+        if (!empty($this->storefront_settings['zen']['active'])
+            && ($this->storefront_settings['zen']['icon_display'] ?? 'plugin') !== 'none'
+        ) {
+            $icon_size = $this->storefront_settings['zen']['icon_size'] ?? 'medium';
+            $dimensions = $this->getIconSizeDimensions($icon_size);
+            $css_variables['prefill-zen-icon-width'] = $dimensions['width'];
+            $css_variables['prefill-zen-icon-height'] = $dimensions['height'];
+        }
+
         $js_params = [
             'pluginID'                  => shopPrefillPlugin::PLUGIN_ID,
             'appUrl'                    => wa()->getAppUrl('shop'),
             'isDebug'                   => $this->is_debug,
             'isAuth'                    => $this->user_provider->isAuth(),
             'myDeliveryVariantsEnabled' => $this->storefront_settings['prefill']['my_delivery_variants'] ?? true,
+            'zenButtonClasses'          => $this->storefront_settings['prefill']['my_delivery_variants_button_classes'] ?? '',
             'messages'                  => [
                 'validation_error_title'      => _wp('zen.validation.error.title'),
                 'validation_error_message'    => _wp('zen.validation.error.message'),
@@ -245,6 +249,10 @@ class shopPrefillPluginFrontendHooks
                 'delivery_unavailable_title'  => _wp('dialog.delivery_unavailable.title'),
                 'delivery_unavailable_text'   => _wp('dialog.delivery_unavailable.text'),
                 'delivery_unavailable_button' => _wp('dialog.delivery_unavailable.button'),
+                'consent_revoke_title'       => _wp('dialog.consent_revoke.title'),
+                'consent_revoke_text'        => _wp('dialog.consent_revoke.text'),
+                'consent_revoke_confirm'     => _wp('dialog.consent_revoke.confirm'),
+                'consent_revoke_cancel'       => _wp('dialog.consent_revoke.cancel'),
             ],
         ];
 
@@ -267,6 +275,23 @@ class shopPrefillPluginFrontendHooks
         return ! empty($this->storefront_settings['zen']['active'])
             && ! empty($this->storefront_settings['zen']['hide_auth_header'])
             && $this->user_provider->isAuth();
+    }
+
+    /**
+     * Возвращает размеры иконок для заданного пресета
+     *
+     * @param string $size Пресет размера: 'small' | 'medium' | 'large'
+     * @return array{width: string, height: string}
+     */
+    private function getIconSizeDimensions(string $size): array
+    {
+        $sizes = [
+            'small'  => ['width' => '2.5rem', 'height' => '1.5rem'],
+            'medium' => ['width' => '3.5rem', 'height' => '2rem'],
+            'large'  => ['width' => '4.5rem', 'height' => '2.5rem'],
+        ];
+
+        return $sizes[$size] ?? $sizes['medium'];
     }
 }
 

@@ -4,9 +4,10 @@
  * Контроллер управления согласием и историей предзаполнения
  *
  * Действия:
- * - grant  — дать согласие на сохранение данных
- * - revoke — отозвать согласие
- * - clear  — очистить историю (удалить guest_hash)
+ * - grant       — дать согласие на сохранение данных
+ * - revoke      — отозвать согласие и удалить guest_hash (чтобы следующий за ПК не видел старые данные)
+ * - clear       — очистить историю (удалить guest_hash)
+ * - clear_form  — очистить сессию формы оформления заказа (checkout + snapshot)
  */
 class shopPrefillPluginFrontendConsentController extends waJsonController
 {
@@ -29,8 +30,16 @@ class shopPrefillPluginFrontendConsentController extends waJsonController
 
                 case 'revoke':
                     $plugin->getConsentStorage()->revokeConsent();
+                    $plugin->getGuestHashStorage()->clearGuestHash();
                     shopPrefillPluginLog::info('User revoked prefill consent');
                     $this->response = ['status' => 'ok', 'message' => _wp('Согласие отозвано')];
+                    break;
+
+                case 'clear_form':
+                    wa()->getStorage()->remove('shop/checkout');
+                    wa()->getStorage()->remove('shop/prefill_snapshot');
+                    shopPrefillPluginLog::info('User cleared checkout form session');
+                    $this->response = ['status' => 'ok', 'message' => _wp('Данные формы очищены')];
                     break;
 
                 case 'clear':

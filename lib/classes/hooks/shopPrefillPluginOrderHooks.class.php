@@ -53,9 +53,6 @@ class shopPrefillPluginOrderHooks
             // Сохраняем shipping_type_id (для предзаполнения следующего заказа)
             $this->saveShippingType($order_id, $checkout_params);
 
-            // Сохраняем комментарий (для предзаполнения следующего заказа)
-            $this->saveComment($order_id, $checkout_params);
-
             // Для неавторизованных: сохраняем хеш гостя
             $this->saveGuestHash($order_id);
         }
@@ -86,18 +83,6 @@ class shopPrefillPluginOrderHooks
         }
 
         $this->order_provider->storeShippingTypeId($order_id, (string) $shipping_type_id);
-    }
-
-    /**
-     * Сохраняет комментарий заказа
-     *
-     * @param int $order_id ID заказа
-     * @param array $checkout_params Параметры checkout
-     */
-    private function saveComment(int $order_id, array $checkout_params): void
-    {
-        $comment = $checkout_params['order']['confirm']['comment'] ?? '';
-        $this->order_provider->storeComment($order_id, $comment);
     }
 
     /**

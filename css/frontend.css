@@ -295,6 +295,51 @@ body.prefill-dialog-open {
  * Управляется через переменную --prefill-auth-header-display, которая задается 
  * при включенной настройке zen.hide_auth_header 
  */
+/* Диалог подтверждения (consent revoke, очистка формы) */
+.prefill-dialog__confirm-text {
+    margin: 0 0 1.2em;
+    line-height: 1.5;
+}
+
+.prefill-dialog__confirm-actions {
+    display: flex;
+    gap: 0.8em;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.prefill-dialog__confirm-btn,
+.prefill-dialog__cancel-btn {
+    padding: 0.5em 1.2em;
+    border-radius: 0.4em;
+    cursor: pointer;
+    font-size: 1em;
+    border: none;
+}
+
+.prefill-dialog__confirm-btn {
+    background-color: var(--prefill-accent-color, #000);
+    color: #fff;
+}
+
+.prefill-dialog__confirm-btn:hover {
+    opacity: 0.9;
+}
+
+.prefill-dialog__cancel-btn {
+    background-color: #e8e8e8;
+    color: #333;
+}
+
+.prefill-dialog__cancel-btn:hover {
+    background-color: #ddd;
+}
+
+.prefill-consent-field {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
 .wa-step-auth-section .wa-section-header .wa-contact-name,
 .wa-step-auth-section .wa-section-header .wa-logout-link {
     display: var(--prefill-auth-header-display, inline) !important;

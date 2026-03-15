@@ -62,6 +62,65 @@ class DialogManager {
         return dialog;
     }
 
+    /**
+     * Показывает диалог подтверждения с двумя кнопками.
+     *
+     * @param {string} id - ID диалога
+     * @param {string} title - Заголовок
+     * @param {string} message - Текст сообщения
+     * @param {string} confirmText - Текст кнопки подтверждения
+     * @param {string} cancelText - Текст кнопки отмены
+     * @returns {Promise<boolean>} true при нажатии подтверждения, false при отмене или закрытии
+     */
+    showConfirm(id, title, message, confirmText, cancelText) {
+        const dialog = this.getDialog(id);
+
+        if (typeof dialog.showModal !== "function") {
+            return Promise.resolve(false);
+        }
+
+        const titleElem = dialog.querySelector(".prefill-dialog__title");
+        if (titleElem) {
+            titleElem.textContent = title || "";
+        }
+
+        const content = `
+            <p class="prefill-dialog__confirm-text">${message || ""}</p>
+            <div class="prefill-dialog__confirm-actions">
+                <button type="button" class="prefill-dialog__cancel-btn">${cancelText || ""}</button>
+                <button type="button" class="prefill-dialog__confirm-btn">${confirmText || ""}</button>
+            </div>
+        `;
+        dialog.querySelector(".prefill-dialog__content").innerHTML = content;
+
+        document.body.classList.add("prefill-dialog-open");
+        dialog.showModal();
+
+        return new Promise((resolve) => {
+            let resolved = false;
+            const doResolve = (value) => {
+                if (!resolved) {
+                    resolved = true;
+                    this.closeDialog(dialog);
+                    resolve(value);
+                }
+            };
+
+            dialog.querySelector(".prefill-dialog__confirm-btn").addEventListener("click", () => doResolve(true), { once: true });
+            dialog.querySelector(".prefill-dialog__cancel-btn").addEventListener("click", () => doResolve(false), { once: true });
+
+            const onClose = () => {
+                dialog.removeEventListener("close", onClose);
+                document.body.classList.remove("prefill-dialog-open");
+                if (!resolved) {
+                    resolved = true;
+                    resolve(false);
+                }
+            };
+            dialog.addEventListener("close", onClose, { once: true });
+        });
+    }
+
     // ==========================================
     // ВНУТРЕННИЕ (ПРИВАТНЫЕ) МЕТОДЫ
     // ==========================================
