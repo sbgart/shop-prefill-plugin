@@ -1,6 +1,6 @@
 # Issue 14 — `isUserAuthenticated()` в `SessionStorageProvider` — дублирует `UserProvider`
 
-**Статус:** ⬜ Открыта  
+**Статус:** ✅ Закрыта  
 **Приоритет:** 🟡 Низкий  
 **Сложность фикса:** 🔧 Небольшой  
 **Файл:** `sessionstorage/shopPrefillPluginSessionStorageProvider.class.php`, строки 210–220
@@ -21,3 +21,4 @@ private function isUserAuthenticated(): bool
 ## Рекомендация
 
 Инжектировать `shopPrefillPluginUserProvider` в `SessionStorageProvider`.
+

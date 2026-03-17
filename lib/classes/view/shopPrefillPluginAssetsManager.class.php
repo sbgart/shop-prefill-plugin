@@ -59,18 +59,12 @@ class shopPrefillPluginAssetsManager
         // Генерируем и подключаем CSS переменные
         if (!empty($css_variables)) {
             $css_variables_filename = $this->generateCssVariablesFile($css_variables);
-            $this->getResponse()->addCss(
-                substr(wa()->getDataUrl('plugins/' . $this->plugin_id . '/css/', true, 'shop'), 1)
-                . $css_variables_filename
-            );
+            $this->getResponse()->addCss($this->getPublicDataPath('css') . $css_variables_filename);
         }
 
         // Генерируем и подключаем JS инициализатор
         $js_initializer_filename = $this->generateJSInitializerFile($js_params);
-        $this->getResponse()->addJs(
-            substr(wa()->getDataUrl('plugins/' . $this->plugin_id . '/js/', true, 'shop'), 1)
-            . $js_initializer_filename
-        );
+        $this->getResponse()->addJs($this->getPublicDataPath('js') . $js_initializer_filename);
 
         $this->assets_initialized = true;
     }
@@ -145,6 +139,19 @@ JS;
         }
 
         return ":root {\n" . implode("\n", $css_variables) . "\n}\n";
+    }
+
+    /**
+     * Возвращает публичный URL-путь к поддиректории данных плагина (без ведущего /).
+     * wa()->getDataUrl() возвращает путь с ведущим `/`, addCss/addJs ожидают путь без него.
+     *
+     * @param string $subdir Поддиректория (например 'css', 'js')
+     * @return string Путь вида `wa-data/public/shop/plugins/{id}/{subdir}/`
+     * @throws waException
+     */
+    private function getPublicDataPath(string $subdir): string
+    {
+        return substr(wa()->getDataUrl('plugins/' . $this->plugin_id . '/' . $subdir . '/', true, 'shop'), 1);
     }
 
     /**

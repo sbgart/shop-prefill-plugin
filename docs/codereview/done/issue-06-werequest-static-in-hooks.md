@@ -1,6 +1,6 @@
 # Issue 06 — `OrderProvider` — неинкапсулированный доступ к `waRequest` в хуке
 
-**Статус:** ⬜ Открыта  
+**Статус:** ✅ Закрыта  
 **Приоритет:** 🟡 Низкий  
 **Сложность фикса:** 🔧 Небольшой  
 **Файл:** `hooks/shopPrefillPluginOrderHooks.class.php`, строки 82–85
@@ -17,3 +17,8 @@ $shipping_post = waRequest::post('shipping', [], waRequest::TYPE_ARRAY_TRIM);
 ## Рекомендация
 
 Инжектировать `waRequest` в `OrderHooks` через конструктор (аналогично `CheckoutHooks`).
+
+## Выполнено
+
+- В конструктор `OrderHooks` добавлен параметр `waRequest $request`, в `saveShippingType()` используется `$this->request->post()` вместо `waRequest::post()`.
+- В `shopPrefill.plugin.php` в `getOrderHooks()` передаётся `wa()->getRequest()`.

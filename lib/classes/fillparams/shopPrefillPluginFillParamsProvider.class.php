@@ -14,7 +14,6 @@ class shopPrefillPluginFillParamsProvider
     private shopPrefillPluginContactProvider $contact_provider;
     private shopPrefillPluginGuestHashStorage $guest_hash_storage;
     private shopPrefillPluginLocationProvider $location_provider;
-    private waResponse $response;
 
     /** @var shopPrefillPluginFillParamsCollection|null Коллекция параметров предзаполнения */
     private ?shopPrefillPluginFillParamsCollection $fill_params_collection = null;
@@ -24,51 +23,13 @@ class shopPrefillPluginFillParamsProvider
         shopPrefillPluginUserProvider $user_provider,
         shopPrefillPluginContactProvider $contact_provider,
         shopPrefillPluginGuestHashStorage $guest_hash_storage,
-        shopPrefillPluginLocationProvider $location_provider,
-        waResponse $response
+        shopPrefillPluginLocationProvider $location_provider
     ) {
         $this->order_provider = $order_provider;
         $this->user_provider = $user_provider;
         $this->contact_provider = $contact_provider;
         $this->guest_hash_storage = $guest_hash_storage;
         $this->location_provider = $location_provider;
-        $this->response = $response;
-    }
-
-    /** Возвращает провайдер заказов */
-    private function getOrderProvider(): shopPrefillPluginOrderProvider
-    {
-        return $this->order_provider;
-    }
-
-    /** Возвращает провайдер пользователя */
-    private function getUserProvider(): shopPrefillPluginUserProvider
-    {
-        return $this->user_provider;
-    }
-
-    /** Возвращает хранилище хеша гостя */
-    private function getGuestHashStorage(): shopPrefillPluginGuestHashStorage
-    {
-        return $this->guest_hash_storage;
-    }
-
-    /** Возвращает провайдер локаций (стран/регионов) */
-    private function getLocationProvider(): shopPrefillPluginLocationProvider
-    {
-        return $this->location_provider;
-    }
-
-    /** Возвращает провайдер контактов */
-    private function getContactProvider(): shopPrefillPluginContactProvider
-    {
-        return $this->contact_provider;
-    }
-
-    /** Возвращает объект ответа Webasyst */
-    private function getResponse(): waResponse
-    {
-        return $this->response;
     }
 
     /**
@@ -84,7 +45,7 @@ class shopPrefillPluginFillParamsProvider
     public function getFillParams(?int $fill_params_id = null): shopPrefillPluginFillParams
     {
         // Авторизованные пользователи: данные из БД по contact_id
-        if ($this->getUserProvider()->isAuth()) {
+        if ($this->user_provider->isAuth()) {
             return $this->getFillParamsForAuthorized($fill_params_id);
         }
 
@@ -100,11 +61,11 @@ class shopPrefillPluginFillParamsProvider
      */
     private function getFillParamsForAuthorized(?int $order_id = null): shopPrefillPluginFillParams
     {
-        $contact_id = $this->getUserProvider()->getId();
+        $contact_id = $this->user_provider->getId();
 
         // Передан конкретный заказ (выбор адреса из списка) — используем только если заказ принадлежит пользователю
         if ($order_id) {
-            $order_contact_id = $this->getOrderProvider()->getContactIdFromOrder($order_id);
+            $order_contact_id = $this->order_provider->getContactIdFromOrder($order_id);
             if ($order_contact_id && (int) $order_contact_id === (int) $contact_id) {
                 $fill_params = $this->getFillParamsByOrderId($order_id);
                 if ($fill_params !== null) {
@@ -114,7 +75,7 @@ class shopPrefillPluginFillParamsProvider
         }
 
         // Иначе — последний заказ пользователя
-        $last_order_id = $this->getOrderProvider()->getLastOrderIdByContactId($contact_id);
+        $last_order_id = $this->order_provider->getLastOrderIdByContactId($contact_id);
         if (!$last_order_id) {
             return new shopPrefillPluginFillParams();
         }
@@ -130,7 +91,7 @@ class shopPrefillPluginFillParamsProvider
      */
     private function getFillParamsByOrderId(int $order_id): ?shopPrefillPluginFillParams
     {
-        $order_params = $this->getOrderProvider()->getOrderParams($order_id);
+        $order_params = $this->order_provider->getOrderParams($order_id);
         if (!$order_params) {
             return null;
         }
@@ -145,10 +106,10 @@ class shopPrefillPluginFillParamsProvider
     private function getFillParamsForGuest(): shopPrefillPluginFillParams
     {
         // Создаем/получаем хеш гостя из куки (автопродлевается)
-        $guest_hash = $this->getGuestHashStorage()->getOrCreateGuestHash();
+        $guest_hash = $this->guest_hash_storage->getOrCreateGuestHash();
 
         // Ищем последний заказ с этим хешем через OrderProvider
-        $order_id = $this->getOrderProvider()->getLastOrderIdByGuestHash($guest_hash);
+        $order_id = $this->order_provider->getLastOrderIdByGuestHash($guest_hash);
         if (!$order_id) {
             return new shopPrefillPluginFillParams();
         }
@@ -176,25 +137,19 @@ class shopPrefillPluginFillParamsProvider
         $this->fill_params_collection = new shopPrefillPluginFillParamsCollection();
 
         // Получаем список ID заказов в зависимости от типа пользователя
-        if ($this->getUserProvider()->isAuth()) {
-            $orders_ids = $this->getOrderProvider()->getUserOrdersId($this->getUserProvider()->getId());
+        if ($this->user_provider->isAuth()) {
+            $orders_ids = $this->order_provider->getUserOrdersId($this->user_provider->getId());
         } else {
-            $guest_hash = $this->getGuestHashStorage()->getOrCreateGuestHash();
-            $orders_ids = $this->getOrderProvider()->getAllOrderIdsByGuestHash($guest_hash);
+            $guest_hash = $this->guest_hash_storage->getOrCreateGuestHash();
+            $orders_ids = $this->order_provider->getAllOrderIdsByGuestHash($guest_hash);
         }
 
         if (empty($orders_ids)) {
             return $this->fill_params_collection;
         }
 
-        // Получаем параметры всех заказов
-        $orders_params = [];
-        foreach ($orders_ids as $order_id) {
-            $params = $this->getOrderProvider()->getOrderParams($order_id);
-            if ($params) {
-                $orders_params[$order_id] = $params;
-            }
-        }
+        // Один батчевый запрос вместо N
+        $orders_params = $this->order_provider->getOrdersParamsByIds($orders_ids);
 
         $unique_orders_params = shopPrefillPluginFillParamsHelper::removeDuplicateSubarrays(
             $orders_params,
@@ -351,7 +306,7 @@ class shopPrefillPluginFillParamsProvider
         if (isset($order_params['shipping_address.country'])) {
             $fill_params->setCountry($order_params['shipping_address.country']);
 
-            $country_name = $this->getLocationProvider()->getCountryName($order_params['shipping_address.country']);
+            $country_name = $this->location_provider->getCountryName($order_params['shipping_address.country']);
             $fill_params->setCountryName($country_name);
         }
 
@@ -359,7 +314,7 @@ class shopPrefillPluginFillParamsProvider
         if (isset($order_params['shipping_address.region'])) {
             $fill_params->setRegion($order_params['shipping_address.region']);
 
-            $region_name = $this->getLocationProvider()->getRegionName(
+            $region_name = $this->location_provider->getRegionName(
                 $order_params['shipping_address.country'],
                 $order_params['shipping_address.region']
             );
@@ -429,7 +384,7 @@ class shopPrefillPluginFillParamsProvider
         // Комментарий читаем напрямую из shop_order — единый источник истины.
         // Это позволяет подхватить правки, сделанные администратором в бэкенде.
         if ($order_id) {
-            $comment = $this->getOrderProvider()->getOrderComment($order_id);
+            $comment = $this->order_provider->getOrderComment($order_id);
             if ($comment !== null && $comment !== '') {
                 $fill_params->setComment($comment);
             }
@@ -451,22 +406,22 @@ class shopPrefillPluginFillParamsProvider
      */
     private function fillAuthDataFromOrder(shopPrefillPluginFillParams $fill_params, int $order_id): void
     {
-        $contact_id = $this->getOrderProvider()->getContactIdFromOrder($order_id);
+        $contact_id = $this->order_provider->getContactIdFromOrder($order_id);
         if (!$contact_id) {
             return;
         }
 
-        $contact = $this->getContactProvider()->getContact($contact_id);
+        $contact = $this->contact_provider->getContact($contact_id);
         if (!$contact) {
             return;
         }
 
         // Тип покупателя
-        $customer_type = $this->getContactProvider()->getCustomerType($contact);
+        $customer_type = $this->contact_provider->getCustomerType($contact);
         $fill_params->setCustomerType($customer_type);
 
         // Все поля auth[data]
-        $auth_data = $this->getContactProvider()->getAuthData($contact);
+        $auth_data = $this->contact_provider->getAuthData($contact);
         $fill_params->setAuthData($auth_data);
     }
 }

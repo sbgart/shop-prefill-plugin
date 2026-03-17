@@ -51,10 +51,6 @@ class shopPrefillPluginCheckoutHooks
     public function handleCheckoutBeforeAuth(array &$params): void
     {
         $fill_params = $this->fill_params_provider->getFillParams();
-        if (!$fill_params) {
-            return;
-        }
-
         $filled_order = $this->session_storage->preFillCheckoutParams($fill_params);
 
         if (!empty($filled_order)) {

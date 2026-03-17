@@ -129,7 +129,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function getStorefrontSettings(): array
     {
-        return self::$storefront_settings ??= self::getStorefrontProvider()->getCurrentStorefront()->getSettings();
+        return self::$storefront_settings ??= $this->getStorefrontProvider()->getCurrentStorefront()->getSettings();
     }
 
     /**
@@ -179,8 +179,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getUserProvider(),
             $this->getContactProvider(),
             $this->getGuestHashStorage(),
-            $this->getLocationProvider(),
-            wa()->getResponse()
+            $this->getLocationProvider()
         );
     }
 
@@ -228,7 +227,8 @@ class shopPrefillPlugin extends shopPlugin
             $this->getZenMode(),
             $this->getUserProvider(),
             $this->getConsentStorage(),
-            $this->getStorefrontSettings()
+            $this->getStorefrontSettings(),
+            wa()->getRequest()
         );
     }
 
@@ -291,6 +291,8 @@ class shopPrefillPlugin extends shopPlugin
     public function getSessionStorageProvider(): shopPrefillPluginSessionStorageProvider
     {
         return $this->session_storage_provider ??= new shopPrefillPluginSessionStorageProvider(
+            wa()->getStorage(),
+            $this->getUserProvider(),
             $this->getStorefrontSettings()
         );
     }

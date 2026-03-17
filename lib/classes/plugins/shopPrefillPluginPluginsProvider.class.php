@@ -28,26 +28,6 @@ class shopPrefillPluginPluginsProvider
     /**
      * @throws waException
      */
-    public static function getSortedShippingMethods(array $criteria = []): array
-    {
-        $shippings = self::getShippingMethods();
-
-        foreach ($shippings as $id => &$shipping) {
-            if (array_key_exists($id, $criteria) && array_key_exists("sort", $criteria[$id])) {
-                $shipping["sort"] = $criteria[$id]["sort"];
-            }
-        }
-
-        uasort($shippings, function ($a, $b) {
-            return ($a['sort'] - $b['sort']);
-        });
-
-        return $shippings;
-    }
-
-    /**
-     * @throws waException
-     */
     public static function getPaymentMethods(): array
     {
         if (self::$payment_methods_cache !== null) {

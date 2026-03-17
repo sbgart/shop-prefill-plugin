@@ -12,6 +12,7 @@ class shopPrefillPluginOrderHooks
     private shopPrefillPluginUserProvider $user_provider;
     private shopPrefillPluginConsentStorage $consent_storage;
     private array $storefront_settings;
+    private waRequest $request;
 
     public function __construct(
         shopPrefillPluginSessionStorageProvider $session_storage,
@@ -20,7 +21,8 @@ class shopPrefillPluginOrderHooks
         shopPrefillPluginZenMode $zen_mode,
         shopPrefillPluginUserProvider $user_provider,
         shopPrefillPluginConsentStorage $consent_storage,
-        array $storefront_settings
+        array $storefront_settings,
+        waRequest $request
     ) {
         $this->session_storage = $session_storage;
         $this->order_provider = $order_provider;
@@ -29,6 +31,7 @@ class shopPrefillPluginOrderHooks
         $this->user_provider = $user_provider;
         $this->consent_storage = $consent_storage;
         $this->storefront_settings = $storefront_settings;
+        $this->request = $request;
     }
 
     /**
@@ -76,7 +79,7 @@ class shopPrefillPluginOrderHooks
         $shipping_type_id = $checkout_params['order']['shipping']['type_id'] ?? '';
 
         if (!$shipping_type_id) {
-            $shipping_post = waRequest::post('shipping', [], waRequest::TYPE_ARRAY_TRIM);
+            $shipping_post = $this->request->post('shipping', [], waRequest::TYPE_ARRAY_TRIM);
             if (!empty($shipping_post['type_id'])) {
                 $shipping_type_id = $shipping_post['type_id'];
             }

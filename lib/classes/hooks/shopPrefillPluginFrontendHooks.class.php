@@ -76,9 +76,7 @@ class shopPrefillPluginFrontendHooks
         // Предзаполнение при входе на сайт
         if ($this->storefront_settings['prefill']['on_entry']) {
             shopPrefillPluginLog::info('Prefill on_entry triggered in frontendHead');
-            $this->session_storage->preFillCheckoutParams(
-                $this->fill_params_provider->getFillParams()
-            );
+            $this->session_storage->preFillCheckoutParams($fill_params);
         }
 
         // DEBUG: Состояние ПОСЛЕ предзаполнения
