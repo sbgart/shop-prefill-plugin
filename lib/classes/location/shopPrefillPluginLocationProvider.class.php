@@ -3,12 +3,12 @@
 class shopPrefillPluginLocationProvider
 {
     private waCountryModel $country_model;
-    private waRegionModel $region_model;
+    private waRegionModel  $region_model;
 
     public function __construct(waCountryModel $country_model, waRegionModel $region_model)
     {
         $this->country_model = $country_model;
-        $this->region_model = $region_model;
+        $this->region_model  = $region_model;
     }
 
     private function getCountryModel(): waCountryModel

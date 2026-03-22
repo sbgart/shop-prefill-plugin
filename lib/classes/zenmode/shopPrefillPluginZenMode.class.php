@@ -51,23 +51,23 @@ class shopPrefillPluginZenMode
 
     /**
      * @param array $zen_settings Настройки zen из storefront settings
-     * @param waResponse|null $response Response для записи cookies
-     * @param waView|null $view View объект для рендеринга
-     * @param shopPrefillPluginZenData|null $zen_data Данные для шаблонов сводки
-     * @param waRequest|null $request Request для чтения cookies
+     * @param waResponse $response Response для записи cookies
+     * @param waView $view View объект для рендеринга
+     * @param shopPrefillPluginZenData $zen_data Данные для шаблонов сводки
+     * @param waRequest $request Request для чтения cookies
      */
     public function __construct(
         array $zen_settings,
-        ?waResponse $response = null,
-        ?waView $view = null,
-        ?shopPrefillPluginZenData $zen_data = null,
-        ?waRequest $request = null
+        waResponse $response,
+        waView $view,
+        shopPrefillPluginZenData $zen_data,
+        waRequest $request
     ) {
         $this->settings = $zen_settings;
-        $this->response = $response ?? wa()->getResponse();
-        $this->view     = $view ?? wa()->getView();
-        $this->zen_data = $zen_data ?? new shopPrefillPluginZenData($this->view);
-        $this->request  = $request ?? wa()->getRequest();
+        $this->response = $response;
+        $this->view     = $view;
+        $this->zen_data = $zen_data;
+        $this->request  = $request;
     }
 
     /**

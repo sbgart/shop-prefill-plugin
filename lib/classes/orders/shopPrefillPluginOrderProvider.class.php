@@ -2,14 +2,14 @@
 
 class shopPrefillPluginOrderProvider
 {
-    private shopOrderModel $order_model;
+    private shopOrderModel       $order_model;
     private shopOrderParamsModel $order_params_model;
 
     private ?array $last_user_order = null;
 
     public function __construct(shopOrderModel $order_model, shopOrderParamsModel $order_params_model)
     {
-        $this->order_model = $order_model;
+        $this->order_model        = $order_model;
         $this->order_params_model = $order_params_model;
     }
 

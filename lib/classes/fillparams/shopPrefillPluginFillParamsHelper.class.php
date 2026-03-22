@@ -1,15 +1,19 @@
 <?php
 
-class shopPrefillPluginFillParamsHelper
+final class shopPrefillPluginFillParamsHelper
 {
     public static function filteredOrderParams(array $params, string $prefix): array
     {
+        if ($prefix === '') {
+            return [];
+        }
+
         $result = [];
+        $prefix_len = strlen($prefix);
 
         foreach ($params as $param => $value) {
-            $pos = strpos($param, $prefix);
-            if ($pos !== false && $pos === 0) {
-                $result[substr($param, strlen($prefix))] = !empty($value) ? $value : null;
+            if (strpos($param, $prefix) === 0) {
+                $result[substr($param, $prefix_len)] = !empty($value) ? $value : null;
             }
         }
 
@@ -18,7 +22,7 @@ class shopPrefillPluginFillParamsHelper
 
     public static function removeDuplicateSubArrays(array $array, string $filter_key_prefix): array
     {
-        $unique_array = array();
+        $unique_array      = array();
         $serialized_arrays = array();
 
         // Итерируем по исходному массиву в обратном порядке, чтобы сохранить последние встретившиеся дубликаты
@@ -34,9 +38,9 @@ class shopPrefillPluginFillParamsHelper
 
             $serialized = serialize($filtered_sub_array);
 
-            if (!isset($serialized_arrays[$serialized])) {
+            if (! isset($serialized_arrays[$serialized])) {
                 $serialized_arrays[$serialized] = true;
-                $unique_array[$key] = $sub_array; // Сохраняем подмассив при первом упоминании (поскольку идем с конца)
+                $unique_array[$key]             = $sub_array; // Сохраняем подмассив при первом упоминании (поскольку идем с конца)
             }
         }
 

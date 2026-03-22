@@ -2,28 +2,27 @@
 
 class shopPrefillPlugin extends shopPlugin
 {
-    public const APP_ID = "shop";
+    public const APP_ID    = "shop";
     public const PLUGIN_ID = "prefill";
 
     public static shopPrefillPlugin $instance;
 
-    private static ?bool $active = null;
+    private static ?bool $active         = null;
     private static ?bool $enable_install = null;
 
-    private static ?array $installed_shop_plugins = null;
-    private static ?string $plugin_path = null;
-    private static ?array $storefront_settings = null;
-    private static bool $frontend_assets_inited = false;
+    private static ?array  $installed_shop_plugins = null;
+    private static ?string $plugin_path            = null;
+    private static ?array  $storefront_settings    = null;
 
-    private ?shopPrefillPluginFillParams $prefill_params = null;
-    private ?shopPrefillPluginSettingProvider $setting_provider = null;
+    private ?shopPrefillPluginFillParams         $prefill_params      = null;
+    private ?shopPrefillPluginSettingProvider    $setting_provider    = null;
     private ?shopPrefillPluginStorefrontProvider $storefront_provider = null;
-    private ?shopPrefillPluginPluginsProvider $plugins_provider = null;
-    private ?shopPrefillPluginUserProvider $user_provider = null;
-    private ?shopPrefillPluginLocationProvider $location_provider = null;
-    private ?shopPrefillPluginContactProvider $contact_provider = null;
+    private ?shopPrefillPluginPluginsProvider    $plugins_provider    = null;
+    private ?shopPrefillPluginUserProvider       $user_provider       = null;
+    private ?shopPrefillPluginLocationProvider   $location_provider   = null;
+    private ?shopPrefillPluginContactProvider    $contact_provider    = null;
 
-    private ?shopOrderModel $shop_order_model = null;
+    private ?shopOrderModel       $shop_order_model        = null;
     private ?shopOrderParamsModel $shop_order_params_model = null;
 
     private ?shopPrefillPluginOrderProvider $order_provider = null;
@@ -33,7 +32,7 @@ class shopPrefillPlugin extends shopPlugin
     private ?shopPrefillPluginFillParamsProvider $fill_params_provider = null;
 
     private ?shopPrefillPluginGuestHashStorage $guest_hash_storage = null;
-    private ?shopPrefillPluginConsentStorage $consent_storage = null;
+    private ?shopPrefillPluginConsentStorage   $consent_storage    = null;
 
     private ?shopPrefillPluginZenMode $zen_mode = null;
 
@@ -106,7 +105,7 @@ class shopPrefillPlugin extends shopPlugin
     {
         $config_file = self::getPluginPath() . '/lib/config/' . $name . '.php';
 
-        if (!file_exists($config_file)) {
+        if (! file_exists($config_file)) {
             return [];
         }
 
@@ -190,7 +189,7 @@ class shopPrefillPlugin extends shopPlugin
     {
         return $this->guest_hash_storage ??= new shopPrefillPluginGuestHashStorage(
             $this->getUserProvider(),
-            new shopOrderParamsModel(),
+            $this->getOrderParamsModel(),
             wa()->getResponse()
         );
     }
@@ -208,9 +207,19 @@ class shopPrefillPlugin extends shopPlugin
     public function getOrderProvider(): shopPrefillPluginOrderProvider
     {
         return $this->order_provider ??= new shopPrefillPluginOrderProvider(
-            new shopOrderModel(),
-            new shopOrderParamsModel()
+            $this->getOrderModel(),
+            $this->getOrderParamsModel()
         );
+    }
+
+    private function getOrderModel(): shopOrderModel
+    {
+        return $this->shop_order_model ??= new shopOrderModel();
+    }
+
+    private function getOrderParamsModel(): shopOrderParamsModel
+    {
+        return $this->shop_order_params_model ??= new shopOrderParamsModel();
     }
 
     /**
@@ -308,12 +317,13 @@ class shopPrefillPlugin extends shopPlugin
     {
         if ($this->zen_mode === null) {
             $storefront_settings = $this->getStorefrontSettings();
-            $view = wa()->getView();
-            $this->zen_mode = new shopPrefillPluginZenMode(
+            $view                = wa()->getView();
+            $this->zen_mode      = new shopPrefillPluginZenMode(
                 $storefront_settings['zen'] ?? [],
                 wa()->getResponse(),
                 $view,
-                new shopPrefillPluginZenData($view)
+                new shopPrefillPluginZenData($view),
+                wa()->getRequest()
             );
         }
         return $this->zen_mode;
@@ -329,43 +339,6 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
-     * @throws waException
-     */
-    public function frontendAssetsInit(array $css_variables = [], array $js_params = []): void
-    {
-        if (!self::$frontend_assets_inited) {
-            $this->getAssetsManager()->init(
-                $this->isDebug(),
-                $css_variables,
-                $js_params,
-                fn($path) => $this->addCss($path),
-                fn($path) => $this->addJs($path)
-            );
-            self::$frontend_assets_inited = true;
-        }
-    }
-
-    /**
-     * @throws waException
-     */
-    private function generateCssVariablesFile(array $css_variables): string
-    {
-        return $this->getAssetsManager()->generateCssVariablesFile($css_variables);
-    }
-
-    /**
-     * @throws waException
-     */
-    private function generateJSInitializerFile(array $params): string
-    {
-        return $this->getAssetsManager()->generateJSInitializerFile($params);
-    }
-
-
-
-
-
-    /**
      * Хук срабатывает на всех страницах магазина.
      * Предзаполняем параметры сразу при входе на сайт.
      *
@@ -374,7 +347,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function frontendHead($params)
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return;
         }
 
@@ -389,7 +362,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutBeforeAuth(&$params): void
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return;
         }
 
@@ -406,7 +379,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderAuth(&$params)
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return '';
         }
 
@@ -423,7 +396,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderRegion(&$params)
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return '';
         }
 
@@ -440,7 +413,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderShipping(&$params)
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return '';
         }
 
@@ -456,7 +429,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderDetails(&$params)
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return '';
         }
 
@@ -472,7 +445,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderPayment(&$params)
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return '';
         }
 
@@ -488,7 +461,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderConfirm(&$params)
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return '';
         }
 
@@ -505,7 +478,7 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function orderActionCreate($data)
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return;
         }
 
