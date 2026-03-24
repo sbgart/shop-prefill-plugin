@@ -25,9 +25,9 @@ final class shopPrefillPluginFillParamsHelper
         $unique_array      = array();
         $serialized_arrays = array();
 
-        // Итерируем по исходному массиву в обратном порядке, чтобы сохранить последние встретившиеся дубликаты
+        // Входной массив должен быть отсортирован по ключу ASC (старые первые).
+        // Итерируем в обратном порядке: первый встреченный для каждой сигнатуры — самый свежий.
         foreach (array_reverse($array, true) as $key => $sub_array) {
-            // Перенёс условие фильтрации в сам callback
             $filtered_sub_array = array_filter(
                 $sub_array,
                 function ($k) use ($filter_key_prefix) {
@@ -40,7 +40,11 @@ final class shopPrefillPluginFillParamsHelper
 
             if (! isset($serialized_arrays[$serialized])) {
                 $serialized_arrays[$serialized] = true;
+<<<<<<< HEAD
                 $unique_array[$key]             = $sub_array; // Сохраняем подмассив при первом упоминании (поскольку идем с конца)
+=======
+                $unique_array[$key]             = $sub_array;
+>>>>>>> 6670825 (refactor: Удален контроллер для переключения статуса предзаполнения, обновлены методы и логика работы с параметрами предзаполнения. Исправлены стили и улучшена инкапсуляция в классе ZenMode. Обновлены TODO.md и документация.)
             }
         }
 

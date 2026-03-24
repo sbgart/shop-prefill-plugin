@@ -29,7 +29,7 @@ class shopPrefillPluginOrderProvider
         if ($contact_id <= 0) {
             return null;
         }
-        $last_order_id = $this->order_model->select("*")
+        $last_order_id = $this->order_model->select("id")
             ->where('contact_id=?', $contact_id)
             ->order('id DESC')->fetchField();
 
@@ -66,7 +66,7 @@ class shopPrefillPluginOrderProvider
 
     public function storeShippingTypeId(int $order_id, string $shipping_type_id): bool
     {
-        if (empty($shipping_type_id) && $order_id <= 0) {
+        if (empty($shipping_type_id) || $order_id <= 0) {
             return false;
         }
 

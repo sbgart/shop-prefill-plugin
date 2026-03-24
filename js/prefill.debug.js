@@ -137,17 +137,6 @@
         });
     };
 
-    window.PrefillDebugHelper.togglePrefill = function () {
-        if (!confirm('Переключить статус предзаполнения?')) return;
-
-        var url = (window.PrefillDebugHelper.baseUrl || '/shop/') + 'prefill/toggle-prefill';
-        fetchAction(url, function (data) {
-            console.log('✅ Prefill toggled:', data);
-            // Обновляем панель без перезагрузки страницы
-            window.PrefillDebugHelper.refreshDebug();
-        }, {}, 'POST', true);
-    };
-
     window.PrefillDebugHelper.toggleStorageDetails = function (details) {
         var isOpen = details.open ? '1' : '0';
         window.PrefillDebugHelper.setCookie('wa_prefill_debug_storage_open', isOpen, 365);

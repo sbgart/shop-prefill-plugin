@@ -9,16 +9,6 @@ class shopPrefillPluginFillParamsCollection
         return $this->collection;
     }
 
-    public function getById(int $id = 0): ?shopPrefillPluginFillParams
-    {
-        if (isset($this->collection[$id])) {
-            return $this->collection[$id];
-        }
-
-        return null;
-    }
-
-
     public function add(shopPrefillPluginFillParams $params): void
     {
         $this->collection[] = $params;

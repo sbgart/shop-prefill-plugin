@@ -151,6 +151,14 @@ class shopPrefillPluginFillParamsProvider
         // Один батчевый запрос вместо N
         $orders_params = $this->order_provider->getOrdersParamsByIds($orders_ids);
 
+<<<<<<< HEAD
+=======
+        // Явная сортировка по order_id ASC: removeDuplicateSubArrays ожидает на входе
+        // «старые первые», чтобы при обходе в обратном порядке сохранять самые свежие записи.
+        // Без этого корректность зависит от неявного поведения waModel::get().
+        ksort($orders_params);
+
+>>>>>>> 6670825 (refactor: Удален контроллер для переключения статуса предзаполнения, обновлены методы и логика работы с параметрами предзаполнения. Исправлены стили и улучшена инкапсуляция в классе ZenMode. Обновлены TODO.md и документация.)
         $unique_orders_params = shopPrefillPluginFillParamsHelper::removeDuplicateSubArrays(
             $orders_params,
             "shipping_"

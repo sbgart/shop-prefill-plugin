@@ -106,7 +106,7 @@ class shopPrefillPluginDebug
 
             // Получаем настройки витрины
             $storefront_settings = $plugin->getStorefrontSettings();
-            $plugin_enabled = !empty($storefront_settings['prefill']['active']);
+            $plugin_enabled = !empty($storefront_settings['active']);
             $zen_enabled = !empty($storefront_settings['zen']['active']);
 
             // Группируем стек по хукам

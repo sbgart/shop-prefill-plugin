@@ -4,6 +4,13 @@ class shopPrefillPluginLocationProvider
 {
     private waCountryModel $country_model;
     private waRegionModel  $region_model;
+<<<<<<< HEAD
+=======
+    /** @var array<string, string|null> */
+    private static array $country_name_cache = [];
+    /** @var array<string, string|null> */
+    private static array $region_name_cache = [];
+>>>>>>> 6670825 (refactor: Удален контроллер для переключения статуса предзаполнения, обновлены методы и логика работы с параметрами предзаполнения. Исправлены стили и улучшена инкапсуляция в классе ZenMode. Обновлены TODO.md и документация.)
 
     public function __construct(waCountryModel $country_model, waRegionModel $region_model)
     {
@@ -28,7 +35,12 @@ class shopPrefillPluginLocationProvider
 
     public function getCountryName($country): ?string
     {
-        return $this->getCountryModel()->name($country);
+        $country_key = (string) $country;
+        if (! array_key_exists($country_key, self::$country_name_cache)) {
+            self::$country_name_cache[$country_key] = $this->getCountryModel()->name($country);
+        }
+
+        return self::$country_name_cache[$country_key];
     }
 
     public function getRegions($country, $group = false)
@@ -40,8 +52,12 @@ class shopPrefillPluginLocationProvider
 
     public function getRegionName($country, $region)
     {
-        $region = $this->getRegionModel()->get($country, $region);
+        $region_key = (string) $country . ':' . (string) $region;
+        if (! array_key_exists($region_key, self::$region_name_cache)) {
+            $region_data = $this->getRegionModel()->get($country, $region);
+            self::$region_name_cache[$region_key] = ifset($region_data, 'name', null);
+        }
 
-        return ifset($region, 'name', null);
+        return self::$region_name_cache[$region_key];
     }
 }

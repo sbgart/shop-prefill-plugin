@@ -49,18 +49,17 @@ class shopPrefillPluginOrderHooks
 
         $order_id = (int) $data['order_id'];
 
-        // Операции предзаполнения — только если prefill активен
-        if ($this->storefront_settings['prefill']['active'] ?? false) {
-            $checkout_params = $this->session_storage->getCheckoutParams();
+        // Операции предзаполнения выполняем всегда для активной витрины:
+        // настройка prefill.active больше не используется.
+        $checkout_params = $this->session_storage->getCheckoutParams();
 
-            // Сохраняем shipping_type_id (для предзаполнения следующего заказа)
-            $this->saveShippingType($order_id, $checkout_params);
+        // Сохраняем shipping_type_id (для предзаполнения следующего заказа)
+        $this->saveShippingType($order_id, $checkout_params);
 
-            // Для неавторизованных: сохраняем хеш гостя
-            $this->saveGuestHash($order_id);
-        }
+        // Для неавторизованных: сохраняем хеш гостя
+        $this->saveGuestHash($order_id);
 
-        // Очищаем cookies Zen Mode (независимо от prefill.active)
+        // Очищаем cookies Zen Mode
         $this->zen_mode->clearCookies();
 
         shopPrefillPluginLog::info('Order creation hook processed successfully', [
