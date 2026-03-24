@@ -8,12 +8,12 @@ final class shopPrefillPluginFillParamsHelper
             return [];
         }
 
-        $result = [];
+        $result     = [];
         $prefix_len = strlen($prefix);
 
         foreach ($params as $param => $value) {
             if (strpos($param, $prefix) === 0) {
-                $result[substr($param, $prefix_len)] = !empty($value) ? $value : null;
+                $result[substr($param, $prefix_len)] = ! empty($value) ? $value : null;
             }
         }
 
@@ -40,11 +40,7 @@ final class shopPrefillPluginFillParamsHelper
 
             if (! isset($serialized_arrays[$serialized])) {
                 $serialized_arrays[$serialized] = true;
-<<<<<<< HEAD
-                $unique_array[$key]             = $sub_array; // Сохраняем подмассив при первом упоминании (поскольку идем с конца)
-=======
                 $unique_array[$key]             = $sub_array;
->>>>>>> 6670825 (refactor: Удален контроллер для переключения статуса предзаполнения, обновлены методы и логика работы с параметрами предзаполнения. Исправлены стили и улучшена инкапсуляция в классе ZenMode. Обновлены TODO.md и документация.)
             }
         }
 

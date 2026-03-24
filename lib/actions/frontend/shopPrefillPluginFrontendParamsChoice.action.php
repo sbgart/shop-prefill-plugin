@@ -13,11 +13,6 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
         $fill_params_array      = [];
         $items                  = $fill_params_collection->get();
 
-<<<<<<< HEAD
-        // Показываем последние 5 вариантов доставки (а не первые 5).
-        // Ошибка проявлялась как раз на сценариях, когда в диалоге выпадали "старые" варианты.
-        $items = array_slice($items, -5);
-=======
         // Гарантируем, что при лимите остаются самые свежие (с максимальным order_id)
         usort($items, static function (shopPrefillPluginFillParams $left, shopPrefillPluginFillParams $right): int {
             return (int) $right->getId() <=> (int) $left->getId();
@@ -25,7 +20,6 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
 
         // Ограничиваем до 5 самых свежих элементов
         $items = array_slice($items, 0, 5);
->>>>>>> 6670825 (refactor: Удален контроллер для переключения статуса предзаполнения, обновлены методы и логика работы с параметрами предзаполнения. Исправлены стили и улучшена инкапсуляция в классе ZenMode. Обновлены TODO.md и документация.)
 
         // Определяем текущий сценарий доставки для подсветки активной карточки
         $checkout_params = $instance->getSessionStorageProvider()->getCheckoutParams() ?: [];
