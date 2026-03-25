@@ -7,6 +7,11 @@ class shopPrefillPluginFrontendResetSnapshotController extends waJsonController
 {
     public function execute()
     {
+        if (!waSystemConfig::isDebug() || !wa()->getUser()->isAdmin('shop')) {
+            $this->errors = 'Access denied';
+            return;
+        }
+
         try {
             shopPrefillPlugin::getInstance()->getSessionStorageProvider()->clearSnapshot();
             $this->response = ['status' => 'ok'];

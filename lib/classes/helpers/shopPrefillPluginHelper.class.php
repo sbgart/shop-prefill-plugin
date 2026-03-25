@@ -2,17 +2,18 @@
 
 class shopPrefillPluginHelper
 {
-    public static function deepMergeArrays(array &$array1, array &$array2): array
+    public static function deepMergeArrays(array $base, array $override): array
     {
-        foreach ($array2 as $key => &$value) {
-            if (is_array($value) && isset($array1[$key]) && is_array($array1[$key])) {
-                self::deepMergeArrays($array1[$key], $value);
+        $result = $base;
+        foreach ($override as $key => $value) {
+            if (is_array($value) && isset($result[$key]) && is_array($result[$key])) {
+                $result[$key] = self::deepMergeArrays($result[$key], $value);
             } else {
-                $array1[$key] = $value;
+                $result[$key] = $value;
             }
         }
 
-        return $array1;
+        return $result;
     }
 
 }

@@ -14,7 +14,7 @@ class shopPrefillPluginFillParamsCollection
         $this->collection[] = $params;
     }
 
-    public function toArray(bool $sort = false, ?int $limit = null): array
+    public function toArray(?int $limit = null): array
     {
         $result = [];
 
@@ -25,12 +25,6 @@ class shopPrefillPluginFillParamsCollection
             }
             $result[] = $fill_params->toArray();
             $count++;
-        }
-
-        if ($sort) {
-            uasort($result, function ($a, $b) {
-                return strcmp($a["sort"], $b["sort"]);
-            });
         }
 
         return $result;

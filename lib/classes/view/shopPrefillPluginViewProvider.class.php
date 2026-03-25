@@ -19,20 +19,6 @@ class shopPrefillPluginViewProvider
         return $view->fetch($view_path . '.html');
     }
 
-
-    public static function createCssVariablesString($params): string
-    {
-        $css_variables = '';
-        foreach ($params as $key => $value) {
-            $css_variables .= "--{$key}: {$value};\n";
-        }
-
-        return "
-        :root {
-            {$css_variables}
-        }";
-    }
-
     /**
      * @throws waException
      * @throws SmartyException

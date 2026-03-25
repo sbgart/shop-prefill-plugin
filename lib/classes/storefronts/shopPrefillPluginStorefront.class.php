@@ -10,13 +10,17 @@ class shopPrefillPluginStorefront
 
     private shopPrefillPluginStorefrontSettingProvider $setting_provider;
 
-    public function __construct(string $domain, string $url, array $route = [])
-    {
+    public function __construct(
+        string $domain,
+        string $url,
+        shopPrefillPluginStorefrontSettingProvider $setting_provider,
+        array $route = []
+    ) {
         $this->domain = $domain;
         $this->url = $url;
         $this->code = $domain === '*' && $url === '*' ? '*' : base64_encode($domain . '/' . $url);
         $this->route = $route;
-        $this->setting_provider = new shopPrefillPluginStorefrontSettingProvider();
+        $this->setting_provider = $setting_provider;
     }
 
     public function getDomain(): string

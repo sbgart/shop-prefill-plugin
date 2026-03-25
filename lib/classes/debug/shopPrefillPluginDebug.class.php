@@ -197,80 +197,12 @@ class shopPrefillPluginDebug
                 ];
             }
 
-            // Получаем параметры предзаполнения, которые плагин подготовил
-            $fill_params_data = [];
-            $fill_params_meta = [
-                'user_authorized' => false,
-                'user_id' => null,
-                'contact_id' => null,
-                'guest_hash' => null,
-                'orders_count' => 0,
-                'source' => 'empty',
-                'source_order_id' => null,
-            ];
-
-            try {
-                // Проверяем авторизацию
-                $user_provider = $plugin->getUserProvider();
-                $guest_hash_storage = $plugin->getGuestHashStorage();
-
-                $fill_params_meta['user_authorized'] = $user_provider->isAuth();
-
-                if ($fill_params_meta['user_authorized']) {
-                    // Авторизованный пользователь
-                    $fill_params_meta['user_id'] = $user_provider->getId();
-                    $fill_params_meta['contact_id'] = $user_provider->getId();
-
-                    // Получаем количество заказов
-                    $order_provider = $plugin->getOrderProvider();
-                    $orders_ids = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
-                    $fill_params_meta['orders_count'] = count($orders_ids ?: []);
-                } else {
-                    // Гость: показываем укороченный хеш
-                    $guest_hash = $guest_hash_storage->getGuestHash();
-                    $fill_params_meta['guest_hash'] = $guest_hash ? substr($guest_hash, 0, 16) . '...' : null;
-
-                    // Получаем количество заказов гостя
-                    if ($guest_hash) {
-                        $order_provider = $plugin->getOrderProvider();
-                        $orders_ids = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
-                        $fill_params_meta['orders_count'] = count($orders_ids);
-                    }
-                }
-
-                // Получаем параметры предзаполнения из БД
-                $fill_params = $plugin->getFillParamsProvider()->getFillParams();
-                $fill_params_data = $fill_params->toArray();
-
-                // Определяем источник данных
-                $order_id = $fill_params->getId();
-                if ($order_id) {
-                    $fill_params_meta['source'] = 'order';
-                    $fill_params_meta['source_order_id'] = $order_id;
-                } elseif ($fill_params_meta['orders_count'] > 0) {
-                    $fill_params_meta['source'] = 'orders (no data)';
-                } else {
-                    $fill_params_meta['source'] = 'empty (no orders)';
-                }
-            } catch (Exception $e) {
-                shopPrefillPluginLog::error('Failed preparing debug info for fill params in shopPrefillPluginDebug', [
-                    'message' => $e->getMessage()
-                ]);
-                $fill_params_meta['source'] = 'error: ' . $e->getMessage();
-            }
-
-            // Получаем текущее состояние хранилища checkout и snapshot
-            $current_storage = [];
-            $snapshot_storage = [];
-            try {
-                $session_storage = $plugin->getSessionStorageProvider();
-                $current_storage = $session_storage->getCheckoutParams() ?: [];
-                $snapshot_storage = $session_storage->getSnapshot() ?: [];
-            } catch (Exception $e) {
-                shopPrefillPluginLog::warning('Failed fetching session storage in shopPrefillPluginDebug', [
-                    'message' => $e->getMessage()
-                ]);
-            }
+            // Собираем общие отладочные данные
+            $debug_data = self::collectDebugData($plugin);
+            $fill_params_data = $debug_data['fill_params_data'];
+            $fill_params_meta = $debug_data['fill_params_meta'];
+            $current_storage = $debug_data['current_storage'];
+            $snapshot_storage = $debug_data['snapshot_storage'];
 
             // Подготавливаем данные для шаблона
             $template_vars = [
@@ -329,6 +261,96 @@ class shopPrefillPluginDebug
         }
 
         // НЕ очищаем стек здесь! Он будет очищаться при следующем вызове
+    }
+
+    /**
+     * Собирает общие отладочные данные о параметрах предзаполнения и хранилище
+     *
+     * @param shopPrefillPlugin $plugin
+     * @return array
+     */
+    public static function collectDebugData(shopPrefillPlugin $plugin): array
+    {
+        $fill_params_data = [];
+        $fill_params_meta = [
+            'user_authorized' => false,
+            'user_id' => null,
+            'contact_id' => null,
+            'guest_hash' => null,
+            'orders_count' => 0,
+            'source' => 'empty',
+            'source_order_id' => null,
+        ];
+
+        try {
+            // Проверяем авторизацию
+            $user_provider = $plugin->getUserProvider();
+            $guest_hash_storage = $plugin->getGuestHashStorage();
+
+            $fill_params_meta['user_authorized'] = $user_provider->isAuth();
+
+            if ($fill_params_meta['user_authorized']) {
+                // Авторизованный пользователь
+                $fill_params_meta['user_id'] = $user_provider->getId();
+                $fill_params_meta['contact_id'] = $user_provider->getId();
+
+                // Получаем количество заказов
+                $order_provider = $plugin->getOrderProvider();
+                $orders_ids = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
+                $fill_params_meta['orders_count'] = count($orders_ids ?: []);
+            } else {
+                // Гость: показываем укороченный хеш
+                $guest_hash = $guest_hash_storage->getGuestHash();
+                $fill_params_meta['guest_hash'] = $guest_hash ? substr($guest_hash, 0, 16) . '...' : null;
+
+                // Получаем количество заказов гостя
+                if ($guest_hash) {
+                    $order_provider = $plugin->getOrderProvider();
+                    $orders_ids = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
+                    $fill_params_meta['orders_count'] = count($orders_ids);
+                }
+            }
+
+            // Получаем параметры предзаполнения из БД
+            $fill_params = $plugin->getFillParamsProvider()->getFillParams();
+            $fill_params_data = $fill_params->toArray();
+
+            // Определяем источник данных
+            $order_id = $fill_params->getId();
+            if ($order_id) {
+                $fill_params_meta['source'] = 'order';
+                $fill_params_meta['source_order_id'] = $order_id;
+            } elseif ($fill_params_meta['orders_count'] > 0) {
+                $fill_params_meta['source'] = 'orders (no data)';
+            } else {
+                $fill_params_meta['source'] = 'empty (no orders)';
+            }
+        } catch (Exception $e) {
+            shopPrefillPluginLog::error('Failed preparing debug info for fill params in shopPrefillPluginDebug', [
+                'message' => $e->getMessage()
+            ]);
+            $fill_params_meta['source'] = 'error: ' . $e->getMessage();
+        }
+
+        // Получаем текущее состояние хранилища checkout и snapshot
+        $current_storage = [];
+        $snapshot_storage = [];
+        try {
+            $session_storage = $plugin->getSessionStorageProvider();
+            $current_storage = $session_storage->getCheckoutParams() ?: [];
+            $snapshot_storage = $session_storage->getSnapshot() ?: [];
+        } catch (Exception $e) {
+            shopPrefillPluginLog::warning('Failed fetching session storage in shopPrefillPluginDebug', [
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return [
+            'fill_params_data' => $fill_params_data,
+            'fill_params_meta' => $fill_params_meta,
+            'current_storage' => $current_storage,
+            'snapshot_storage' => $snapshot_storage,
+        ];
     }
 
     /**

@@ -4,6 +4,11 @@ class shopPrefillPluginFrontendLogsController extends waJsonController
 {
     public function execute()
     {
+        if (!waSystemConfig::isDebug() || !wa()->getUser()->isAdmin('shop')) {
+            $this->errors = 'Access denied';
+            return;
+        }
+
         $message = waRequest::post('message', null);
         $type = waRequest::post('type', 'log');
 

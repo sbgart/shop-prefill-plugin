@@ -10,14 +10,16 @@ class shopPrefillPluginStorefrontProvider
         $storefront_collection = new shopPrefillPluginStorefrontCollection();
         $routes = wa()->getRouting()->getByApp(shopPrefillPlugin::APP_ID);
 
+        // Единственный экземпляр на весь запрос — читает конфиг и строит структуру один раз
+        $setting_provider = new shopPrefillPluginStorefrontSettingProvider();
+
         if ($default) {
-            // Add default storefront
-            $storefront_collection->add(new shopPrefillPluginStorefront('*', '*'));
+            $storefront_collection->add(new shopPrefillPluginStorefront('*', '*', $setting_provider));
         }
 
         foreach ($routes as $domain => $domain_routes) {
             foreach ($domain_routes as $route) {
-                $storefront = new shopPrefillPluginStorefront($domain, $route['url'], $route);
+                $storefront = new shopPrefillPluginStorefront($domain, $route['url'], $setting_provider, $route);
                 $storefront_collection->add($storefront);
             }
         }

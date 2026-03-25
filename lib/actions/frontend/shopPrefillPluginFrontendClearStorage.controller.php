@@ -10,9 +10,9 @@ class shopPrefillPluginFrontendClearStorageController extends waJsonController
 {
     public function execute()
     {
-        // Устанавливаем правильный заголовок
-        if (!headers_sent()) {
-            header('Content-Type: application/json; charset=utf-8');
+        if (!waSystemConfig::isDebug() || !wa()->getUser()->isAdmin('shop')) {
+            $this->errors = 'Access denied';
+            return;
         }
 
         try {

@@ -2,7 +2,7 @@
 
 class shopPrefillPluginStorefrontCollection
 {
-    private array $storefronts;
+    private array $storefronts = [];
 
     public function has(string $storefront_code): bool
     {

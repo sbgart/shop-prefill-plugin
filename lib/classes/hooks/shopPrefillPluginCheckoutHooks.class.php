@@ -71,9 +71,10 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderAuth(array &$params): string
     {
+        $state = new shopPrefillCheckoutState($params);
         return $this->renderZenModeStylesheet()
-            . $this->buildZenModeGroupBlock('customer', $params, 'checkoutRenderAuth')
-            . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderAuth', 'AUTH SECTION');
+            . $this->buildZenModeGroupBlock('customer', $state, 'checkoutRenderAuth')
+            . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderAuth', 'AUTH SECTION');
     }
 
     /**
@@ -85,7 +86,8 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderRegion(array &$params): string
     {
-        return $this->renderSectionErrorsAndDebug($params, 'checkoutRenderRegion', 'REGION SECTION');
+        $state = new shopPrefillCheckoutState($params);
+        return $this->renderSectionErrorsAndDebug($state, 'checkoutRenderRegion', 'REGION SECTION');
     }
 
     /**
@@ -97,7 +99,8 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderShipping(array &$params): string
     {
-        return $this->renderSectionErrorsAndDebug($params, 'checkoutRenderShipping', 'SHIPPING SECTION');
+        $state = new shopPrefillCheckoutState($params);
+        return $this->renderSectionErrorsAndDebug($state, 'checkoutRenderShipping', 'SHIPPING SECTION');
     }
 
     /**
@@ -109,8 +112,9 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderDetails(array &$params): string
     {
-        return $this->buildZenModeGroupBlock('delivery', $params, 'checkoutRenderDetails')
-            . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderDetails', 'DETAILS SECTION');
+        $state = new shopPrefillCheckoutState($params);
+        return $this->buildZenModeGroupBlock('delivery', $state, 'checkoutRenderDetails')
+            . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderDetails', 'DETAILS SECTION');
     }
 
     /**
@@ -122,8 +126,9 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderPayment(array &$params): string
     {
-        return $this->buildZenModeGroupBlock('payment', $params, 'checkoutRenderPayment')
-            . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderPayment', 'PAYMENT SECTION');
+        $state = new shopPrefillCheckoutState($params);
+        return $this->buildZenModeGroupBlock('payment', $state, 'checkoutRenderPayment')
+            . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderPayment', 'PAYMENT SECTION');
     }
 
     /**
@@ -135,10 +140,11 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderConfirm(array &$params): string
     {
-        return $this->renderDeliveryUnavailableScript($params)
-            . $this->renderZenModeConfirmStyles($params)
+        $state = new shopPrefillCheckoutState($params);
+        return $this->renderDeliveryUnavailableScript($state)
+            . $this->renderZenModeConfirmStyles($state)
             . $this->renderConsentCheckbox()
-            . $this->renderSectionErrorsAndDebug($params, 'checkoutRenderConfirm', 'CONFIRM SECTION');
+            . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderConfirm', 'CONFIRM SECTION');
     }
 
     /**
@@ -150,13 +156,13 @@ class shopPrefillPluginCheckoutHooks
      * В случае сигнала куку гасит JS при показе диалога — это позволяет скрипту
      * дожить в HTML через несколько AJAX-запросов checkout до финального рендера.
      */
-    private function renderDeliveryUnavailableScript(array &$params): string
+    private function renderDeliveryUnavailableScript(shopPrefillCheckoutState $state): string
     {
         if ($this->request->cookie('prefill_user_selected') !== '1') {
             return '';
         }
 
-        $state = new shopPrefillCheckoutState($params);
+
         if ($state->getShippingType() !== '') {
             // Доставка успешно заполнена — гасим куку server-side
             $this->response->setCookie('prefill_user_selected', '', -1, '/');
@@ -190,13 +196,12 @@ class shopPrefillPluginCheckoutHooks
      * @param string $log_context Контекст для логирования ошибок
      * @return string HTML блока управления или пустая строка
      */
-    private function buildZenModeGroupBlock(string $group, array &$params, string $log_context): string
+    private function buildZenModeGroupBlock(string $group, shopPrefillCheckoutState $state, string $log_context): string
     {
         try {
             if (!$this->zen_mode->isGroupEnabled($group)) {
                 return '';
             }
-            $state = new shopPrefillCheckoutState($params);
             return $this->zen_mode->buildCollapseBlock($group, $state);
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Zen Mode error in ' . $log_context, [
@@ -213,10 +218,9 @@ class shopPrefillPluginCheckoutHooks
      * @param array $params Параметры хука
      * @return string HTML с <style> тегом или пустая строка
      */
-    private function renderZenModeConfirmStyles(array $params): string
+    private function renderZenModeConfirmStyles(shopPrefillCheckoutState $state): string
     {
         try {
-            $state = new shopPrefillCheckoutState($params);
             $groups_to_collapse = $this->zen_mode->getGroupsToCollapse($state);
             return $this->zen_mode->generateAllStyles($groups_to_collapse);
         } catch (Exception $e) {
@@ -267,9 +271,8 @@ class shopPrefillPluginCheckoutHooks
      * @param string $section_label Метка секции для вывода (например AUTH SECTION)
      * @return string HTML блока debug информации или пустая строка
      */
-    private function renderSectionErrorsAndDebug(array $params, string $hook_name, string $section_label): string
+    private function renderSectionErrorsAndDebug(shopPrefillCheckoutState $state, string $hook_name, string $section_label): string
     {
-        $state = new shopPrefillCheckoutState($params);
         $errors_info = $state->getAllErrorsInfo();
 
         if ($this->is_debug) {
