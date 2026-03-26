@@ -50,17 +50,20 @@ class shopPrefillPluginFrontendHooks
      * Предзаполняет параметры при входе на сайт, управляет cookies.
      *
      * @param array|null $params Параметры хука
+     * @return string HTML для вставки в <head>
      * @throws waException
      * @throws waDbException
      */
-    public function handleFrontendHead(?array $params = null): void
+    public function handleFrontendHead(?array $params = null): string
     {
+        $head_html = '';
+
         // DEBUG: Регистрируем вызов хука
         $this->registerDebugHookCall('frontendHead');
 
         if (! $this->storefront_settings['active']) {
             shopPrefillPluginLog::info('Skipping frontendHead: storefront is inactive');
-            return;
+            return '';
         }
 
         // Получаем параметры для заполнения
@@ -84,6 +87,13 @@ class shopPrefillPluginFrontendHooks
 
         // Инициализация стилей и скриптов
         $this->initializeFrontendAssets();
+
+        if ($this->is_debug) {
+            $head_html .= shopPrefillPluginDebug::scheduleDebugStackRender();
+            $head_html .= shopPrefillPluginDebug::renderDebugStack();
+        }
+
+        return $head_html;
     }
 
     /**
@@ -167,10 +177,6 @@ class shopPrefillPluginFrontendHooks
             "AFTER PREFILL ($hook_name)",
             ['sections_filled_status' => $sections_filled_status]
         );
-
-        // Регистрируем отложенный вывод стека (будет выведен после всех хуков)
-        shopPrefillPluginDebug::scheduleDebugStackRender();
-        shopPrefillPluginDebug::renderDebugStack();
     }
 
     /**

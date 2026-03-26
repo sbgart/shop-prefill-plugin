@@ -55,24 +55,23 @@ class shopPrefillPluginDebug
      * Регистрирует отложенный вывод стека (через JavaScript callback)
      * Используется чтобы собрать записи из всех хуков перед выводом
      *
-     * @return void
+     * @return string
      */
-    public static function scheduleDebugStackRender(): void
+    public static function scheduleDebugStackRender(): string
     {
         static $scheduled = false;
 
         if ($scheduled) {
-            return;
+            return '';
         }
 
         $scheduled = true;
 
-        // Регистрируем callback который выведет стек после загрузки DOM
-        // Используем setTimeout чтобы дать время всем хукам отработать
-        echo "<script>
+        // Регистрируем callback который выведет стек после загрузки DOM.
+        // Используем setTimeout, чтобы дать время всем хукам собрать stack.
+        return "<script>
         (function() {
             function renderPrefillDebugStack() {
-                // Даём время на то чтобы все хуки выполнились и добавили записи
                 setTimeout(function() {
                     if (window.PrefillDebugHelper && window.PrefillDebugHelper.renderStack) {
                         window.PrefillDebugHelper.renderStack();
@@ -92,15 +91,23 @@ class shopPrefillPluginDebug
     /**
      * Выводит весь накопленный стек дебага одним летающим окном
      *
-     * @return void
+     * @return string
      */
-    public static function renderDebugStack(): void
+    public static function renderDebugStack(): string
     {
+        static $rendered = false;
+
+        if ($rendered) {
+            return '';
+        }
+
         if (empty(self::$debug_stack)) {
-            return;
+            return '';
         }
 
         try {
+            $rendered = true;
+
             // Получаем экземпляр плагина
             $plugin = shopPrefillPlugin::getInstance();
 
@@ -229,11 +236,10 @@ class shopPrefillPluginDebug
                 $template_path . 'DebugStack.html'
             ));
 
-            // Экранируем HTML для JavaScript
-            // ВАЖНО: сначала экранируем одинарные кавычки, потом переносы строк
-            $debug_html_escaped = str_replace("'", "\\'", $debug_html);
-            $debug_html_escaped = str_replace(["\r\n", "\n", "\r"], "\\n", $debug_html_escaped);
-            $debug_html_escaped = str_replace('"', '\\"', $debug_html_escaped);
+            $debug_html_json = json_encode($debug_html, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($debug_html_json === false) {
+                $debug_html_json = json_encode('', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
 
             // Подключаем JS файл
             $plugin_id = 'prefill';
@@ -241,15 +247,18 @@ class shopPrefillPluginDebug
 
             // Определяем базовый URL для AJAX запросов
             $base_url = wa()->getRouteUrl('shop/frontend');
-
-            echo "<script src=\"{$js_url}\"></script>";
+            $base_url_json = json_encode($base_url, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($base_url_json === false) {
+                $base_url_json = json_encode('', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
 
             // Передаем данные в JS
-            echo "<script>
+            return "<script src=\"{$js_url}\"></script>"
+                . "<script>
             (function() {
                 window.PrefillDebugHelper = window.PrefillDebugHelper || {};
-                window.PrefillDebugHelper.stackHtml = '{$debug_html_escaped}';
-                window.PrefillDebugHelper.baseUrl = '{$base_url}';
+                window.PrefillDebugHelper.stackHtml = {$debug_html_json};
+                window.PrefillDebugHelper.baseUrl = {$base_url_json};
             })();
             </script>";
         } catch (Exception $e) {
@@ -257,7 +266,7 @@ class shopPrefillPluginDebug
             shopPrefillPluginLog::error('Critical error rendering debug stack in shopPrefillPluginDebug', [
                 'message' => $e->getMessage()
             ]);
-            echo "<script>console.error('Debug render error:', " . json_encode($e->getMessage()) . ");</script>";
+            return "<script>console.error('Prefill debug render error:', " . json_encode($e->getMessage()) . ");</script>";
         }
 
         // НЕ очищаем стек здесь! Он будет очищаться при следующем вызове

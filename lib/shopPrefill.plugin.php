@@ -348,10 +348,10 @@ class shopPrefillPlugin extends shopPlugin
     public function frontendHead($params)
     {
         if (! $this->isActive()) {
-            return;
+            return '';
         }
 
-        $this->getFrontendHooks()->handleFrontendHead($params);
+        return $this->getFrontendHooks()->handleFrontendHead($params);
     }
 
     /**

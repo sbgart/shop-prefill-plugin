@@ -1,6 +1,6 @@
 # Issue 34 — `FillCheckoutParamsController`: `return json_encode()` вместо `$this->response`
 
-**Статус:** ⬜ Открыта  
+**Статус:** ✅ Закрыта  
 **Приоритет:** 🔴 Критический  
 **Сложность фикса:** ⚡ Минутный  
 **Файл:** `actions/frontend/shopPrefillPluginFrontendFillCheckoutParams.controller.php`

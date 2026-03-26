@@ -7,105 +7,116 @@
  * - '1' = согласие дано
  * - отсутствие куки = нет согласия
  *
- * Cookie автоматически продлевается на 1 год при каждой проверке hasConsent(),
- * гарантируя, что согласие не истечёт, пока пользователь посещает сайт.
+ * Cookie автоматически продлевается на 1 год при каждой проверке `hasConsent()`.
+ * Это сделано намеренно: согласие не должно «внезапно» истечь у активного пользователя,
+ * и логика продления не должна размазываться по нескольким местам (единая точка правды).
  *
  * Используется только для гостей. Авторизованные пользователи
  * идентифицируются по contact_id, согласие не требуется.
  */
 class shopPrefillPluginConsentStorage
 {
-    /** Название куки для согласия */
-    private const CONSENT_COOKIE = 'prefill_consent';
+    public const CONSENT_COOKIE = 'prefill_consent';
 
-    /** Время жизни куки в секундах (1 год) */
-    private const COOKIE_TTL = 365 * 86400;
+    /**
+     * TTL куки в секундах (1 год).
+     *
+     * Важно держать синхронно с TTL гостевого хеша (prefill_guest_hash),
+     * чтобы у пары «идентификатор гостя» + «согласие» не было неожиданных рассинхронов.
+     */
+    private const COOKIE_TTL = 31536000;
 
     private waResponse $response;
 
+    /**
+     * @param waResponse $response Используем response, чтобы выставлять Set-Cookie централизованно.
+     */
     public function __construct(waResponse $response)
     {
         $this->response = $response;
     }
 
     /**
-     * Проверяет наличие согласия пользователя
+     * Проверяет наличие согласия пользователя (гостя).
      *
-     * При наличии согласия автоматически продлевает срок жизни cookie на 1 год.
-     * Это обеспечивает, что согласие не истекает, пока пользователь посещает сайт.
+     * Если согласие было дано ранее (cookie = '1'), метод также продлевает TTL куки.
+     * Это специально сделано побочным эффектом проверки, т.к. `hasConsent()` вызывается
+     * в «естественных» точках жизненного цикла (frontend_head / checkout hooks).
      *
-     * @return bool true если согласие дано
+     * @return bool true, если согласие дано
      */
     public function hasConsent(): bool
     {
-        $consent = waRequest::cookie(self::CONSENT_COOKIE, null, waRequest::TYPE_STRING);
-
-        if ($consent === '1') {
-            // Продлеваем cookie при каждой проверке
-            $this->renewConsent();
-            return true;
+        if (waRequest::cookie(self::CONSENT_COOKIE) !== '1') {
+            return false;
         }
 
-        return false;
+        // Согласие есть — продлеваем TTL на этом же запросе.
+        $this->renewConsent();
+        return true;
     }
 
     /**
-     * Продлевает срок жизни cookie согласия
+     * Выдаёт согласие (устанавливает/обновляет cookie).
      *
-     * Вызывается автоматически при каждой проверке hasConsent()
-     */
-    private function renewConsent(): void
-    {
-        $this->response->setCookie(
-            self::CONSENT_COOKIE,
-            '1',
-            time() + self::COOKIE_TTL,
-            null,   // path (default)
-            '',     // domain (default)
-            false,  // secure (TODO: включить для production)
-            true    // httponly — защита от XSS
-        );
-    }
-
-    /**
-     * Выдает согласие (устанавливает куку)
+     * Делегирует в `renewConsent()`, чтобы не дублировать параметры `setCookie()`.
      */
     public function grantConsent(): void
     {
+        $this->renewConsent();
+    }
+
+    /**
+     * Отзывает согласие (удаляет cookie).
+     *
+     * Важно удалять cookie с теми же ключевыми атрибутами (path/domain/etc.),
+     * что и при установке — иначе браузер может сохранить «старую» версию.
+     */
+    public function revokeConsent(): void
+    {
+        $this->deleteConsentCookie();
+    }
+
+    /**
+     * Продлевает согласие на следующий период TTL.
+     */
+    private function renewConsent(): void
+    {
+        $this->setConsentCookie(time() + self::COOKIE_TTL);
+    }
+
+    /**
+     * Ставит cookie согласия с нужными атрибутами.
+     *
+     * `secure=false` сейчас намеренно (см. отдельный issue про secure cookies).
+     * `httponly=true` обязателен, чтобы JS не мог прочитать куку.
+     */
+    private function setConsentCookie(int $expires): void
+    {
         $this->response->setCookie(
             self::CONSENT_COOKIE,
             '1',
-            time() + self::COOKIE_TTL,
-            null,   // path (default)
-            '',     // domain (default)
-            false,  // secure (TODO: включить для production)
-            true    // httponly — защита от XSS
+            $expires,
+            null,
+            '',
+            false,
+            true
         );
     }
 
     /**
-     * Отзывает согласие (удаляет куку)
+     * Удаляет cookie согласия.
      */
-    public function revokeConsent(): void
+    private function deleteConsentCookie(): void
     {
         $this->response->setCookie(
             self::CONSENT_COOKIE,
             '',
-            time() - 3600, // Устанавливаем время в прошлом для удаления
-            null,   // path (default)
-            '',     // domain (default)
-            false,  // secure (TODO: включить для production)
-            true    // httponly — защита от XSS
+            time() - 3600,
+            null,
+            '',
+            false,
+            true
         );
-    }
-
-    /**
-     * Возвращает название куки согласия
-     *
-     * @return string
-     */
-    public static function getConsentCookieName(): string
-    {
-        return self::CONSENT_COOKIE;
     }
 }

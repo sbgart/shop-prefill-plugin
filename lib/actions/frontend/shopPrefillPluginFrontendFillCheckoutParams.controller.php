@@ -20,13 +20,20 @@ class shopPrefillPluginFrontendFillCheckoutParamsController extends waJsonContro
                 'fill_params_id' => $fill_params_id
             ]);
 
-            return json_encode(array('status' => 'success'));
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Failed manually applying checkout params', [
                 'fill_params_id' => $fill_params_id,
-                'message' => $e->getMessage()
+                'message'        => $e->getMessage()
             ]);
-            return json_encode(array('status' => 'error', 'message' => $e->getMessage()));
+
+            $this->setError($e->getMessage(), array(
+                'fill_params_id' => $fill_params_id,
+            ));
+            return;
         }
+
+        $this->response = array(
+            'fill_params_id' => $fill_params_id,
+        );
     }
 }
