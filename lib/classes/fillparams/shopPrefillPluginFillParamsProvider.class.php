@@ -151,20 +151,19 @@ class shopPrefillPluginFillParamsProvider
         // Один батчевый запрос вместо N
         $orders_params = $this->order_provider->getOrdersParamsByIds($orders_ids);
 
-        // Явная сортировка по order_id ASC: removeDuplicateSubArrays ожидает на входе
-        // «старые первые», чтобы при обходе в обратном порядке сохранять самые свежие записи.
-        // Без этого корректность зависит от неявного поведения waModel::get().
+        // ASC по order_id: при обходе в обратном порядке первым встречается самый свежий заказ.
         ksort($orders_params);
-
-        $unique_orders_params = shopPrefillPluginFillParamsHelper::removeDuplicateSubArrays(
-            $orders_params,
-            "shipping_"
-        );
 
         $active_shipping_instances = shopPrefillPluginPluginsProvider::getShippingMethods();
 
-        foreach ($unique_orders_params as $order_id => $order_params) {
-            // Пропускаем адреса без важных параметров доставки (защита от старых заказов или сбоев)
+        // Дедупликация через isSameDeliveryOption: строим «лёгкий» FillParams без order_id,
+        // чтобы не делать запросы к shop_order/wa_contact до фильтрации дублей.
+        // Итерируем от новых к старым — первый встреченный сценарий считается актуальным.
+        $seen_delivery_options = [];
+        $unique_orders_params  = [];
+
+        foreach (array_reverse($orders_params, true) as $order_id => $order_params) {
+            // Пропускаем заказы без ключевых параметров доставки
             if (empty($order_params['shipping_id']) || empty($order_params['shipping_type_id'])) {
                 continue;
             }
@@ -175,6 +174,27 @@ class shopPrefillPluginFillParamsProvider
                 continue;
             }
 
+            // Без order_id: только адрес + параметры доставки из order_params, без запросов к БД
+            $candidate = $this->getFillParamsByOrderParams($order_params);
+
+            $is_duplicate = false;
+            foreach ($seen_delivery_options as $seen) {
+                if ($candidate->isSameDeliveryOption($seen)) {
+                    $is_duplicate = true;
+                    break;
+                }
+            }
+
+            if (! $is_duplicate) {
+                $seen_delivery_options[]        = $candidate;
+                $unique_orders_params[$order_id] = $order_params;
+            }
+        }
+
+        // Восстанавливаем порядок ASC (старые → новые) для консистентности коллекции
+        ksort($unique_orders_params);
+
+        foreach ($unique_orders_params as $order_id => $order_params) {
             $fill_params = $this->getFillParamsByOrderParams($order_params, $order_id);
             $this->fill_params_collection->add($fill_params);
         }

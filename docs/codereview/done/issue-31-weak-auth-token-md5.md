@@ -1,11 +1,27 @@
 # Issue 31 — Security: слабый auth_token на основе MD5 без секрета
 
-**Статус:** ⬜ Открыта  
+**Статус:** ✅ Закрыта  
 **Приоритет:** 🔴 Критический  
 **Сложность фикса:** 🔧 Небольшой  
-**Файл:** `user/shopPrefillPluginUserProvider.class.php`, метод `getAuthToken`
+**Файл:** `wa-system/auth/waAuth.class.php`, метод `getToken`
 
-## Проблема
+## Итог проверки
+
+Проблема подтверждена, но относится к **ядру Webasyst**, а не к плагину `prefill`.
+
+Фрагмент с `md5` и формированием `auth_token` находится в:
+
+```php
+public function getToken($user_info)
+{
+    $hash = md5($user_info['create_datetime'] . $user_info['login'] . $user_info['password']);
+    return substr($hash, 0, 15) . $user_info['id'] . substr($hash, -15);
+}
+```
+
+Поэтому issue для этого репозитория/плагина закрыта как external (upstream/framework).
+
+## Первичное описание
 
 Метод `getAuthToken()` генерирует токен авторизации из предсказуемых данных без серверного секрета:
 
