@@ -11,7 +11,7 @@ class shopPrefillPluginCheckoutHooks
     private shopPrefillPluginConsentStorage $consent_storage;
     private shopPrefillPluginSessionStorageProvider $session_storage;
     private shopPrefillPluginFillParamsProvider $fill_params_provider;
-    private bool $is_debug;
+    private bool $is_debug_panel;
     private array $storefront_settings;
     private waRequest $request;
     private waResponse $response;
@@ -22,7 +22,7 @@ class shopPrefillPluginCheckoutHooks
         shopPrefillPluginConsentStorage $consent_storage,
         shopPrefillPluginSessionStorageProvider $session_storage,
         shopPrefillPluginFillParamsProvider $fill_params_provider,
-        bool $is_debug,
+        bool $is_debug_panel,
         array $storefront_settings,
         waRequest $request,
         waResponse $response
@@ -32,7 +32,7 @@ class shopPrefillPluginCheckoutHooks
         $this->consent_storage = $consent_storage;
         $this->session_storage = $session_storage;
         $this->fill_params_provider = $fill_params_provider;
-        $this->is_debug = $is_debug;
+        $this->is_debug_panel = $is_debug_panel;
         $this->storefront_settings = $storefront_settings;
         $this->request = $request;
         $this->response = $response;
@@ -275,7 +275,7 @@ class shopPrefillPluginCheckoutHooks
     {
         $errors_info = $state->getAllErrorsInfo();
 
-        if ($this->is_debug) {
+        if ($this->is_debug_panel) {
             shopPrefillPluginDebug::addDebugEntry(
                 $state->getData(),
                 'CHECKOUT HOOK (' . $hook_name . ')',

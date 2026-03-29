@@ -3,29 +3,56 @@
 /**
  * Проверяет возможность предзаполнения секций checkout
  *
- * Использует положительную логику: секция включена = предзаполняем
+ * Использует положительную логику: группа включена = предзаполняем все её секции
  * Проверяет заполненность секции по ключевым полям через dot-notation
  */
 class shopPrefillPluginSectionChecker
 {
-    private array $enabled_sections;
+    private array $enabled_groups;
+
+    /**
+     * Маппинг секция → группа (совпадает с группами Zen Mode)
+     */
+    private const SECTION_TO_GROUP = [
+        'auth'     => 'customer',
+        'region'   => 'delivery',
+        'shipping' => 'delivery',
+        'details'  => 'delivery',
+        'payment'  => 'payment',
+        'confirm'  => 'confirm',
+    ];
 
     /**
      * Ключевые поля для проверки заполненности секции (dot-notation)
      * Если хотя бы одно поле заполнено — секция считается предзаполненной
      */
     private const SECTION_KEY_FIELDS = [
-        'auth' => ['data.email', 'data.phone', 'data.firstname', 'html'],
-        'region' => ['city', 'html'],
+        'auth'     => ['data.email', 'data.phone', 'data.firstname', 'html'],
+        'region'   => ['city', 'html'],
         'shipping' => ['type_id'],
-        'details' => ['shipping_address.street', 'html'],
-        'payment' => ['id'],
-        'confirm' => ['comment', 'html'],
+        'details'  => ['shipping_address.street', 'html'],
+        'payment'  => ['id'],
+        'confirm'  => ['comment', 'html'],
     ];
 
-    public function __construct(array $enabled_sections)
+    public function __construct(array $enabled_groups)
     {
-        $this->enabled_sections = $enabled_sections;
+        $this->enabled_groups = $enabled_groups;
+    }
+
+    /**
+     * Проверяет, включена ли группа для данной секции
+     *
+     * @param string $section_id ID секции (auth, region, shipping, details, payment, confirm)
+     * @return bool true если группа секции включена
+     */
+    public function isGroupEnabledForSection(string $section_id): bool
+    {
+        $group = self::SECTION_TO_GROUP[$section_id] ?? null;
+        if ($group === null) {
+            return true;
+        }
+        return (bool)($this->enabled_groups[$group] ?? true);
     }
 
     /**
@@ -37,8 +64,8 @@ class shopPrefillPluginSectionChecker
      */
     public function canPrefillSection(string $section_id, array $checkout_params): bool
     {
-        // 1. Секция НЕ включена в настройках → не предзаполняем
-        if (!($this->enabled_sections[$section_id] ?? true)) {
+        // 1. Группа секции выключена в настройках → не предзаполняем
+        if (!$this->isGroupEnabledForSection($section_id)) {
             return false;
         }
 

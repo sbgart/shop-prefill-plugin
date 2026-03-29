@@ -201,6 +201,27 @@ msgstr "Fixed width and height of the icon block across all sections for consist
 msgid "setting.prefill.my_delivery_variants"
 msgstr ""
 
+msgid "setting.prefill.debug_panel"
+msgstr "Storefront debug panel"
+
+msgid "setting.prefill.sections.label"
+msgstr "Prefill groups"
+
+msgid "setting.prefill.sections.customer"
+msgstr "Customer (auth)"
+
+msgid "setting.prefill.sections.delivery"
+msgstr "Delivery (region, method, address)"
+
+msgid "setting.prefill.sections.payment"
+msgstr "Payment"
+
+msgid "setting.prefill.sections.confirm"
+msgstr "Confirmation (comment)"
+
+msgid "tooltip.prefill.debug_panel"
+msgstr "Show the floating debug panel and extended checkout hints only when Webasyst debug mode is on. Off by default so a permanently enabled admin debug flag does not expose the panel to customers."
+
 msgid "First name"
 msgstr ""
 

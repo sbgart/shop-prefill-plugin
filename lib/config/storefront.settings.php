@@ -6,11 +6,12 @@ return [
         'my_delivery_variants'                => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'my_delivery_variants_button_classes' => ['value' => ''],
         'on_entry'                            => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+        // Плавающая панель отладки и связанный UI (при глобальном debug Webasyst)
+        'debug_panel'                         => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
+        // Группы секций чекаута: customer=auth, delivery=region+shipping+details, payment, confirm
         'sections'                            => [
-            'auth'     => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
-            'region'   => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
-            'shipping' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
-            'details'  => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'customer' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'delivery' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
             'payment'  => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
             'confirm'  => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         ],

@@ -4,8 +4,7 @@
 
 UI сейчас состоит из вкладок:
 
-- `General` (`templates/actions/settings/blocks/tabs/General.html`)
-- `Prefill` (`templates/actions/settings/blocks/tabs/Prefill.html`)
+- `General` — основная вкладка (витрина и предзаполнение): `templates/actions/settings/blocks/tabs/General.html`, `templates/actions/settings/blocks/tabs/Prefill.html`
 - `Design` (`templates/actions/settings/blocks/tabs/Design.html`)
 
 Ниже — **каждая настройка**: где показываем, **каким полем** и что означает.
@@ -54,98 +53,91 @@ UI сейчас состоит из вкладок:
 
 - `prefill.my_delivery_variants`
   - **Формат**: Switcher (boolean)
-  - **Вкладка**: Prefill
+  - **Вкладка**: General
   - **Описание**: включает UI “Мои варианты доставки” (карточки/выбор вариантов на основе прошлых заказов)
   - **Дефолт**: `true`
   - **Статус UI**: уже есть
 
+- `prefill.debug_panel`
+  - **Формат**: Switcher (boolean)
+  - **Вкладка**: General
+  - **Описание**: при глобальном debug Webasyst — включить **только** плавающую панель и стек для неё (`isDebugPanelEnabled()`). Общий режим отладки плагина = глобальный флаг (`shopPrefillPlugin::isDebug()`): ассеты, JS-логгер, админские debug-POST без панели.
+  - **Дефолт**: `false` (чтобы при часто включённом debug у администратора панель не светилась покупателям)
+  - **Статус UI**: уже есть
+
 - `prefill.on_entry`
   - **Формат**: Switcher (boolean)
-  - **Вкладка**: Prefill
+  - **Вкладка**: General
   - **Описание**: применять предзаполнение “на входе” (при первом заходе/рендере, а не только на AJAX шагах)
   - **Дефолт**: `true`
   - **Статус UI**: нет (нужно добавить)
 
-- `prefill.sections.auth`
-  - **Формат**: Switcher (boolean) или чекбокс в группе “Секции”
-  - **Вкладка**: Prefill
-  - **Описание**: разрешать предзаполнение секции авторизации
+- `prefill.sections.customer`
+  - **Формат**: Switcher (boolean)
+  - **Вкладка**: General
+  - **Описание**: разрешать предзаполнение группы "Покупатель" (секция `auth`)
   - **Дефолт**: `true`
   - **Статус UI**: нет (нужно добавить)
 
-- `prefill.sections.region`
-  - **Формат**: Switcher/checkbox
-  - **Вкладка**: Prefill
-  - **Описание**: разрешать предзаполнение региона/адреса (в зависимости от чекаута)
+- `prefill.sections.delivery`
+  - **Формат**: Switcher (boolean)
+  - **Вкладка**: General
+  - **Описание**: разрешать предзаполнение группы "Доставка" (секции `region`, `shipping`, `details`)
   - **Дефолт**: `true`
-  - **Статус UI**: нет
-
-- `prefill.sections.shipping`
-  - **Формат**: Switcher/checkbox
-  - **Вкладка**: Prefill
-  - **Описание**: разрешать предзаполнение/автовыбор доставки
-  - **Дефолт**: `true`
-  - **Статус UI**: нет
-
-- `prefill.sections.details`
-  - **Формат**: Switcher/checkbox
-  - **Вкладка**: Prefill
-  - **Описание**: разрешать предзаполнение контактных данных/полей покупателя
-  - **Дефолт**: `true`
-  - **Статус UI**: нет
+  - **Статус UI**: нет (нужно добавить)
 
 - `prefill.sections.payment`
-  - **Формат**: Switcher/checkbox
-  - **Вкладка**: Prefill
-  - **Описание**: разрешать предзаполнение/автовыбор оплаты
+  - **Формат**: Switcher (boolean)
+  - **Вкладка**: General
+  - **Описание**: разрешать предзаполнение группы "Оплата" (секция `payment`)
   - **Дефолт**: `true`
-  - **Статус UI**: нет
+  - **Статус UI**: нет (нужно добавить)
 
 - `prefill.sections.confirm`
-  - **Формат**: Switcher/checkbox
-  - **Вкладка**: Prefill
-  - **Описание**: разрешать предзаполнение секции подтверждения (если применимо)
+  - **Формат**: Switcher (boolean)
+  - **Вкладка**: General
+  - **Описание**: разрешать предзаполнение группы "Подтверждение" (секция `confirm`, комментарий к заказу)
   - **Дефолт**: `true`
-  - **Статус UI**: нет
+  - **Статус UI**: нет (нужно добавить)
 
 - `prefill.integration.cityselect`
   - **Формат**: Switcher (boolean)
-  - **Вкладка**: Prefill
+  - **Вкладка**: General
   - **Описание**: интеграция с CitySelect (подстановка города/поисковый компонент)
   - **Дефолт**: `true`
   - **Статус UI**: уже есть
 
 - `prefill.integration.dp`
   - **Формат**: Switcher (boolean)
-  - **Вкладка**: Prefill
+  - **Вкладка**: General
   - **Описание**: интеграция с DP (delivery/pickup плагин/агрегатор)
   - **Дефолт**: `true`
   - **Статус UI**: нет
 
 - `prefill.remember_me.active`
   - **Формат**: Switcher (boolean)
-  - **Вкладка**: Prefill (подгруппа “Remember me”)
+  - **Вкладка**: General (подгруппа “Remember me”)
   - **Описание**: включить “запомнить меня” для авторизованных пользователей (поведение на фронте)
   - **Дефолт**: `true`
   - **Статус UI**: нет
 
 - `prefill.remember_me.expires`
   - **Формат**: Number (int, days)
-  - **Вкладка**: Prefill (подгруппа “Remember me”, показывать если `active = true`)
+  - **Вкладка**: General (подгруппа “Remember me”, показывать если `active = true`)
   - **Описание**: срок “remember me” в днях
   - **Дефолт**: `90`
   - **Статус UI**: нет
 
 - `prefill.guest.consent_required`
   - **Формат**: Switcher (boolean)
-  - **Вкладка**: Prefill (подгруппа “Guest”)
+  - **Вкладка**: General (подгруппа “Guest”)
   - **Описание**: требовать согласие гостя перед сохранением/использованием данных для предзаполнения
   - **Дефолт**: `true`
   - **Статус UI**: нет
 
 - `prefill.my_delivery_variants_button_classes`
   - **Формат**: Text (string)
-  - **Вкладка**: Prefill (подгруппа “Мои варианты доставки”)
+  - **Вкладка**: General (подгруппа “Мои варианты доставки”)
   - **Описание**: дополнительные CSS-классы для кнопок/элементов UI “Мои варианты доставки”
   - **Дефолт**: `''`
   - **Статус UI**: нет

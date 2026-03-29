@@ -8,7 +8,7 @@ class shopPrefillPluginFrontendResetAndRefillController extends waJsonController
 {
     public function execute()
     {
-        if (!waSystemConfig::isDebug() || !wa()->getUser()->isAdmin('shop')) {
+        if (! shopPrefillPlugin::getInstance()->isDebug() || ! wa()->getUser()->isAdmin('shop')) {
             $this->errors = 'Access denied';
             return;
         }

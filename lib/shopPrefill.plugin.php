@@ -80,9 +80,26 @@ class shopPrefillPlugin extends shopPlugin
             && ($this->getSettingProvider()->getSettings()['active'] === true);
     }
 
+    /**
+     * Режим отладки плагина = глобальный debug Webasyst (несжатые ассеты, JS-логгер, служебные эндпоинты).
+     */
     public function isDebug(): bool
     {
         return waSystemConfig::isDebug();
+    }
+
+    /**
+     * Плавающая панель и стек хуков в head: только при глобальном debug и включённой настройке витрины prefill.debug_panel.
+     */
+    public function isDebugPanelEnabled(): bool
+    {
+        if (! waSystemConfig::isDebug()) {
+            return false;
+        }
+
+        $settings = $this->getStorefrontSettings();
+
+        return ! empty($settings['prefill']['debug_panel']);
     }
 
     /**
@@ -256,6 +273,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getConsentStorage(),
             $this->getAssetsManager(),
             $this->isDebug(),
+            $this->isDebugPanelEnabled(),
             $this->getStorefrontSettings(),
             fn($path) => $this->addCss($path),
             fn($path) => $this->addJs($path)
@@ -285,7 +303,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getConsentStorage(),
             $this->getSessionStorageProvider(),
             $this->getFillParamsProvider(),
-            $this->isDebug(),
+            $this->isDebugPanelEnabled(),
             $this->getStorefrontSettings(),
             wa()->getRequest(),
             wa()->getResponse()

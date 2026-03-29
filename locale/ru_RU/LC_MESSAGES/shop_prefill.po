@@ -255,6 +255,27 @@ msgstr "Общая ширина и высота блока иконки во в�
 msgid "setting.prefill.my_delivery_variants"
 msgstr ""
 
+msgid "setting.prefill.debug_panel"
+msgstr "Панель отладки на витрине"
+
+msgid "setting.prefill.sections.label"
+msgstr "Группы предзаполнения"
+
+msgid "setting.prefill.sections.customer"
+msgstr "Покупатель (авторизация)"
+
+msgid "setting.prefill.sections.delivery"
+msgstr "Доставка (регион, способ, адрес)"
+
+msgid "setting.prefill.sections.payment"
+msgstr "Оплата"
+
+msgid "setting.prefill.sections.confirm"
+msgstr "Подтверждение (комментарий)"
+
+msgid "tooltip.prefill.debug_panel"
+msgstr "Показывать плавающую панель и расширенные подсказки по чекауту только если включён режим отладки Webasyst. По умолчанию выключено, чтобы при постоянном debug у администратора панель не попадала покупателям."
+
 msgid "First name"
 msgstr ""
 

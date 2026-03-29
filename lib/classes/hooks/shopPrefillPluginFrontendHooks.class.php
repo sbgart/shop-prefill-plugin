@@ -13,6 +13,7 @@ class shopPrefillPluginFrontendHooks
     private shopPrefillPluginConsentStorage         $consent_storage;
     private shopPrefillPluginAssetsManager          $assets_manager;
     private bool                                    $is_debug;
+    private bool                                    $is_debug_panel;
     private array                                   $storefront_settings;
     /** @var callable */
     private $add_css_callback;
@@ -27,6 +28,7 @@ class shopPrefillPluginFrontendHooks
         shopPrefillPluginConsentStorage $consent_storage,
         shopPrefillPluginAssetsManager $assets_manager,
         bool $is_debug,
+        bool $is_debug_panel,
         array $storefront_settings,
         callable $add_css_callback,
         callable $add_js_callback
@@ -38,6 +40,7 @@ class shopPrefillPluginFrontendHooks
         $this->consent_storage      = $consent_storage;
         $this->assets_manager       = $assets_manager;
         $this->is_debug             = $is_debug;
+        $this->is_debug_panel       = $is_debug_panel;
         $this->storefront_settings  = $storefront_settings;
         $this->add_css_callback     = $add_css_callback;
         $this->add_js_callback      = $add_js_callback;
@@ -88,7 +91,7 @@ class shopPrefillPluginFrontendHooks
         // Инициализация стилей и скриптов
         $this->initializeFrontendAssets();
 
-        if ($this->is_debug) {
+        if ($this->is_debug_panel) {
             $head_html .= shopPrefillPluginDebug::scheduleDebugStackRender();
             $head_html .= shopPrefillPluginDebug::renderDebugStack();
         }
@@ -103,7 +106,7 @@ class shopPrefillPluginFrontendHooks
      */
     private function registerDebugHookCall(string $hook_name): void
     {
-        if ($this->is_debug) {
+        if ($this->is_debug_panel) {
             shopPrefillPluginDebug::registerHookCall($hook_name);
         }
     }
@@ -117,7 +120,7 @@ class shopPrefillPluginFrontendHooks
      */
     private function logDebugBeforePrefill(string $hook_name, ?shopPrefillPluginFillParams $fill_params): void
     {
-        if (! $this->is_debug) {
+        if (! $this->is_debug_panel) {
             return;
         }
 
@@ -132,7 +135,7 @@ class shopPrefillPluginFrontendHooks
         foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
             // Собираем детальную информацию для UX цепочки
             $sections_prefill_status[$section_id] = [
-                'enabled'  => $this->storefront_settings['prefill']['sections'][$section_id] ?? true,
+                'enabled'  => $section_checker->isGroupEnabledForSection($section_id),
                 'filled'   => $section_checker->isSectionFilled($section_id, $checkout_params_before),
                 'has_data' => $fill_params ? $fill_params->hasDataForSection($section_id) : false,
                 'result'   => $section_checker->canPrefillSection($section_id, $checkout_params_before),
@@ -158,7 +161,7 @@ class shopPrefillPluginFrontendHooks
      */
     private function logDebugAfterPrefill(string $hook_name): void
     {
-        if (! $this->is_debug) {
+        if (! $this->is_debug_panel) {
             return;
         }
 
@@ -260,6 +263,7 @@ class shopPrefillPluginFrontendHooks
             ],
         ];
 
+        // Несжатые ассеты и isDebug в JS (логгер) — по глобальному debug; панель — по is_debug_panel
         $this->assets_manager->init(
             $this->is_debug,
             $css_variables,

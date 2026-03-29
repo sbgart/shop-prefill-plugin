@@ -13,6 +13,11 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
         try {
             $plugin = shopPrefillPlugin::getInstance();
 
+            if (! $plugin->isDebugPanelEnabled()) {
+                $this->errors = ['error' => 'Access denied'];
+                return;
+            }
+
             // Получаем настройки витрины
             $storefront_settings = $plugin->getStorefrontSettings();
             $plugin_enabled = !empty($storefront_settings['active']);

@@ -17,5 +17,40 @@
         type='Switcher'
         label='[`setting.prefill.my_delivery_variants`]'
         value=$settings['prefill']['my_delivery_variants']}
+
+        {include file='../../components/Field.html'
+        name="{$name_prefix}[prefill][debug_panel]"
+        type='Switcher'
+        label='[`setting.prefill.debug_panel`]'
+        value=$settings['prefill']['debug_panel']
+        tooltip='[`tooltip.prefill.debug_panel`]'}
+    </div>
+
+    <div class="fields-group custom-mt-16">
+        <div class="fields-group-header">[`setting.prefill.sections.label`]</div>
+
+        {include file='../../components/Field.html'
+        name="{$name_prefix}[prefill][sections][customer]"
+        type='Switcher'
+        label='[`setting.prefill.sections.customer`]'
+        value=$settings['prefill']['sections']['customer']}
+
+        {include file='../../components/Field.html'
+        name="{$name_prefix}[prefill][sections][delivery]"
+        type='Switcher'
+        label='[`setting.prefill.sections.delivery`]'
+        value=$settings['prefill']['sections']['delivery']}
+
+        {include file='../../components/Field.html'
+        name="{$name_prefix}[prefill][sections][payment]"
+        type='Switcher'
+        label='[`setting.prefill.sections.payment`]'
+        value=$settings['prefill']['sections']['payment']}
+
+        {include file='../../components/Field.html'
+        name="{$name_prefix}[prefill][sections][confirm]"
+        type='Switcher'
+        label='[`setting.prefill.sections.confirm`]'
+        value=$settings['prefill']['sections']['confirm']}
     </div>
 </div>
