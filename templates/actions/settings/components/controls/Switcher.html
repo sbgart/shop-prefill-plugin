@@ -1,10 +1,12 @@
 {strip}
     <input type="hidden" name="{$name}" value="false">
-    <input type="checkbox"
-           name="{$name}"
-           data-type="switcher{if isset($collapse)},collapse{/if}"
-           value="true"
-            {if isset($value) && $value == 'true'} {'checked'} {/if}
+    <span class="switch"
+          data-type="switcher{if isset($collapse)},collapse{/if}"
             {if isset($collapse)} data-for="{$collapse}" {/if}
-            {if isset($id)} data-id="{$id}" {/if} />
+            {if isset($id)} data-id="{$id}" {/if}>
+        <input type="checkbox"
+               name="{$name}"
+               value="true"
+                {if isset($value) && $value == 'true'}checked{/if} />
+    </span>
 {/strip}

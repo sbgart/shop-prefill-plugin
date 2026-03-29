@@ -1,23 +1,21 @@
-<div class="fields">
-    {include file='../../components/Field.html'
-    name="{$name_prefix}[active]"
-    type='Switcher'
-    label='[`setting.active`]'
-    value=$settings['active']
-    tooltip='[`tooltip.storefront_active`]'}
+<div class="s-section-header">
+    <h3 class="s-title">[`Основные настройки для витрины`]</h3>
+    <p class="s-description">[`Настройте основные параметры плагина, которые будут влиять на всю витрину.`]</p>
 </div>
 
 <div class="fields">
-    {include file='../../components/Field.html'
-    name="{$name_prefix}[prefill][my_delivery_variants]"
-    type='Switcher'
-    label='[`setting.prefill.my_delivery_variants`]'
-    value=$settings['prefill']['my_delivery_variants']}
-</div>
+    <div class="fields-group custom-mt-16">
+        {include file='../../components/Field.html'
+        name="{$name_prefix}[active]"
+        type='Switcher'
+        label='[`setting.active`]'
+        value=$settings['active']
+        tooltip='[`tooltip.storefront_active`]'}
 
-<script>
-    $(function () {
-        const prefillSettings = new PrefillSettings('#prefill [data-id="storefront-content"]');
-        prefillSettings.switcher();
-    });
-</script>
+        {include file='../../components/Field.html'
+        name="{$name_prefix}[prefill][my_delivery_variants]"
+        type='Switcher'
+        label='[`setting.prefill.my_delivery_variants`]'
+        value=$settings['prefill']['my_delivery_variants']}
+    </div>
+</div>

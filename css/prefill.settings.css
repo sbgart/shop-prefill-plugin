@@ -1,3 +1,11 @@
+#wa-plugins-container .content {
+    background-color: var(--background-color);
+}
+
+#wa-plugins-container .fields-group {
+    background-color: var(--background-color-blank);
+}
+
 .fields {
     width: 100%;
 }
@@ -14,5 +22,54 @@
 
 [data-tab-content] {
     padding: 20px 0;
+    display: none;
+}
+
+.prefill-storefront-select-wrapper {
+    width: 100%;
+}
+
+.prefill-storefront-content {
+    margin-top: 16px;
+    position: relative;
+}
+
+#prefill .tab-content {
+    padding: 20px 0;
+}
+
+#prefill .chips {
+    margin-bottom: 4px;
+}
+
+#prefill .chips li > a {
+    font-weight: 500;
+}
+
+#prefill .s-section-header .s-title {
+    font-size: 1.35em;
+    line-height: 1.6em;
+    margin-bottom: 0.25em;
+}
+
+#prefill .s-section-header .s-description {
+    margin-top: 0;
+    margin-bottom: 0;
+    color: #999;
+    font-size: 0.9em;
+    line-height: 1.4em;
+}
+
+#prefill .s-section-header {
+    margin: 0 0 20px;
+}
+
+#prefill .field .value {
+    display: block;
+    clear: both;
+}
+
+#prefill .field .value:first-of-type {
+    clear: none;
 }
 

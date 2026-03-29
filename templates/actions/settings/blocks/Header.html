@@ -1,17 +1,18 @@
-<div class="float-right">
-    <ul class="menu-h with-icons">
-      <li>
-        <a href="https://appark.ru/#support"><i class="icon16 ss settings-bw"></i> [`menu.help`]</a>
-      </li>
-      <li>
-        <a href="https://www.webasyst.ru/store/plugin/shop/{$plugin_id}/reviews/"><i class="icon16 ss star-bw"></i> [`menu.feedback`]</a>
-      </li>
-    </ul>
+<div class="s-page-header">
+    <div class="flexbox middle space-12 wrap">
+        <div class="wide flexbox middle space-12">
+            <input type="hidden" name="{$name_prefix}[active]" value="false">
+            <span class="switch" data-type="switcher">
+                <input type="checkbox" name="{$name_prefix}[active]" value="true" {if ifset($settings['active']) == 'true'}checked{/if}>
+            </span>
+            <div>
+                <h1>[`title`]</h1>
+            </div>
+        </div>
+        <div class="flexbox space-8">
+            <a href="https://appark.ru/#support" title="[`menu.help`]" class="button nobutton small rounded gray nowrap custom-mt-4" target="_blank">
+                [`menu.help`] <i class="fas fa-external-link-alt fa-xs text-gray"></i>
+            </a>
+        </div>
+    </div>
 </div>
-
-<h1>[`title`]</h1>
-
-<p>[`devs`]: <a href="http://appark.ru" target="_blank" class="inline-link">
-  <b><i>appark.ru</i></b></a> 
-  <i class="icon16 new-window" style="vertical-align: middle;"></i>
-</p>

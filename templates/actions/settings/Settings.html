@@ -1,51 +1,47 @@
 {$name_prefix = "`$app_id`_`$plugin_id`"}
 
-<div id="{$plugin_id}">
-    {include file='./blocks/Head.html'}
+{include file='./blocks/Head.html'}
 
-    {include file='./blocks/Header.html'}
+<form id="plugins-settings-form" action="?module=plugins&id={$plugin_id}&action=save" method="POST">
+    {$wa->csrf()}
 
-    <form id="plugins-settings-form" action="?module=plugins&id={$plugin_id}&action=save" method="POST">
-        {$wa->csrf()}
+    <div class="article wider">
+        <div class="article-body">
+            <div id="{$plugin_id}">
+                {include file='./blocks/Header.html'}
 
-        <div class="fields" style="width: 100%;">
-
-            <div class="field-group">
-                {include file='./components/Field.html'
-                type='Switcher'
-                name="{$name_prefix}[active]"
-                label='[`setting.plugin_active`]'
-                value=$settings['active']}
-            </div>
-
-            <!-- Storefront selector -->
-            <div class="field-group">
-                {include file='./components/Field.html'
-                type='StorefrontSelect'
-                label='<strong>[`setting.storefront_selector`]</strong>'
-                tooltip='[`title.storefront_selector`]'}
-            </div>
-            <div data-id="storefront-content"></div>
-
-            <hr>
-
-            <div class="field">
-                <div class="value submit">
-                    <input type="submit" class="button green" value="[`Save`]">
-                    <span id="plugins-settings-form-status" style="display: none;"></span>
+                <div class="fields custom-mt-24">
+                    <div class="field">
+                        <div class="name">[`setting.storefront_selector`]</div>
+                        <div class="value">
+                            <prefill-storefront-select storefronts='{if $storefronts_json}{$storefronts_json|escape}{else}{ldelim}"storefronts":[],"statuses":{ldelim}{rdelim}{rdelim}{/if}'
+                                                      module="prefillPluginSettingsStorefront"
+                                                      default-label="[`setting.storefront_selector.general`]"
+                                                      show-status="true"
+                                                      contents-wrapper-selector="#prefill-storefront-content">
+                            </prefill-storefront-select>
+                        </div>
+                    </div>
                 </div>
+
+                <div class="prefill-storefront-content" id="prefill-storefront-content"></div>
             </div>
-
         </div>
-    </form>
+    </div>
 
-</div>
+    <div class="bottombar sticky custom-mt-20">
+        <div class="custom-pl-48 custom-py-16 not-blank">
+            <div class="value submit js-footer-actions flexbox space-8 middle">
+                <button type="submit" class="button green js-submit-button">[`Save`]</button>
+                <span id="plugins-settings-form-status" style="display: none;"></span>
+            </div>
+        </div>
+    </div>
+</form>
 
 <script>
     $(function () {
-        const prefillSettings = new PrefillSettings('#prefill');
-
+        const prefillSettings = new PrefillSettings('#{$plugin_id}');
         prefillSettings.switcher();
-        prefillSettings.storefrontSelect();
     });
 </script>

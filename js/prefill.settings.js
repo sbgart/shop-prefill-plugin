@@ -18,41 +18,30 @@ var PrefillSettings = (function () {
         const $switchers = this.$wrapper.find('[data-type*="switcher"]');
         $switchers.each(function () {
             const $switcher = $(this);
-            $switcher.iButton({
-                labelOn: '',
-                labelOff: '',
-                className: 'mini',
+            const target = $switcher.data("for");
+            const $target = target ? $switcher.closest(".field").find('[data-id="' + target + '"]') : $();
+
+            if ($target.length > 0) {
+                const isChecked = $switcher.find('input[type="checkbox"]').is(":checked");
+                if (isChecked) {
+                    $target.show();
+                } else {
+                    $target.hide();
+                }
+            }
+
+            $switcher.waSwitch({
+                change: function (active) {
+                    if ($target.length > 0) {
+                        if (active) {
+                            $target.slideDown(200);
+                        } else {
+                            $target.slideUp(200);
+                        }
+                    }
+                },
             });
-        })
-
-    }
-
-    PrefillSettings.prototype.storefrontSelect = function (module, params) {
-        if (!params) params = {};
-        if (!module) module = 'prefillPluginSettingsStorefront';
-
-        const self = this;
-
-        const $storefrontSelect = self.$wrapper.find('[data-id="storefront-select"]');
-        const $storefrontContent = self.$wrapper.find('[data-id="storefront-content"]');
-
-        function renderActiveContent() {
-            $storefrontContent.html('<i class="icon16 loading"></i>');
-
-            const selectedStorefront = $storefrontSelect.find(':selected');
-
-            const storefrontCode = selectedStorefront.data('code');
-
-            $.post('?module=' + module, Object.assign({code: storefrontCode}, params))
-                .done(function (data) {
-                    $storefrontContent.html(data);
-
-                    $(self.$wrapper).trigger('shop_minorder_storefront_settings_loaded');
-                });
-        }
-
-        renderActiveContent();
-        $storefrontSelect.on('change', renderActiveContent);
+        });
 
     }
 
@@ -144,3 +133,29 @@ var PrefillSettings = (function () {
     return PrefillSettings;
 
 })()
+
+document.addEventListener('prefill:storefront-content-loaded', function (event) {
+    const container = event.detail && event.detail.container ? event.detail.container : null;
+    if (!container) {
+        return;
+    }
+
+    const settings = new PrefillSettings(container);
+    settings.switcher();
+    settings.tabs();
+    settings.collapse();
+    settings.sortable();
+});
+
+document.addEventListener('prefill:storefront-content-shown', function (event) {
+    const container = event.detail && event.detail.container ? event.detail.container : null;
+    if (!container) {
+        return;
+    }
+
+    const settings = new PrefillSettings(container);
+    settings.switcher();
+    settings.tabs();
+    settings.collapse();
+    settings.sortable();
+});

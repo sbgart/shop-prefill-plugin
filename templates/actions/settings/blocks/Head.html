@@ -1,10 +1,19 @@
-<!-- Switcher -->
-<script type="text/javascript"
-        src="{$wa_url}wa-content/js/jquery-plugins/ibutton/jquery.ibutton.min.js?v{$wa->version(true)}"></script>
+<script>
+    var $_locale = {
+        'Error': "{'Error'|_wp|escape:'javascript'}",
+        'Save': "{'Save'|_wp|escape:'javascript'}",
+        'On': "{'On'|_wp|escape:'javascript'}",
+        'Off': "{'Off'|_wp|escape:'javascript'}"
+    };
+    window.$_ = function (key) {
+        return $_locale[key] || key;
+    };
+</script>
 
 <!-- Plugin -->
 <link rel="stylesheet"
-      href="{$wa_url}wa-apps/{$app_id}/plugins/{$plugin_id}/css/{$plugin_id}.settings.css?v{$wa->version(true)}">
+      href="{$plugin_url}css/{$plugin_id}.settings.css?v{$plugin_version}">
 <link rel="stylesheet"
-      href="{$wa_url}wa-apps/{$app_id}/plugins/{$plugin_id}/css/appark.settings.css?v{$wa->version(true)}">
-<script src="{$wa_url}wa-apps/{$app_id}/plugins/{$plugin_id}/js/{$plugin_id}.settings.js?v{$wa->version(true)}"></script>
+      href="{$plugin_url}css/appark.settings.css?v{$plugin_version}">
+<script src="{$plugin_url}js/{$plugin_id}.settings.js?v{$plugin_version}"></script>
+<script src="{$plugin_url}js/components/{$plugin_id}-storefront-select.js?v{$plugin_version}"></script>

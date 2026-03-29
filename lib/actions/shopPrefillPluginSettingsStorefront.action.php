@@ -19,8 +19,8 @@ class shopPrefillPluginSettingsStorefrontAction extends waViewAction
         $paymentMethods = shopPrefillPluginPluginsProvider::getPaymentMethods();
 
         // Locale config
-        waLocale::loadByDomain(array('shop', 'Prefill'));
-        waSystem::pushActivePlugin('Prefill', 'shop');
+        waLocale::loadByDomain(['shop', 'prefill']);
+        waSystem::pushActivePlugin('prefill', 'shop');
         
         $this->view->assign([
             'app_id'          => shopPrefillPlugin::APP_ID,

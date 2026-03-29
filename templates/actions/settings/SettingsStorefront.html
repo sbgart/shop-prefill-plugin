@@ -1,8 +1,28 @@
-{include file='./blocks/Tabs.html' tabs=['General','Prefill', 'Design', 'Help']}
+<div data-type="tabs" data-tab-group="settings" class="custom-mt-24">
+    <div class="flexbox middle wrap-mobile space-16">
+        <div class="wide">
+            <ul class="chips small rounded custom-pl-0 custom-my-0">
+                <li class="selected"><a href="#" data-tab-trigger="general" data-tab-group="settings">[`General`]</a></li>
+                <li><a href="#" data-tab-trigger="prefill" data-tab-group="settings">[`Prefill`]</a></li>
+                <li><a href="#" data-tab-trigger="design" data-tab-group="settings">[`Design`]</a></li>
+                <li><a href="#" data-tab-trigger="help" data-tab-group="settings">[`Help`]</a></li>
+            </ul>
+        </div>
+    </div>
 
-<script>
-    $(function () {
-        const prefillSettings = new PrefillSettings('#prefill [data-id="storefront-content"]');
-        prefillSettings.tabs();
-    });
-</script>
+    <div data-tab-group="settings" data-tab-content="general" class="tab-content">
+        {include file='./blocks/tabs/General.html'}
+    </div>
+
+    <div data-tab-group="settings" data-tab-content="prefill" class="tab-content">
+        {include file='./blocks/tabs/Prefill.html'}
+    </div>
+
+    <div data-tab-group="settings" data-tab-content="design" class="tab-content">
+        {include file='./blocks/tabs/Design.html'}
+    </div>
+
+    <div data-tab-group="settings" data-tab-content="help" class="tab-content">
+        {include file='./blocks/tabs/Help.html'}
+    </div>
+</div>

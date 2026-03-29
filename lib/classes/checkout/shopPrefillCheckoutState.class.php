@@ -189,17 +189,37 @@ class shopPrefillCheckoutState
     }
 
     /**
-     * Возвращает ID конкретного инстанса/точки доставки.
-     * Приоритет: data.shipping.id → data.shipping.selected_variant.id → vars.shipping.selected_variant.id
+     * Возвращает ID инстанса способа доставки в смысле shop_plugin.id (первая часть variant_id до точки).
+     *
+     * В ядре: shopCheckoutDetailsStep после успешного расчёта выставляет data.shipping.id = первая часть
+     * selected_variant.variant_id; до шага details этого ключа нет. В vars результата шага shipping лежит
+     * selected_variant_id (строка), а не вложенный selected_variant — см. shopCheckoutShippingStep::process().
      */
     public function getShippingInstanceId(): ?string
     {
-        $id = $this->params['data']['shipping']['id']
-            ?? $this->params['data']['shipping']['selected_variant']['id']
-            ?? $this->params['vars']['shipping']['selected_variant']['id']
-            ?? null;
+        $id = $this->params['data']['shipping']['id'] ?? null;
+        if ($id !== null && $id !== '') {
+            return (string) $id;
+        }
 
-        return ($id !== null && $id !== '') ? (string) $id : null;
+        $explicit = $this->params['data']['shipping']['selected_variant']['id'] ?? null;
+        if ($explicit !== null && $explicit !== '') {
+            return (string) $explicit;
+        }
+
+        $from_variant = $this->getShippingServiceId();
+        if ($from_variant !== null) {
+            return $from_variant;
+        }
+
+        $selected_variant_id = $this->params['vars']['shipping']['selected_variant_id'] ?? null;
+        if ($selected_variant_id !== null && $selected_variant_id !== '') {
+            $parts = explode('.', (string) $selected_variant_id, 2);
+
+            return $parts[0] !== '' ? $parts[0] : null;
+        }
+
+        return null;
     }
 
     /**

@@ -6,8 +6,6 @@ return [
         'my_delivery_variants'                => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'my_delivery_variants_button_classes' => ['value' => ''],
         'on_entry'                            => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
-        'source'                              => ['value' => 'last_order'],
-        'default_payment'                     => ['value' => 0, 'filter' => FILTER_VALIDATE_INT],
         'sections'                            => [
             'auth'     => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
             'region'   => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],

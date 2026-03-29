@@ -42,6 +42,39 @@ class shopPrefillPluginStorefrontCollection
         return $storefronts_tree;
     }
 
+    /**
+     * @throws waDbException
+     */
+    public function toJson(): string
+    {
+        $storefront_groups = [];
+        $statuses = ['*' => true];
+        $storefront_list = $this->getList();
+
+        foreach ($storefront_list as $storefront) {
+            $domain = $storefront->getDomain();
+
+            if (!isset($storefront_groups[$domain])) {
+                $storefront_groups[$domain] = [
+                    'domain' => $domain,
+                    'items'  => [],
+                ];
+            }
+
+            $storefront_groups[$domain]['items'][] = [
+                'code' => $storefront->getCode(),
+                'url'  => $storefront->getFullUrl(),
+            ];
+
+            $statuses[$storefront->getCode()] = $storefront->isActive();
+        }
+
+        return json_encode([
+            'storefronts' => array_values($storefront_groups),
+            'statuses'    => $statuses,
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
     public function getByCode(string $storefront_code): ?shopPrefillPluginStorefront
     {
         if (!$this->has($storefront_code)) {

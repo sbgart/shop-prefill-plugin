@@ -57,34 +57,13 @@ msgstr "Неизвестное действие"
 msgid "Запомнить мои данные для следующего заказа"
 msgstr ""
 
-msgid "option.source.last_order"
-msgstr ""
-
 msgid "option.source.none"
-msgstr ""
-
-msgid "setting.prefill.source"
-msgstr ""
-
-msgid "tooltip.prefill.source"
-msgstr ""
-
-msgid "setting.default_payment"
-msgstr ""
-
-msgid "tooltip.prefill.default_payment"
 msgstr ""
 
 msgid "setting.prefill.integration.cityselect"
 msgstr ""
 
 msgid "tooltip.prefill.integration.cityselect"
-msgstr ""
-
-msgid "setting.prefill.disable.fields.comment"
-msgstr ""
-
-msgid "tooltip.prefill.disable.fields.comment"
 msgstr ""
 
 msgid "tooltip.storefront_active"
@@ -484,4 +463,25 @@ msgid "Array of custom payment fields (e.g. INN, Company)"
 msgstr ""
 
 msgid "Внутренняя ошибка"
+msgstr ""
+
+msgid "Основные настройки для витрины"
+msgstr ""
+
+msgid "Настройте основные параметры плагина, которые будут влиять на всю витрину."
+msgstr ""
+
+msgid "Раздел будет заполнен на следующем этапе."
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Prefill"
+msgstr ""
+
+msgid "Design"
+msgstr ""
+
+msgid "Help"
 msgstr ""
