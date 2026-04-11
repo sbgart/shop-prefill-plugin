@@ -274,14 +274,19 @@ class shopPrefillPluginFrontendHooks
     }
 
     /**
-     * Проверяет, нужно ли скрывать элементы шапки авторизации (только в Zen Mode и для авторизованных)
+     * Проверяет, нужно ли скрывать элементы шапки авторизации:
+     * Zen включён, группа «Покупатель» сворачивается, флаг hide_auth_header, пользователь авторизован.
      *
      * @return bool
      */
     private function isAuthHeaderHidden(): bool
     {
-        return ! empty($this->storefront_settings['zen']['active'])
-            && ! empty($this->storefront_settings['zen']['hide_auth_header'])
+        $zen      = $this->storefront_settings['zen'] ?? [];
+        $customer = $zen['groups']['customer'] ?? [];
+
+        return ! empty($zen['active'])
+            && ! empty($customer['enabled'])
+            && ! empty($customer['hide_auth_header'])
             && $this->user_provider->isAuth();
     }
 

@@ -29,6 +29,15 @@
     width: 100%;
 }
 
+#prefill .prefill-storefront-select-hint {
+    margin-top: 8px;
+    margin-bottom: 0;
+    color: #999;
+    font-size: 0.9em;
+    line-height: 1.4em;
+    max-width: 42em;
+}
+
 .prefill-storefront-content {
     margin-top: 16px;
     position: relative;

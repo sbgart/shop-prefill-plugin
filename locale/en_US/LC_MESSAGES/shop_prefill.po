@@ -33,6 +33,9 @@ msgstr "Storefront"
 msgid "setting.storefront_selector.general"
 msgstr "General settings for all storefronts"
 
+msgid "hint.storefront_selector_status"
+msgstr "Storefronts that use their own settings are marked with a green indicator in the list. General settings for all storefronts do not apply to them."
+
 msgid "setting.active"
 msgstr "Status"
 

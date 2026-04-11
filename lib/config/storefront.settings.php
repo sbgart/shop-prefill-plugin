@@ -33,7 +33,6 @@ return [
     // Zen Mode — сворачивание секций чекаута
     'zen'         => [
         'active'                => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
-        'hide_auth_header'      => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         // 'default' | 'plugin' | 'none' — иконки в свёрнутых секциях: дефолтные, логотипы плагинов или без иконок
         'icon_display'          => ['value' => 'plugin'],
         // 'small' | 'medium' | 'large' — размер иконок (2.5rem×1.5rem, 3.5rem×2rem, 4.5rem×2.5rem)
@@ -42,6 +41,8 @@ return [
         'groups'                => [
             'customer' => [
                 'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+                // Скрытие заголовка auth: только при zen.active + свёртке группы «Покупатель» + флаг (см. FrontendHooks::isAuthHeaderHidden)
+                'hide_auth_header' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon'             => ['value' => ''],
                 'summary_template' => ['value' => '{if $company}{$company} • {/if}{$firstname} {$lastname} • {$phone}'],
             ],

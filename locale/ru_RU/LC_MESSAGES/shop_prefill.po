@@ -33,6 +33,9 @@ msgstr "Витрина"
 msgid "setting.storefront_selector.general"
 msgstr "Общие настройки для всех витрин"
 
+msgid "hint.storefront_selector_status"
+msgstr "Витрины с индивидуальными настройками в списке отмечены зелёным маркером. Общие настройки для всех витрин на них не распространяются."
+
 msgid "setting.active"
 msgstr "Статус для витрины"
 

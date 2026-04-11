@@ -293,7 +293,7 @@ body.prefill-dialog-open {
 
 /* Скрываем дублирующееся имя авторизованного пользователя и кнопку "Выход" в шапке секции auth 
  * Управляется через переменную --prefill-auth-header-display, которая задается 
- * при включенной настройке zen.hide_auth_header 
+ * при включенной настройке zen.groups.customer.hide_auth_header (и активном Zen + свёртке группы customer) 
  */
 /* Диалог подтверждения (consent revoke, очистка формы) */
 .prefill-dialog__confirm-text {
