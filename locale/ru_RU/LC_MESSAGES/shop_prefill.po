@@ -235,10 +235,19 @@ msgid "zen.icon_source.plugin_logos.hint"
 msgstr "Показывать логотипы плагинов доставки и оплаты (CDEK, Stripe и т.д.)"
 
 msgid "zen.icon_source.default_icons"
-msgstr "Дефолтные иконки"
+msgstr "По умолчанию"
 
 msgid "zen.icon_source.default_icons.hint"
 msgstr "Показывать общие иконки групп (delivery.svg, payment.svg) или загруженную кастомную иконку"
+
+msgid "hint.zen.icon_source.customer"
+msgstr "По умолчанию — стандартная иконка; Без иконки — не показывать; Своя иконка — использовать URL ниже; Аватар — аватар покупателя (для гостей будет иконка по умолчанию)."
+
+msgid "hint.zen.icon_source.delivery"
+msgstr "По умолчанию — стандартная иконка группы; Логотипы плагинов — логотип выбранного способа доставки; Своя иконка — использовать URL ниже."
+
+msgid "hint.zen.icon_source.payment"
+msgstr "По умолчанию — стандартная иконка группы; Логотипы плагинов — логотип выбранного способа оплаты; Своя иконка — использовать URL ниже."
 
 msgid "zen.icon_size"
 msgstr "Размер иконок"
@@ -256,7 +265,7 @@ msgid "zen.icon_size.hint"
 msgstr "Общая ширина и высота блока иконки во всех секциях для единообразия отступов"
 
 msgid "setting.prefill.my_delivery_variants"
-msgstr ""
+msgstr "Мои варианты доставки"
 
 msgid "setting.prefill.debug_panel"
 msgstr "Панель отладки на витрине"
@@ -276,215 +285,467 @@ msgstr "Оплата"
 msgid "setting.prefill.sections.confirm"
 msgstr "Подтверждение (комментарий)"
 
-msgid "tooltip.prefill.debug_panel"
+msgid "hint.active"
+msgstr "Включает работу плагина на текущей витрине."
+
+msgid "hint.prefill.my_delivery_variants"
+msgstr "Показывает покупателю выбор из вариантов доставки на основе истории его заказов."
+
+msgid "hint.prefill.debug_panel"
 msgstr "Показывать плавающую панель и расширенные подсказки по чекауту только если включён режим отладки Webasyst. По умолчанию выключено, чтобы при постоянном debug у администратора панель не попадала покупателям."
 
+msgid "hint.prefill.sections.customer"
+msgstr "Разрешает предзаполнение блока «Покупатель (авторизация)»."
+
+msgid "hint.prefill.sections.delivery"
+msgstr "Разрешает предзаполнение блока «Доставка (регион, способ, адрес)»."
+
+msgid "hint.prefill.sections.payment"
+msgstr "Разрешает предзаполнение блока «Оплата»."
+
+msgid "hint.prefill.sections.confirm"
+msgstr "Разрешает предзаполнение блока «Подтверждение». Поле «Условия предоставления услуг» плагин не заполняет."
+
+msgid "setting.general.sidebar_heading"
+msgstr "Категории настроек"
+
+msgid "setting.group.main"
+msgstr "Основные настройки"
+
+msgid "hint.group.main"
+msgstr "Основные параметры работы плагина на витрине."
+
+msgid "setting.group.guest"
+msgstr "Гость"
+
+msgid "hint.group.guest"
+msgstr "Предзаполнение и сохранение данных для неавторизованных покупателей."
+
+msgid "setting.group.my_delivery_variants"
+msgstr "Мои варианты доставки"
+
+msgid "hint.group.my_delivery_variants"
+msgstr "Выбор вариантов доставки из истории заказов и оформление кнопки «Мои варианты» под тему дизайна."
+
+msgid "setting.group.auth"
+msgstr "Авторизация"
+
+msgid "hint.group.auth"
+msgstr "Управление продлением авторизации покупателей на витрине."
+
+msgid "setting.group.sections"
+msgstr "Блоки оформления"
+
+msgid "hint.group.sections"
+msgstr "Выбор блоков чекаута, для которых выполняется предзаполнение данных."
+
+msgid "setting.prefill.on_entry"
+msgstr "Предзаполнение при открытии витрины"
+
+msgid "hint.prefill.on_entry"
+msgstr "При включении предзаполнение выполняется при первом заходе на любую страницу витрины. Если выключено — срабатывает при открытии корзины. Полезно, если цена в корзине зависит от способа доставки."
+
+msgid "setting.prefill.guest.enabled"
+msgstr "Предзаполнение для гостей"
+
+msgid "hint.prefill.guest.enabled"
+msgstr "При отключении гости не участвуют в предзаполнении: не создаётся хеш-cookie, данные не сохраняются в заказе и не используются при следующем визите."
+
+msgid "setting.prefill.guest.consent_required"
+msgstr "Требовать согласие гостя на сохранение данных"
+
+msgid "hint.prefill.guest.consent_required"
+msgstr "Гость должен явно разрешить сохранение данных для предзаполнения. При снятии флажка данные стираются."
+
+msgid "setting.prefill.my_delivery_variants_button_classes"
+msgstr "CSS-классы кнопки «Мои варианты»"
+
+msgid "hint.prefill.my_delivery_variants_button_classes"
+msgstr "Дополнительные CSS-классы для подгонки кнопок под вёрстку темы дизайна. Перечисляйте через пробел, как в HTML-атрибуте class (например: btn btn-default my-theme-button)."
+
+msgid "setting.prefill.remember_me.active"
+msgstr "Продлевать авторизацию на витрине"
+
+msgid "hint.prefill.remember_me.active"
+msgstr "При каждом посещении витрины авторизованным покупателем продлевает срок его авторизации в Webasyst."
+
+msgid "setting.prefill.remember_me.expires"
+msgstr "Срок жизни cookie авторизации, дней"
+
+msgid "hint.prefill.remember_me.expires"
+msgstr "Количество дней вперёд, на которые продлевается авторизация при каждом посещении."
+
+msgid "hint.tab.design"
+msgstr "Внешний вид элементов плагина на витрине."
+
+msgid "setting.styles.accent_color"
+msgstr "Акцентный цвет оформления"
+
+msgid "hint.styles.accent_color"
+msgstr "Задаёт акцентный цвет элементов плагина на витрине для подгонки под тему дизайна."
+
+msgid "hint.zen.group.main"
+msgstr "Основные параметры Дзен-режима на витрине."
+
+msgid "zen.toggle_button_classes"
+msgstr "CSS-классы кнопки сворачивания"
+
+msgid "hint.zen.toggle_button_classes"
+msgstr "Дополнительные CSS-классы для кнопки сворачивания и разворачивания блоков."
+
+msgid "hint.zen.group.customer"
+msgstr "Параметры свёрнутого блока «Покупатель» в Дзен-режиме."
+
+msgid "zen.setting.customer.enabled"
+msgstr "Сворачивать блок «Покупатель»"
+
+msgid "hint.zen.groups.customer.enabled"
+msgstr "Сворачивает блок «Покупатель» и выводит краткую сводку при правильном заполнении."
+
+msgid "zen.groups.customer.hide_auth_header"
+msgstr "Скрыть ФИО и авторизацию в заголовке блока"
+
+msgid "hint.zen.groups.customer.hide_auth_header"
+msgstr "Применяется только к авторизованным покупателям. ФИО дублируется в сводке Дзен-режима."
+
+msgid "zen.icon_source.customer"
+msgstr "Иконка секции «Покупатель»"
+
+msgid "zen.icon_source.none"
+msgstr "Без иконки"
+
+msgid "zen.icon_source.custom"
+msgstr "Своя иконка"
+
+msgid "zen.icon_source.custom.hint"
+msgstr "Укажите URL иконки в поле ниже."
+
+msgid "zen.icon_source.avatar"
+msgstr "Аватар пользователя"
+
+msgid "zen.icon_source.avatar.hint"
+msgstr "Для гостей — автоматический fallback на стандартную иконку."
+
+msgid "zen.groups.customer.icon"
+msgstr "URL иконки блока «Покупатель»"
+
+msgid "hint.zen.groups.customer.icon"
+msgstr "Прямая ссылка на файл PNG или SVG."
+
+msgid "zen.groups.customer.summary_template"
+msgstr "Шаблон сводки блока «Покупатель»"
+
+msgid "hint.zen.groups.customer.summary_template"
+msgstr "Smarty-шаблон краткого текста в свёрнутом блоке. Переменные: $firstname, $lastname, $phone, $email, $company."
+
+msgid "hint.zen.group.delivery"
+msgstr "Параметры свёрнутого блока «Доставка» в Дзен-режиме."
+
+msgid "zen.setting.delivery.enabled"
+msgstr "Сворачивать блок «Доставка»"
+
+msgid "hint.zen.groups.delivery.enabled"
+msgstr "Сворачивает блок «Доставка» и выводит краткую сводку при правильном заполнении."
+
+msgid "zen.groups.delivery.icon"
+msgstr "URL иконки блока «Доставка»"
+
+msgid "hint.zen.groups.delivery.icon"
+msgstr "Прямая ссылка на файл PNG или SVG."
+
+msgid "zen.groups.delivery.summary_template"
+msgstr "Общий шаблон сводки блока «Доставка»"
+
+msgid "hint.zen.groups.delivery.summary_template"
+msgstr "Smarty-шаблон краткого текста в свёрнутом блоке. Переменные: $delivery_plugin, $shipping_name, $shipping_rate, $shipping_logo_url."
+
+msgid "hint.zen.group.payment"
+msgstr "Параметры свёрнутого блока «Оплата» в Дзен-режиме."
+
+msgid "zen.setting.payment.enabled"
+msgstr "Сворачивать блок «Оплата»"
+
+msgid "hint.zen.groups.payment.enabled"
+msgstr "Сворачивает блок «Оплата» и выводит краткую сводку при правильном заполнении."
+
+msgid "zen.groups.payment.icon"
+msgstr "URL иконки блока «Оплата»"
+
+msgid "hint.zen.groups.payment.icon"
+msgstr "Прямая ссылка на файл PNG или SVG."
+
+msgid "zen.groups.payment.summary_template"
+msgstr "Общий шаблон сводки блока «Оплата»"
+
+msgid "hint.zen.groups.payment.summary_template"
+msgstr "Smarty-шаблон краткого текста в свёрнутом блоке. Переменные: $payment_name, $payment_description, $payment_logo_url."
+
+msgid "zen.custom_templates.label"
+msgstr "Шаблоны для конкретных методов"
+
+msgid "zen.custom_templates.hint"
+msgstr "Если для метода включён персональный шаблон — он используется вместо общего шаблона выше"
+
+msgid "zen.custom_template.switcher_title"
+msgstr "Включить персональный шаблон для этого метода"
+
+msgid "zen.custom_template.edit"
+msgstr "Редактировать"
+
+msgid "zen.custom_template.uses_common"
+msgstr "используется общий шаблон"
+
+msgid "zen.custom_template.modal.title"
+msgstr "Шаблон: %s"
+
+msgid "zen.custom_template.modal.vars"
+msgstr "Переменные"
+
+msgid "zen.custom_template.modal.conditions"
+msgstr "Условия"
+
+msgid "zen.custom_template.modal.save"
+msgstr "Готово"
+
+msgid "zen.custom_template.modal.cancel"
+msgstr "Отмена"
+
+msgid "zen.custom_template.modal.reset"
+msgstr "Сбросить к стандартному"
+
+msgid "zen.custom_template.modal.how_to_use"
+msgstr "Как это использовать?"
+
+msgid "zen.custom_template.modal.how_to_var"
+msgstr "Переменная:"
+
+msgid "zen.custom_template.modal.how_to_cond"
+msgstr "Условие:"
+
+msgid "zen.custom_template.modal.how_to_html"
+msgstr "HTML разрешён:"
+
+msgid "zen.custom_template.modal.how_to_example"
+msgstr "Пример:"
+
+msgid "zen.custom_template.vars.delivery"
+msgstr "Доставка"
+
+msgid "zen.custom_template.vars.address"
+msgstr "Адрес"
+
+msgid "zen.custom_template.vars.customer"
+msgstr "Покупатель"
+
+msgid "zen.custom_template.vars.payment"
+msgstr "Оплата"
+
 msgid "First name"
-msgstr ""
+msgstr "Имя"
 
 msgid "Customer first name"
-msgstr ""
+msgstr "Имя покупателя"
 
 msgid "Last name"
-msgstr ""
+msgstr "Фамилия"
 
 msgid "Customer last name"
-msgstr ""
+msgstr "Фамилия покупателя"
 
 msgid "Phone"
-msgstr ""
+msgstr "Телефон"
 
 msgid "Customer phone number"
-msgstr ""
+msgstr "Телефон покупателя"
 
 msgid "Email"
-msgstr ""
+msgstr "Email"
 
 msgid "Customer email"
-msgstr ""
+msgstr "Email покупателя"
 
 msgid "Company"
-msgstr ""
+msgstr "Компания"
 
 msgid "Company name"
-msgstr ""
+msgstr "Название компании"
 
 msgid "Custom contact fields"
-msgstr ""
+msgstr "Доп. поля контакта"
 
 msgid "Array of custom contact fields (e.g. birthday)"
-msgstr ""
+msgstr "Массив доп. полей контакта (например, день рождения)"
 
 msgid "Service agreement"
-msgstr ""
+msgstr "Согласие на обработку данных"
 
 msgid "Consent to personal data processing (auth[service_agreement]). Localized Yes/No or empty."
-msgstr ""
+msgstr "Согласие на обработку персональных данных. Локализованное Да/Нет или пусто."
 
 msgid "Service agreement hint"
-msgstr ""
+msgstr "Текст согласия"
 
 msgid "Text of the consent hint (data[customer][service_agreement_hint]) from checkout config."
-msgstr ""
+msgstr "Текст подсказки согласия из конфига чекаута."
 
 msgid "Shipping rate name"
-msgstr ""
+msgstr "Название тарифа доставки"
 
 msgid "Selected shipping rate name"
-msgstr ""
+msgstr "Название выбранного тарифа доставки"
 
 msgid "Shipping cost"
-msgstr ""
+msgstr "Стоимость доставки"
 
 msgid "Formatted shipping cost"
-msgstr ""
+msgstr "Стоимость доставки (форматированная)"
 
 msgid "Delivery method name"
-msgstr ""
+msgstr "Название метода доставки"
 
 msgid "Name of the shipping method in store settings"
-msgstr ""
+msgstr "Название метода доставки в настройках магазина"
 
 msgid "Shipping logo URL"
-msgstr ""
+msgstr "URL логотипа доставки"
 
 msgid "URL of the selected shipping plugin logo (from checkout vars)"
-msgstr ""
+msgstr "URL логотипа выбранного плагина доставки"
 
 msgid "Plugin name"
-msgstr ""
+msgstr "Название плагина"
 
 msgid "Delivery plugin name"
-msgstr ""
+msgstr "Название плагина доставки"
 
 msgid "Pickup point"
-msgstr ""
+msgstr "Пункт самовывоза"
 
 msgid "Delivery tariff"
-msgstr ""
+msgstr "Тариф доставки"
 
 msgid "Delivery tariff/service name"
-msgstr ""
+msgstr "Название тарифа/услуги доставки"
 
 msgid "Store pickup"
-msgstr ""
+msgstr "Самовывоз из магазина"
 
 msgid "Delivery type"
-msgstr ""
+msgstr "Тип доставки"
 
 msgid "Delivery type (e.g. pickup, courier, post)"
-msgstr ""
+msgstr "Тип доставки (напр.: самовывоз, курьер, почта)"
 
 msgid "Estimated delivery"
-msgstr ""
+msgstr "Срок доставки"
 
 msgid "Estimated delivery time"
-msgstr ""
+msgstr "Ориентировочный срок доставки"
 
 msgid "Description"
-msgstr ""
+msgstr "Описание"
 
 msgid "Description of the delivery method"
-msgstr ""
+msgstr "Описание метода доставки"
 
 msgid "Business hours"
-msgstr ""
+msgstr "Режим работы"
 
 msgid "Pickup point business hours (HTML structure)"
-msgstr ""
+msgstr "Режим работы пункта самовывоза (HTML)"
 
 msgid "Way to reach"
-msgstr ""
+msgstr "Как добраться"
 
 msgid "Instructions on how to reach the pickup point"
-msgstr ""
+msgstr "Инструкция как добраться до пункта самовывоза"
 
 msgid "Storage days"
-msgstr ""
+msgstr "Дней хранения"
 
 msgid "Number of days the order is stored"
-msgstr ""
+msgstr "Количество дней хранения заказа"
 
 msgid "Photos"
-msgstr ""
+msgstr "Фото"
 
 msgid "Array of pickup point photos"
-msgstr ""
+msgstr "Массив фото пункта самовывоза"
 
 msgid "Custom shipping fields"
-msgstr ""
+msgstr "Доп. поля доставки"
 
 msgid "Array of custom shipping fields"
-msgstr ""
+msgstr "Массив доп. полей доставки"
 
 msgid "City"
-msgstr ""
+msgstr "Город"
 
 msgid "Delivery city"
-msgstr ""
+msgstr "Город доставки"
 
 msgid "Region"
-msgstr ""
+msgstr "Регион"
 
 msgid "Delivery region code or name"
-msgstr ""
+msgstr "Код или название региона доставки"
 
 msgid "Street"
-msgstr ""
+msgstr "Улица"
 
 msgid "Street address"
-msgstr ""
+msgstr "Улица"
 
 msgid "Building"
-msgstr ""
+msgstr "Дом"
 
 msgid "Building number"
-msgstr ""
+msgstr "Номер дома"
 
 msgid "Apartment"
-msgstr ""
+msgstr "Квартира"
 
 msgid "Apartment/Office number"
-msgstr ""
+msgstr "Номер квартиры/офиса"
 
 msgid "ZIP"
-msgstr ""
+msgstr "Индекс"
 
 msgid "Postal code"
-msgstr ""
+msgstr "Почтовый индекс"
 
 msgid "Custom address fields"
-msgstr ""
+msgstr "Доп. поля адреса"
 
 msgid "Array of custom address fields (e.g. metro)"
-msgstr ""
+msgstr "Массив доп. полей адреса (напр. метро)"
 
 msgid "Payment method"
-msgstr ""
+msgstr "Метод оплаты"
 
 msgid "Selected payment method name"
-msgstr ""
+msgstr "Название выбранного метода оплаты"
 
 msgid "Payment logo URL"
-msgstr ""
+msgstr "URL логотипа оплаты"
 
 msgid "URL of the selected payment plugin logo (from checkout vars)"
-msgstr ""
+msgstr "URL логотипа выбранного плагина оплаты"
 
 msgid "Payment description"
-msgstr ""
+msgstr "Описание оплаты"
 
 msgid "Payment method description"
-msgstr ""
+msgstr "Описание метода оплаты"
 
 msgid "Payment upon receipt"
-msgstr ""
+msgstr "Оплата при получении"
 
 msgid "Custom payment fields"
-msgstr ""
+msgstr "Доп. поля оплаты"
 
 msgid "Array of custom payment fields (e.g. INN, Company)"
-msgstr ""
+msgstr "Массив доп. полей оплаты (напр. ИНН, компания)"
 
 msgid "Внутренняя ошибка"
 msgstr ""

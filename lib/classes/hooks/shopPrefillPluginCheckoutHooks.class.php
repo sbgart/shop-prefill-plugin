@@ -244,6 +244,10 @@ class shopPrefillPluginCheckoutHooks
                 return '';
             }
 
+            if (!$this->storefront_settings['prefill']['guest']['enabled']) {
+                return '';
+            }
+
             $consent_required = $this->storefront_settings['prefill']['guest']['consent_required'];
             if (!$consent_required) {
                 return '';

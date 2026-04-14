@@ -1,0 +1,67 @@
+{*
+ * Содержимое модального окна редактора шаблона Zen Mode.
+ * Рендерится через AJAX (?module=prefillPluginSettingsTemplateEditor).
+ * JS вставляет .prefill-ct-modal-body и .prefill-ct-footer в $.waDialog.
+ *}
+<div class="prefill-ct-modal-content"
+     data-group="{$group}"
+     data-default="{$default_tpl|escape:'html'}"
+     data-title-template="[`zen.custom_template.modal.title`]">
+
+    <div class="prefill-ct-modal-body flexbox space-16">
+
+        {* ── Левая колонка: поле ввода шаблона (значение заполняет JS) ── *}
+        <div class="prefill-ct-editor">
+            <textarea class="js-prefill-ct-textarea"
+                      rows="14"
+                      style="width:100%;min-height:260px;box-sizing:border-box;font-family:monospace;font-size:13px;resize:vertical;"></textarea>
+        </div>
+
+        {* ── Правая колонка: переменные + условия + справка ── *}
+        <div class="prefill-ct-sidebar">
+
+            <div class="prefill-ct-panel-heading">[`zen.custom_template.modal.vars`]</div>
+
+            {foreach $var_groups as $var_group}
+            <div class="prefill-ct-group-label small bold">{$var_group.label}</div>
+            <div class="prefill-ct-chips">
+                {foreach $var_group.vars as $v}
+                <a href="javascript:void(0);"
+                   class="prefill-ct-chip js-prefill-insert-var"
+                   data-snippet="{$v.snippet|escape:'html'}"
+                   title="{$v.snippet|escape:'html'}: {$v.description|escape:'html'}">{$v.name|escape:'html'}</a>
+                {/foreach}
+            </div>
+            {/foreach}
+
+            {* ── Условия ── *}
+            <div class="prefill-ct-panel-heading" style="margin-top:14px">[`zen.custom_template.modal.conditions`]</div>
+            <div class="prefill-ct-chips">
+                {foreach $conditions as $cond}
+                <a href="javascript:void(0);"
+                   class="prefill-ct-chip prefill-ct-chip-code js-prefill-insert-var"
+                   data-snippet="{$cond.snippet|escape:'html'}">{$cond.label}</a>
+                {/foreach}
+            </div>
+
+            {* ── Как использовать? ── *}
+            <details class="prefill-ct-how-to" style="margin-top:14px">
+                <summary>[`zen.custom_template.modal.how_to_use`]</summary>
+                <div class="hint" style="margin-top:6px">
+                    <p>[`zen.custom_template.modal.how_to_var`] <code>{ldelim}$variable_name{rdelim}</code></p>
+                    <p>[`zen.custom_template.modal.how_to_cond`]<br>
+                       <code>{ldelim}if $company{rdelim}{ldelim}$company{rdelim} &bull; {ldelim}/if{rdelim}</code></p>
+                    <p>[`zen.custom_template.modal.how_to_html`] <code>&lt;strong&gt;, &lt;br /&gt;</code></p>
+                </div>
+            </details>
+
+        </div>
+    </div>
+
+    <div class="prefill-ct-footer flexbox middle space-8">
+        <button class="button green js-prefill-ct-save">[`zen.custom_template.modal.save`]</button>
+        <button class="button light-gray js-prefill-ct-cancel">[`zen.custom_template.modal.cancel`]</button>
+        <a href="javascript:void(0);" class="js-prefill-ct-reset small" style="margin-left:auto">[`zen.custom_template.modal.reset`]</a>
+    </div>
+
+</div>

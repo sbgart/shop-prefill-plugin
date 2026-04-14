@@ -101,6 +101,11 @@ class shopPrefillPluginOrderHooks
             return;
         }
 
+        if (!$this->storefront_settings['prefill']['guest']['enabled']) {
+            shopPrefillPluginLog::info('Skipping saveGuestHash: guest prefill is disabled');
+            return;
+        }
+
         $consent_required = $this->storefront_settings['prefill']['guest']['consent_required'];
         $has_consent = $this->consent_storage->hasConsent();
 

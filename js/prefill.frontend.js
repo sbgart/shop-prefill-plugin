@@ -42,7 +42,7 @@ class PrefillFrontendController {
       params.messages,
       params.isAuth,
       params.myDeliveryVariantsEnabled,
-      params.zenButtonClasses
+      params.myDeliveryVariantsButtonClasses
     );
 
     // Создаём ZenModeToggle для управления сворачиванием секций чекаута

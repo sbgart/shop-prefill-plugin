@@ -191,11 +191,34 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Возвращает путь к иконке группы (дефолтная или кастомная из настроек)
+     * Возвращает URL иконки для группы delivery или payment согласно настройке icon_source.
      *
-     * @param string $group Имя группы
-     * @return string URL иконки
-     * @throws waException
+     * icon_source: 'default' — дефолтный SVG группы;
+     *              'plugin'  — логотип активного плагина → fallback на дефолтный SVG;
+     *              'custom'  — URL из поля icon.
+     *
+     * @param string $group Имя группы (delivery | payment)
+     * @param shopPrefillCheckoutState $state Состояние чекаута
+     * @return string URL иконки или пустая строка
+     */
+    private function getPluginGroupIcon(string $group, shopPrefillCheckoutState $state): string
+    {
+        $source = $this->settings['groups'][$group]['icon_source'] ?? 'default';
+
+        switch ($source) {
+            case 'custom':
+                return $this->settings['groups'][$group]['icon'] ?? '';
+            case 'plugin':
+                $logo = $this->getGroupPluginLogo($group, $state);
+                return $logo ?: shopPrefillPlugin::getStaticUrl("img/zen/{$group}.svg");
+            default: // 'default'
+                return shopPrefillPlugin::getStaticUrl("img/zen/{$group}.svg");
+        }
+    }
+
+    /**
+     * @deprecated Используй getPluginGroupIcon() для delivery/payment.
+     * Оставлен для обратной совместимости.
      */
     public function getGroupIcon(string $group): string
     {
@@ -204,8 +227,50 @@ class shopPrefillPluginZenMode
             return $custom_icon;
         }
 
-        // Стандартная иконка плагина
         return shopPrefillPlugin::getStaticUrl("img/zen/{$group}.svg");
+    }
+
+    /**
+     * Возвращает URL иконки для группы «Покупатель» согласно настройке icon_source.
+     *
+     * @return string URL иконки или пустая строка (без иконки)
+     */
+    private function getCustomerGroupIcon(): string
+    {
+        $source = $this->settings['groups']['customer']['icon_source'] ?? 'default';
+
+        switch ($source) {
+            case 'none':
+                return '';
+            case 'custom':
+                return $this->settings['groups']['customer']['icon'] ?? '';
+            case 'avatar':
+                return $this->getContactAvatarUrl();
+            default: // 'default'
+                return shopPrefillPlugin::getStaticUrl('img/zen/customer.svg');
+        }
+    }
+
+    /**
+     * Возвращает URL аватара текущего авторизованного покупателя.
+     * Для гостей или при ошибке — fallback на стандартную иконку customer.svg.
+     *
+     * @return string URL аватара или стандартной иконки
+     */
+    private function getContactAvatarUrl(): string
+    {
+        $user = wa()->getUser();
+        if (! $user || ! $user->isAuth()) {
+            return shopPrefillPlugin::getStaticUrl('img/zen/customer.svg');
+        }
+
+        try {
+            $contact = new waContact($user->getId());
+            $url     = $contact->getPhoto(100, 100);
+            return $url ?: shopPrefillPlugin::getStaticUrl('img/zen/customer.svg');
+        } catch (waException $e) {
+            return shopPrefillPlugin::getStaticUrl('img/zen/customer.svg');
+        }
     }
 
     /**
@@ -280,21 +345,47 @@ class shopPrefillPluginZenMode
 
 
     /**
-     * Возвращает шаблон сводки для группы
+     * Возвращает пер-инстансный шаблон, если он активен.
+     * Возвращает null если запись отсутствует, active=false или template пустой.
      *
-     * @param string $group Имя группы
-     * @param array $params Данные чекаута (нужны для определения типа доставки)
+     * @param array  $group_settings Настройки группы (из getGroupSettings)
+     * @param string $instance_id    ID инстанса плагина доставки или оплаты
+     * @return string|null
+     */
+    private function resolveCustomTemplate(array $group_settings, string $instance_id): ?string
+    {
+        $entry = $group_settings['custom_templates'][$instance_id] ?? null;
+        if (empty($entry) || empty($entry['active']) || empty($entry['template'])) {
+            return null;
+        }
+        return $entry['template'];
+    }
+
+    /**
+     * Возвращает шаблон сводки для группы.
+     * Для delivery и payment сначала проверяет пер-инстансный шаблон с флагом active=true,
+     * при его отсутствии — общий summary_template группы.
+     *
+     * @param string                    $group Имя группы (customer, delivery, payment)
+     * @param shopPrefillCheckoutState  $state Состояние чекаута
      * @return string
      */
     public function getSummaryTemplate(string $group, shopPrefillCheckoutState $state): string
     {
         $group_settings = $this->getGroupSettings($group);
 
-        // Для delivery пытаемся найти специфичный шаблон по ID инстанса
         if ($group === 'delivery') {
-            $shipping_id = $state->getShippingInstanceId();
-            if ($shipping_id && ! empty($group_settings['custom_templates'][$shipping_id])) {
-                return $group_settings['custom_templates'][$shipping_id];
+            $instance_id = $state->getShippingInstanceId();
+        } elseif ($group === 'payment') {
+            $instance_id = $state->getPaymentId();
+        } else {
+            $instance_id = null;
+        }
+
+        if ($instance_id) {
+            $template = $this->resolveCustomTemplate($group_settings, $instance_id);
+            if ($template !== null) {
+                return $template;
             }
         }
 
@@ -349,15 +440,15 @@ class shopPrefillPluginZenMode
         $summary_html = null;
 
         if ($is_collapsed) {
-            // Иконка группы: только если режим не 'none' (default или plugin)
+            // Иконка группы: только если глобальный режим не 'none'
             $icon_mode = $this->getIconDisplayMode();
             if ($icon_mode !== 'none') {
-                if ($icon_mode === 'plugin') {
-                    $icon_url = $this->getGroupPluginLogo($group, $state);
-                }
-                // При 'default' или если plugin-логотип не найден — берём групповую иконку
-                if (empty($icon_url)) {
-                    $icon_url = $this->getGroupIcon($group);
+                if ($group === 'customer') {
+                    // Для customer — собственная логика icon_source (default/none/custom/avatar)
+                    $icon_url = $this->getCustomerGroupIcon();
+                } else {
+                    // Для delivery/payment — per-group icon_source (default/plugin/custom)
+                    $icon_url = $this->getPluginGroupIcon($group, $state);
                 }
             }
 

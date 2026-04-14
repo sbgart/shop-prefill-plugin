@@ -6,6 +6,33 @@
  */
 class shopPrefillPluginZenData
 {
+    /**
+     * Иммутабельные шаблоны по умолчанию для каждой группы.
+     * Используются как стартовая точка при первой активации кастомного шаблона
+     * и как цель кнопки «Сбросить к стандартному» в модальном окне редактора.
+     *
+     * ВАЖНО: строки намеренно дублируются в lib/config/storefront.settings.php (значения 'value').
+     * Менять здесь — значит менять factory defaults для сброса; менять в storefront.settings.php —
+     * значит менять defaults для новых установок плагина.
+     */
+    private const DEFAULT_SUMMARY_TEMPLATES = [
+        'customer' => '{if $company}{$company} • {/if}{$firstname} {$lastname} • {$phone}',
+        'delivery' => '<strong>{$delivery_plugin}</strong><br />{$shipping_name} • {$shipping_rate}',
+        'payment'  => '<strong>{$payment_name}</strong><br />{$payment_description}',
+    ];
+
+    /**
+     * Возвращает иммутабельный шаблон по умолчанию для группы.
+     * Используется для кнопки «Сбросить к стандартному» в UI редактора кастомного шаблона.
+     *
+     * @param string $group customer|delivery|payment
+     * @return string
+     */
+    public static function getDefaultTemplate(string $group): string
+    {
+        return self::DEFAULT_SUMMARY_TEMPLATES[$group] ?? '';
+    }
+
     private waView $view;
     private string $currency;
 
@@ -16,126 +43,152 @@ class shopPrefillPluginZenData
     }
 
     /**
-     * Возвращает список всех доступных полей для шаблонов
-     * Используется для документации и (в будущем) визуального редактора.
+     * Возвращает список всех доступных полей для Smarty-шаблонов.
+     * Служит единственным источником правды — используется как для рендера данных,
+     * так и для построения UI модального редактора (переменные + подсказки).
      *
-     * @return array
+     * Поле 'group' определяет принадлежность поля к секции:
+     *   'contact'  — данные покупателя
+     *   'delivery' — данные доставки
+     *   'address'  — данные адреса
+     *   'payment'  — данные оплаты
+     *
+     * @return array<string, array{name: string, description: string, example: string, group: string}>
      */
-    public function getAvailableFields(): array
+    public static function getAvailableFields(): array
     {
         return [
             // === КОНТАКТ ===
             'firstname' => [
+                'group' => 'contact',
                 'name' => _wp('First name'),
                 'description' => _wp('Customer first name'),
                 'example' => 'Ivan',
             ],
             'lastname' => [
+                'group' => 'contact',
                 'name' => _wp('Last name'),
                 'description' => _wp('Customer last name'),
                 'example' => 'Ivanov',
             ],
             'phone' => [
+                'group' => 'contact',
                 'name' => _wp('Phone'),
                 'description' => _wp('Customer phone number'),
                 'example' => '+79991234567',
             ],
             'email' => [
+                'group' => 'contact',
                 'name' => _wp('Email'),
                 'description' => _wp('Customer email'),
                 'example' => 'ivan@example.com',
             ],
             'company' => [
+                'group' => 'contact',
                 'name' => _wp('Company'),
                 'description' => _wp('Company name'),
                 'example' => 'Horn & Hooves',
             ],
             'contact_custom' => [
+                'group' => 'contact',
                 'name' => _wp('Custom contact fields'),
                 'description' => _wp('Array of custom contact fields (e.g. birthday)'),
                 'example' => '{$contact_custom.birthday}',
             ],
             'service_agreement' => [
+                'group' => 'contact',
                 'name' => _wp('Service agreement'),
                 'description' => _wp('Consent to personal data processing (auth[service_agreement]). Localized Yes/No or empty.'),
                 'example' => '{$service_agreement}',
             ],
             'service_agreement_hint' => [
+                'group' => 'contact',
                 'name' => _wp('Service agreement hint'),
                 'description' => _wp('Text of the consent hint (data[customer][service_agreement_hint]) from checkout config.'),
                 'example' => '{$service_agreement_hint}',
             ],
 
-            // === ДОСТАВКА (Основные) ===
+            // === ДОСТАВКА ===
             'shipping_name' => [
+                'group' => 'delivery',
                 'name' => _wp('Shipping rate name'),
                 'description' => _wp('Selected shipping rate name'),
                 'example' => 'Courier delivery',
             ],
             'shipping_rate' => [
+                'group' => 'delivery',
                 'name' => _wp('Shipping cost'),
                 'description' => _wp('Formatted shipping cost'),
                 'example' => '300 rub',
             ],
             'delivery_method_name' => [
+                'group' => 'delivery',
                 'name' => _wp('Delivery method name'),
                 'description' => _wp('Name of the shipping method in store settings'),
                 'example' => 'Delivery by CDEK',
             ],
             'shipping_logo' => [
+                'group' => 'delivery',
                 'name' => _wp('Shipping logo URL'),
                 'description' => _wp('URL of the selected shipping plugin logo (from checkout vars)'),
                 'example' => '{$shipping_logo}',
             ],
-
-            // === ДОСТАВКА (Детали) ===
             'delivery_plugin' => [
+                'group' => 'delivery',
                 'name' => _wp('Plugin name'),
                 'description' => _wp('Delivery plugin name'),
                 'example' => _wp('Pickup point'),
             ],
             'delivery_tariff' => [
+                'group' => 'delivery',
                 'name' => _wp('Delivery tariff'),
                 'description' => _wp('Delivery tariff/service name'),
                 'example' => _wp('Store pickup'),
             ],
             'delivery_type' => [
+                'group' => 'delivery',
                 'name' => _wp('Delivery type'),
                 'description' => _wp('Delivery type (e.g. pickup, courier, post)'),
                 'example' => 'pickup',
             ],
             'delivery_est_delivery' => [
+                'group' => 'delivery',
                 'name' => _wp('Estimated delivery'),
                 'description' => _wp('Estimated delivery time'),
                 'example' => '1-2 days',
             ],
             'delivery_description' => [
+                'group' => 'delivery',
                 'name' => _wp('Description'),
                 'description' => _wp('Description of the delivery method'),
                 'example' => 'Delivery to the door',
             ],
             'delivery_schedule' => [
+                'group' => 'delivery',
                 'name' => _wp('Business hours'),
                 'description' => _wp('Pickup point business hours (HTML structure)'),
                 'example' => '<div class="wa-schedule-wrapper">...</div>',
             ],
             'delivery_way' => [
+                'group' => 'delivery',
                 'name' => _wp('Way to reach'),
                 'description' => _wp('Instructions on how to reach the pickup point'),
                 'example' => 'Entrance from the yard',
             ],
             'delivery_storage_days' => [
+                'group' => 'delivery',
                 'name' => _wp('Storage days'),
                 'description' => _wp('Number of days the order is stored'),
                 'example' => '5',
             ],
-            // Photos array is complex, maybe just mention it exists
             'delivery_photos' => [
+                'group' => 'delivery',
                 'name' => _wp('Photos'),
                 'description' => _wp('Array of pickup point photos'),
                 'example' => '[{"uri": "...", "thumb_uri": "..."}]',
             ],
             'shipping_custom' => [
+                'group' => 'delivery',
                 'name' => _wp('Custom shipping fields'),
                 'description' => _wp('Array of custom shipping fields'),
                 'example' => '{$shipping_custom.time_interval}',
@@ -143,36 +196,43 @@ class shopPrefillPluginZenData
 
             // === АДРЕС ===
             'city' => [
+                'group' => 'address',
                 'name' => _wp('City'),
                 'description' => _wp('Delivery city'),
                 'example' => 'Moscow',
             ],
             'region' => [
+                'group' => 'address',
                 'name' => _wp('Region'),
                 'description' => _wp('Delivery region code or name'),
                 'example' => '77',
             ],
             'street' => [
+                'group' => 'address',
                 'name' => _wp('Street'),
                 'description' => _wp('Street address'),
                 'example' => 'Lenina st.',
             ],
             'building' => [
+                'group' => 'address',
                 'name' => _wp('Building'),
                 'description' => _wp('Building number'),
                 'example' => '10',
             ],
             'apartment' => [
+                'group' => 'address',
                 'name' => _wp('Apartment'),
                 'description' => _wp('Apartment/Office number'),
                 'example' => '15',
             ],
             'zip' => [
+                'group' => 'address',
                 'name' => _wp('ZIP'),
                 'description' => _wp('Postal code'),
                 'example' => '123456',
             ],
             'address_custom' => [
+                'group' => 'address',
                 'name' => _wp('Custom address fields'),
                 'description' => _wp('Array of custom address fields (e.g. metro)'),
                 'example' => '{$address_custom.metro}',
@@ -180,26 +240,29 @@ class shopPrefillPluginZenData
 
             // === ОПЛАТА ===
             'payment_name' => [
+                'group' => 'payment',
                 'name' => _wp('Payment method'),
                 'description' => _wp('Selected payment method name'),
                 'example' => 'Cash on delivery',
             ],
             'payment_logo' => [
+                'group' => 'payment',
                 'name' => _wp('Payment logo URL'),
                 'description' => _wp('URL of the selected payment plugin logo (from checkout vars)'),
                 'example' => '{$payment_logo}',
             ],
             'payment_description' => [
+                'group' => 'payment',
                 'name' => _wp('Payment description'),
                 'description' => _wp('Payment method description'),
                 'example' => _wp('Payment upon receipt'),
             ],
             'payment_custom' => [
+                'group' => 'payment',
                 'name' => _wp('Custom payment fields'),
                 'description' => _wp('Array of custom payment fields (e.g. INN, Company)'),
                 'example' => '{$payment_custom.inn}',
             ],
-
         ];
     }
 
@@ -214,7 +277,7 @@ class shopPrefillPluginZenData
     public function extractSummaryData(string $group, shopPrefillCheckoutState $state): array
     {
         // Инициализируем массив данными по умолчанию
-        $data = array_fill_keys(array_keys($this->getAvailableFields()), '');
+        $data = array_fill_keys(array_keys(self::getAvailableFields()), '');
 
         $this->extractContactData($state, $data);
         $this->extractDeliveryData($state, $data);

@@ -1,0 +1,9 @@
+{strip}
+    {$input_class=$input_class|default:''}
+    <div class="flexbox middle" style="gap:8px">
+        <input type="color" data-color-picker value="{$value|default:'#000000'|escape:'html'}"
+               style="width:40px;height:32px;padding:2px;cursor:pointer;border:1px solid #d9d9d9;border-radius:4px;flex-shrink:0">
+        <input type="text" name="{$name}" data-color-text value="{$value|default:'#000000'|escape:'html'}"
+               placeholder="#000000"{if $input_class} class="{$input_class|escape:'html'}"{/if} style="width:90px">
+    </div>
+{/strip}

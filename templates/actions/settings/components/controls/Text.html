@@ -1,3 +1,5 @@
 {strip}
-    <input type="text" name="{$name}" value="{$value|escape:'html'}" placeholder="{$placeholder}">
+    {* Optional CSS classes on the input (e.g. prefill-settings-input-wide for full width). *}
+    {$input_class=$input_class|default:''}
+    <input type="text" name="{$name}" value="{$value|escape:'html'}" placeholder="{$placeholder}"{if $input_class} class="{$input_class|escape:'html'}"{/if}>
 {/strip}

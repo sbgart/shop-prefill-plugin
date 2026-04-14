@@ -16,19 +16,21 @@ class shopPrefillPluginSettingsStorefrontAction extends waViewAction
 
         $plugin = shopPrefillPlugin::getInstance();
 
-        $paymentMethods = shopPrefillPluginPluginsProvider::getPaymentMethods();
+        $shippingMethods = shopPrefillPluginPluginsProvider::getShippingMethods();
+        $paymentMethods  = shopPrefillPluginPluginsProvider::getPaymentMethods();
 
         // Locale config
         waLocale::loadByDomain(['shop', 'prefill']);
         waSystem::pushActivePlugin('prefill', 'shop');
-        
+
         $this->view->assign([
-            'app_id'          => shopPrefillPlugin::APP_ID,
-            'plugin_id'       => shopPrefillPlugin::PLUGIN_ID,
-            'name_prefix'     => $app_id.'_'.$plugin_id.'[storefront]['.$storefront_code.']',
-            'storefront_code' => $storefront_code,
-            'settings'        => $plugin->getStorefrontProvider()->getStorefront($storefront_code)->getSettings(),
-            'payment_methods' => array_map(fn($method) => $method['name'], $paymentMethods),
+            'app_id'               => shopPrefillPlugin::APP_ID,
+            'plugin_id'            => shopPrefillPlugin::PLUGIN_ID,
+            'name_prefix'          => $app_id.'_'.$plugin_id.'[storefront]['.$storefront_code.']',
+            'storefront_code'      => $storefront_code,
+            'settings'             => $plugin->getStorefrontProvider()->getStorefront($storefront_code)->getSettings(),
+            'shipping_methods'     => $shippingMethods,
+            'payment_methods'      => $paymentMethods,
         ]);
     }
 

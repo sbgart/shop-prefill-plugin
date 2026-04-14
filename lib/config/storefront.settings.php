@@ -24,6 +24,7 @@ return [
             'expires' => ['value' => 90, 'filter' => FILTER_VALIDATE_INT], // 90 days
         ],
         'guest'                               => [
+            'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN], // Разрешить предзаполнение для гостей
             'consent_required' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN], // Требовать согласие гостя
         ],
     ],
@@ -43,21 +44,24 @@ return [
                 'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 // Скрытие заголовка auth: только при zen.active + свёртке группы «Покупатель» + флаг (см. FrontendHooks::isAuthHeaderHidden)
                 'hide_auth_header' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+                // 'default' | 'none' | 'custom' | 'avatar' — источник иконки для свёрнутого блока
+                'icon_source'      => ['value' => 'default'],
                 'icon'             => ['value' => ''],
                 'summary_template' => ['value' => '{if $company}{$company} • {/if}{$firstname} {$lastname} • {$phone}'],
             ],
             'delivery' => [
                 'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon'             => ['value' => ''],
-                'icon_source'      => ['value' => 'plugin'], // 'plugin' | 'default'
+                'icon_source'      => ['value' => 'default'], // 'default' | 'plugin' | 'custom'
                 'summary_template' => ['value' => '<strong>{$delivery_plugin}</strong><br />{$shipping_name} • {$shipping_rate}'],
                 'custom_templates' => ['value' => []],
             ],
             'payment'  => [
                 'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon'             => ['value' => ''],
-                'icon_source'      => ['value' => 'plugin'], // 'plugin' | 'default'
+                'icon_source'      => ['value' => 'default'], // 'default' | 'plugin' | 'custom'
                 'summary_template' => ['value' => '<strong>{$payment_name}</strong><br />{$payment_description}'],
+                'custom_templates' => ['value' => []],
             ],
         ],
     ],

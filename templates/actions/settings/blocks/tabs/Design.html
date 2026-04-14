@@ -1,99 +1,14 @@
-{* Zen Mode: отображение иконок в свёрнутых секциях *}
 <div class="s-section-header">
-    <h3 class="s-title">[`Основные настройки для витрины`]</h3>
-    <p class="s-description">[`Настройте основные параметры плагина, которые будут влиять на всю витрину.`]</p>
+    <h3 class="s-title">[`tab.design`]</h3>
+    <p class="s-description">[`hint.tab.design`]</p>
 </div>
 <div class="fields">
-    <div class="fields-group custom-mt-16">
-        <div class="field">
-            <div class="name">[`zen.icon_display`]</div>
-            <div class="value">
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][icon_display]" value="plugin"
-                        {if ($settings['zen']['icon_display']|default:'plugin') == 'plugin'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_display.plugin`]</span>
-                </label>
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][icon_display]" value="default"
-                        {if ($settings['zen']['icon_display']|default:'plugin') == 'default'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_display.default`]</span>
-                </label>
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][icon_display]" value="none"
-                        {if ($settings['zen']['icon_display']|default:'plugin') == 'none'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_display.none`]</span>
-                </label>
-                <div class="hint">[`zen.icon_display.hint`]</div>
-            </div>
-        </div>
-        {* Размер иконок (показывается только если icon_display != none) *}
-        {if ($settings['zen']['icon_display']|default:'plugin') != 'none'}
-        <div class="field">
-            <div class="name">[`zen.icon_size`]</div>
-            <div class="value">
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][icon_size]" value="small"
-                        {if ($settings['zen']['icon_size']|default:'medium') == 'small'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_size.small`]</span>
-                </label>
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][icon_size]" value="medium"
-                        {if ($settings['zen']['icon_size']|default:'medium') == 'medium'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_size.medium`]</span>
-                </label>
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][icon_size]" value="large"
-                        {if ($settings['zen']['icon_size']|default:'medium') == 'large'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_size.large`]</span>
-                </label>
-                <div class="hint">[`zen.icon_size.hint`]</div>
-            </div>
-        </div>
-        {/if}
-        {* Источник иконок для групп доставки и оплаты (при icon_display != none) *}
-        <div class="field">
-            <div class="name">[`zen.icon_source.delivery`]</div>
-            <div class="value">
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][groups][delivery][icon_source]" value="plugin"
-                        {if ($settings['zen']['groups']['delivery']['icon_source']|default:'plugin') == 'plugin'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_source.plugin_logos`]</span>
-                </label>
-                <div class="hint">[`zen.icon_source.plugin_logos.hint`]</div>
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][groups][delivery][icon_source]" value="default"
-                        {if ($settings['zen']['groups']['delivery']['icon_source']|default:'plugin') == 'default'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_source.default_icons`]</span>
-                </label>
-                <div class="hint">[`zen.icon_source.default_icons.hint`]</div>
-            </div>
-        </div>
-        <div class="field">
-            <div class="name">[`zen.icon_source.payment`]</div>
-            <div class="value">
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][groups][payment][icon_source]" value="plugin"
-                        {if ($settings['zen']['groups']['payment']['icon_source']|default:'plugin') == 'plugin'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_source.plugin_logos`]</span>
-                </label>
-                <div class="hint">[`zen.icon_source.plugin_logos.hint`]</div>
-                <label class="wa-radio">
-                    <input type="radio" name="{$name_prefix}[zen][groups][payment][icon_source]" value="default"
-                        {if ($settings['zen']['groups']['payment']['icon_source']|default:'plugin') == 'default'}checked{/if}>
-                    <span></span>
-                    <span>[`zen.icon_source.default_icons`]</span>
-                </label>
-                <div class="hint">[`zen.icon_source.default_icons.hint`]</div>
-            </div>
-        </div>
+    <div class="fields-group">
+        {include file='../../components/Field.html'
+            name="{$name_prefix}[styles][accent_color]"
+            type='Color'
+            label='[`setting.styles.accent_color`]'
+            value=$settings['styles']['accent_color']
+            hint_after='[`hint.styles.accent_color`]'}
     </div>
 </div>

@@ -69,6 +69,13 @@ class shopPrefillPluginFrontendHooks
             return '';
         }
 
+        // Для гостей: пропускаем если функция отключена
+        $guest_enabled = $this->storefront_settings['prefill']['guest']['enabled'];
+        if (!$guest_enabled && !$this->user_provider->isAuth()) {
+            shopPrefillPluginLog::info('Skipping frontendHead: guest prefill is disabled');
+            return $head_html;
+        }
+
         // Получаем параметры для заполнения
         $fill_params = $this->fill_params_provider->getFillParams();
 
@@ -206,6 +213,10 @@ class shopPrefillPluginFrontendHooks
             return;
         }
 
+        if (!$this->storefront_settings['prefill']['guest']['enabled']) {
+            return;
+        }
+
         // Продлеваем cookie хеша гостя при каждом визите
         $this->guest_hash_storage->getOrCreateGuestHash();
 
@@ -247,7 +258,7 @@ class shopPrefillPluginFrontendHooks
             'isDebug'                   => $this->is_debug,
             'isAuth'                    => $this->user_provider->isAuth(),
             'myDeliveryVariantsEnabled' => $this->storefront_settings['prefill']['my_delivery_variants'] ?? true,
-            'zenButtonClasses'          => $this->storefront_settings['prefill']['my_delivery_variants_button_classes'] ?? '',
+            'myDeliveryVariantsButtonClasses' => $this->storefront_settings['prefill']['my_delivery_variants_button_classes'] ?? '',
             'messages'                  => [
                 'validation_error_title'      => _wp('zen.validation.error.title'),
                 'validation_error_message'    => _wp('zen.validation.error.message'),

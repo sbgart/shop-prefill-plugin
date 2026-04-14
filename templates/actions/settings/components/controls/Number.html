@@ -1,0 +1,3 @@
+{strip}
+    <input type="number" name="{$name}" value="{$value|escape:'html'}" min="{$min|default:0}" step="{$step|default:1}"{if isset($max)} max="{$max}"{/if}>
+{/strip}

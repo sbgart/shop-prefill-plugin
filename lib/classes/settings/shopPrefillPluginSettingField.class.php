@@ -30,6 +30,11 @@ class shopPrefillPluginSettingField
             return $this->default_value;
         }
 
+        // filter_var() не поддерживает массивы без FILTER_FORCE_ARRAY → вернуть как есть
+        if (is_array($setting_value)) {
+            return $setting_value;
+        }
+
         return filter_var($setting_value, $this->filter);
     }
 }

@@ -1,0 +1,367 @@
+<div class="flexbox space-24" data-type="tabs" data-tab-group="zen">
+    <div class="sidebar flexbox">
+        <div class="sidebar-body">
+            <h5 class="heading">[`setting.general.sidebar_heading`]</h5>
+            <ul class="menu">
+                <li class="selected rounded">
+                    <a href="#" data-tab-trigger="main" data-tab-group="zen">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>[`setting.group.main`]</span>
+                    </a>
+                </li>
+            </ul>
+            <h5 class="heading">[`zen.groups.title`]</h5>
+            <ul class="menu">
+                <li class="rounded">
+                    <a href="#" data-tab-trigger="customer" data-tab-group="zen">
+                        <i class="fas fa-user"></i>
+                        <span>[`zen.group.customer`]</span>
+                    </a>
+                </li>
+                <li class="rounded">
+                    <a href="#" data-tab-trigger="delivery" data-tab-group="zen">
+                        <i class="fas fa-truck"></i>
+                        <span>[`zen.group.delivery`]</span>
+                    </a>
+                </li>
+                <li class="rounded">
+                    <a href="#" data-tab-trigger="payment" data-tab-group="zen">
+                        <i class="fas fa-credit-card"></i>
+                        <span>[`zen.group.payment`]</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="content blank">
+
+        {* ── Основные настройки ── *}
+        <div id="zen-main-tab" data-tab-group="zen" data-tab-content="main" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`setting.group.main`]</h3>
+                <p class="s-description">[`hint.zen.group.main`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][active]"
+                        type='Switcher'
+                        label='[`zen.setting.active`]'
+                        value=$settings['zen']['active']
+                        tooltip='[`zen.tooltip.active`]'}
+
+                    {* Иконки в свёрнутых секциях: Select, согласно спеке *}
+                    <div class="field">
+                        <div class="name">[`zen.icon_display`]</div>
+                        <div class="value">
+                            <select name="{$name_prefix}[zen][icon_display]">
+                                <option value="plugin" {if ($settings['zen']['icon_display']|default:'plugin') == 'plugin'}selected{/if}>[`zen.icon_display.plugin`]</option>
+                                <option value="default" {if ($settings['zen']['icon_display']|default:'plugin') == 'default'}selected{/if}>[`zen.icon_display.default`]</option>
+                                <option value="none" {if ($settings['zen']['icon_display']|default:'plugin') == 'none'}selected{/if}>[`zen.icon_display.none`]</option>
+                            </select>
+                            <p class="hint">[`zen.icon_display.hint`]</p>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="name">[`zen.icon_size`]</div>
+                        <div class="value">
+                            <label class="wa-radio">
+                                <input type="radio" name="{$name_prefix}[zen][icon_size]" value="small"
+                                    {if ($settings['zen']['icon_size']|default:'medium') == 'small'}checked{/if}>
+                                <span></span>
+                                <span>[`zen.icon_size.small`]</span>
+                            </label>
+                            <label class="wa-radio">
+                                <input type="radio" name="{$name_prefix}[zen][icon_size]" value="medium"
+                                    {if ($settings['zen']['icon_size']|default:'medium') == 'medium'}checked{/if}>
+                                <span></span>
+                                <span>[`zen.icon_size.medium`]</span>
+                            </label>
+                            <label class="wa-radio">
+                                <input type="radio" name="{$name_prefix}[zen][icon_size]" value="large"
+                                    {if ($settings['zen']['icon_size']|default:'medium') == 'large'}checked{/if}>
+                                <span></span>
+                                <span>[`zen.icon_size.large`]</span>
+                            </label>
+                            <p class="hint">[`zen.icon_size.hint`]</p>
+                        </div>
+                    </div>
+
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][toggle_button_classes]"
+                        type='Text'
+                        label='[`zen.toggle_button_classes`]'
+                        value=$settings['zen']['toggle_button_classes']
+                        hint_after='[`hint.zen.toggle_button_classes`]'
+                        placeholder=''
+                        input_class='prefill-settings-input-wide'}
+                </div>
+            </div>
+        </div>
+
+        {* ── Покупатель ── *}
+        {assign var="customer_icon_source" value=($settings['zen']['groups']['customer']['icon_source']|default:'default')}
+        <div id="zen-customer-tab" data-tab-group="zen" data-tab-content="customer" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`zen.group.customer`]</h3>
+                <p class="s-description">[`hint.zen.group.customer`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][groups][customer][enabled]"
+                        type='Switcher'
+                        label='[`zen.setting.customer.enabled`]'
+                        value=$settings['zen']['groups']['customer']['enabled']
+                        hint_after='[`hint.zen.groups.customer.enabled`]'}
+
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][groups][customer][hide_auth_header]"
+                        type='Switcher'
+                        label='[`zen.groups.customer.hide_auth_header`]'
+                        value=$settings['zen']['groups']['customer']['hide_auth_header']
+                        hint_after='[`hint.zen.groups.customer.hide_auth_header`]'}
+
+                    {* icon_source: Select с вариантами default/none/custom/avatar *}
+                    <div class="field">
+                        <div class="name">[`zen.icon_source.customer`]</div>
+                        <div class="value">
+                            <select name="{$name_prefix}[zen][groups][customer][icon_source]"
+                                    data-reveal-target="zen-customer-icon"
+                                    data-reveal-value="custom">
+                                <option value="default" {if $customer_icon_source == 'default'}selected{/if}>[`zen.icon_source.default_icons`]</option>
+                                <option value="none" {if $customer_icon_source == 'none'}selected{/if}>[`zen.icon_source.none`]</option>
+                                <option value="custom" {if $customer_icon_source == 'custom'}selected{/if}>[`zen.icon_source.custom`]</option>
+                                <option value="avatar" {if $customer_icon_source == 'avatar'}selected{/if}>[`zen.icon_source.avatar`]</option>
+                            </select>
+                            <p class="hint">[`hint.zen.icon_source.customer`]</p>
+                        </div>
+                    </div>
+
+                    <div class="field" data-id="zen-customer-icon"{if $customer_icon_source != 'custom'} style="display:none"{/if}>
+                        <div class="name">[`zen.groups.customer.icon`]</div>
+                        <div class="value">
+                            <input type="text" name="{$name_prefix}[zen][groups][customer][icon]"
+                                   value="{$settings['zen']['groups']['customer']['icon']|escape:'html'}"
+                                   placeholder="https://" class="prefill-settings-input-wide">
+                            <p class="hint">[`hint.zen.groups.customer.icon`]</p>
+                        </div>
+                    </div>
+
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][groups][customer][summary_template]"
+                        type='Textarea'
+                        label='[`zen.groups.customer.summary_template`]'
+                        value=$settings['zen']['groups']['customer']['summary_template']
+                        hint_after='[`hint.zen.groups.customer.summary_template`]'
+                        rows=3
+                        input_class='prefill-settings-input-wide'}
+                </div>
+            </div>
+        </div>
+
+        {* ── Доставка ── *}
+        {assign var="delivery_icon_source" value=($settings['zen']['groups']['delivery']['icon_source']|default:'default')}
+        <div id="zen-delivery-tab" data-tab-group="zen" data-tab-content="delivery" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`zen.group.delivery`]</h3>
+                <p class="s-description">[`hint.zen.group.delivery`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][groups][delivery][enabled]"
+                        type='Switcher'
+                        label='[`zen.setting.delivery.enabled`]'
+                        value=$settings['zen']['groups']['delivery']['enabled']
+                        hint_after='[`hint.zen.groups.delivery.enabled`]'}
+
+                    {* icon_source: Select с вариантами default/plugin/custom *}
+                    <div class="field">
+                        <div class="name">[`zen.icon_source.delivery`]</div>
+                        <div class="value" data-radio-reveal="zen-delivery-icon">
+                            <select name="{$name_prefix}[zen][groups][delivery][icon_source]"
+                                    data-reveal-target="zen-delivery-icon"
+                                    data-reveal-value="custom">
+                                <option value="default" {if $delivery_icon_source == 'default'}selected{/if}>[`zen.icon_source.default_icons`]</option>
+                                <option value="plugin" {if $delivery_icon_source == 'plugin'}selected{/if}>[`zen.icon_source.plugin_logos`]</option>
+                                <option value="custom" {if $delivery_icon_source == 'custom'}selected{/if}>[`zen.icon_source.custom`]</option>
+                            </select>
+                            <p class="hint">[`hint.zen.icon_source.delivery`]</p>
+                        </div>
+                    </div>
+
+                    <div class="field" data-id="zen-delivery-icon"{if $delivery_icon_source != 'custom'} style="display:none"{/if}>
+                        <div class="name">[`zen.groups.delivery.icon`]</div>
+                        <div class="value">
+                            <input type="text" name="{$name_prefix}[zen][groups][delivery][icon]"
+                                   value="{$settings['zen']['groups']['delivery']['icon']|escape:'html'}"
+                                   placeholder="https://" class="prefill-settings-input-wide">
+                            <p class="hint">[`hint.zen.groups.delivery.icon`]</p>
+                        </div>
+                    </div>
+
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][groups][delivery][summary_template]"
+                        type='Textarea'
+                        label='[`zen.groups.delivery.summary_template`]'
+                        value=$settings['zen']['groups']['delivery']['summary_template']
+                        hint_after='[`hint.zen.groups.delivery.summary_template`]'
+                        rows=3
+                        input_class='prefill-settings-input-wide'}
+                </div>
+
+                {* ── Индивидуальные шаблоны для каждого метода доставки ── *}
+                {if $shipping_methods}
+                <div class="fields-group">
+                    <div class="field">
+                        <div class="name">[`zen.custom_templates.label`]</div>
+                        <div class="value">
+                            <p class="hint">[`zen.custom_templates.hint`]</p>
+                            {foreach $shipping_methods as $id => $method}
+                            {assign var="ct_active" value=($settings['zen']['groups']['delivery']['custom_templates'][$id]['active']|default:false)}
+                            {assign var="ct_template" value=($settings['zen']['groups']['delivery']['custom_templates'][$id]['template']|default:'')}
+                            <div class="prefill-custom-template-row flexbox middle space-8" style="margin-bottom: 8px;">
+                                <input type="hidden"
+                                       name="{$name_prefix}[zen][groups][delivery][custom_templates][{$id}][active]"
+                                       value="{if $ct_active}1{else}0{/if}"
+                                       class="js-prefill-ct-active-input">
+                                <span class="switch{if $ct_active} is-active{/if} js-prefill-ct-switcher"
+                                      title="[`zen.custom_template.switcher_title`]">
+                                    <input type="checkbox"{if $ct_active} checked{/if}>
+                                    <span class="switch-toggle"></span>
+                                </span>
+                                <span class="bold">{$method.name|escape:'html'}</span>
+                                <span class="js-prefill-ct-edit"{if !$ct_active} style="display:none"{/if}>
+                                    <a href="javascript:void(0);"
+                                       class="button rounded light-gray smaller nowrap js-prefill-edit-template"
+                                       data-instance-id="{$id}"
+                                       data-group="delivery"
+                                       data-instance-name="{$method.name|escape:'html'}"
+                                       data-template="{$ct_template|escape:'html'}"
+                                       data-group-template="{$settings['zen']['groups']['delivery']['summary_template']|escape:'html'}">
+                                        <i class="fas fa-pencil-alt text-blue"></i>
+                                        <span class="desktop-only">[`zen.custom_template.edit`]</span>
+                                    </a>
+                                </span>
+                                <span class="hint js-prefill-ct-hint"{if $ct_active} style="display:none"{/if}>[`zen.custom_template.uses_common`]</span>
+                            </div>
+                            <input type="hidden"
+                                   name="{$name_prefix}[zen][groups][delivery][custom_templates][{$id}][template]"
+                                   value="{$ct_template|escape:'html'}"
+                                   class="js-prefill-ct-template-input"
+                                   data-instance-id="{$id}"
+                                   data-group="delivery">
+                            {/foreach}
+                        </div>
+                    </div>
+                </div>
+                {/if}
+            </div>
+        </div>
+
+        {* ── Оплата ── *}
+        {assign var="payment_icon_source" value=($settings['zen']['groups']['payment']['icon_source']|default:'default')}
+        <div id="zen-payment-tab" data-tab-group="zen" data-tab-content="payment" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`zen.group.payment`]</h3>
+                <p class="s-description">[`hint.zen.group.payment`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][groups][payment][enabled]"
+                        type='Switcher'
+                        label='[`zen.setting.payment.enabled`]'
+                        value=$settings['zen']['groups']['payment']['enabled']
+                        hint_after='[`hint.zen.groups.payment.enabled`]'}
+
+                    {* icon_source: Select с вариантами default/plugin/custom *}
+                    <div class="field">
+                        <div class="name">[`zen.icon_source.payment`]</div>
+                        <div class="value" data-radio-reveal="zen-payment-icon">
+                            <select name="{$name_prefix}[zen][groups][payment][icon_source]"
+                                    data-reveal-target="zen-payment-icon"
+                                    data-reveal-value="custom">
+                                <option value="default" {if $payment_icon_source == 'default'}selected{/if}>[`zen.icon_source.default_icons`]</option>
+                                <option value="plugin" {if $payment_icon_source == 'plugin'}selected{/if}>[`zen.icon_source.plugin_logos`]</option>
+                                <option value="custom" {if $payment_icon_source == 'custom'}selected{/if}>[`zen.icon_source.custom`]</option>
+                            </select>
+                            <p class="hint">[`hint.zen.icon_source.payment`]</p>
+                        </div>
+                    </div>
+
+                    <div class="field" data-id="zen-payment-icon"{if $payment_icon_source != 'custom'} style="display:none"{/if}>
+                        <div class="name">[`zen.groups.payment.icon`]</div>
+                        <div class="value">
+                            <input type="text" name="{$name_prefix}[zen][groups][payment][icon]"
+                                   value="{$settings['zen']['groups']['payment']['icon']|escape:'html'}"
+                                   placeholder="https://" class="prefill-settings-input-wide">
+                            <p class="hint">[`hint.zen.groups.payment.icon`]</p>
+                        </div>
+                    </div>
+
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][groups][payment][summary_template]"
+                        type='Textarea'
+                        label='[`zen.groups.payment.summary_template`]'
+                        value=$settings['zen']['groups']['payment']['summary_template']
+                        hint_after='[`hint.zen.groups.payment.summary_template`]'
+                        rows=3
+                        input_class='prefill-settings-input-wide'}
+                </div>
+
+                {* ── Индивидуальные шаблоны для каждого метода оплаты ── *}
+                {if $payment_methods}
+                <div class="fields-group">
+                    <div class="field">
+                        <div class="name">[`zen.custom_templates.label`]</div>
+                        <div class="value">
+                            <p class="hint">[`zen.custom_templates.hint`]</p>
+                            {foreach $payment_methods as $id => $method}
+                            {assign var="ct_active" value=($settings['zen']['groups']['payment']['custom_templates'][$id]['active']|default:false)}
+                            {assign var="ct_template" value=($settings['zen']['groups']['payment']['custom_templates'][$id]['template']|default:'')}
+                            <div class="prefill-custom-template-row flexbox middle space-8" style="margin-bottom: 8px;">
+                                <input type="hidden"
+                                       name="{$name_prefix}[zen][groups][payment][custom_templates][{$id}][active]"
+                                       value="{if $ct_active}1{else}0{/if}"
+                                       class="js-prefill-ct-active-input">
+                                <span class="switch{if $ct_active} is-active{/if} js-prefill-ct-switcher"
+                                      title="[`zen.custom_template.switcher_title`]">
+                                    <input type="checkbox"{if $ct_active} checked{/if}>
+                                    <span class="switch-toggle"></span>
+                                </span>
+                                <span class="bold">{$method.name|escape:'html'}</span>
+                                <span class="js-prefill-ct-edit"{if !$ct_active} style="display:none"{/if}>
+                                    <a href="javascript:void(0);"
+                                       class="button rounded light-gray smaller nowrap js-prefill-edit-template"
+                                       data-instance-id="{$id}"
+                                       data-group="payment"
+                                       data-instance-name="{$method.name|escape:'html'}"
+                                       data-template="{$ct_template|escape:'html'}"
+                                       data-group-template="{$settings['zen']['groups']['payment']['summary_template']|escape:'html'}">
+                                        <i class="fas fa-pencil-alt text-blue"></i>
+                                        <span class="desktop-only">[`zen.custom_template.edit`]</span>
+                                    </a>
+                                </span>
+                                <span class="hint js-prefill-ct-hint"{if $ct_active} style="display:none"{/if}>[`zen.custom_template.uses_common`]</span>
+                            </div>
+                            <input type="hidden"
+                                   name="{$name_prefix}[zen][groups][payment][custom_templates][{$id}][template]"
+                                   value="{$ct_template|escape:'html'}"
+                                   class="js-prefill-ct-template-input"
+                                   data-instance-id="{$id}"
+                                   data-group="payment">
+                            {/foreach}
+                        </div>
+                    </div>
+                </div>
+                {/if}
+            </div>
+        </div>
+
+    </div>
+</div>
+

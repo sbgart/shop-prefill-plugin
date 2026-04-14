@@ -63,11 +63,11 @@
 
             {capture assign=value_block}
                 {if isset($hint_before)}
-                    <span class="hint">{$hint_before}</span>
+                    <p class="hint">{$hint_before}</p>
                 {/if}
                 {$control}
                 {if isset($hint_after)}
-                    <span class="hint">{$hint_after}</span>
+                    <p class="hint">{$hint_after}</p>
                 {/if}
                 {$hint_spoiler_block}
             {/capture}

@@ -1,56 +1,188 @@
-<div class="s-section-header">
-    <h3 class="s-title">[`Основные настройки для витрины`]</h3>
-    <p class="s-description">[`Настройте основные параметры плагина, которые будут влиять на всю витрину.`]</p>
-</div>
-
-<div class="fields">
-    <div class="fields-group custom-mt-16">
-        {include file='../../components/Field.html'
-        name="{$name_prefix}[active]"
-        type='Switcher'
-        label='[`setting.active`]'
-        value=$settings['active']
-        tooltip='[`tooltip.storefront_active`]'}
-
-        {include file='../../components/Field.html'
-        name="{$name_prefix}[prefill][my_delivery_variants]"
-        type='Switcher'
-        label='[`setting.prefill.my_delivery_variants`]'
-        value=$settings['prefill']['my_delivery_variants']}
-
-        {include file='../../components/Field.html'
-        name="{$name_prefix}[prefill][debug_panel]"
-        type='Switcher'
-        label='[`setting.prefill.debug_panel`]'
-        value=$settings['prefill']['debug_panel']
-        tooltip='[`tooltip.prefill.debug_panel`]'}
+<div class="flexbox space-24" data-type="tabs" data-tab-group="general">
+    <div class="sidebar flexbox">
+        <div class="sidebar-body">
+        <h5 class="heading">[`setting.general.sidebar_heading`]</h5>
+            <ul class="menu">
+                <li class="selected rounded">
+                    <a href="#" data-tab-trigger="main" data-tab-group="general">
+                        <i class="fas fa-cog"></i>
+                        <span>[`setting.group.main`]</span>
+                    </a>
+                </li>
+                <li class="rounded">
+                    <a href="#" data-tab-trigger="guest" data-tab-group="general">
+                        <i class="fas fa-user-slash"></i>
+                        <span>[`setting.group.guest`]</span>
+                    </a>
+                </li>
+                <li class="rounded">
+                    <a href="#" data-tab-trigger="my_delivery_variants" data-tab-group="general">
+                        <i class="fas fa-truck"></i>
+                        <span>[`setting.group.my_delivery_variants`]</span>
+                    </a>
+                </li>
+                <li class="rounded">
+                    <a href="#" data-tab-trigger="auth" data-tab-group="general">
+                        <i class="fas fa-user"></i>
+                        <span>[`setting.group.auth`]</span>
+                    </a>
+                </li>
+                <li class="rounded">
+                    <a href="#" data-tab-trigger="sections" data-tab-group="general">
+                        <i class="fas fa-th-large"></i>
+                        <span>[`setting.group.sections`]</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
 
-    <div class="fields-group custom-mt-16">
-        <div class="fields-group-header">[`setting.prefill.sections.label`]</div>
+    <div class="content blank">
 
-        {include file='../../components/Field.html'
-        name="{$name_prefix}[prefill][sections][customer]"
-        type='Switcher'
-        label='[`setting.prefill.sections.customer`]'
-        value=$settings['prefill']['sections']['customer']}
+        <div id="general-main-tab" data-tab-group="general" data-tab-content="main" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`setting.group.main`]</h3>
+                <p class="s-description">[`hint.group.main`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[active]"
+                    type='Switcher'
+                    label='[`setting.active`]'
+                    value=$settings['active']
+                    tooltip='[`tooltip.storefront_active`]'
+                    hint_after='[`hint.active`]'}
 
-        {include file='../../components/Field.html'
-        name="{$name_prefix}[prefill][sections][delivery]"
-        type='Switcher'
-        label='[`setting.prefill.sections.delivery`]'
-        value=$settings['prefill']['sections']['delivery']}
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][debug_panel]"
+                    type='Switcher'
+                    label='[`setting.prefill.debug_panel`]'
+                    value=$settings['prefill']['debug_panel']
+                    hint_after='[`hint.prefill.debug_panel`]'}
 
-        {include file='../../components/Field.html'
-        name="{$name_prefix}[prefill][sections][payment]"
-        type='Switcher'
-        label='[`setting.prefill.sections.payment`]'
-        value=$settings['prefill']['sections']['payment']}
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][on_entry]"
+                    type='Switcher'
+                    label='[`setting.prefill.on_entry`]'
+                    value=$settings['prefill']['on_entry']
+                    hint_after='[`hint.prefill.on_entry`]'}
+                </div>
+            </div>
+        </div>
 
-        {include file='../../components/Field.html'
-        name="{$name_prefix}[prefill][sections][confirm]"
-        type='Switcher'
-        label='[`setting.prefill.sections.confirm`]'
-        value=$settings['prefill']['sections']['confirm']}
+        <div id="general-guest-tab" data-tab-group="general" data-tab-content="guest" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`setting.group.guest`]</h3>
+                <p class="s-description">[`hint.group.guest`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][guest][enabled]"
+                    type='Switcher'
+                    label='[`setting.prefill.guest.enabled`]'
+                    value=$settings['prefill']['guest']['enabled']
+                    hint_after='[`hint.prefill.guest.enabled`]'}
+
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][guest][consent_required]"
+                    type='Switcher'
+                    label='[`setting.prefill.guest.consent_required`]'
+                    value=$settings['prefill']['guest']['consent_required']
+                    hint_after='[`hint.prefill.guest.consent_required`]'}
+                </div>
+            </div>
+        </div>
+
+        <div id="general-my_delivery_variants-tab" data-tab-group="general" data-tab-content="my_delivery_variants" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`setting.group.my_delivery_variants`]</h3>
+                <p class="s-description">[`hint.group.my_delivery_variants`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][my_delivery_variants]"
+                    type='Switcher'
+                    label='[`setting.prefill.my_delivery_variants`]'
+                    value=$settings['prefill']['my_delivery_variants']
+                    hint_after='[`hint.prefill.my_delivery_variants`]'}
+
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][my_delivery_variants_button_classes]"
+                    type='Text'
+                    label='[`setting.prefill.my_delivery_variants_button_classes`]'
+                    value=$settings['prefill']['my_delivery_variants_button_classes']
+                    hint_after='[`hint.prefill.my_delivery_variants_button_classes`]'
+                    placeholder=''
+                    input_class='prefill-settings-input-wide'}
+                </div>
+            </div>
+        </div>
+
+        <div id="general-auth-tab" data-tab-group="general" data-tab-content="auth" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`setting.group.auth`]</h3>
+                <p class="s-description">[`hint.group.auth`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][remember_me][active]"
+                    type='Switcher'
+                    label='[`setting.prefill.remember_me.active`]'
+                    value=$settings['prefill']['remember_me']['active']
+                    hint_after='[`hint.prefill.remember_me.active`]'}
+
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][remember_me][expires]"
+                    type='Number'
+                    label='[`setting.prefill.remember_me.expires`]'
+                    value=$settings['prefill']['remember_me']['expires']
+                    min=1
+                    hint_after='[`hint.prefill.remember_me.expires`]'}
+                </div>
+            </div>
+        </div>
+
+        <div id="general-sections-tab" data-tab-group="general" data-tab-content="sections" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`setting.prefill.sections.label`]</h3>
+                <p class="s-description">[`hint.group.sections`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][sections][customer]"
+                    type='Switcher'
+                    label='[`setting.prefill.sections.customer`]'
+                    value=$settings['prefill']['sections']['customer']
+                    hint_after='[`hint.prefill.sections.customer`]'}
+
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][sections][delivery]"
+                    type='Switcher'
+                    label='[`setting.prefill.sections.delivery`]'
+                    value=$settings['prefill']['sections']['delivery']
+                    hint_after='[`hint.prefill.sections.delivery`]'}
+
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][sections][payment]"
+                    type='Switcher'
+                    label='[`setting.prefill.sections.payment`]'
+                    value=$settings['prefill']['sections']['payment']
+                    hint_after='[`hint.prefill.sections.payment`]'}
+
+                    {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][sections][confirm]"
+                    type='Switcher'
+                    label='[`setting.prefill.sections.confirm`]'
+                    value=$settings['prefill']['sections']['confirm']
+                    hint_after='[`hint.prefill.sections.confirm`]'}
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>

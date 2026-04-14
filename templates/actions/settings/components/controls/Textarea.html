@@ -1,0 +1,6 @@
+{strip}
+    {$input_class=$input_class|default:''}
+    {$rows=$rows|default:4}
+    <textarea name="{$name}" rows="{$rows}"{if $input_class} class="{$input_class|escape:'html'}"{/if}
+>{$value|escape:'html'}</textarea>
+{/strip}

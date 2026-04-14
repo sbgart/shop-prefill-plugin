@@ -181,10 +181,19 @@ msgid "zen.icon_source.plugin_logos.hint"
 msgstr "Show delivery/payment plugin logos (e.g. CDEK, Stripe)"
 
 msgid "zen.icon_source.default_icons"
-msgstr "Default icons"
+msgstr "Default"
 
 msgid "zen.icon_source.default_icons.hint"
 msgstr "Show generic group icons (delivery.svg, payment.svg) or custom uploaded icon"
+
+msgid "hint.zen.icon_source.customer"
+msgstr "Default — standard icon; No icon — hide; Custom icon — use the URL below; Avatar — customer avatar (guests fall back to Default)."
+
+msgid "hint.zen.icon_source.delivery"
+msgstr "Default — standard group icon; Plugin logos — selected shipping method logo; Custom icon — use the URL below."
+
+msgid "hint.zen.icon_source.payment"
+msgstr "Default — standard group icon; Plugin logos — selected payment method logo; Custom icon — use the URL below."
 
 msgid "zen.icon_size"
 msgstr "Icon size"
@@ -202,7 +211,7 @@ msgid "zen.icon_size.hint"
 msgstr "Fixed width and height of the icon block across all sections for consistent spacing"
 
 msgid "setting.prefill.my_delivery_variants"
-msgstr ""
+msgstr "My delivery variants"
 
 msgid "setting.prefill.debug_panel"
 msgstr "Storefront debug panel"
@@ -222,215 +231,302 @@ msgstr "Payment"
 msgid "setting.prefill.sections.confirm"
 msgstr "Confirmation (comment)"
 
-msgid "tooltip.prefill.debug_panel"
+msgid "hint.active"
+msgstr "Enables the plugin on the selected storefront."
+
+msgid "hint.prefill.my_delivery_variants"
+msgstr "Shows the customer a choice of delivery options based on their order history."
+
+msgid "hint.prefill.debug_panel"
 msgstr "Show the floating debug panel and extended checkout hints only when Webasyst debug mode is on. Off by default so a permanently enabled admin debug flag does not expose the panel to customers."
 
+msgid "hint.prefill.sections.customer"
+msgstr "Allows prefill for the «Customer (auth)» block."
+
+msgid "hint.prefill.sections.delivery"
+msgstr "Allows prefill for the «Delivery (region, method, address)» block."
+
+msgid "hint.prefill.sections.payment"
+msgstr "Allows prefill for the «Payment» block."
+
+msgid "hint.prefill.sections.confirm"
+msgstr "Allows prefill for the «Confirmation» block. The «Terms of service» checkbox is not prefilled."
+
+msgid "setting.general.sidebar_heading"
+msgstr "Settings categories"
+
+msgid "setting.group.main"
+msgstr "General settings"
+
+msgid "hint.group.main"
+msgstr "Main plugin settings for the storefront."
+
+msgid "setting.group.guest"
+msgstr "Guest"
+
+msgid "hint.group.guest"
+msgstr "Prefill and saving data for customers who are not logged in."
+
+msgid "setting.group.my_delivery_variants"
+msgstr "My delivery variants"
+
+msgid "hint.group.my_delivery_variants"
+msgstr "Delivery options from order history and styling the «My variants» button for your design theme."
+
+msgid "setting.group.auth"
+msgstr "Authorization"
+
+msgid "hint.group.auth"
+msgstr "Controls authorization session renewal for storefront customers."
+
+msgid "setting.group.sections"
+msgstr "Checkout sections"
+
+msgid "hint.group.sections"
+msgstr "Choose which checkout sections to prefill."
+
+msgid "setting.prefill.on_entry"
+msgstr "Prefill on storefront entry"
+
+msgid "hint.prefill.on_entry"
+msgstr "When enabled, prefill runs on every storefront page visit. When disabled, it runs on cart open. Useful when cart price depends on the shipping method."
+
+msgid "setting.prefill.guest.enabled"
+msgstr "Prefill for guests"
+
+msgid "hint.prefill.guest.enabled"
+msgstr "When disabled, guests are excluded from prefill: no hash cookie is created, no data is saved to the order, and nothing is used on the next visit."
+
+msgid "setting.prefill.guest.consent_required"
+msgstr "Require guest consent for data storage"
+
+msgid "hint.prefill.guest.consent_required"
+msgstr "Guest must explicitly allow saving data for prefill. Data is erased when consent is withdrawn."
+
+msgid "setting.prefill.my_delivery_variants_button_classes"
+msgstr "CSS classes for «My variants» button"
+
+msgid "hint.prefill.my_delivery_variants_button_classes"
+msgstr "Additional CSS classes to match the buttons to your theme. List names separated by spaces, like an HTML class attribute (e.g. btn btn-default my-theme-button)."
+
+msgid "setting.prefill.remember_me.active"
+msgstr "Renew storefront authorization"
+
+msgid "hint.prefill.remember_me.active"
+msgstr "Extends the customer's Webasyst authorization on each storefront visit."
+
+msgid "setting.prefill.remember_me.expires"
+msgstr "Authorization cookie lifetime, days"
+
+msgid "hint.prefill.remember_me.expires"
+msgstr "Number of days ahead the authorization is extended on each visit."
+
 msgid "First name"
-msgstr ""
+msgstr "First name"
 
 msgid "Customer first name"
-msgstr ""
+msgstr "Customer first name"
 
 msgid "Last name"
-msgstr ""
+msgstr "Last name"
 
 msgid "Customer last name"
-msgstr ""
+msgstr "Customer last name"
 
 msgid "Phone"
-msgstr ""
+msgstr "Phone"
 
 msgid "Customer phone number"
-msgstr ""
+msgstr "Customer phone number"
 
 msgid "Email"
-msgstr ""
+msgstr "Email"
 
 msgid "Customer email"
-msgstr ""
+msgstr "Customer email"
 
 msgid "Company"
-msgstr ""
+msgstr "Company"
 
 msgid "Company name"
-msgstr ""
+msgstr "Company name"
 
 msgid "Custom contact fields"
-msgstr ""
+msgstr "Custom contact fields"
 
 msgid "Array of custom contact fields (e.g. birthday)"
-msgstr ""
+msgstr "Array of custom contact fields (e.g. birthday)"
 
 msgid "Service agreement"
-msgstr ""
+msgstr "Service agreement"
 
 msgid "Consent to personal data processing (auth[service_agreement]). Localized Yes/No or empty."
-msgstr ""
+msgstr "Consent to personal data processing (auth[service_agreement]). Localized Yes/No or empty."
 
 msgid "Service agreement hint"
-msgstr ""
+msgstr "Service agreement hint"
 
 msgid "Text of the consent hint (data[customer][service_agreement_hint]) from checkout config."
-msgstr ""
+msgstr "Text of the consent hint (data[customer][service_agreement_hint]) from checkout config."
 
 msgid "Shipping rate name"
-msgstr ""
+msgstr "Shipping rate name"
 
 msgid "Selected shipping rate name"
-msgstr ""
+msgstr "Selected shipping rate name"
 
 msgid "Shipping cost"
-msgstr ""
+msgstr "Shipping cost"
 
 msgid "Formatted shipping cost"
-msgstr ""
+msgstr "Formatted shipping cost"
 
 msgid "Delivery method name"
-msgstr ""
+msgstr "Delivery method name"
 
 msgid "Name of the shipping method in store settings"
-msgstr ""
+msgstr "Name of the shipping method in store settings"
 
 msgid "Shipping logo URL"
-msgstr ""
+msgstr "Shipping logo URL"
 
 msgid "URL of the selected shipping plugin logo (from checkout vars)"
-msgstr ""
+msgstr "URL of the selected shipping plugin logo (from checkout vars)"
 
 msgid "Plugin name"
-msgstr ""
+msgstr "Plugin name"
 
 msgid "Delivery plugin name"
-msgstr ""
+msgstr "Delivery plugin name"
 
 msgid "Pickup point"
-msgstr ""
+msgstr "Pickup point"
 
 msgid "Delivery tariff"
-msgstr ""
+msgstr "Delivery tariff"
 
 msgid "Delivery tariff/service name"
-msgstr ""
+msgstr "Delivery tariff/service name"
 
 msgid "Store pickup"
-msgstr ""
+msgstr "Store pickup"
 
 msgid "Delivery type"
-msgstr ""
+msgstr "Delivery type"
 
 msgid "Delivery type (e.g. pickup, courier, post)"
-msgstr ""
+msgstr "Delivery type (e.g. pickup, courier, post)"
 
 msgid "Estimated delivery"
-msgstr ""
+msgstr "Estimated delivery"
 
 msgid "Estimated delivery time"
-msgstr ""
+msgstr "Estimated delivery time"
 
 msgid "Description"
-msgstr ""
+msgstr "Description"
 
 msgid "Description of the delivery method"
-msgstr ""
+msgstr "Description of the delivery method"
 
 msgid "Business hours"
-msgstr ""
+msgstr "Business hours"
 
 msgid "Pickup point business hours (HTML structure)"
-msgstr ""
+msgstr "Pickup point business hours (HTML structure)"
 
 msgid "Way to reach"
-msgstr ""
+msgstr "Way to reach"
 
 msgid "Instructions on how to reach the pickup point"
-msgstr ""
+msgstr "Instructions on how to reach the pickup point"
 
 msgid "Storage days"
-msgstr ""
+msgstr "Storage days"
 
 msgid "Number of days the order is stored"
-msgstr ""
+msgstr "Number of days the order is stored"
 
 msgid "Photos"
-msgstr ""
+msgstr "Photos"
 
 msgid "Array of pickup point photos"
-msgstr ""
+msgstr "Array of pickup point photos"
 
 msgid "Custom shipping fields"
-msgstr ""
+msgstr "Custom shipping fields"
 
 msgid "Array of custom shipping fields"
-msgstr ""
+msgstr "Array of custom shipping fields"
 
 msgid "City"
-msgstr ""
+msgstr "City"
 
 msgid "Delivery city"
-msgstr ""
+msgstr "Delivery city"
 
 msgid "Region"
-msgstr ""
+msgstr "Region"
 
 msgid "Delivery region code or name"
-msgstr ""
+msgstr "Delivery region code or name"
 
 msgid "Street"
-msgstr ""
+msgstr "Street"
 
 msgid "Street address"
-msgstr ""
+msgstr "Street address"
 
 msgid "Building"
-msgstr ""
+msgstr "Building"
 
 msgid "Building number"
-msgstr ""
+msgstr "Building number"
 
 msgid "Apartment"
-msgstr ""
+msgstr "Apartment"
 
 msgid "Apartment/Office number"
-msgstr ""
+msgstr "Apartment/Office number"
 
 msgid "ZIP"
-msgstr ""
+msgstr "ZIP"
 
 msgid "Postal code"
-msgstr ""
+msgstr "Postal code"
 
 msgid "Custom address fields"
-msgstr ""
+msgstr "Custom address fields"
 
 msgid "Array of custom address fields (e.g. metro)"
-msgstr ""
+msgstr "Array of custom address fields (e.g. metro)"
 
 msgid "Payment method"
-msgstr ""
+msgstr "Payment method"
 
 msgid "Selected payment method name"
-msgstr ""
+msgstr "Selected payment method name"
 
 msgid "Payment logo URL"
-msgstr ""
+msgstr "Payment logo URL"
 
 msgid "URL of the selected payment plugin logo (from checkout vars)"
-msgstr ""
+msgstr "URL of the selected payment plugin logo (from checkout vars)"
 
 msgid "Payment description"
-msgstr ""
+msgstr "Payment description"
 
 msgid "Payment method description"
-msgstr ""
+msgstr "Payment method description"
 
 msgid "Payment upon receipt"
-msgstr ""
+msgstr "Payment upon receipt"
 
 msgid "Custom payment fields"
-msgstr ""
+msgstr "Custom payment fields"
 
 msgid "Array of custom payment fields (e.g. INN, Company)"
-msgstr ""
+msgstr "Array of custom payment fields (e.g. INN, Company)"
 
 msgid "zen.delivery.type.pickup"
 msgstr ""
@@ -472,4 +568,190 @@ msgid "Design"
 msgstr ""
 
 msgid "Help"
+msgstr ""
+
+msgid "hint.tab.design"
+msgstr "Appearance of plugin elements on storefront."
+
+msgid "setting.styles.accent_color"
+msgstr "Accent color"
+
+msgid "hint.styles.accent_color"
+msgstr "Sets the accent color for plugin elements on the storefront to match the design theme."
+
+msgid "hint.zen.group.main"
+msgstr "Main Zen Mode parameters for this storefront."
+
+msgid "zen.toggle_button_classes"
+msgstr "CSS classes for collapse button"
+
+msgid "hint.zen.toggle_button_classes"
+msgstr "Additional CSS classes for the collapse/expand section button."
+
+msgid "hint.zen.group.customer"
+msgstr "Settings for the collapsed Customer block in Zen Mode."
+
+msgid "zen.setting.customer.enabled"
+msgstr "Collapse Customer block"
+
+msgid "hint.zen.groups.customer.enabled"
+msgstr "Collapses the Customer block and shows a brief summary when correctly filled."
+
+msgid "zen.groups.customer.hide_auth_header"
+msgstr "Hide name and auth header in Customer block"
+
+msgid "hint.zen.groups.customer.hide_auth_header"
+msgstr "Applies to authenticated customers only. Name is duplicated in the Zen Mode summary."
+
+msgid "zen.icon_source.customer"
+msgstr "Customer section icon"
+
+msgid "zen.icon_source.none"
+msgstr "No icon"
+
+msgid "zen.icon_source.custom"
+msgstr "Custom icon"
+
+msgid "zen.icon_source.custom.hint"
+msgstr "Provide the icon URL in the field below."
+
+msgid "zen.icon_source.avatar"
+msgstr "User avatar"
+
+msgid "zen.icon_source.avatar.hint"
+msgstr "Falls back to the default icon for guests."
+
+msgid "zen.groups.customer.icon"
+msgstr "Customer block icon URL"
+
+msgid "hint.zen.groups.customer.icon"
+msgstr "Direct URL to a PNG or SVG file."
+
+msgid "zen.groups.customer.summary_template"
+msgstr "Customer block summary template"
+
+msgid "hint.zen.groups.customer.summary_template"
+msgstr "Smarty template for the collapsed block summary. Variables: $firstname, $lastname, $phone, $email, $company."
+
+msgid "hint.zen.group.delivery"
+msgstr "Settings for the collapsed Delivery block in Zen Mode."
+
+msgid "zen.setting.delivery.enabled"
+msgstr "Collapse Delivery block"
+
+msgid "hint.zen.groups.delivery.enabled"
+msgstr "Collapses the Delivery block and shows a brief summary when correctly filled."
+
+msgid "zen.groups.delivery.icon"
+msgstr "Delivery block icon URL"
+
+msgid "hint.zen.groups.delivery.icon"
+msgstr "Direct URL to a PNG or SVG file."
+
+msgid "zen.groups.delivery.summary_template"
+msgstr "Delivery block summary template"
+
+msgid "hint.zen.groups.delivery.summary_template"
+msgstr "Smarty template for the collapsed block summary. Variables: $delivery_plugin, $shipping_name, $shipping_rate, $shipping_logo_url."
+
+msgid "hint.zen.group.payment"
+msgstr "Settings for the collapsed Payment block in Zen Mode."
+
+msgid "zen.setting.payment.enabled"
+msgstr "Collapse Payment block"
+
+msgid "hint.zen.groups.payment.enabled"
+msgstr "Collapses the Payment block and shows a brief summary when correctly filled."
+
+msgid "zen.groups.payment.icon"
+msgstr "Payment block icon URL"
+
+msgid "hint.zen.groups.payment.icon"
+msgstr "Direct URL to a PNG or SVG file."
+
+msgid "zen.groups.payment.summary_template"
+msgstr "Payment block summary template"
+
+msgid "hint.zen.groups.payment.summary_template"
+msgstr "Smarty template for the collapsed block summary. Variables: $payment_name, $payment_description, $payment_logo_url."
+
+msgid "zen.custom_templates.label"
+msgstr "Templates for specific methods"
+
+msgid "zen.custom_templates.hint"
+msgstr "If a custom template is enabled for a method, it overrides the common template above"
+
+msgid "zen.custom_template.switcher_title"
+msgstr "Enable custom template for this method"
+
+msgid "zen.custom_template.edit"
+msgstr "Edit"
+
+msgid "zen.custom_template.uses_common"
+msgstr "uses common template"
+
+msgid "zen.custom_template.modal.title"
+msgstr "Template: %s"
+
+msgid "zen.custom_template.modal.vars"
+msgstr "Variables"
+
+msgid "zen.custom_template.modal.conditions"
+msgstr "Conditions"
+
+msgid "zen.custom_template.modal.save"
+msgstr "Done"
+
+msgid "zen.custom_template.modal.cancel"
+msgstr "Cancel"
+
+msgid "zen.custom_template.modal.reset"
+msgstr "Reset to default"
+
+msgid "zen.custom_template.modal.how_to_use"
+msgstr "How to use?"
+
+msgid "zen.custom_template.modal.how_to_var"
+msgstr "Variable:"
+
+msgid "zen.custom_template.modal.how_to_cond"
+msgstr "Condition:"
+
+msgid "zen.custom_template.modal.how_to_html"
+msgstr "HTML allowed:"
+
+msgid "zen.custom_template.modal.how_to_example"
+msgstr "Example:"
+
+msgid "zen.custom_template.vars.delivery"
+msgstr "Delivery"
+
+msgid "zen.custom_template.vars.address"
+msgstr "Address"
+
+msgid "zen.custom_template.vars.customer"
+msgstr "Customer"
+
+msgid "zen.custom_template.vars.payment"
+msgstr "Payment"
+
+msgid "zen.groups.title"
+msgstr ""
+
+msgid "zen.group.customer"
+msgstr ""
+
+msgid "zen.group.delivery"
+msgstr ""
+
+msgid "zen.group.payment"
+msgstr ""
+
+msgid "zen.setting.active"
+msgstr ""
+
+msgid "zen.tooltip.active"
+msgstr ""
+
+msgid "tab.zen"
 msgstr ""
