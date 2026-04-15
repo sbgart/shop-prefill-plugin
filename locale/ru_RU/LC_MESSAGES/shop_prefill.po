@@ -504,6 +504,9 @@ msgstr "Переменные"
 msgid "zen.custom_template.modal.conditions"
 msgstr "Условия"
 
+msgid "zen.custom_template.modal.formatting"
+msgstr "Форматирование"
+
 msgid "zen.custom_template.modal.save"
 msgstr "Готово"
 
@@ -539,6 +542,24 @@ msgstr "Покупатель"
 
 msgid "zen.custom_template.vars.payment"
 msgstr "Оплата"
+
+msgid "zen.custom_template.format.bold"
+msgstr "Жирный"
+
+msgid "zen.custom_template.format.italic"
+msgstr "Курсив"
+
+msgid "zen.custom_template.format.underline"
+msgstr "Подчеркнутый"
+
+msgid "zen.custom_template.format.br"
+msgstr "Новая строка"
+
+msgid "zen.custom_template.format.bullet"
+msgstr "Маркер"
+
+msgid "zen.custom_template.format.link"
+msgstr "Ссылка"
 
 msgid "First name"
 msgstr "Имя"
@@ -769,4 +790,7 @@ msgid "Design"
 msgstr ""
 
 msgid "Help"
+msgstr ""
+
+msgid "..."
 msgstr ""

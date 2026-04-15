@@ -36,11 +36,21 @@
 
             {* ── Условия ── *}
             <div class="prefill-ct-panel-heading" style="margin-top:14px">[`zen.custom_template.modal.conditions`]</div>
-            <div class="prefill-ct-chips">
+            <div class="prefill-ct-chips prefill-ct-chips--spacious">
                 {foreach $conditions as $cond}
                 <a href="javascript:void(0);"
                    class="prefill-ct-chip prefill-ct-chip-code js-prefill-insert-var"
                    data-snippet="{$cond.snippet|escape:'html'}">{$cond.label}</a>
+                {/foreach}
+            </div>
+
+            {* ── Форматирование / HTML ── *}
+            <div class="prefill-ct-panel-heading" style="margin-top:14px">[`zen.custom_template.modal.formatting`]</div>
+            <div class="prefill-ct-chips prefill-ct-chips--spacious">
+                {foreach $formatting as $fmt}
+                <a href="javascript:void(0);"
+                   class="prefill-ct-chip prefill-ct-chip-format js-prefill-insert-var"
+                   data-snippet="{$fmt.snippet|escape:'html'}">{$fmt.label}</a>
                 {/foreach}
             </div>
 

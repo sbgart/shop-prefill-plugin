@@ -28,6 +28,7 @@ class shopPrefillPluginSettingsTemplateEditorAction extends waViewAction
             throw new waException('Invalid group', 400);
         }
 
+        // Locale config
         waLocale::loadByDomain(['shop', 'prefill']);
         waSystem::pushActivePlugin('prefill', 'shop');
 
@@ -36,6 +37,7 @@ class shopPrefillPluginSettingsTemplateEditorAction extends waViewAction
             'default_tpl' => shopPrefillPluginZenData::getDefaultTemplate($group),
             'var_groups'  => $this->buildVarGroups($group),
             'conditions'  => $this->buildConditions(),
+            'formatting'  => $this->buildFormattingSnippets(),
         ]);
     }
 
@@ -94,6 +96,23 @@ class shopPrefillPluginSettingsTemplateEditorAction extends waViewAction
             ['label' => '{if}…{else}…{/if}',  'snippet' => '{if $}{else}{/if}'],
             ['label' => '{if $a && $b}',      'snippet' => '{if $ && $}{/if}'],
             ['label' => '{if $a || $b}',      'snippet' => '{if $ || $}{/if}'],
+        ];
+    }
+
+    /**
+     * Базовые HTML/форматирующие вставки для шаблонов.
+     *
+     * @return array[]
+     */
+    private function buildFormattingSnippets(): array
+    {
+        return [
+            ['label' => _wp('zen.custom_template.format.bold'),      'snippet' => '<strong></strong>'],
+            ['label' => _wp('zen.custom_template.format.italic'),    'snippet' => '<em></em>'],
+            ['label' => _wp('zen.custom_template.format.underline'), 'snippet' => '<u></u>'],
+            ['label' => _wp('zen.custom_template.format.br'),        'snippet' => '<br />'],
+            ['label' => _wp('zen.custom_template.format.bullet'),    'snippet' => ' &bull; '],
+            ['label' => _wp('zen.custom_template.format.link'),      'snippet' => '<a href=\"\"></a>'],
         ];
     }
 }

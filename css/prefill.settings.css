@@ -127,7 +127,8 @@
 }
 
 .prefill-ct-sidebar {
-    flex: 0 0 210px;
+    /* +20px requested */
+    flex: 0 0 230px;
     max-height: 320px;
     overflow-y: auto;
     border-left: 1px solid var(--border-color, #e0e0e0);
@@ -157,6 +158,11 @@
     margin-bottom: 4px;
 }
 
+.prefill-ct-chips--spacious {
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
 .prefill-ct-chip {
     display: inline-block;
     font-family: monospace;
@@ -164,8 +170,9 @@
     padding: 2px 6px;
     border: 1px solid var(--border-color, #d0d0d0);
     border-radius: 3px;
+    /* Use native UI vars so dark mode looks correct */
     background: var(--background-color-blank, #f8f8f8);
-    color: var(--color-primary, #1976d2);
+    color: var(--text-color, #1f1f1f);
     white-space: nowrap;
     cursor: pointer;
     line-height: 1.5;
@@ -173,12 +180,18 @@
 }
 
 .prefill-ct-chip:hover {
-    background: var(--color-primary-light, #e3f2fd);
-    border-color: var(--color-primary, #1976d2);
+    background: var(--highlighted-blue, rgba(40, 120, 255, 0.12));
+    border-color: var(--accent-color, var(--color-primary, #1976d2));
+    color: var(--accent-color, var(--color-primary, #1976d2));
 }
 
 .prefill-ct-chip-code {
-    color: var(--text-color, #333);
+    color: var(--text-color, #1f1f1f);
+}
+
+.prefill-ct-chip-format {
+    color: var(--text-color, #1f1f1f);
+    background: var(--background-color, #f2f2f2);
 }
 
 .prefill-ct-how-to {
@@ -203,5 +216,5 @@
 }
 
 .dialog .prefill-ct-dialog-body {
-  width: 870px;
+    width: min(890px, 95vw);
 }

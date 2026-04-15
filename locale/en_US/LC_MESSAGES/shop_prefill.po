@@ -570,6 +570,9 @@ msgstr ""
 msgid "Help"
 msgstr ""
 
+msgid "debug.locale.bump2"
+msgstr "Locale test 2"
+
 msgid "hint.tab.design"
 msgstr "Appearance of plugin elements on storefront."
 
@@ -699,6 +702,9 @@ msgstr "Variables"
 msgid "zen.custom_template.modal.conditions"
 msgstr "Conditions"
 
+msgid "zen.custom_template.modal.formatting"
+msgstr "Formatting"
+
 msgid "zen.custom_template.modal.save"
 msgstr "Done"
 
@@ -735,6 +741,24 @@ msgstr "Customer"
 msgid "zen.custom_template.vars.payment"
 msgstr "Payment"
 
+msgid "zen.custom_template.format.bold"
+msgstr "Bold"
+
+msgid "zen.custom_template.format.italic"
+msgstr "Italic"
+
+msgid "zen.custom_template.format.underline"
+msgstr "Underline"
+
+msgid "zen.custom_template.format.br"
+msgstr "New line"
+
+msgid "zen.custom_template.format.bullet"
+msgstr "Bullet"
+
+msgid "zen.custom_template.format.link"
+msgstr "Link"
+
 msgid "zen.groups.title"
 msgstr ""
 
@@ -754,4 +778,7 @@ msgid "zen.tooltip.active"
 msgstr ""
 
 msgid "tab.zen"
+msgstr ""
+
+msgid "..."
 msgstr ""
