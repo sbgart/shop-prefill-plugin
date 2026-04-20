@@ -12,12 +12,14 @@
 
         {* ── Левая колонка: поле ввода шаблона (значение заполняет JS) ── *}
         <div class="prefill-ct-editor">
+            {* Значение задаётся из JS; Ace монтируется в .prefill-ct-ace (wa-content/js/ace). *}
             <textarea class="js-prefill-ct-textarea"
                       rows="14"
-                      style="width:100%;min-height:260px;box-sizing:border-box;font-family:monospace;font-size:13px;resize:vertical;"></textarea>
+                      style="display:none"></textarea>
+            <div class="prefill-ct-ace" aria-hidden="true"></div>
         </div>
 
-        {* ── Правая колонка: переменные + условия + справка ── *}
+        {* ── Правая колонка: переменные + условия + форматирование ── *}
         <div class="prefill-ct-sidebar">
 
             <div class="prefill-ct-panel-heading">[`zen.custom_template.modal.vars`]</div>
@@ -26,10 +28,42 @@
             <div class="prefill-ct-group-label small bold">{$var_group.label}</div>
             <div class="prefill-ct-chips">
                 {foreach $var_group.vars as $v}
-                <a href="javascript:void(0);"
-                   class="prefill-ct-chip js-prefill-insert-var"
-                   data-snippet="{$v.snippet|escape:'html'}"
-                   title="{$v.snippet|escape:'html'}: {$v.description|escape:'html'}">{$v.name|escape:'html'}</a>
+                    {if !empty($v.is_array)}
+                    <div class="dropdown js-prefill-var-dropdown prefill-ct-var-dropdown">
+                        <button type="button"
+                                class="dropdown-toggle button prefill-ct-chip js-prefill-var-tooltip"
+                                data-wa-tooltip-class="prefill-var-tooltip-popper"
+                                data-snippet="{$v.snippet|escape:'html'}"
+                                data-description="{$v.description|escape:'html'}"
+                                data-example="{$v.example|escape:'html'}"
+                                data-example-code="{$v.example_code|escape:'html'}"
+                                data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">
+                            {$v.name|escape:'html'} <span class="caret"></span>
+                        </button>
+                        <div class="dropdown-body">
+                            <ul class="menu">
+                                <li>
+                                    <a href="javascript:void(0);"
+                                       class="js-prefill-insert-snippet"
+                                       data-snippet="{$v.snippet_loop|escape:'html'}">{$template_editor_ui.insert_loop|escape:'html'}</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0);"
+                                       class="js-prefill-insert-snippet"
+                                       data-snippet="{$v.snippet|escape:'html'}">{$template_editor_ui.insert_variable|escape:'html'}</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    {else}
+                    <a href="javascript:void(0);"
+                       class="prefill-ct-chip js-prefill-var-tooltip js-prefill-insert-snippet"
+                       data-wa-tooltip-class="prefill-var-tooltip-popper"
+                       data-snippet="{$v.snippet|escape:'html'}"
+                       data-description="{$v.description|escape:'html'}"
+                       data-example="{$v.example|escape:'html'}"
+                       data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">{$v.name|escape:'html'}</a>
+                    {/if}
                 {/foreach}
             </div>
             {/foreach}
@@ -39,8 +73,12 @@
             <div class="prefill-ct-chips prefill-ct-chips--spacious">
                 {foreach $conditions as $cond}
                 <a href="javascript:void(0);"
-                   class="prefill-ct-chip prefill-ct-chip-code js-prefill-insert-var"
-                   data-snippet="{$cond.snippet|escape:'html'}">{$cond.label}</a>
+                   class="prefill-ct-chip prefill-ct-chip-code js-prefill-var-tooltip js-prefill-insert-snippet"
+                   data-wa-tooltip-class="prefill-var-tooltip-popper"
+                   data-snippet="{$cond.snippet|escape:'html'}"
+                   data-description="{$cond.description|escape:'html'}"
+                   data-example="{$cond.example|escape:'html'}"
+                   data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">{$cond.label|escape:'html'}</a>
                 {/foreach}
             </div>
 
@@ -49,21 +87,14 @@
             <div class="prefill-ct-chips prefill-ct-chips--spacious">
                 {foreach $formatting as $fmt}
                 <a href="javascript:void(0);"
-                   class="prefill-ct-chip prefill-ct-chip-format js-prefill-insert-var"
-                   data-snippet="{$fmt.snippet|escape:'html'}">{$fmt.label}</a>
+                   class="prefill-ct-chip prefill-ct-chip-format js-prefill-var-tooltip js-prefill-insert-snippet"
+                   data-wa-tooltip-class="prefill-var-tooltip-popper"
+                   data-snippet="{$fmt.snippet|escape:'html'}"
+                   data-description="{$fmt.description|escape:'html'}"
+                   data-example="{$fmt.example|escape:'html'}"
+                   data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">{$fmt.label|escape:'html'}</a>
                 {/foreach}
             </div>
-
-            {* ── Как использовать? ── *}
-            <details class="prefill-ct-how-to" style="margin-top:14px">
-                <summary>[`zen.custom_template.modal.how_to_use`]</summary>
-                <div class="hint" style="margin-top:6px">
-                    <p>[`zen.custom_template.modal.how_to_var`] <code>{ldelim}$variable_name{rdelim}</code></p>
-                    <p>[`zen.custom_template.modal.how_to_cond`]<br>
-                       <code>{ldelim}if $company{rdelim}{ldelim}$company{rdelim} &bull; {ldelim}/if{rdelim}</code></p>
-                    <p>[`zen.custom_template.modal.how_to_html`] <code>&lt;strong&gt;, &lt;br /&gt;</code></p>
-                </div>
-            </details>
 
         </div>
     </div>

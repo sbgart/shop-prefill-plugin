@@ -150,14 +150,20 @@
                         </div>
                     </div>
 
-                    {include file='../../components/Field.html'
-                        name="{$name_prefix}[zen][groups][customer][summary_template]"
-                        type='Textarea'
-                        label='[`zen.groups.customer.summary_template`]'
-                        value=$settings['zen']['groups']['customer']['summary_template']
-                        hint_after='[`hint.zen.groups.customer.summary_template`]'
-                        rows=3
-                        input_class='prefill-settings-input-wide'}
+                    <div class="field">
+                        <div class="name">[`zen.groups.customer.summary_template`]</div>
+                        <div class="value">
+                            <input type="hidden"
+                                   name="{$name_prefix}[zen][groups][customer][summary_template]"
+                                   class="js-prefill-summary-template-input"
+                                   value="{$settings['zen']['groups']['customer']['summary_template']|escape:'html'}">
+                            <a href="javascript:void(0);"
+                               class="button light-gray smaller js-prefill-edit-summary-template"
+                               data-group="customer"
+                               data-title="[`zen.groups.customer.summary_template`]">[`zen.summary_template.edit_in_editor`]</a>
+                            <p class="hint">[`hint.zen.groups.customer.summary_template`]</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -203,14 +209,20 @@
                         </div>
                     </div>
 
-                    {include file='../../components/Field.html'
-                        name="{$name_prefix}[zen][groups][delivery][summary_template]"
-                        type='Textarea'
-                        label='[`zen.groups.delivery.summary_template`]'
-                        value=$settings['zen']['groups']['delivery']['summary_template']
-                        hint_after='[`hint.zen.groups.delivery.summary_template`]'
-                        rows=3
-                        input_class='prefill-settings-input-wide'}
+                    <div class="field">
+                        <div class="name">[`zen.groups.delivery.summary_template`]</div>
+                        <div class="value">
+                            <input type="hidden"
+                                   name="{$name_prefix}[zen][groups][delivery][summary_template]"
+                                   class="js-prefill-summary-template-input"
+                                   value="{$settings['zen']['groups']['delivery']['summary_template']|escape:'html'}">
+                            <a href="javascript:void(0);"
+                               class="button light-gray smaller js-prefill-edit-summary-template"
+                               data-group="delivery"
+                               data-title="[`zen.groups.delivery.summary_template`]">[`zen.summary_template.edit_in_editor`]</a>
+                            <p class="hint">[`hint.zen.groups.delivery.summary_template`]</p>
+                        </div>
+                    </div>
                 </div>
 
                 {* ── Индивидуальные шаблоны для каждого метода доставки ── *}
@@ -223,30 +235,45 @@
                             {foreach $shipping_methods as $id => $method}
                             {assign var="ct_active" value=($settings['zen']['groups']['delivery']['custom_templates'][$id]['active']|default:false)}
                             {assign var="ct_template" value=($settings['zen']['groups']['delivery']['custom_templates'][$id]['template']|default:'')}
-                            <div class="prefill-custom-template-row flexbox middle space-8" style="margin-bottom: 8px;">
+                            <div class="prefill-custom-template-row prefill-ct-method-row">
                                 <input type="hidden"
                                        name="{$name_prefix}[zen][groups][delivery][custom_templates][{$id}][active]"
                                        value="{if $ct_active}1{else}0{/if}"
                                        class="js-prefill-ct-active-input">
-                                <span class="switch{if $ct_active} is-active{/if} js-prefill-ct-switcher"
-                                      title="[`zen.custom_template.switcher_title`]">
-                                    <input type="checkbox"{if $ct_active} checked{/if}>
-                                    <span class="switch-toggle"></span>
-                                </span>
-                                <span class="bold">{$method.name|escape:'html'}</span>
-                                <span class="js-prefill-ct-edit"{if !$ct_active} style="display:none"{/if}>
-                                    <a href="javascript:void(0);"
-                                       class="button rounded light-gray smaller nowrap js-prefill-edit-template"
-                                       data-instance-id="{$id}"
-                                       data-group="delivery"
-                                       data-instance-name="{$method.name|escape:'html'}"
-                                       data-template="{$ct_template|escape:'html'}"
-                                       data-group-template="{$settings['zen']['groups']['delivery']['summary_template']|escape:'html'}">
-                                        <i class="fas fa-pencil-alt text-blue"></i>
-                                        <span class="desktop-only">[`zen.custom_template.edit`]</span>
-                                    </a>
-                                </span>
-                                <span class="hint js-prefill-ct-hint"{if $ct_active} style="display:none"{/if}>[`zen.custom_template.uses_common`]</span>
+                                <div class="prefill-ct-method-icon-wrap" aria-hidden="true">
+                                    {if $method.prefill_plugin_icon}
+                                        <img class="prefill-ct-method-icon-img" src="{$method.prefill_plugin_icon|escape:'html'}" alt="">
+                                    {else}
+                                        <span class="prefill-ct-method-icon-fallback"><i class="fas fa-truck"></i></span>
+                                    {/if}
+                                </div>
+                                <div class="prefill-ct-method-main">
+                                    <div class="prefill-ct-method-text">
+                                        <div class="prefill-ct-method-title">{$method.name|escape:'html'}</div>
+                                        <div class="prefill-ct-method-meta hint">
+                                            {$method.prefill_plugin_title|escape:'html'}{if $method.plugin} · {$method.plugin|escape:'html'}{/if} · #{$id|escape:'html'}
+                                        </div>
+                                    </div>
+                                    <div class="prefill-ct-method-actions">
+                                        <span class="js-prefill-ct-edit"{if !$ct_active} style="display:none"{/if}>
+                                            <a href="javascript:void(0);"
+                                               class="button rounded light-gray smaller nowrap js-prefill-edit-template prefill-ct-method-edit"
+                                               title="[`zen.custom_template.edit`]"
+                                               data-instance-id="{$id}"
+                                               data-group="delivery"
+                                               data-instance-name="{$method.name|escape:'html'}"
+                                               data-template="{$ct_template|escape:'html'}"
+                                               data-group-template="{$settings['zen']['groups']['delivery']['summary_template']|escape:'html'}">
+                                                <i class="fas fa-pencil-alt text-blue"></i>
+                                            </a>
+                                        </span>
+                                        <span class="switch{if $ct_active} is-active{/if} js-prefill-ct-switcher"
+                                              title="[`zen.custom_template.switcher_title`]">
+                                            <input type="checkbox"{if $ct_active} checked{/if}>
+                                            <span class="switch-toggle"></span>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                             <input type="hidden"
                                    name="{$name_prefix}[zen][groups][delivery][custom_templates][{$id}][template]"
@@ -303,14 +330,20 @@
                         </div>
                     </div>
 
-                    {include file='../../components/Field.html'
-                        name="{$name_prefix}[zen][groups][payment][summary_template]"
-                        type='Textarea'
-                        label='[`zen.groups.payment.summary_template`]'
-                        value=$settings['zen']['groups']['payment']['summary_template']
-                        hint_after='[`hint.zen.groups.payment.summary_template`]'
-                        rows=3
-                        input_class='prefill-settings-input-wide'}
+                    <div class="field">
+                        <div class="name">[`zen.groups.payment.summary_template`]</div>
+                        <div class="value">
+                            <input type="hidden"
+                                   name="{$name_prefix}[zen][groups][payment][summary_template]"
+                                   class="js-prefill-summary-template-input"
+                                   value="{$settings['zen']['groups']['payment']['summary_template']|escape:'html'}">
+                            <a href="javascript:void(0);"
+                               class="button light-gray smaller js-prefill-edit-summary-template"
+                               data-group="payment"
+                               data-title="[`zen.groups.payment.summary_template`]">[`zen.summary_template.edit_in_editor`]</a>
+                            <p class="hint">[`hint.zen.groups.payment.summary_template`]</p>
+                        </div>
+                    </div>
                 </div>
 
                 {* ── Индивидуальные шаблоны для каждого метода оплаты ── *}
@@ -323,30 +356,45 @@
                             {foreach $payment_methods as $id => $method}
                             {assign var="ct_active" value=($settings['zen']['groups']['payment']['custom_templates'][$id]['active']|default:false)}
                             {assign var="ct_template" value=($settings['zen']['groups']['payment']['custom_templates'][$id]['template']|default:'')}
-                            <div class="prefill-custom-template-row flexbox middle space-8" style="margin-bottom: 8px;">
+                            <div class="prefill-custom-template-row prefill-ct-method-row">
                                 <input type="hidden"
                                        name="{$name_prefix}[zen][groups][payment][custom_templates][{$id}][active]"
                                        value="{if $ct_active}1{else}0{/if}"
                                        class="js-prefill-ct-active-input">
-                                <span class="switch{if $ct_active} is-active{/if} js-prefill-ct-switcher"
-                                      title="[`zen.custom_template.switcher_title`]">
-                                    <input type="checkbox"{if $ct_active} checked{/if}>
-                                    <span class="switch-toggle"></span>
-                                </span>
-                                <span class="bold">{$method.name|escape:'html'}</span>
-                                <span class="js-prefill-ct-edit"{if !$ct_active} style="display:none"{/if}>
-                                    <a href="javascript:void(0);"
-                                       class="button rounded light-gray smaller nowrap js-prefill-edit-template"
-                                       data-instance-id="{$id}"
-                                       data-group="payment"
-                                       data-instance-name="{$method.name|escape:'html'}"
-                                       data-template="{$ct_template|escape:'html'}"
-                                       data-group-template="{$settings['zen']['groups']['payment']['summary_template']|escape:'html'}">
-                                        <i class="fas fa-pencil-alt text-blue"></i>
-                                        <span class="desktop-only">[`zen.custom_template.edit`]</span>
-                                    </a>
-                                </span>
-                                <span class="hint js-prefill-ct-hint"{if $ct_active} style="display:none"{/if}>[`zen.custom_template.uses_common`]</span>
+                                <div class="prefill-ct-method-icon-wrap" aria-hidden="true">
+                                    {if $method.prefill_plugin_icon}
+                                        <img class="prefill-ct-method-icon-img" src="{$method.prefill_plugin_icon|escape:'html'}" alt="">
+                                    {else}
+                                        <span class="prefill-ct-method-icon-fallback"><i class="fas fa-credit-card"></i></span>
+                                    {/if}
+                                </div>
+                                <div class="prefill-ct-method-main">
+                                    <div class="prefill-ct-method-text">
+                                        <div class="prefill-ct-method-title">{$method.name|escape:'html'}</div>
+                                        <div class="prefill-ct-method-meta hint">
+                                            {$method.prefill_plugin_title|escape:'html'}{if $method.plugin} · {$method.plugin|escape:'html'}{/if} · #{$id|escape:'html'}
+                                        </div>
+                                    </div>
+                                    <div class="prefill-ct-method-actions">
+                                        <span class="js-prefill-ct-edit"{if !$ct_active} style="display:none"{/if}>
+                                            <a href="javascript:void(0);"
+                                               class="button rounded light-gray smaller nowrap js-prefill-edit-template prefill-ct-method-edit"
+                                               title="[`zen.custom_template.edit`]"
+                                               data-instance-id="{$id}"
+                                               data-group="payment"
+                                               data-instance-name="{$method.name|escape:'html'}"
+                                               data-template="{$ct_template|escape:'html'}"
+                                               data-group-template="{$settings['zen']['groups']['payment']['summary_template']|escape:'html'}">
+                                                <i class="fas fa-pencil-alt text-blue"></i>
+                                            </a>
+                                        </span>
+                                        <span class="switch{if $ct_active} is-active{/if} js-prefill-ct-switcher"
+                                              title="[`zen.custom_template.switcher_title`]">
+                                            <input type="checkbox"{if $ct_active} checked{/if}>
+                                            <span class="switch-toggle"></span>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                             <input type="hidden"
                                    name="{$name_prefix}[zen][groups][payment][custom_templates][{$id}][template]"

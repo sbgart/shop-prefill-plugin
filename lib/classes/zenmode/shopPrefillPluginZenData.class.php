@@ -53,59 +53,72 @@ class shopPrefillPluginZenData
      *   'address'  — данные адреса
      *   'payment'  — данные оплаты
      *
-     * @return array<string, array{name: string, description: string, example: string, group: string}>
+     * @return array<string, array{
+     *     name: string,
+     *     description: string,
+     *     example: string,
+     *     group: string,
+     *     is_array?: bool,
+     *     snippet_loop?: string,
+     *     example_code?: string
+     * }>
      */
     public static function getAvailableFields(): array
     {
+        // snippet_loop: готовые фрагменты Smarty; массивы приходят из shopPrefillCheckoutState как ассоциативные
+        // (custom fields) либо список хэшей (photos — uri/thumb_uri в элементах).
         return [
             // === КОНТАКТ ===
             'firstname' => [
                 'group' => 'contact',
                 'name' => _wp('First name'),
                 'description' => _wp('Customer first name'),
-                'example' => 'Ivan',
+                'example' => _wp('zen.custom_template.example_value.firstname'),
             ],
             'lastname' => [
                 'group' => 'contact',
                 'name' => _wp('Last name'),
                 'description' => _wp('Customer last name'),
-                'example' => 'Ivanov',
+                'example' => _wp('zen.custom_template.example_value.lastname'),
             ],
             'phone' => [
                 'group' => 'contact',
                 'name' => _wp('Phone'),
                 'description' => _wp('Customer phone number'),
-                'example' => '+79991234567',
+                'example' => _wp('zen.custom_template.example_value.phone'),
             ],
             'email' => [
                 'group' => 'contact',
                 'name' => _wp('Email'),
                 'description' => _wp('Customer email'),
-                'example' => 'ivan@example.com',
+                'example' => _wp('zen.custom_template.example_value.email'),
             ],
             'company' => [
                 'group' => 'contact',
                 'name' => _wp('Company'),
                 'description' => _wp('Company name'),
-                'example' => 'Horn & Hooves',
+                'example' => _wp('zen.custom_template.example_value.company'),
             ],
             'contact_custom' => [
                 'group' => 'contact',
                 'name' => _wp('Custom contact fields'),
                 'description' => _wp('Array of custom contact fields (e.g. birthday)'),
-                'example' => '{$contact_custom.birthday}',
+                'example' => _wp('zen.custom_template.example_value.contact_custom'),
+                'is_array' => true,
+                'example_code' => '{$contact_custom.birthday}',
+                'snippet_loop' => '{foreach $contact_custom as $k => $v}{$k|escape}: {$v|escape}{if !$v@last} &bull; {/if}{/foreach}',
             ],
             'service_agreement' => [
                 'group' => 'contact',
                 'name' => _wp('Service agreement'),
                 'description' => _wp('Consent to personal data processing (auth[service_agreement]). Localized Yes/No or empty.'),
-                'example' => '{$service_agreement}',
+                'example' => _wp('zen.service_agreement.yes'),
             ],
             'service_agreement_hint' => [
                 'group' => 'contact',
                 'name' => _wp('Service agreement hint'),
                 'description' => _wp('Text of the consent hint (data[customer][service_agreement_hint]) from checkout config.'),
-                'example' => '{$service_agreement_hint}',
+                'example' => _wp('zen.custom_template.example_value.service_agreement_hint'),
             ],
 
             // === ДОСТАВКА ===
@@ -113,25 +126,25 @@ class shopPrefillPluginZenData
                 'group' => 'delivery',
                 'name' => _wp('Shipping rate name'),
                 'description' => _wp('Selected shipping rate name'),
-                'example' => 'Courier delivery',
+                'example' => _wp('zen.custom_template.example_value.shipping_name'),
             ],
             'shipping_rate' => [
                 'group' => 'delivery',
                 'name' => _wp('Shipping cost'),
                 'description' => _wp('Formatted shipping cost'),
-                'example' => '300 rub',
+                'example' => _wp('zen.custom_template.example_value.shipping_rate'),
             ],
             'delivery_method_name' => [
                 'group' => 'delivery',
                 'name' => _wp('Delivery method name'),
                 'description' => _wp('Name of the shipping method in store settings'),
-                'example' => 'Delivery by CDEK',
+                'example' => _wp('zen.custom_template.example_value.delivery_method_name'),
             ],
             'shipping_logo' => [
                 'group' => 'delivery',
                 'name' => _wp('Shipping logo URL'),
                 'description' => _wp('URL of the selected shipping plugin logo (from checkout vars)'),
-                'example' => '{$shipping_logo}',
+                'example' => _wp('zen.custom_template.example_value.url_sample'),
             ],
             'delivery_plugin' => [
                 'group' => 'delivery',
@@ -149,49 +162,55 @@ class shopPrefillPluginZenData
                 'group' => 'delivery',
                 'name' => _wp('Delivery type'),
                 'description' => _wp('Delivery type (e.g. pickup, courier, post)'),
-                'example' => 'pickup',
+                'example' => _wp('zen.delivery.type.pickup'),
             ],
             'delivery_est_delivery' => [
                 'group' => 'delivery',
                 'name' => _wp('Estimated delivery'),
                 'description' => _wp('Estimated delivery time'),
-                'example' => '1-2 days',
+                'example' => _wp('zen.custom_template.example_value.est_delivery'),
             ],
             'delivery_description' => [
                 'group' => 'delivery',
                 'name' => _wp('Description'),
                 'description' => _wp('Description of the delivery method'),
-                'example' => 'Delivery to the door',
+                'example' => _wp('zen.custom_template.example_value.delivery_description'),
             ],
             'delivery_schedule' => [
                 'group' => 'delivery',
                 'name' => _wp('Business hours'),
                 'description' => _wp('Pickup point business hours (HTML structure)'),
-                'example' => '<div class="wa-schedule-wrapper">...</div>',
+                'example' => _wp('zen.custom_template.example_value.schedule_fragment'),
             ],
             'delivery_way' => [
                 'group' => 'delivery',
                 'name' => _wp('Way to reach'),
                 'description' => _wp('Instructions on how to reach the pickup point'),
-                'example' => 'Entrance from the yard',
+                'example' => _wp('zen.custom_template.example_value.delivery_way'),
             ],
             'delivery_storage_days' => [
                 'group' => 'delivery',
                 'name' => _wp('Storage days'),
                 'description' => _wp('Number of days the order is stored'),
-                'example' => '5',
+                'example' => _wp('zen.custom_template.example_value.storage_days'),
             ],
             'delivery_photos' => [
                 'group' => 'delivery',
                 'name' => _wp('Photos'),
                 'description' => _wp('Array of pickup point photos'),
-                'example' => '[{"uri": "...", "thumb_uri": "..."}]',
+                'example' => _wp('zen.custom_template.example_value.delivery_photos'),
+                'is_array' => true,
+                'example_code' => '{foreach $delivery_photos as $photo}{$photo.thumb_uri|default:$photo.uri}{/foreach}',
+                'snippet_loop' => '{foreach $delivery_photos as $photo}<img src="{if !empty($photo.thumb_uri)}{$photo.thumb_uri|escape}{else}{$photo.uri|escape}{/if}" alt="" />{/foreach}',
             ],
             'shipping_custom' => [
                 'group' => 'delivery',
                 'name' => _wp('Custom shipping fields'),
                 'description' => _wp('Array of custom shipping fields'),
-                'example' => '{$shipping_custom.time_interval}',
+                'example' => _wp('zen.custom_template.example_value.shipping_custom'),
+                'is_array' => true,
+                'example_code' => '{$shipping_custom.time_interval}',
+                'snippet_loop' => '{foreach $shipping_custom as $k => $v}{$k|escape}: {$v|escape}{if !$v@last} &bull; {/if}{/foreach}',
             ],
 
             // === АДРЕС ===
@@ -199,43 +218,46 @@ class shopPrefillPluginZenData
                 'group' => 'address',
                 'name' => _wp('City'),
                 'description' => _wp('Delivery city'),
-                'example' => 'Moscow',
+                'example' => _wp('zen.custom_template.example_value.city'),
             ],
             'region' => [
                 'group' => 'address',
                 'name' => _wp('Region'),
                 'description' => _wp('Delivery region code or name'),
-                'example' => '77',
+                'example' => _wp('zen.custom_template.example_value.region'),
             ],
             'street' => [
                 'group' => 'address',
                 'name' => _wp('Street'),
                 'description' => _wp('Street address'),
-                'example' => 'Lenina st.',
+                'example' => _wp('zen.custom_template.example_value.street'),
             ],
             'building' => [
                 'group' => 'address',
                 'name' => _wp('Building'),
                 'description' => _wp('Building number'),
-                'example' => '10',
+                'example' => _wp('zen.custom_template.example_value.building'),
             ],
             'apartment' => [
                 'group' => 'address',
                 'name' => _wp('Apartment'),
                 'description' => _wp('Apartment/Office number'),
-                'example' => '15',
+                'example' => _wp('zen.custom_template.example_value.apartment'),
             ],
             'zip' => [
                 'group' => 'address',
                 'name' => _wp('ZIP'),
                 'description' => _wp('Postal code'),
-                'example' => '123456',
+                'example' => _wp('zen.custom_template.example_value.zip'),
             ],
             'address_custom' => [
                 'group' => 'address',
                 'name' => _wp('Custom address fields'),
                 'description' => _wp('Array of custom address fields (e.g. metro)'),
-                'example' => '{$address_custom.metro}',
+                'example' => _wp('zen.custom_template.example_value.address_custom'),
+                'is_array' => true,
+                'example_code' => '{$address_custom.metro}',
+                'snippet_loop' => '{foreach $address_custom as $k => $v}{$k|escape}: {$v|escape}{if !$v@last} &bull; {/if}{/foreach}',
             ],
 
             // === ОПЛАТА ===
@@ -243,13 +265,13 @@ class shopPrefillPluginZenData
                 'group' => 'payment',
                 'name' => _wp('Payment method'),
                 'description' => _wp('Selected payment method name'),
-                'example' => 'Cash on delivery',
+                'example' => _wp('zen.custom_template.example_value.payment_name'),
             ],
             'payment_logo' => [
                 'group' => 'payment',
                 'name' => _wp('Payment logo URL'),
                 'description' => _wp('URL of the selected payment plugin logo (from checkout vars)'),
-                'example' => '{$payment_logo}',
+                'example' => _wp('zen.custom_template.example_value.url_sample'),
             ],
             'payment_description' => [
                 'group' => 'payment',
@@ -261,7 +283,10 @@ class shopPrefillPluginZenData
                 'group' => 'payment',
                 'name' => _wp('Custom payment fields'),
                 'description' => _wp('Array of custom payment fields (e.g. INN, Company)'),
-                'example' => '{$payment_custom.inn}',
+                'example' => _wp('zen.custom_template.example_value.payment_custom'),
+                'is_array' => true,
+                'example_code' => '{$payment_custom.inn}',
+                'snippet_loop' => '{foreach $payment_custom as $k => $v}{$k|escape}: {$v|escape}{if !$v@last} &bull; {/if}{/foreach}',
             ],
         ];
     }

@@ -194,23 +194,20 @@ var PrefillSettings = (function () {
             var $row = $switcher.closest('.prefill-custom-template-row');
             var $activeInput = $row.find('.js-prefill-ct-active-input');
             var $editArea = $row.find('.js-prefill-ct-edit');
-            var $hint = $row.find('.js-prefill-ct-hint');
 
             $switcher.waSwitch({
                 change: function (active) {
                     $activeInput.val(active ? '1' : '0');
                     if (active) {
                         $editArea.slideDown(200);
-                        $hint.slideUp(200);
                     } else {
                         $editArea.slideUp(200);
-                        $hint.slideDown(200);
                     }
                 }
             });
         });
 
-        // Клик по кнопке «Редактировать шаблон»
+        // Клик по кнопке «Редактировать шаблон» (per-instance custom templates)
         self.$wrapper.on('click', '.js-prefill-edit-template', function (e) {
             e.preventDefault();
             var $btn = $(this);
@@ -223,31 +220,60 @@ var PrefillSettings = (function () {
             // Первое открытие (кастомный шаблон пустой) — начать с общего шаблона группы
             var initialValue = tmpl || groupTmpl;
 
-            self._openTemplateModal($btn, instanceId, group, name, initialValue);
+            self._openTemplateModal({
+                group: group,
+                title: name,
+                initialValue: initialValue,
+                onSave: function (value) {
+                    $btn.data('template', value).attr('data-template', value);
+                    self.$wrapper.find(
+                        '.js-prefill-ct-template-input[data-group="' + group + '"][data-instance-id="' + instanceId + '"]'
+                    ).val(value);
+                }
+            });
+        });
+
+        // Клик по кнопке «Редактировать» для полей summary_template
+        self.$wrapper.on('click', '.js-prefill-edit-summary-template', function (e) {
+            e.preventDefault();
+            var $btn     = $(this);
+            var group    = $btn.data('group');
+            var title    = $btn.data('title') || '';
+            var $field = $btn.closest('.value');
+            var $input = $field.find('.js-prefill-summary-template-input');
+
+            self._openTemplateModal({
+                group: group,
+                title: title,
+                initialValue: $input.val(),
+                onSave: function (value) {
+                    $input.val(value);
+                }
+            });
         });
     };
 
     /**
-     * Открывает модальное окно редактора шаблона.
-     * Загружает содержимое через AJAX (?module=prefillPluginSettingsTemplateEditor),
-     * Smarty рендерит переменные и локаль на сервере, JS вставляет результат в $.waDialog.
+     * Открывает универсальное модальное окно редактора шаблона.
+     * Загружает sidebar (переменные, условия, форматирование) через AJAX.
      *
-     * @param {jQuery} $btn         Кнопка «Редактировать», хранит data-template
-     * @param {string} instanceId   ID инстанса плагина (ключ в custom_templates)
-     * @param {string} group        'delivery' | 'payment'
-     * @param {string} name         Название инстанса (для заголовка)
-     * @param {string} initialValue Начальное значение textarea
+     * @param {object} options
+     * @param {string}   options.group        'customer' | 'delivery' | 'payment'
+     * @param {string}   options.title        Заголовок диалога
+     * @param {string}   options.initialValue Начальное значение шаблона
+     * @param {Function} options.onSave       Колбэк(value) — вызывается при нажатии «Сохранить»
      */
-    PrefillSettings.prototype._openTemplateModal = function ($btn, instanceId, group, name, initialValue) {
-        var self = this;
+    PrefillSettings.prototype._openTemplateModal = function (options) {
+        var group        = options.group;
+        var title        = options.title || '';
+        var initialValue = options.initialValue || '';
+        var onSave       = options.onSave;
 
         $.post('?module=prefillPluginSettingsTemplateEditor', { group: group })
             .done(function (html) {
                 var $wrap = $(html);
 
                 var factoryDefault = $wrap.data('default') || '';
-                var titleTpl = $wrap.data('title-template') || '%s';
-                var title    = titleTpl.replace('%s', name);
 
                 // Заполняем textarea начальным значением
                 $wrap.find('.js-prefill-ct-textarea').val(initialValue);
@@ -259,30 +285,61 @@ var PrefillSettings = (function () {
                     header:  $('<h4>').text(title),
                     content: $body,
                     footer:  $footer,
+                    onResize: function ($dialogWrapper) {
+                        var editor = $dialogWrapper.data('prefillZenAce');
+                        if (editor) {
+                            editor.resize();
+                        }
+                    },
+                    onClose: function (dialog) {
+                        prefillZenTemplateAceDestroy(dialog);
+                    },
                     onOpen: function ($wrapper, dialog) {
                         $wrapper.addClass('prefill-ct-dialog');
                         // Расширяем диалог — дефолтная ширина контейнера слишком узкая для редактора
                         // Поддерживаем оба варианта разметки диалогов: legacy (.dialog-body) и UI2 (.wa-dialog-body)
                         $wrapper.find('.wa-dialog-body, .dialog-body').addClass('prefill-ct-dialog-body');
+
+                        // Тултипы вешаем на body + fixed: иначе overflow у сайдбара/диалога даёт узкую
+                        // «полоску», z-index ниже модалки — контент уезжает под блоки.
+                        if (typeof $.fn.waTooltip === 'function') {
+                            $wrapper.find('.js-prefill-var-tooltip').waTooltip({
+                                allowHTML: true,
+                                interactive: true,
+                                // Tippy: [задержка показа, скрытия] — не всплывает при быстром проходе мышью
+                                delay: [450, 80],
+                                maxWidth: 400,
+                                placement: 'top',
+                                zIndex: 200002,
+                                appendTo: function () {
+                                    return document.body;
+                                },
+                                popperOptions: {
+                                    strategy: 'fixed',
+                                },
+                                content: function (reference) {
+                                    return prefillBuildVarTooltipHtml($(reference));
+                                },
+                            });
+                        }
+                        if (typeof $.fn.waDropdown === 'function') {
+                            $wrapper.find('.js-prefill-var-dropdown').waDropdown({ hover: false });
+                        }
+
+                        prefillZenTemplateAceInit($wrapper);
+
                         // Вставка переменной / сниппета в позицию курсора
-                        $wrapper.on('click', '.js-prefill-insert-var', function (e) {
+                        $wrapper.on('click', '.js-prefill-insert-snippet', function (e) {
                             e.preventDefault();
-                            prefillInsertAtCursor(
-                                $wrapper.find('.js-prefill-ct-textarea')[0],
-                                $(this).data('snippet')
-                            );
+                            prefillZenTemplateAceInsert($wrapper, $(this).data('snippet'));
                         });
 
                         // Сохранить
                         $wrapper.find('.js-prefill-ct-save').on('click', function () {
-                            var newTemplate = $wrapper.find('.js-prefill-ct-textarea').val();
-
-                            $btn.data('template', newTemplate).attr('data-template', newTemplate);
-
-                            self.$wrapper.find(
-                                '.js-prefill-ct-template-input[data-group="' + group + '"][data-instance-id="' + instanceId + '"]'
-                            ).val(newTemplate);
-
+                            var value = prefillZenTemplateAceGetValue($wrapper);
+                            if (typeof onSave === 'function') {
+                                onSave(value);
+                            }
                             dialog.close();
                         });
 
@@ -294,7 +351,7 @@ var PrefillSettings = (function () {
                         // Сбросить к factory default
                         $wrapper.find('.js-prefill-ct-reset').on('click', function (e) {
                             e.preventDefault();
-                            $wrapper.find('.js-prefill-ct-textarea').val(factoryDefault).focus();
+                            prefillZenTemplateAceSetValue($wrapper, factoryDefault);
                         });
                     }
                 });
@@ -304,6 +361,202 @@ var PrefillSettings = (function () {
     return PrefillSettings;
 
 })()
+
+/**
+ * Ace (wa-content/js/ace), как в бэкенде Webasyst для Smarty/HTML.
+ * Textarea остаётся скрытой синхронизацией значения для сохранения.
+ *
+ * @param {jQuery} $wrapper Корень $.waDialog
+ */
+function prefillZenTemplateAceInit($wrapper) {
+    var $ta = $wrapper.find('.js-prefill-ct-textarea');
+    var $editorRoot = $wrapper.find('.prefill-ct-editor');
+    var $mount = $wrapper.find('.prefill-ct-ace');
+
+    if (typeof ace === 'undefined' || !$mount.length) {
+        $editorRoot.addClass('prefill-ct-editor--fallback');
+        return;
+    }
+
+    var editor = ace.edit($mount[0]);
+    editor.commands.removeCommand('find');
+    ace.config.set('basePath', (window.wa_url || '') + 'wa-content/js/ace/');
+
+    function applyAceTheme() {
+        if (document.documentElement.dataset.theme === 'dark') {
+            editor.setTheme('ace/theme/monokai');
+        } else {
+            editor.setTheme('ace/theme/eclipse');
+        }
+    }
+
+    applyAceTheme();
+    var onWaThemeChange = function () {
+        applyAceTheme();
+    };
+    document.documentElement.addEventListener('wa-theme-change', onWaThemeChange);
+    $wrapper.data('prefillZenAceThemeHandler', onWaThemeChange);
+
+    var session = editor.getSession();
+    session.setMode('ace/mode/smarty');
+    session.setUseWrapMode(true);
+    editor.setShowPrintMargin(false);
+    editor.renderer.setShowGutter(true);
+    if (navigator.appVersion.indexOf('Mac') !== -1) {
+        editor.setFontSize(13);
+    } else if (navigator.appVersion.indexOf('Linux') !== -1) {
+        editor.setFontSize(16);
+    } else {
+        editor.setFontSize(14);
+    }
+    editor.setOption('minLines', 12);
+    editor.setOption('maxLines', 10000);
+    editor.setAutoScrollEditorIntoView(true);
+
+    var initial = $ta.val();
+    if (initial == null) {
+        initial = '';
+    } else {
+        initial = String(initial);
+    }
+    session.setValue(initial);
+
+    session.on('change', function () {
+        $ta.val(editor.getValue());
+    });
+    $ta.val(editor.getValue());
+
+    $wrapper.data('prefillZenAce', editor);
+
+    setTimeout(function () {
+        editor.resize();
+        editor.focus();
+    }, 50);
+    setTimeout(function () {
+        editor.resize();
+    }, 280);
+}
+
+/**
+ * @param dialog Экземпляр $.waDialog (аргумент onClose)
+ */
+function prefillZenTemplateAceDestroy(dialog) {
+    var $w = dialog && dialog.$wrapper;
+    if (!$w || !$w.length) {
+        return;
+    }
+    var themeHandler = $w.data('prefillZenAceThemeHandler');
+    if (themeHandler) {
+        document.documentElement.removeEventListener('wa-theme-change', themeHandler);
+        $w.removeData('prefillZenAceThemeHandler');
+    }
+    var editor = $w.data('prefillZenAce');
+    if (editor) {
+        try {
+            editor.destroy();
+        } catch (ignore) {
+        }
+        $w.removeData('prefillZenAce');
+    }
+}
+
+/**
+ * @param {jQuery} $wrapper
+ * @returns {string}
+ */
+function prefillZenTemplateAceGetValue($wrapper) {
+    var editor = $wrapper.data('prefillZenAce');
+    if (editor) {
+        return editor.getValue();
+    }
+    return $wrapper.find('.js-prefill-ct-textarea').val();
+}
+
+/**
+ * @param {jQuery} $wrapper
+ * @param {string} text
+ */
+function prefillZenTemplateAceSetValue($wrapper, text) {
+    var editor = $wrapper.data('prefillZenAce');
+    var $ta = $wrapper.find('.js-prefill-ct-textarea');
+    var v = text == null ? '' : String(text);
+    $ta.val(v);
+    if (editor) {
+        editor.setValue(v);
+        editor.clearSelection();
+        editor.navigateFileEnd();
+        editor.focus();
+    } else {
+        $ta.focus();
+    }
+}
+
+/**
+ * @param {jQuery} $wrapper
+ * @param {string} text
+ */
+function prefillZenTemplateAceInsert($wrapper, text) {
+    var snippet = text == null ? '' : String(text);
+    var editor = $wrapper.data('prefillZenAce');
+    if (editor) {
+        editor.focus();
+        editor.insert(snippet);
+        return;
+    }
+    prefillInsertAtCursor($wrapper.find('.js-prefill-ct-textarea')[0], snippet);
+}
+
+/**
+ * Экранирование для безопасного вывода в HTML тултипа.
+ */
+function prefillEscapeHtml(s) {
+    if (s === null || s === undefined) {
+        return '';
+    }
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+/**
+ * Разметка HTML-подсказки для waTooltip (переменные редактора Zen).
+ */
+function prefillBuildVarTooltipHtml($el) {
+    var code = $el.data('snippet');
+    if (code === undefined || code === null) {
+        code = '';
+    } else {
+        code = String(code);
+    }
+    var desc = $el.data('description');
+    desc = desc !== undefined && desc !== null ? String(desc) : '';
+    var example = $el.data('example');
+    example = example !== undefined && example !== null ? String(example) : '';
+    var exampleCode = $el.data('exampleCode');
+    exampleCode = exampleCode !== undefined && exampleCode !== null ? String(exampleCode) : '';
+    var exLabel = $el.data('tooltipExampleLabel');
+    exLabel = exLabel !== undefined && exLabel !== null ? String(exLabel) : '';
+
+    var parts = [];
+    parts.push('<div class="prefill-var-tooltip">');
+    parts.push('<div class="prefill-var-tooltip__code"><code>' + prefillEscapeHtml(code) + '</code></div>');
+    if (desc) {
+        parts.push('<div class="prefill-var-tooltip__desc">' + prefillEscapeHtml(desc) + '</div>');
+    }
+    if (example && exLabel) {
+        parts.push('<div class="prefill-var-tooltip__ex-head">' + prefillEscapeHtml(exLabel) + '</div>');
+        parts.push('<div class="prefill-var-tooltip__ex">' + prefillEscapeHtml(example) + '</div>');
+    } else if (example) {
+        parts.push('<div class="prefill-var-tooltip__ex">' + prefillEscapeHtml(example) + '</div>');
+    }
+    if (exampleCode) {
+        parts.push('<div class="prefill-var-tooltip__ex-code"><code>' + prefillEscapeHtml(exampleCode) + '</code></div>');
+    }
+    parts.push('</div>');
+    return parts.join('');
+}
 
 /**
  * Вставляет text в позицию курсора textarea (или в конец, если нет фокуса).

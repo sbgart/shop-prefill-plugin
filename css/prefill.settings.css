@@ -103,9 +103,84 @@
     clear: none;
 }
 
-/* ── Custom template row ─────────────────────────────────────────── */
-.prefill-custom-template-row {
-    padding: 4px 0;
+/* ── Custom template row (Zen: список методов как в настройках доставки Shop-Script) ── */
+.prefill-custom-template-row.prefill-ct-method-row {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color-soft, #ececec);
+}
+
+.prefill-custom-template-row.prefill-ct-method-row:last-of-type {
+    border-bottom: none;
+}
+
+.prefill-ct-method-icon-wrap {
+    flex: 0 0 48px;
+    width: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+}
+
+.prefill-ct-method-icon-img {
+    display: block;
+    max-width: 48px;
+    max-height: 32px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.prefill-ct-method-icon-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 28px;
+    color: var(--text-color-hint, #b0b0b0);
+    font-size: 18px;
+}
+
+.prefill-ct-method-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.prefill-ct-method-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.prefill-ct-method-title {
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.prefill-ct-method-meta {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.prefill-ct-method-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.prefill-ct-method-edit {
+    min-width: 2.25rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
 }
 
 /* ── Template editor modal ───────────────────────────────────────── */
@@ -115,11 +190,32 @@
 
 .prefill-ct-editor {
     flex: 1 1 60%;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
 }
 
-.prefill-ct-editor .js-prefill-ct-textarea {
+.prefill-ct-editor .prefill-ct-ace {
+    flex: 1 1 auto;
+    min-height: 220px;
     width: 100%;
-    min-height: 180px;
+    box-sizing: border-box;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 3px;
+}
+
+.prefill-ct-editor .prefill-ct-ace .ace_editor {
+    min-height: 220px;
+}
+
+.prefill-ct-editor.prefill-ct-editor--fallback .prefill-ct-ace {
+    display: none;
+}
+
+.prefill-ct-editor.prefill-ct-editor--fallback .js-prefill-ct-textarea {
+    display: block !important;
+    width: 100%;
+    min-height: 220px;
     font-family: monospace;
     font-size: 12px;
     resize: vertical;
@@ -194,25 +290,116 @@
     background: var(--background-color, #f2f2f2);
 }
 
-.prefill-ct-how-to {
-    margin-top: 10px;
-    font-size: 12px;
+/* Variable chip as Webasyst dropdown (array fields) */
+.prefill-ct-var-dropdown {
+    display: inline-block;
+    vertical-align: middle;
+    max-width: 100%;
 }
 
-.prefill-ct-how-to summary {
-    cursor: pointer;
-    color: var(--color-primary, #1976d2);
-    user-select: none;
-}
-
-.prefill-ct-how-to .hint {
-    margin-top: 6px;
-    padding-left: 4px;
-}
-
-.prefill-ct-how-to code {
+/* Same surface as .prefill-ct-chip; overrides WA .button / .button:hover */
+.prefill-ct-var-dropdown .dropdown-toggle.button.prefill-ct-chip {
+    position: relative;
+    margin: 0;
+    font-family: monospace;
     font-size: 11px;
-    word-break: break-all;
+    font-weight: normal;
+    padding: 4px 26px 4px 8px;
+    line-height: 1.45;
+    text-align: left;
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    background: var(--background-color-blank, #f8f8f8);
+    color: var(--text-color, #1f1f1f);
+    border: 1px solid var(--border-color, #d0d0d0);
+    border-radius: 3px;
+    box-shadow: none;
+}
+
+.prefill-ct-var-dropdown .dropdown-toggle.button.prefill-ct-chip:hover,
+.prefill-ct-var-dropdown.open > .dropdown-toggle.button.prefill-ct-chip {
+    background: var(--highlighted-blue, rgba(40, 120, 255, 0.12));
+    border-color: var(--accent-color, var(--color-primary, #1976d2));
+    color: var(--accent-color, var(--color-primary, #1976d2));
+    box-shadow: none;
+    top: 0;
+}
+
+.prefill-ct-var-dropdown .dropdown-toggle.button.prefill-ct-chip:active {
+    top: 0;
+    box-shadow: none;
+}
+
+.prefill-ct-var-dropdown .dropdown-toggle .caret {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    margin-top: 0;
+    margin-left: 0;
+    transform: translateY(-50%);
+    flex-shrink: 0;
+    opacity: 0.75;
+}
+
+/* Класс передаётся в waTooltip → навешивается на .wa-tooltip-content (wa.js setClass) */
+.wa-tooltip-content.prefill-var-tooltip-popper {
+    min-width: 260px;
+    max-width: 400px;
+    box-sizing: border-box;
+}
+
+/* HTML content inside waTooltip (Tippy) for Zen variable hints */
+.prefill-var-tooltip {
+    text-align: left;
+    font-size: 12px;
+    line-height: 1.45;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.prefill-var-tooltip__code {
+    margin-bottom: 8px;
+}
+
+.prefill-var-tooltip__code code {
+    display: block;
+    font-size: 11px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.prefill-var-tooltip__desc {
+    color: var(--text-color-muted, #666);
+    margin-bottom: 8px;
+}
+
+.prefill-var-tooltip__ex-head {
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-color-muted, #888);
+    margin-bottom: 4px;
+}
+
+.prefill-var-tooltip__ex {
+    margin-bottom: 6px;
+    word-break: break-word;
+}
+
+.prefill-var-tooltip__ex-code {
+    margin-top: 4px;
+}
+
+.prefill-var-tooltip__ex-code code {
+    display: block;
+    font-size: 10px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
 }
 
 .dialog .prefill-ct-dialog-body {

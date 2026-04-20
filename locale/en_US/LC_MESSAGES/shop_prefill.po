@@ -634,7 +634,7 @@ msgid "zen.groups.customer.summary_template"
 msgstr "Customer block summary template"
 
 msgid "hint.zen.groups.customer.summary_template"
-msgstr "Smarty template for the collapsed block summary. Variables: $firstname, $lastname, $phone, $email, $company."
+msgstr "Short line shown when the block is collapsed (Smarty template)."
 
 msgid "hint.zen.group.delivery"
 msgstr "Settings for the collapsed Delivery block in Zen Mode."
@@ -655,7 +655,7 @@ msgid "zen.groups.delivery.summary_template"
 msgstr "Delivery block summary template"
 
 msgid "hint.zen.groups.delivery.summary_template"
-msgstr "Smarty template for the collapsed block summary. Variables: $delivery_plugin, $shipping_name, $shipping_rate, $shipping_logo_url."
+msgstr "Short line shown when the block is collapsed (Smarty template)."
 
 msgid "hint.zen.group.payment"
 msgstr "Settings for the collapsed Payment block in Zen Mode."
@@ -676,7 +676,7 @@ msgid "zen.groups.payment.summary_template"
 msgstr "Payment block summary template"
 
 msgid "hint.zen.groups.payment.summary_template"
-msgstr "Smarty template for the collapsed block summary. Variables: $payment_name, $payment_description, $payment_logo_url."
+msgstr "Short line shown when the block is collapsed (Smarty template)."
 
 msgid "zen.custom_templates.label"
 msgstr "Templates for specific methods"
@@ -689,9 +689,6 @@ msgstr "Enable custom template for this method"
 
 msgid "zen.custom_template.edit"
 msgstr "Edit"
-
-msgid "zen.custom_template.uses_common"
-msgstr "uses common template"
 
 msgid "zen.custom_template.modal.title"
 msgstr "Template: %s"
@@ -714,20 +711,68 @@ msgstr "Cancel"
 msgid "zen.custom_template.modal.reset"
 msgstr "Reset to default"
 
-msgid "zen.custom_template.modal.how_to_use"
-msgstr "How to use?"
+msgid "zen.summary_template.edit_in_editor"
+msgstr "Edit in editor"
 
-msgid "zen.custom_template.modal.how_to_var"
-msgstr "Variable:"
+msgid "zen.custom_template.tooltip.cond_if.desc"
+msgstr "Replace each «$» with a variable or expression. The part between {if} and {/if} is output only when the condition is true."
 
-msgid "zen.custom_template.modal.how_to_cond"
-msgstr "Condition:"
+msgid "zen.custom_template.tooltip.cond_if.example"
+msgstr "{if $company}{$company} • {/if}"
 
-msgid "zen.custom_template.modal.how_to_html"
-msgstr "HTML allowed:"
+msgid "zen.custom_template.tooltip.cond_else.desc"
+msgstr "Two branches: first block if the condition is true, the block after {else} if false. Replace «$» with your expression."
 
-msgid "zen.custom_template.modal.how_to_example"
-msgstr "Example:"
+msgid "zen.custom_template.tooltip.cond_else.example"
+msgstr "{if $shipping_rate}{$shipping_rate}{else}—{/if}"
+
+msgid "zen.custom_template.tooltip.cond_and.desc"
+msgstr "Both sides must be true. Replace each «$» with a variable or expression (e.g. $firstname and $lastname)."
+
+msgid "zen.custom_template.tooltip.cond_and.example"
+msgstr "{if $firstname && $lastname}{$firstname} {$lastname}{/if}"
+
+msgid "zen.custom_template.tooltip.cond_or.desc"
+msgstr "At least one side must be true. Replace each «$» with a variable or expression."
+
+msgid "zen.custom_template.tooltip.cond_or.example"
+msgstr "{if $phone || $email}{$phone} {$email}{/if}"
+
+msgid "zen.custom_template.tooltip.fmt_strong.desc"
+msgstr "Templates may include HTML. Wraps text in <strong> for bold emphasis."
+
+msgid "zen.custom_template.tooltip.fmt_strong.example"
+msgstr "<strong>New</strong> price"
+
+msgid "zen.custom_template.tooltip.fmt_em.desc"
+msgstr "Italic text using <em>."
+
+msgid "zen.custom_template.tooltip.fmt_em.example"
+msgstr "<em>Limited offer</em>"
+
+msgid "zen.custom_template.tooltip.fmt_u.desc"
+msgstr "Underlined text using <u>."
+
+msgid "zen.custom_template.tooltip.fmt_u.example"
+msgstr "<u>Important</u>"
+
+msgid "zen.custom_template.tooltip.fmt_br.desc"
+msgstr "Line break. Self-closing <br /> is fine in Smarty/HTML output."
+
+msgid "zen.custom_template.tooltip.fmt_br.example"
+msgstr "Line one<br />Line two"
+
+msgid "zen.custom_template.tooltip.fmt_bullet.desc"
+msgstr "Inserts a bullet separator between parts (HTML entity)."
+
+msgid "zen.custom_template.tooltip.fmt_bullet.example"
+msgstr "{$city} • {$street}"
+
+msgid "zen.custom_template.tooltip.fmt_a.desc"
+msgstr "Hyperlink: put the URL in href and the visible label between the opening and closing tags."
+
+msgid "zen.custom_template.tooltip.fmt_a.example"
+msgstr "<a href=\"https://example.com\">Website</a>"
 
 msgid "zen.custom_template.vars.delivery"
 msgstr "Delivery"
@@ -758,6 +803,96 @@ msgstr "Bullet"
 
 msgid "zen.custom_template.format.link"
 msgstr "Link"
+
+msgid "zen.custom_template.tooltip.example"
+msgstr "Example"
+
+msgid "zen.custom_template.insert.loop"
+msgstr "Insert foreach block"
+
+msgid "zen.custom_template.insert.variable"
+msgstr "Insert variable only"
+
+msgid "zen.custom_template.example_value.firstname"
+msgstr "Ivan"
+
+msgid "zen.custom_template.example_value.lastname"
+msgstr "Ivanov"
+
+msgid "zen.custom_template.example_value.phone"
+msgstr "+1 234 567-8901"
+
+msgid "zen.custom_template.example_value.email"
+msgstr "customer@example.com"
+
+msgid "zen.custom_template.example_value.company"
+msgstr "Acme LLC"
+
+msgid "zen.custom_template.example_value.contact_custom"
+msgstr "birthday: 1990-03-15"
+
+msgid "zen.custom_template.example_value.service_agreement_hint"
+msgstr "I agree to the processing of personal data"
+
+msgid "zen.custom_template.example_value.shipping_name"
+msgstr "Courier, 1–2 business days"
+
+msgid "zen.custom_template.example_value.shipping_rate"
+msgstr "$5.00"
+
+msgid "zen.custom_template.example_value.delivery_method_name"
+msgstr "Express delivery"
+
+msgid "zen.custom_template.example_value.url_sample"
+msgstr "https://cdn.example.com/icons/shipping.png"
+
+msgid "zen.custom_template.example_value.est_delivery"
+msgstr "1–2 days"
+
+msgid "zen.custom_template.example_value.delivery_description"
+msgstr "Delivery to your door"
+
+msgid "zen.custom_template.example_value.schedule_fragment"
+msgstr "Mon–Fri 10:00–20:00"
+
+msgid "zen.custom_template.example_value.delivery_way"
+msgstr "Entrance from the courtyard"
+
+msgid "zen.custom_template.example_value.storage_days"
+msgstr "5"
+
+msgid "zen.custom_template.example_value.delivery_photos"
+msgstr "Pickup point photos (thumbnails in a row)"
+
+msgid "zen.custom_template.example_value.shipping_custom"
+msgstr "time_interval: 14:00–18:00"
+
+msgid "zen.custom_template.example_value.city"
+msgstr "Springfield"
+
+msgid "zen.custom_template.example_value.region"
+msgstr "CA"
+
+msgid "zen.custom_template.example_value.street"
+msgstr "Main St."
+
+msgid "zen.custom_template.example_value.building"
+msgstr "10"
+
+msgid "zen.custom_template.example_value.apartment"
+msgstr "15"
+
+msgid "zen.custom_template.example_value.zip"
+msgstr "12345"
+
+msgid "zen.custom_template.example_value.address_custom"
+msgstr "metro: Central"
+
+msgid "zen.custom_template.example_value.payment_name"
+msgstr "Cash on delivery"
+
+msgid "zen.custom_template.example_value.payment_custom"
+msgstr "inn: 7707083893"
 
 msgid "zen.groups.title"
 msgstr ""
