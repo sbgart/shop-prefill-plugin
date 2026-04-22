@@ -8,24 +8,13 @@
 class shopPrefillPluginSettingsTemplateEditorAction extends waViewAction
 {
     /**
-     * Определяет, какие группы полей (из getAvailableFields) показывать
-     * в редакторе для каждого типа шаблона.
-     * Порядок в массиве = порядок секций в UI.
-     */
-    private const EDITOR_FIELD_GROUPS = [
-        'customer' => ['contact'],
-        'delivery' => ['delivery', 'address', 'contact'],
-        'payment'  => ['payment', 'contact'],
-    ];
-
-    /**
      * @throws waException
      */
     public function execute()
     {
         $group = waRequest::post('group', '', waRequest::TYPE_STRING_TRIM);
 
-        if (!array_key_exists($group, self::EDITOR_FIELD_GROUPS)) {
+        if (!array_key_exists($group, shopPrefillPluginZenData::TEMPLATE_EDITOR_FIELD_GROUPS)) {
             throw new waException('Invalid group', 400);
         }
 
@@ -86,7 +75,7 @@ class shopPrefillPluginSettingsTemplateEditorAction extends waViewAction
 
         // Собираем только те группы, которые нужны этому типу редактора, в нужном порядке
         $var_groups = [];
-        foreach (self::EDITOR_FIELD_GROUPS[$editor_group] as $field_group) {
+        foreach (shopPrefillPluginZenData::TEMPLATE_EDITOR_FIELD_GROUPS[$editor_group] as $field_group) {
             if (!empty($fields_by_group[$field_group])) {
                 $var_groups[] = [
                     'label' => $group_labels[$field_group],

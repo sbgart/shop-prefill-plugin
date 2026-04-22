@@ -6,96 +6,126 @@
 <div class="prefill-ct-modal-content"
      data-group="{$group}"
      data-default="{$default_tpl|escape:'html'}"
-     data-title-template="[`zen.custom_template.modal.title`]">
+     data-title-template="[`zen.custom_template.modal.title`]"
+>
 
-    <div class="prefill-ct-modal-body flexbox space-16">
+    <div class="prefill-ct-modal-body"
+         data-preview-loading="[`zen.custom_template.preview.loading`]"
+         data-preview-error-title="[`zen.custom_template.preview.error`]">
 
-        {* ── Левая колонка: поле ввода шаблона (значение заполняет JS) ── *}
-        <div class="prefill-ct-editor">
-            {* Значение задаётся из JS; Ace монтируется в .prefill-ct-ace (wa-content/js/ace). *}
-            <textarea class="js-prefill-ct-textarea"
-                      rows="14"
-                      style="display:none"></textarea>
-            <div class="prefill-ct-ace" aria-hidden="true"></div>
+        <ul class="tabs bordered-bottom prefill-ct-tabs">
+            <li class="selected">
+                <a href="javascript:void(0);" class="js-prefill-ct-tab" data-tab="editor"><i class="fas fa-code custom-mr-4"></i>[`zen.custom_template.tab.editor`]</a>
+            </li>
+            <li>
+                <a href="javascript:void(0);" class="js-prefill-ct-tab" data-tab="preview"><i class="fas fa-eye custom-mr-4"></i>[`zen.custom_template.tab.preview`]</a>
+            </li>
+        </ul>
+
+        <div class="prefill-ct-tab-panel js-prefill-ct-tab-panel" data-tab="editor">
+            <div class="prefill-ct-editor-layout flexbox space-16">
+
+                {* ── Левая колонка: поле ввода шаблона (значение заполняет JS) ── *}
+                <div class="prefill-ct-editor">
+                    {* Значение задаётся из JS; Ace монтируется в .prefill-ct-ace (wa-content/js/ace). *}
+                    <textarea class="js-prefill-ct-textarea"
+                              rows="14"
+                              style="display:none"></textarea>
+                    <div class="prefill-ct-ace" aria-hidden="true"></div>
+                </div>
+
+                {* ── Правая колонка: переменные + условия + форматирование ── *}
+                <div class="prefill-ct-sidebar">
+                    <div class="prefill-ct-sidebar-scroll">
+
+                    <div class="prefill-ct-panel-heading">[`zen.custom_template.modal.vars`]</div>
+
+                    {foreach $var_groups as $var_group}
+                    <div class="prefill-ct-group-label small bold">{$var_group.label}</div>
+                    <ul class="chips prefill-ct-chips">
+                        {foreach $var_group.vars as $v}
+                            {if !empty($v.is_array)}
+                            <li>
+                            <div class="dropdown js-prefill-var-dropdown prefill-ct-var-dropdown">
+                                <button type="button" class="dropdown-toggle button light-gray small smallest outlined js-prefill-var-tooltip"
+                                        data-wa-tooltip-class="prefill-var-tooltip-popper"
+                                        data-snippet="{$v.snippet|escape:'html'}"
+                                        data-description="{$v.description|escape:'html'}"
+                                        data-example="{$v.example|escape:'html'}"
+                                        data-example-code="{$v.example_code|escape:'html'}"
+                                        data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">
+                                    {$v.name|escape:'html'} <span class="caret"></span>
+                                </button>
+                                <div class="dropdown-body">
+                                    <ul class="menu">
+                                        <li>
+                                            <a href="javascript:void(0);"
+                                               class="js-prefill-insert-snippet"
+                                               data-snippet="{$v.snippet_loop|escape:'html'}"><i class="fas fa-redo custom-mr-4"></i>{$template_editor_ui.insert_loop|escape:'html'}</a>
+                                        </li>
+                                        <li>
+                                            <a href="javascript:void(0);"
+                                               class="js-prefill-insert-snippet"
+                                               data-snippet="{$v.snippet|escape:'html'}"><i class="fas fa-paste custom-mr-4"></i>{$template_editor_ui.insert_variable|escape:'html'}</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            </li>
+                            {else}
+                            <li>
+                                <button type="button"
+                                   class="button light-gray small smallest outlined js-prefill-var-tooltip js-prefill-insert-snippet"
+                                   data-wa-tooltip-class="prefill-var-tooltip-popper"
+                                   data-snippet="{$v.snippet|escape:'html'}"
+                                   data-description="{$v.description|escape:'html'}"
+                                   data-example="{$v.example|escape:'html'}"
+                                   data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">{$v.name|escape:'html'}</button>
+                            </li>
+                            {/if}
+                        {/foreach}
+                    </ul>
+                    {/foreach}
+
+                    {* ── Условия ── *}
+                    <div class="prefill-ct-panel-heading" style="margin-top:14px">[`zen.custom_template.modal.conditions`]</div>
+                    <ul class="chips prefill-ct-chips prefill-ct-chips--spacious">
+                        {foreach $conditions as $cond}
+                        <li>
+                            <button type="button"
+                               class="button light-gray small smallest outlined prefill-ct-chip-code js-prefill-var-tooltip js-prefill-insert-snippet"
+                               data-wa-tooltip-class="prefill-var-tooltip-popper"
+                               data-snippet="{$cond.snippet|escape:'html'}"
+                               data-description="{$cond.description|escape:'html'}"
+                               data-example="{$cond.example|escape:'html'}"
+                               data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">{$cond.label|escape:'html'}</button>
+                        </li>
+                        {/foreach}
+                    </ul>
+
+                    {* ── Форматирование / HTML ── *}
+                    <div class="prefill-ct-panel-heading" style="margin-top:14px">[`zen.custom_template.modal.formatting`]</div>
+                    <ul class="chips prefill-ct-chips prefill-ct-chips--spacious">
+                        {foreach $formatting as $fmt}
+                        <li>
+                            <button type="button"
+                               class="button light-gray small smallest outlined prefill-ct-chip-format js-prefill-var-tooltip js-prefill-insert-snippet"
+                               data-wa-tooltip-class="prefill-var-tooltip-popper"
+                               data-snippet="{$fmt.snippet|escape:'html'}"
+                               data-description="{$fmt.description|escape:'html'}"
+                               data-example="{$fmt.example|escape:'html'}"
+                               data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">{$fmt.label|escape:'html'}</button>
+                        </li>
+                        {/foreach}
+                    </ul>
+
+                    </div>
+                </div>
+            </div>
         </div>
 
-        {* ── Правая колонка: переменные + условия + форматирование ── *}
-        <div class="prefill-ct-sidebar">
-
-            <div class="prefill-ct-panel-heading">[`zen.custom_template.modal.vars`]</div>
-
-            {foreach $var_groups as $var_group}
-            <div class="prefill-ct-group-label small bold">{$var_group.label}</div>
-            <div class="prefill-ct-chips">
-                {foreach $var_group.vars as $v}
-                    {if !empty($v.is_array)}
-                    <div class="dropdown js-prefill-var-dropdown prefill-ct-var-dropdown">
-                        <button type="button"
-                                class="dropdown-toggle button prefill-ct-chip js-prefill-var-tooltip"
-                                data-wa-tooltip-class="prefill-var-tooltip-popper"
-                                data-snippet="{$v.snippet|escape:'html'}"
-                                data-description="{$v.description|escape:'html'}"
-                                data-example="{$v.example|escape:'html'}"
-                                data-example-code="{$v.example_code|escape:'html'}"
-                                data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">
-                            {$v.name|escape:'html'} <span class="caret"></span>
-                        </button>
-                        <div class="dropdown-body">
-                            <ul class="menu">
-                                <li>
-                                    <a href="javascript:void(0);"
-                                       class="js-prefill-insert-snippet"
-                                       data-snippet="{$v.snippet_loop|escape:'html'}">{$template_editor_ui.insert_loop|escape:'html'}</a>
-                                </li>
-                                <li>
-                                    <a href="javascript:void(0);"
-                                       class="js-prefill-insert-snippet"
-                                       data-snippet="{$v.snippet|escape:'html'}">{$template_editor_ui.insert_variable|escape:'html'}</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    {else}
-                    <a href="javascript:void(0);"
-                       class="prefill-ct-chip js-prefill-var-tooltip js-prefill-insert-snippet"
-                       data-wa-tooltip-class="prefill-var-tooltip-popper"
-                       data-snippet="{$v.snippet|escape:'html'}"
-                       data-description="{$v.description|escape:'html'}"
-                       data-example="{$v.example|escape:'html'}"
-                       data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">{$v.name|escape:'html'}</a>
-                    {/if}
-                {/foreach}
-            </div>
-            {/foreach}
-
-            {* ── Условия ── *}
-            <div class="prefill-ct-panel-heading" style="margin-top:14px">[`zen.custom_template.modal.conditions`]</div>
-            <div class="prefill-ct-chips prefill-ct-chips--spacious">
-                {foreach $conditions as $cond}
-                <a href="javascript:void(0);"
-                   class="prefill-ct-chip prefill-ct-chip-code js-prefill-var-tooltip js-prefill-insert-snippet"
-                   data-wa-tooltip-class="prefill-var-tooltip-popper"
-                   data-snippet="{$cond.snippet|escape:'html'}"
-                   data-description="{$cond.description|escape:'html'}"
-                   data-example="{$cond.example|escape:'html'}"
-                   data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">{$cond.label|escape:'html'}</a>
-                {/foreach}
-            </div>
-
-            {* ── Форматирование / HTML ── *}
-            <div class="prefill-ct-panel-heading" style="margin-top:14px">[`zen.custom_template.modal.formatting`]</div>
-            <div class="prefill-ct-chips prefill-ct-chips--spacious">
-                {foreach $formatting as $fmt}
-                <a href="javascript:void(0);"
-                   class="prefill-ct-chip prefill-ct-chip-format js-prefill-var-tooltip js-prefill-insert-snippet"
-                   data-wa-tooltip-class="prefill-var-tooltip-popper"
-                   data-snippet="{$fmt.snippet|escape:'html'}"
-                   data-description="{$fmt.description|escape:'html'}"
-                   data-example="{$fmt.example|escape:'html'}"
-                   data-tooltip-example-label="{$template_editor_ui.tooltip_example|escape:'html'}">{$fmt.label|escape:'html'}</a>
-                {/foreach}
-            </div>
-
+        <div class="prefill-ct-tab-panel prefill-ct-preview-panel js-prefill-ct-tab-panel" data-tab="preview" style="display:none">
+            <div class="js-prefill-ct-preview-content prefill-ct-preview-content"></div>
         </div>
     </div>
 

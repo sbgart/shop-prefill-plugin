@@ -328,6 +328,89 @@ var PrefillSettings = (function () {
 
                         prefillZenTemplateAceInit($wrapper);
 
+                        // Tabs: editor / preview
+                        (function initPreviewTabs() {
+                            var $body = $wrapper.find('.prefill-ct-modal-body');
+                            var previewLoadingText = $body.data('preview-loading') || 'Loading…';
+                            var previewErrorTitle = $body.data('preview-error-title') || 'Template error';
+
+                            var $tabs = $wrapper.find('.js-prefill-ct-tab');
+                            var $panels = $wrapper.find('.js-prefill-ct-tab-panel');
+                            var $preview = $wrapper.find('.js-prefill-ct-preview-content');
+
+                            var lastPreviewTemplate = null;
+                            var lastPreviewGroup = null;
+
+                            function setActiveTab(tab) {
+                                $tabs.closest('li').removeClass('selected');
+                                $tabs.filter('[data-tab="' + tab + '"]').closest('li').addClass('selected');
+
+                                $panels.hide();
+                                $panels.filter('[data-tab="' + tab + '"]').show();
+
+                                // Ace needs resize when becoming visible (tab switch)
+                                if (tab === 'editor') {
+                                    var editor = $wrapper.data('prefillZenAce');
+                                    if (editor) {
+                                        setTimeout(function () { editor.resize(); }, 0);
+                                    }
+                                }
+                            }
+
+                            function renderPreview() {
+                                var template = prefillZenTemplateAceGetValue($wrapper);
+                                if (template == null) { template = ''; }
+                                template = String(template);
+
+                                if (template === lastPreviewTemplate && group === lastPreviewGroup) {
+                                    return;
+                                }
+
+                                lastPreviewTemplate = template;
+                                lastPreviewGroup = group;
+
+                                $preview.html(
+                                    '<span class="hint"><i class="icon16 loading"></i> ' + prefillEscapeHtml(previewLoadingText) + '</span>'
+                                );
+
+                                $.post('?module=prefillPluginSettingsTemplatePreview', {
+                                    group: group,
+                                    template: template
+                                }).done(function (r) {
+                                    if (r && r.status === 'ok' && r.data && r.data.html !== undefined) {
+                                        $preview.html(r.data.html);
+                                        return;
+                                    }
+
+                                    var errors = (r && r.errors) ? r.errors : [];
+                                    if (!errors || !errors.length) {
+                                        errors = [previewErrorTitle];
+                                    }
+                                    var errorText = prefillEscapeHtml(errors.join("\n")).replace(/\n/g, '<br />');
+                                    $preview.html(
+                                        '<div class="prefill-ct-preview-error"><strong>' + prefillEscapeHtml(previewErrorTitle) + '</strong><br />' +
+                                        errorText +
+                                        '</div>'
+                                    );
+                                }).fail(function () {
+                                    $preview.html(
+                                        '<div class="prefill-ct-preview-error"><strong>' + prefillEscapeHtml(previewErrorTitle) + '</strong></div>'
+                                    );
+                                });
+                            }
+
+                            $wrapper.on('click', '.js-prefill-ct-tab', function (e) {
+                                e.preventDefault();
+                                var tab = $(this).data('tab');
+                                setActiveTab(tab);
+                                if (tab === 'preview') {
+                                    renderPreview();
+                                }
+                            });
+
+                            setActiveTab('editor');
+                        })();
+
                         // Вставка переменной / сниппета в позицию курсора
                         $wrapper.on('click', '.js-prefill-insert-snippet', function (e) {
                             e.preventDefault();

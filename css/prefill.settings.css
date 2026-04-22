@@ -188,6 +188,52 @@
     min-height: 200px;
 }
 
+.prefill-ct-tabs.tabs {
+    margin: 0 0 10px;
+    padding-left: 0;
+}
+
+.prefill-ct-tab-panel {
+    margin-top: 12px;
+}
+
+.prefill-ct-editor-layout {
+    min-height: 200px;
+}
+
+.prefill-ct-preview-panel {
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 3px;
+    background: var(--background-color-blank, #fff);
+    padding: 10px 12px;
+    min-height: 220px;
+    max-height: 420px;
+    overflow: auto;
+}
+
+.prefill-ct-preview-content {
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.prefill-ct-preview-error {
+    padding: 10px 12px;
+    border: 1px solid var(--red, #d64545);
+    border-radius: 4px;
+    background: rgba(214, 69, 69, 0.08);
+    color: var(--text-color, #1f1f1f);
+}
+
+.prefill-ct-placeholder {
+    display: inline-block;
+    padding: 0 6px;
+    border: 1px dashed var(--border-color-soft, #d8d8d8);
+    border-radius: 999px;
+    color: var(--text-color-hint, #888);
+    background: var(--background-color, #f2f2f2);
+    white-space: nowrap;
+}
+
 .prefill-ct-editor {
     flex: 1 1 60%;
     min-height: 200px;
@@ -225,10 +271,15 @@
 .prefill-ct-sidebar {
     /* +20px requested */
     flex: 0 0 230px;
-    max-height: 320px;
-    overflow-y: auto;
+    overflow: visible;
     border-left: 1px solid var(--border-color, #e0e0e0);
     padding-left: 12px;
+}
+
+.prefill-ct-sidebar-scroll {
+    max-height: 320px;
+    overflow: auto;
+    padding-right: 6px; /* keep scrollbar off content a bit */
 }
 
 .prefill-ct-panel-heading {
@@ -248,99 +299,34 @@
 }
 
 .prefill-ct-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
     margin-bottom: 4px;
 }
 
 .prefill-ct-chips--spacious {
-    gap: 8px;
     margin-bottom: 10px;
 }
 
-.prefill-ct-chip {
-    display: inline-block;
+/* Chips are native Webasyst UI; keep only token-specific tweaks */
+.prefill-ct-modal-content .chips a,
+.prefill-ct-modal-content .chips .button {
     font-family: monospace;
     font-size: 11px;
-    padding: 2px 6px;
-    border: 1px solid var(--border-color, #d0d0d0);
-    border-radius: 3px;
-    /* Use native UI vars so dark mode looks correct */
-    background: var(--background-color-blank, #f8f8f8);
-    color: var(--text-color, #1f1f1f);
-    white-space: nowrap;
-    cursor: pointer;
-    line-height: 1.5;
-    text-decoration: none;
 }
 
-.prefill-ct-chip:hover {
-    background: var(--highlighted-blue, rgba(40, 120, 255, 0.12));
-    border-color: var(--accent-color, var(--color-primary, #1976d2));
-    color: var(--accent-color, var(--color-primary, #1976d2));
+.prefill-ct-modal-content .chips a {
+    white-space: nowrap;
 }
+
 
 .prefill-ct-chip-code {
-    color: var(--text-color, #1f1f1f);
+    font-variant-ligatures: none;
 }
 
 .prefill-ct-chip-format {
-    color: var(--text-color, #1f1f1f);
-    background: var(--background-color, #f2f2f2);
+    font-variant-ligatures: none;
 }
 
-/* Variable chip as Webasyst dropdown (array fields) */
-.prefill-ct-var-dropdown {
-    display: inline-block;
-    vertical-align: middle;
-    max-width: 100%;
-}
 
-/* Same surface as .prefill-ct-chip; overrides WA .button / .button:hover */
-.prefill-ct-var-dropdown .dropdown-toggle.button.prefill-ct-chip {
-    position: relative;
-    margin: 0;
-    font-family: monospace;
-    font-size: 11px;
-    font-weight: normal;
-    padding: 4px 26px 4px 8px;
-    line-height: 1.45;
-    text-align: left;
-    max-width: 100%;
-    white-space: normal;
-    word-break: break-word;
-    background: var(--background-color-blank, #f8f8f8);
-    color: var(--text-color, #1f1f1f);
-    border: 1px solid var(--border-color, #d0d0d0);
-    border-radius: 3px;
-    box-shadow: none;
-}
-
-.prefill-ct-var-dropdown .dropdown-toggle.button.prefill-ct-chip:hover,
-.prefill-ct-var-dropdown.open > .dropdown-toggle.button.prefill-ct-chip {
-    background: var(--highlighted-blue, rgba(40, 120, 255, 0.12));
-    border-color: var(--accent-color, var(--color-primary, #1976d2));
-    color: var(--accent-color, var(--color-primary, #1976d2));
-    box-shadow: none;
-    top: 0;
-}
-
-.prefill-ct-var-dropdown .dropdown-toggle.button.prefill-ct-chip:active {
-    top: 0;
-    box-shadow: none;
-}
-
-.prefill-ct-var-dropdown .dropdown-toggle .caret {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    margin-top: 0;
-    margin-left: 0;
-    transform: translateY(-50%);
-    flex-shrink: 0;
-    opacity: 0.75;
-}
 
 /* Класс передаётся в waTooltip → навешивается на .wa-tooltip-content (wa.js setClass) */
 .wa-tooltip-content.prefill-var-tooltip-popper {

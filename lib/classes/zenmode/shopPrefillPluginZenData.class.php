@@ -7,6 +7,20 @@
 class shopPrefillPluginZenData
 {
     /**
+     * Определяет, какие группы полей (из getAvailableFields) доступны в редакторе/превью
+     * для каждого блока Zen Mode.
+     *
+     * Единственный источник правды для:
+     * - правой колонки переменных в модалке
+     * - превью шаблона (какие переменные заполняем)
+     */
+    public const TEMPLATE_EDITOR_FIELD_GROUPS = [
+        'customer' => ['contact'],
+        'delivery' => ['delivery', 'address', 'contact'],
+        'payment'  => ['payment', 'contact'],
+    ];
+
+    /**
      * Иммутабельные шаблоны по умолчанию для каждой группы.
      * Используются как стартовая точка при первой активации кастомного шаблона
      * и как цель кнопки «Сбросить к стандартному» в модальном окне редактора.
@@ -289,6 +303,71 @@ class shopPrefillPluginZenData
                 'snippet_loop' => '{foreach $payment_custom as $k => $v}{$k|escape}: {$v|escape}{if !$v@last} &bull; {/if}{/foreach}',
             ],
         ];
+    }
+
+    /**
+     * Тестовые данные для превью шаблона в редакторе (админка).
+     * Использует example-значения из getAvailableFields(), а если example пустой —
+     * подставляет визуальный плейсхолдер, чтобы было наглядно.
+     *
+     * @param string $group customer|delivery|payment
+     * @return array
+     */
+    public static function getSampleData(string $group): array
+    {
+        $fields = self::getAvailableFields();
+
+        $data = array_fill_keys(array_keys($fields), '');
+
+        $allowed_groups = self::TEMPLATE_EDITOR_FIELD_GROUPS[$group] ?? [];
+
+        foreach ($fields as $key => $field) {
+            if (empty($field['group']) || !in_array($field['group'], $allowed_groups, true)) {
+                continue;
+            }
+
+            if (!empty($field['is_array'])) {
+                continue;
+            }
+
+            $example = isset($field['example']) ? trim((string)$field['example']) : '';
+            if ($example !== '') {
+                $data[$key] = $example;
+                continue;
+            }
+
+            $name = isset($field['name']) ? (string)$field['name'] : $key;
+            $safe_name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+            $data[$key] = '<span class="prefill-ct-placeholder">[ ' . $safe_name . ' ]</span>';
+        }
+
+        // Минимальные массивы, чтобы foreach-циклы выглядели правдоподобно.
+        if (in_array($group, self::groupsWithContactCustom(), true)) {
+            $data['contact_custom'] = [
+                'birthday' => '01.01.1990',
+            ];
+        }
+        if ($group === 'delivery') {
+            $data['shipping_custom'] = [
+                'time_interval' => '10:00–18:00',
+            ];
+            $data['address_custom'] = [
+                'metro' => 'Сокольники',
+            ];
+            $data['delivery_photos'] = [];
+        }
+        if ($group === 'payment') {
+            $data['payment_custom'] = [
+                'inn' => '7712345678',
+            ];
+        }
+
+        return $data;
+    }
+
+    private static function groupsWithContactCustom(): array
+    {
+        return ['customer', 'delivery', 'payment'];
     }
 
     /**

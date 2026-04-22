@@ -711,6 +711,18 @@ msgstr "Cancel"
 msgid "zen.custom_template.modal.reset"
 msgstr "Reset to default"
 
+msgid "zen.custom_template.tab.editor"
+msgstr "Editor"
+
+msgid "zen.custom_template.tab.preview"
+msgstr "Preview"
+
+msgid "zen.custom_template.preview.loading"
+msgstr "Rendering preview…"
+
+msgid "zen.custom_template.preview.error"
+msgstr "Template error"
+
 msgid "zen.summary_template.edit_in_editor"
 msgstr "Edit in editor"
 

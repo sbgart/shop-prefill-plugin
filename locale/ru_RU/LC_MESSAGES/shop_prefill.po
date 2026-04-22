@@ -513,6 +513,18 @@ msgstr "Отмена"
 msgid "zen.custom_template.modal.reset"
 msgstr "Сбросить к стандартному"
 
+msgid "zen.custom_template.tab.editor"
+msgstr "Редактор"
+
+msgid "zen.custom_template.tab.preview"
+msgstr "Превью"
+
+msgid "zen.custom_template.preview.loading"
+msgstr "Рендерим превью…"
+
+msgid "zen.custom_template.preview.error"
+msgstr "Ошибка шаблона"
+
 msgid "zen.summary_template.edit_in_editor"
 msgstr "Редактировать в редакторе"
 
