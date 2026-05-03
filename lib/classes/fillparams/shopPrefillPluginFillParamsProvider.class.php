@@ -62,6 +62,7 @@ class shopPrefillPluginFillParamsProvider
     private function getFillParamsForAuthorized(?int $order_id = null): shopPrefillPluginFillParams
     {
         $contact_id = $this->user_provider->getId();
+        shopPrefillPluginLog::debug('Loading fill params for authorized user', ['contact_id' => $contact_id, 'requested_order_id' => $order_id]);
 
         // Передан конкретный заказ (выбор адреса из списка) — используем только если заказ принадлежит пользователю
         if ($order_id) {
@@ -69,6 +70,7 @@ class shopPrefillPluginFillParamsProvider
             if ($order_contact_id && (int) $order_contact_id === (int) $contact_id) {
                 $fill_params = $this->getFillParamsByOrderId($order_id);
                 if ($fill_params !== null) {
+                    shopPrefillPluginLog::debug('Fill params loaded from specific order', ['order_id' => $order_id]);
                     return $fill_params;
                 }
             }
@@ -77,9 +79,11 @@ class shopPrefillPluginFillParamsProvider
         // Иначе — последний заказ пользователя
         $last_order_id = $this->order_provider->getLastOrderIdByContactId($contact_id);
         if (! $last_order_id) {
+            shopPrefillPluginLog::debug('No previous orders found for authorized user', ['contact_id' => $contact_id]);
             return new shopPrefillPluginFillParams();
         }
 
+        shopPrefillPluginLog::debug('Fill params loaded from last order', ['order_id' => $last_order_id]);
         return $this->getFillParamsByOrderId($last_order_id) ?? new shopPrefillPluginFillParams();
     }
 
@@ -107,13 +111,16 @@ class shopPrefillPluginFillParamsProvider
     {
         // Создаем/получаем хеш гостя из куки (автопродлевается)
         $guest_hash = $this->guest_hash_storage->getOrCreateGuestHash();
+        shopPrefillPluginLog::debug('Loading fill params for guest', ['hash_prefix' => substr($guest_hash, 0, 8)]);
 
         // Ищем последний заказ с этим хешем через OrderProvider
         $order_id = $this->order_provider->getLastOrderIdByGuestHash($guest_hash);
         if (! $order_id) {
+            shopPrefillPluginLog::debug('No previous orders found for guest');
             return new shopPrefillPluginFillParams();
         }
 
+        shopPrefillPluginLog::debug('Fill params loaded from guest order', ['order_id' => $order_id]);
         return $this->getFillParamsByOrderId($order_id) ?? new shopPrefillPluginFillParams();
     }
 

@@ -15,17 +15,8 @@ msgstr ""
 msgid "title"
 msgstr "Предзаполнение полей оформления заказа"
 
-msgid "devs"
-msgstr "Разработчик"
-
 msgid "menu.help"
 msgstr "Поддержка"
-
-msgid "menu.feedback"
-msgstr "Оставить отзыв"
-
-msgid "setting.plugin_active"
-msgstr "Статус плагина"
 
 msgid "setting.storefront_selector"
 msgstr "Витрина"
@@ -39,28 +30,7 @@ msgstr "Витрины с индивидуальными настройками 
 msgid "setting.active"
 msgstr "Статус для витрины"
 
-msgid "setting.default_value"
-msgstr "Значение по умолчанию"
-
-msgid "consent.remember_data"
-msgstr "Запомнить мои данные для следующего заказа"
-
-msgid "consent.granted"
-msgstr "Согласие получено"
-
-msgid "consent.revoked"
-msgstr "Согласие отозвано"
-
-msgid "consent.history_cleared"
-msgstr "История очищена"
-
-msgid "consent.unknown_action"
-msgstr "Неизвестное действие"
-
 msgid "Запомнить мои данные для следующего заказа"
-msgstr ""
-
-msgid "option.source.none"
 msgstr ""
 
 msgid "setting.prefill.integration.cityselect"
@@ -84,9 +54,6 @@ msgstr ""
 msgid "setting.reset"
 msgstr ""
 
-msgid "title.storefront_selector"
-msgstr ""
-
 msgid "Save"
 msgstr ""
 
@@ -101,12 +68,6 @@ msgstr ""
 
 msgid "Неизвестное действие"
 msgstr ""
-
-msgid "zen.button.expand"
-msgstr "Изменить"
-
-msgid "zen.button.collapse"
-msgstr "Свернуть"
 
 msgid "zen.group.customer"
 msgstr "Покупатель"
@@ -128,18 +89,6 @@ msgstr "Сворачивает заполненные секции, оставл
 
 msgid "zen.groups.title"
 msgstr "Группы секций"
-
-msgid "zen.setting.group_enabled"
-msgstr "Сворачивать группу"
-
-msgid "zen.template.customer"
-msgstr "Шаблон сводки: Покупатель"
-
-msgid "zen.template.delivery"
-msgstr "Шаблон сводки: Доставка"
-
-msgid "zen.template.payment"
-msgstr "Шаблон сводки: Оплата"
 
 msgid "Edit"
 msgstr "Изменить"
@@ -231,14 +180,8 @@ msgstr "Иконка секции «Оплата»"
 msgid "zen.icon_source.plugin_logos"
 msgstr "Логотипы плагинов"
 
-msgid "zen.icon_source.plugin_logos.hint"
-msgstr "Показывать логотипы плагинов доставки и оплаты (CDEK, Stripe и т.д.)"
-
 msgid "zen.icon_source.default_icons"
 msgstr "По умолчанию"
-
-msgid "zen.icon_source.default_icons.hint"
-msgstr "Показывать общие иконки групп (delivery.svg, payment.svg) или загруженную кастомную иконку"
 
 msgid "hint.zen.icon_source.customer"
 msgstr "По умолчанию — стандартная иконка; Без иконки — не показывать; Своя иконка — использовать URL ниже; Аватар — аватар покупателя (для гостей будет иконка по умолчанию)."
@@ -417,14 +360,8 @@ msgstr "Без иконки"
 msgid "zen.icon_source.custom"
 msgstr "Своя иконка"
 
-msgid "zen.icon_source.custom.hint"
-msgstr "Укажите URL иконки в поле ниже."
-
 msgid "zen.icon_source.avatar"
 msgstr "Аватар пользователя"
-
-msgid "zen.icon_source.avatar.hint"
-msgstr "Для гостей — автоматический fallback на стандартную иконку."
 
 msgid "zen.groups.customer.icon"
 msgstr "URL иконки блока «Покупатель»"
@@ -930,14 +867,71 @@ msgstr ""
 msgid "General"
 msgstr ""
 
-msgid "Prefill"
-msgstr ""
+msgid "tab.debug"
+msgstr "Дебаг"
 
-msgid "Design"
-msgstr ""
+msgid "tab.debug.settings"
+msgstr "Настройки"
 
-msgid "Help"
-msgstr ""
+msgid "tab.debug.logs"
+msgstr "Просмотр логов"
 
-msgid "..."
-msgstr ""
+msgid "setting.logging.level"
+msgstr "Уровень логирования"
+
+msgid "hint.logging.level"
+msgstr "off — не писать; warning — только ошибки и предупреждения (по умолчанию); info — добавить информационные; debug — писать всё"
+
+msgid "log.level.off"
+msgstr "Выключено"
+
+msgid "log.level.error"
+msgstr "Только ошибки"
+
+msgid "log.level.warning"
+msgstr "Предупреждения"
+
+msgid "log.level.info"
+msgstr "Информация"
+
+msgid "log.level.debug"
+msgstr "Отладка (всё)"
+
+msgid "log.refresh"
+msgstr "Обновить"
+
+msgid "log.load_more"
+msgstr "Загрузить ещё"
+
+msgid "log.status.loaded"
+msgstr "загружено"
+
+msgid "log.status.total"
+msgstr "всего в файле"
+
+msgid "log.nav.debug"
+msgstr "Отладка"
+
+msgid "log.nav.info"
+msgstr "Информация"
+
+msgid "log.nav.warning"
+msgstr "Предупреждения"
+
+msgid "log.nav.error"
+msgstr "Ошибки"
+
+msgid "log.clear"
+msgstr "Очистить"
+
+msgid "log.clear.confirm"
+msgstr "Очистить файл лога? Это действие нельзя отменить."
+
+msgid "log.empty"
+msgstr "Записей нет"
+
+msgid "log.loading"
+msgstr "Загрузка..."
+
+msgid "log.load_error"
+msgstr "Ошибка загрузки"

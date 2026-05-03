@@ -1,0 +1,120 @@
+{$log_level = $global_settings['logging']['level']|default:'warning'}
+
+<div class="flexbox space-24" data-type="tabs" data-tab-group="debug"
+     id="prefill-debug-tab"
+     data-msg-empty="[`log.empty`]"
+     data-msg-loading="[`log.loading`]"
+     data-msg-error="[`log.load_error`]"
+     data-msg-clear-confirm="[`log.clear.confirm`]"
+     data-msg-load-more="[`log.load_more`]"
+     data-msg-status-loaded="[`log.status.loaded`]"
+     data-msg-status-total="[`log.status.total`]">
+
+    <div class="sidebar flexbox">
+        <div class="sidebar-body">
+            <ul class="menu">
+
+                <li class="rounded" id="prefill-sidebar-settings-item">
+                    <a href="#" data-tab-trigger="settings" data-tab-group="debug">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>[`tab.debug.settings`]</span>
+                    </a>
+                </li>
+
+                <li class="rounded" id="prefill-sidebar-logs-item">
+                    <a href="#" data-tab-trigger="logs" data-tab-group="debug">
+                        <i class="fas fa-list-alt"></i>
+                        <span>[`tab.debug.logs`]</span>
+                    </a>
+                    <ul class="menu">
+                        <li class="rounded" data-level-item="debug">
+                            <a href="#" class="js-prefill-log-level" data-level="debug">
+                                <i class="fas fa-bug prefill-level-icon--debug"></i>
+                                <span>[`log.nav.debug`]</span>
+                                <span class="count js-prefill-level-count" data-count-level="debug" style="display:none"></span>
+                            </a>
+                        </li>
+                        <li class="rounded" data-level-item="info">
+                            <a href="#" class="js-prefill-log-level" data-level="info">
+                                <i class="fas fa-info-circle prefill-level-icon--info"></i>
+                                <span>[`log.nav.info`]</span>
+                                <span class="count js-prefill-level-count" data-count-level="info" style="display:none"></span>
+                            </a>
+                        </li>
+                        <li class="rounded" data-level-item="warning">
+                            <a href="#" class="js-prefill-log-level" data-level="warning">
+                                <i class="fas fa-exclamation-triangle prefill-level-icon--warning"></i>
+                                <span>[`log.nav.warning`]</span>
+                                <span class="count js-prefill-level-count" data-count-level="warning" style="display:none"></span>
+                            </a>
+                        </li>
+                        <li class="rounded" data-level-item="error">
+                            <a href="#" class="js-prefill-log-level" data-level="error">
+                                <i class="fas fa-times-circle prefill-level-icon--error"></i>
+                                <span>[`log.nav.error`]</span>
+                                <span class="count js-prefill-level-count" data-count-level="error" style="display:none"></span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+
+    <div class="content blank">
+
+        {* Настройки отладки *}
+        <div data-tab-group="debug" data-tab-content="settings" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`tab.debug.settings`]</h3>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[prefill][debug_panel]"
+                        type='Switcher'
+                        label='[`setting.prefill.debug_panel`]'
+                        value=$settings['prefill']['debug_panel']
+                        hint_after='[`hint.prefill.debug_panel`]'}
+
+                    <div class="field">
+                        <div class="name">[`setting.logging.level`]</div>
+                        <div class="value">
+                            <select id="prefill-log-level-select">
+                                <option value="off"     {if $log_level == 'off'}selected{/if}>[`log.level.off`]</option>
+                                <option value="error"   {if $log_level == 'error'}selected{/if}>[`log.level.error`]</option>
+                                <option value="warning" {if $log_level == 'warning'}selected{/if}>[`log.level.warning`]</option>
+                                <option value="info"    {if $log_level == 'info'}selected{/if}>[`log.level.info`]</option>
+                                <option value="debug"   {if $log_level == 'debug'}selected{/if}>[`log.level.debug`]</option>
+                            </select>
+                            <p class="hint">[`hint.logging.level`]</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        {* Просмотр логов *}
+        <div data-tab-group="debug" data-tab-content="logs" class="article">
+            <div class="s-section-header flexbox middle space-between">
+                <h3 class="s-title" id="prefill-log-heading">[`tab.debug.logs`]</h3>
+                <div class="prefill-log-header-actions">
+                    <a href="#" class="button outlined small js-prefill-log-refresh">
+                        <i class="fas fa-sync-alt"></i> [`log.refresh`]
+                    </a>
+                    <a href="#" class="button outlined small red js-prefill-log-clear">
+                        <i class="fas fa-trash"></i> [`log.clear`]
+                    </a>
+                </div>
+            </div>
+            <div class="prefill-log-viewer">
+                <div id="prefill-log-entries"></div>
+                <div id="prefill-log-status" class="hint"></div>
+            </div>
+        </div>
+
+    </div>
+</div>

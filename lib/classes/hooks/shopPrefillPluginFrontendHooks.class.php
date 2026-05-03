@@ -65,14 +65,14 @@ class shopPrefillPluginFrontendHooks
         $this->registerDebugHookCall('frontendHead');
 
         if (! $this->storefront_settings['active']) {
-            shopPrefillPluginLog::info('Skipping frontendHead: storefront is inactive');
+            shopPrefillPluginLog::debug('Skipping frontendHead: storefront is inactive');
             return '';
         }
 
         // Для гостей: пропускаем если функция отключена
         $guest_enabled = $this->storefront_settings['prefill']['guest']['enabled'];
         if (!$guest_enabled && !$this->user_provider->isAuth()) {
-            shopPrefillPluginLog::info('Skipping frontendHead: guest prefill is disabled');
+            shopPrefillPluginLog::debug('Skipping frontendHead: guest prefill is disabled');
             return $head_html;
         }
 
@@ -88,7 +88,9 @@ class shopPrefillPluginFrontendHooks
 
         // Предзаполнение при входе на сайт
         if ($this->storefront_settings['prefill']['on_entry']) {
-            shopPrefillPluginLog::info('Prefill on_entry triggered in frontendHead');
+            shopPrefillPluginLog::debug('Prefill on_entry triggered in frontendHead', [
+                'is_guest' => !$this->user_provider->isAuth(),
+            ]);
             $this->session_storage->preFillCheckoutParams($fill_params);
         }
 

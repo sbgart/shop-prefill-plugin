@@ -391,3 +391,174 @@
 .dialog .prefill-ct-dialog-body {
     width: min(890px, 95vw);
 }
+
+/* ── Log viewer (Debug tab) ── */
+.prefill-log-viewer-toolbar {
+    margin-bottom: 8px;
+}
+
+.prefill-log-viewer-search {
+    margin-bottom: 12px;
+}
+
+#prefill-log-search {
+    width: 100%;
+    max-width: 440px;
+    box-sizing: border-box;
+}
+
+#prefill-log-entries {
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 4px;
+    background: var(--background-secondary, #fafafa);
+    padding: 4px 0;
+}
+
+#prefill-log-status {
+    margin-top: 4px;
+    min-height: 16px;
+}
+
+/* ── Log entry card ── */
+.prefill-log-entry {
+    display: flex;
+    gap: 10px;
+    padding: 5px 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-left: 3px solid transparent;
+}
+
+.prefill-log-entry:last-child {
+    border-bottom: none;
+}
+
+.prefill-log-entry--debug   { border-left-color: #ccc; }
+.prefill-log-entry--info    { border-left-color: #1976d2; }
+.prefill-log-entry--warning { border-left-color: #e65100; }
+.prefill-log-entry--error   { border-left-color: #c62828; }
+
+/* Left rail: badge + time */
+.prefill-log-entry__rail {
+    flex: 0 0 68px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    padding-top: 1px;
+}
+
+.prefill-log-entry__badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-align: center;
+    min-width: 52px;
+}
+
+.prefill-log-entry--debug   .prefill-log-entry__badge { background: #f0f0f0; color: #777; }
+.prefill-log-entry--info    .prefill-log-entry__badge { background: #e3f2fd; color: #1565c0; }
+.prefill-log-entry--warning .prefill-log-entry__badge { background: #fff3e0; color: #bf6300; }
+.prefill-log-entry--error   .prefill-log-entry__badge { background: #ffebee; color: #c62828; }
+
+.prefill-log-entry__time {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-color, #333);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Right body: message + secondary meta + context */
+.prefill-log-entry__body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.prefill-log-entry__message {
+    color: var(--text-color, #222);
+    word-break: break-word;
+}
+
+.prefill-log-entry__src-js {
+    display: inline-block;
+    background: #e3f2fd;
+    color: #1565c0;
+    border-radius: 2px;
+    padding: 0 3px;
+    font-size: 10px;
+    margin-left: 3px;
+    vertical-align: middle;
+}
+
+/* Secondary meta row: date · IP · user */
+.prefill-log-entry__meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    font-size: 10px;
+    color: var(--text-color-muted, #aaa);
+}
+
+.prefill-log-entry__meta-sep {
+    color: var(--border-color, #ddd);
+}
+
+.prefill-log-entry__user {
+    color: var(--text-color-muted, #888);
+    font-weight: 600;
+}
+
+/* Context block */
+.prefill-log-entry__context {
+    margin: 4px 0 2px;
+    padding: 4px 6px;
+    background: rgba(0,0,0,0.03);
+    border-left: 2px solid var(--border-color, #e0e0e0);
+    border-radius: 2px;
+    font-size: 11px;
+    color: #666;
+    white-space: pre-wrap;
+    overflow-x: auto;
+}
+
+/* Loading / empty / error state */
+.prefill-log-state {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-color-muted, #aaa);
+}
+
+.prefill-log-state--error {
+    color: #c62828;
+}
+
+/* Load more row — рендерится внутри #prefill-log-entries */
+.prefill-log-load-more-row {
+    text-align: center;
+    padding: 10px;
+    border-top: 1px solid var(--border-color-soft, rgba(0,0,0,0.05));
+}
+
+.prefill-log-load-more-row--loading {
+    color: var(--text-color-muted, #bbb);
+    font-size: 14px;
+}
+
+.prefill-level-icon--debug   { color: #aaa; }
+.prefill-level-icon--info    { color: #1976d2; }
+.prefill-level-icon--warning { color: #e65100; }
+.prefill-level-icon--error   { color: #c62828; }
+
+.prefill-log-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+}

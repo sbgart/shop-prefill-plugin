@@ -102,7 +102,7 @@ class shopPrefillPluginOrderHooks
         }
 
         if (!$this->storefront_settings['prefill']['guest']['enabled']) {
-            shopPrefillPluginLog::info('Skipping saveGuestHash: guest prefill is disabled');
+            shopPrefillPluginLog::debug('Skipping saveGuestHash: guest prefill is disabled');
             return;
         }
 

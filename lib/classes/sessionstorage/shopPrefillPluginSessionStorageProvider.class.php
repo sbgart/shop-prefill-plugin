@@ -195,8 +195,7 @@ class shopPrefillPluginSessionStorageProvider
             $this->setCheckoutParams($merged);
             $this->saveSnapshot($merged);
             shopPrefillPluginLog::info('Successfully prefilled checkout params', [
-                'filled_sections' => array_keys($final_params['order'] ?? []),
-                'final_params_size' => strlen(json_encode($final_params))
+                'sections' => array_keys($final_params['order'] ?? []),
             ]);
         } else {
             // Checkout уже полностью заполнен — обновляем snapshot актуальным состоянием

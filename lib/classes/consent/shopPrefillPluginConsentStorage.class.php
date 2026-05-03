@@ -48,11 +48,13 @@ class shopPrefillPluginConsentStorage
     public function hasConsent(): bool
     {
         if (waRequest::cookie(self::CONSENT_COOKIE) !== '1') {
+            shopPrefillPluginLog::debug('Guest consent check: no consent');
             return false;
         }
 
         // Согласие есть — продлеваем TTL на этом же запросе.
         $this->renewConsent();
+        shopPrefillPluginLog::debug('Guest consent check: consent present, TTL renewed');
         return true;
     }
 

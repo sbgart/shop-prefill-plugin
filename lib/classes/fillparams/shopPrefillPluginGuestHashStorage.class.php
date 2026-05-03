@@ -77,6 +77,7 @@ class shopPrefillPluginGuestHashStorage
         if ($guest_hash) {
             // Продлеваем куки при каждом обращении
             $this->setGuestHashCookie($guest_hash);
+            shopPrefillPluginLog::debug('Guest hash reused', ['hash_prefix' => substr($guest_hash, 0, 8)]);
             return $guest_hash;
         }
 
@@ -85,6 +86,7 @@ class shopPrefillPluginGuestHashStorage
         $guest_hash = hash('sha256', $unique_id);
 
         $this->setGuestHashCookie($guest_hash);
+        shopPrefillPluginLog::info('Guest hash created', ['hash_prefix' => substr($guest_hash, 0, 8)]);
 
         return $guest_hash;
     }
@@ -133,7 +135,9 @@ class shopPrefillPluginGuestHashStorage
             return false;
         }
 
-        return $this->getOrderParamsModel()->setOne($order_id, self::GUEST_HASH_PARAM, $hash);
+        $result = $this->getOrderParamsModel()->setOne($order_id, self::GUEST_HASH_PARAM, $hash);
+        shopPrefillPluginLog::info('Guest hash saved to order', ['order_id' => $order_id, 'hash_prefix' => substr($hash, 0, 8)]);
+        return $result;
     }
 
     /**
@@ -153,6 +157,7 @@ class shopPrefillPluginGuestHashStorage
      */
     public function clearGuestHash(): void
     {
+        shopPrefillPluginLog::info('Guest hash cleared');
         $this->getResponse()->setCookie(
             self::GUEST_HASH_COOKIE,
             '',

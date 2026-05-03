@@ -15,17 +15,8 @@ msgstr ""
 msgid "title"
 msgstr "Pre-filling checkout fields"
 
-msgid "devs"
-msgstr "Developer"
-
 msgid "menu.help"
 msgstr "Support"
-
-msgid "menu.feedback"
-msgstr "Give feedback"
-
-msgid "setting.plugin_active"
-msgstr "Status plugin"
 
 msgid "setting.storefront_selector"
 msgstr "Storefront"
@@ -39,31 +30,7 @@ msgstr "Storefronts that use their own settings are marked with a green indicato
 msgid "setting.active"
 msgstr "Status"
 
-msgid "setting.default_value"
-msgstr "Default value"
-
-msgid "setting.appearance"
-msgstr "Design"
-
-msgid "consent.remember_data"
-msgstr "Remember my data for next order"
-
-msgid "consent.granted"
-msgstr "Consent granted"
-
-msgid "consent.revoked"
-msgstr "Consent revoked"
-
-msgid "consent.history_cleared"
-msgstr "History cleared"
-
-msgid "consent.unknown_action"
-msgstr "Unknown action"
-
 msgid "Запомнить мои данные для следующего заказа"
-msgstr ""
-
-msgid "option.source.none"
 msgstr ""
 
 msgid "setting.prefill.integration.cityselect"
@@ -85,9 +52,6 @@ msgid "setting.hint_spoiler_summary"
 msgstr ""
 
 msgid "setting.reset"
-msgstr ""
-
-msgid "title.storefront_selector"
 msgstr ""
 
 msgid "Save"
@@ -177,14 +141,8 @@ msgstr "Payment section icon"
 msgid "zen.icon_source.plugin_logos"
 msgstr "Plugin logos"
 
-msgid "zen.icon_source.plugin_logos.hint"
-msgstr "Show delivery/payment plugin logos (e.g. CDEK, Stripe)"
-
 msgid "zen.icon_source.default_icons"
 msgstr "Default"
-
-msgid "zen.icon_source.default_icons.hint"
-msgstr "Show generic group icons (delivery.svg, payment.svg) or custom uploaded icon"
 
 msgid "hint.zen.icon_source.customer"
 msgstr "Default — standard icon; No icon — hide; Custom icon — use the URL below; Avatar — customer avatar (guests fall back to Default)."
@@ -561,18 +519,6 @@ msgstr ""
 msgid "General"
 msgstr ""
 
-msgid "Prefill"
-msgstr ""
-
-msgid "Design"
-msgstr ""
-
-msgid "Help"
-msgstr ""
-
-msgid "debug.locale.bump2"
-msgstr "Locale test 2"
-
 msgid "hint.tab.design"
 msgstr "Appearance of plugin elements on storefront."
 
@@ -615,14 +561,8 @@ msgstr "No icon"
 msgid "zen.icon_source.custom"
 msgstr "Custom icon"
 
-msgid "zen.icon_source.custom.hint"
-msgstr "Provide the icon URL in the field below."
-
 msgid "zen.icon_source.avatar"
 msgstr "User avatar"
-
-msgid "zen.icon_source.avatar.hint"
-msgstr "Falls back to the default icon for guests."
 
 msgid "zen.groups.customer.icon"
 msgstr "Customer block icon URL"
@@ -927,5 +867,71 @@ msgstr ""
 msgid "tab.zen"
 msgstr ""
 
-msgid "..."
-msgstr ""
+msgid "tab.debug"
+msgstr "Debug"
+
+msgid "tab.debug.settings"
+msgstr "Settings"
+
+msgid "tab.debug.logs"
+msgstr "Log viewer"
+
+msgid "setting.logging.level"
+msgstr "Log level"
+
+msgid "hint.logging.level"
+msgstr "off — disabled; warning — errors and warnings only (default); info — add informational messages; debug — log everything"
+
+msgid "log.level.off"
+msgstr "Off"
+
+msgid "log.level.error"
+msgstr "Errors only"
+
+msgid "log.level.warning"
+msgstr "Warnings"
+
+msgid "log.level.info"
+msgstr "Info"
+
+msgid "log.level.debug"
+msgstr "Debug (all)"
+
+msgid "log.refresh"
+msgstr "Refresh"
+
+msgid "log.load_more"
+msgstr "Load more"
+
+msgid "log.status.loaded"
+msgstr "loaded"
+
+msgid "log.status.total"
+msgstr "total in file"
+
+msgid "log.nav.debug"
+msgstr "Debug"
+
+msgid "log.nav.info"
+msgstr "Info"
+
+msgid "log.nav.warning"
+msgstr "Warning"
+
+msgid "log.nav.error"
+msgstr "Error"
+
+msgid "log.clear"
+msgstr "Clear"
+
+msgid "log.clear.confirm"
+msgstr "Clear the log file? This cannot be undone."
+
+msgid "log.empty"
+msgstr "No entries"
+
+msgid "log.loading"
+msgstr "Loading..."
+
+msgid "log.load_error"
+msgstr "Load error"

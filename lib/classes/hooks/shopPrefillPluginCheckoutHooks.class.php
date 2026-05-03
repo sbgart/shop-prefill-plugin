@@ -57,7 +57,9 @@ class shopPrefillPluginCheckoutHooks
             $state = new shopPrefillCheckoutState($params);
             $state->applyPrefillInput($filled_order);
             if ($state->isPrefilled()) {
-                shopPrefillPluginLog::info('Prefill applied in checkoutBeforeAuth');
+                shopPrefillPluginLog::debug('Prefill applied in checkoutBeforeAuth', [
+                    'sections' => array_keys($filled_order),
+                ]);
             }
         }
     }

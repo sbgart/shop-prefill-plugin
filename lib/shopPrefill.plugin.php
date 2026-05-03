@@ -76,8 +76,12 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function isActive(): bool
     {
-        return self::$active ??= (self::enableInstall(self::PLUGIN_ID))
-            && ($this->getSettingProvider()->getSettings()['active'] === true);
+        if (self::$active === null) {
+            $settings = $this->getSettingProvider()->getSettings();
+            shopPrefillPluginLog::setLevel($settings['logging']['level'] ?? 'warning');
+            self::$active = self::enableInstall(self::PLUGIN_ID) && $settings['active'] === true;
+        }
+        return self::$active;
     }
 
     /**

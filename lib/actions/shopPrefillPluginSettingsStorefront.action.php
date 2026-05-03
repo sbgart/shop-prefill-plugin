@@ -29,6 +29,7 @@ class shopPrefillPluginSettingsStorefrontAction extends waViewAction
             'name_prefix'          => $app_id.'_'.$plugin_id.'[storefront]['.$storefront_code.']',
             'storefront_code'      => $storefront_code,
             'settings'             => $plugin->getStorefrontProvider()->getStorefront($storefront_code)->getSettings(),
+            'global_settings'      => $plugin->getSettingProvider()->getSettings(),
             'shipping_methods'     => $shippingMethods,
             'payment_methods'      => $paymentMethods,
         ]);

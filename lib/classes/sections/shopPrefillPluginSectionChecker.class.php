@@ -52,7 +52,9 @@ class shopPrefillPluginSectionChecker
         if ($group === null) {
             return true;
         }
-        return (bool)($this->enabled_groups[$group] ?? true);
+        $enabled = (bool)($this->enabled_groups[$group] ?? true);
+        shopPrefillPluginLog::debug("Section group check: {$section_id} → {$group} " . ($enabled ? 'enabled' : 'disabled'));
+        return $enabled;
     }
 
     /**
@@ -66,14 +68,17 @@ class shopPrefillPluginSectionChecker
     {
         // 1. Группа секции выключена в настройках → не предзаполняем
         if (!$this->isGroupEnabledForSection($section_id)) {
+            shopPrefillPluginLog::debug("Section '{$section_id}' skipped: group disabled");
             return false;
         }
 
         // 2. Секция уже содержит ключевые данные → не перезаписываем
         if ($this->isSectionFilled($section_id, $checkout_params)) {
+            shopPrefillPluginLog::debug("Section '{$section_id}' skipped: already filled");
             return false;
         }
 
+        shopPrefillPluginLog::debug("Section '{$section_id}' can be prefilled");
         return true;
     }
 

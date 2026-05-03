@@ -441,6 +441,262 @@ var PrefillSettings = (function () {
             });
     };
 
+    PrefillSettings.prototype.debugLogs = function () {
+        var self = this;
+        var $tab = self.$wrapper.find('#prefill-debug-tab');
+        if (!$tab.length) { return; }
+
+        var msgEmpty          = $tab.data('msg-empty')          || 'No entries';
+        var msgLoading        = $tab.data('msg-loading')        || 'Loading…';
+        var msgError          = $tab.data('msg-error')          || 'Load error';
+        var msgClearConfirm   = $tab.data('msg-clear-confirm')  || 'Clear log?';
+        var msgLoadMore       = $tab.data('msg-load-more')      || 'Load more';
+        var msgStatusLoaded   = $tab.data('msg-status-loaded')  || 'loaded';
+        var msgStatusTotal    = $tab.data('msg-status-total')   || 'total in file';
+
+        var currentLevel  = 'all';
+        var allEntries    = [];   // newest-first (как возвращает сервер)
+        var currentOffset = 0;
+        var hasMore       = false;
+        var totalInFile   = 0;
+
+        var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        function prefillFormatDate(dateStr) {
+            var parts = dateStr ? dateStr.split('-') : [];
+            if (parts.length !== 3) { return dateStr || ''; }
+            return MONTHS[parseInt(parts[1], 10) - 1] + ' ' + parseInt(parts[2], 10);
+        }
+
+        function renderEntry(entry) {
+            var level = entry.level || 'debug';
+            var time  = entry.datetime ? entry.datetime.substring(11) : '';
+            var date  = entry.datetime ? prefillFormatDate(entry.datetime.substring(0, 10)) : '';
+
+            var msg = prefillEscapeHtml(entry.message);
+            if (entry.source === 'frontend') {
+                msg += '<span class="prefill-log-entry__src-js">JS</span>';
+            }
+
+            // Вторичная строка: дата · IP · user
+            var metaParts = [];
+            if (date) { metaParts.push('<span class="prefill-log-entry__date">' + prefillEscapeHtml(date) + '</span>'); }
+            if (entry.ip) { metaParts.push('<span class="prefill-log-entry__ip">' + prefillEscapeHtml(entry.ip) + '</span>'); }
+            if (entry.user_id) { metaParts.push('<span class="prefill-log-entry__user">#' + parseInt(entry.user_id, 10) + '</span>'); }
+            var sep = '<span class="prefill-log-entry__meta-sep">·</span>';
+            var meta = metaParts.length
+                ? '<div class="prefill-log-entry__meta">' + metaParts.join(sep) + '</div>'
+                : '';
+
+            var ctx = '';
+            if (entry.context !== null && entry.context !== undefined) {
+                var ctxStr = typeof entry.context === 'object'
+                    ? JSON.stringify(entry.context, null, 2)
+                    : String(entry.context);
+                ctx = '<pre class="prefill-log-entry__context">' + prefillEscapeHtml(ctxStr) + '</pre>';
+            }
+
+            return '<div class="prefill-log-entry prefill-log-entry--' + prefillEscapeHtml(level) + '">'
+                + '<div class="prefill-log-entry__rail">'
+                +   '<span class="prefill-log-entry__badge">' + prefillEscapeHtml(level.toUpperCase()) + '</span>'
+                +   '<span class="prefill-log-entry__time">' + prefillEscapeHtml(time) + '</span>'
+                + '</div>'
+                + '<div class="prefill-log-entry__body">'
+                +   '<div class="prefill-log-entry__message">' + msg + '</div>'
+                +   meta
+                +   ctx
+                + '</div>'
+                + '</div>';
+        }
+
+        function renderLoadMoreButton() {
+            return '<div class="prefill-log-load-more-row">'
+                + '<a href="#" class="button light-gray js-prefill-log-load-more">'
+                + '<i class="fas fa-angle-down"></i> '
+                + prefillEscapeHtml(msgLoadMore)
+                + '</a>'
+                + '</div>';
+        }
+
+        function updateStatus() {
+            var $status = self.$wrapper.find('#prefill-log-status');
+            var parts = [];
+            parts.push(allEntries.length + ' ' + msgStatusLoaded);
+            if (hasMore) {
+                parts.push(totalInFile + ' ' + msgStatusTotal);
+            }
+            $status.text(parts.join(' · '));
+        }
+
+        function renderLogs() {
+            var $entries = self.$wrapper.find('#prefill-log-entries');
+
+            if (!allEntries.length) {
+                $entries.html('<div class="prefill-log-state">' + prefillEscapeHtml(msgEmpty) + '</div>');
+                updateStatus();
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < allEntries.length; i++) {
+                html += renderEntry(allEntries[i]);
+            }
+            if (hasMore) {
+                html += renderLoadMoreButton();
+            }
+            $entries.html(html);
+            updateStatus();
+        }
+
+        // reset=true — первая загрузка/обновление или смена уровня; reset=false — "загрузить ещё" (только в режиме ALL)
+        function loadLogs(reset) {
+            var $entries  = self.$wrapper.find('#prefill-log-entries');
+            var isAllMode = currentLevel === 'all';
+
+            if (reset) {
+                allEntries    = [];
+                currentOffset = 0;
+                hasMore       = false;
+                totalInFile   = 0;
+                $entries.html('<div class="prefill-log-state">' + prefillEscapeHtml(msgLoading) + '</div>');
+            } else {
+                // Кнопка заменяется спиннером на месте — записи не перерисовываются
+                $entries.find('.prefill-log-load-more-row').replaceWith(
+                    '<div class="prefill-log-load-more-row prefill-log-load-more-row--loading">'
+                    + '<i class="fas fa-spinner fa-spin"></i>'
+                    + '</div>'
+                );
+            }
+
+            var scrollTop = reset ? 0 : $entries.scrollTop();
+            // Оба режима поддерживают offset; в фильтрованном режиме дополнительно передаём level
+            var params = isAllMode
+                ? { offset: currentOffset }
+                : { level: currentLevel, offset: currentOffset };
+
+            $.get('?module=prefillPluginSettingsReadLogs', params)
+                .done(function (r) {
+                    if (r && r.status === 'ok' && r.data) {
+                        var data  = r.data;
+                        var batch = data.entries || [];
+                        allEntries    = allEntries.concat(batch);
+                        currentOffset += batch.length;
+                        hasMore       = !!data.has_more;
+                        totalInFile   = data.total || allEntries.length;
+                        updateLevelCounts(data.counts);
+
+                        if (reset) {
+                            renderLogs();
+                        } else {
+                            // Дорисовываем только новые записи вместо спиннера
+                            var $spinner = $entries.find('.prefill-log-load-more-row--loading');
+                            var html = '';
+                            for (var i = 0; i < batch.length; i++) {
+                                html += renderEntry(batch[i]);
+                            }
+                            if (hasMore) { html += renderLoadMoreButton(); }
+                            $spinner.replaceWith(html);
+                            updateStatus();
+                            $entries.scrollTop(scrollTop);
+                        }
+                    } else {
+                        $entries.html(
+                            '<div class="prefill-log-state prefill-log-state--error">' + prefillEscapeHtml(msgError) + '</div>'
+                        );
+                    }
+                })
+                .fail(function () {
+                    $entries.html(
+                        '<div class="prefill-log-state prefill-log-state--error">' + prefillEscapeHtml(msgError) + '</div>'
+                    );
+                });
+        }
+
+        // Флаг: sub-item активирует tab через .trigger('click') — нельзя сбрасывать уровень в этом случае
+        var bypassLogsReset = false;
+
+        function updateLevelCounts(counts) {
+            if (!counts) { return; }
+            $.each(counts, function (level, count) {
+                var $badge = $tab.find('[data-count-level="' + level + '"]');
+                if (count > 0) {
+                    $badge.text(count).show();
+                } else {
+                    $badge.hide();
+                }
+            });
+        }
+
+        function updateSidebarActiveState() {
+            var $list = $tab.find('[data-level-item]').closest('ul');
+            $list.find('[data-level-item]').removeClass('selected');
+            if (currentLevel !== 'all') {
+                $list.find('[data-level-item="' + currentLevel + '"]').addClass('selected');
+            }
+        }
+
+        // Подпункты уровней в боковом меню
+        self.$wrapper.on('click', '.js-prefill-log-level', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var newLevel = $(this).data('level');
+            if (newLevel === currentLevel) { return; }
+            currentLevel = newLevel;
+            updateSidebarActiveState();
+            // Переключаем tab-контент, не сбрасывая уровень в обработчике "logs"
+            bypassLogsReset = true;
+            $tab.find('[data-tab-trigger="logs"][data-tab-group="debug"]').trigger('click');
+            bypassLogsReset = false;
+            loadLogs(true);
+        });
+
+        // Обновить — сброс + первая страница
+        self.$wrapper.on('click', '.js-prefill-log-refresh', function (e) {
+            e.preventDefault();
+            loadLogs(true);
+        });
+
+        // Загрузить ещё — следующая страница старых записей
+        self.$wrapper.on('click', '.js-prefill-log-load-more', function (e) {
+            e.preventDefault();
+            if ($(this).hasClass('disabled')) { return; }
+            loadLogs(false);
+        });
+
+        // Очистить
+        self.$wrapper.on('click', '.js-prefill-log-clear', function (e) {
+            e.preventDefault();
+            if (!confirm(msgClearConfirm)) { return; }
+            $.post('?module=prefillPluginSettingsClearLog')
+                .done(function () {
+                    allEntries = []; currentOffset = 0; hasMore = false; totalInFile = 0;
+                    renderLogs();
+                });
+        });
+
+        // Уровень лога — авто-сохранение
+        self.$wrapper.on('change', '#prefill-log-level-select', function () {
+            $.post('?module=prefillPluginSettingsSaveLogLevel', { level: $(this).val() });
+        });
+
+        // Клик по пункту "Просмотр логов" — переключиться в режим ALL и перезагрузить если нужно
+        self.$wrapper.on('click', '[data-tab-trigger="logs"][data-tab-group="debug"]', function () {
+            if (bypassLogsReset) { return; }
+            if (currentLevel !== 'all') {
+                currentLevel = 'all';
+                updateSidebarActiveState();
+                loadLogs(true);
+            } else if (!allEntries.length && !currentOffset) {
+                loadLogs(true);
+            }
+        });
+
+        // Загружаем при первом клике на вкладку Debug
+        self.$wrapper.on('click', '[data-tab-trigger="debug"][data-tab-group="settings"]', function () {
+            if (!allEntries.length && !currentOffset) { loadLogs(true); }
+        });
+    };
+
     return PrefillSettings;
 
 })()
@@ -666,6 +922,7 @@ function initPrefillSettings(container) {
     settings.colorPicker();
     settings.valueReveal();
     settings.customTemplates();
+    settings.debugLogs();
 }
 
 document.addEventListener('prefill:storefront-content-loaded', function (event) {
