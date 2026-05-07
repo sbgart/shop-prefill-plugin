@@ -25,39 +25,39 @@ class shopPrefillPluginFrontendConsentController extends waJsonController
                 case 'grant':
                     $plugin->getConsentStorage()->grantConsent();
                     shopPrefillPluginLog::info('User granted prefill consent');
-                    $this->response = ['status' => 'ok', 'message' => _wp('Согласие получено')];
+                    $this->response = ['status' => 'ok', 'message' => _wp('message.consent.granted')];
                     break;
 
                 case 'revoke':
                     $plugin->getConsentStorage()->revokeConsent();
                     $plugin->getGuestHashStorage()->clearGuestHash();
                     shopPrefillPluginLog::info('User revoked prefill consent');
-                    $this->response = ['status' => 'ok', 'message' => _wp('Согласие отозвано')];
+                    $this->response = ['status' => 'ok', 'message' => _wp('message.consent.revoked')];
                     break;
 
                 case 'clear_form':
                     wa()->getStorage()->remove('shop/checkout');
                     wa()->getStorage()->remove('shop/prefill_snapshot');
                     shopPrefillPluginLog::info('User cleared checkout form session');
-                    $this->response = ['status' => 'ok', 'message' => _wp('Данные формы очищены')];
+                    $this->response = ['status' => 'ok', 'message' => _wp('message.form_data_cleared')];
                     break;
 
                 case 'clear':
                     $plugin->getGuestHashStorage()->clearGuestHash();
                     shopPrefillPluginLog::info('User cleared guest hash history');
-                    $this->response = ['status' => 'ok', 'message' => _wp('История очищена')];
+                    $this->response = ['status' => 'ok', 'message' => _wp('message.history_cleared')];
                     break;
 
                 default:
                     shopPrefillPluginLog::warning('Unknown action received in consent controller', ['action' => $action]);
-                    $this->errors[] = _wp('Неизвестное действие');
+                    $this->errors[] = _wp('error.unknown_action');
             }
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Error processing consent action', [
                 'action' => $action,
                 'message' => $e->getMessage()
             ]);
-            $this->errors[] = _wp('Внутренняя ошибка');
+            $this->errors[] = _wp('error.internal');
         }
     }
 }

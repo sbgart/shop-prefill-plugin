@@ -30,49 +30,46 @@ msgstr "Storefronts that use their own settings are marked with a green indicato
 msgid "setting.active"
 msgstr "Status"
 
-msgid "Запомнить мои данные для следующего заказа"
-msgstr ""
+msgid "checkout.consent.remember_data"
+msgstr "Remember my details for future orders"
 
 msgid "setting.prefill.integration.cityselect"
-msgstr ""
+msgstr "CitySelect integration"
 
 msgid "tooltip.prefill.integration.cityselect"
-msgstr ""
+msgstr "Passes the selected city to CitySelect for correct delivery calculation."
 
 msgid "tooltip.storefront_active"
-msgstr ""
-
-msgid "tab.{$tab|lower}"
-msgstr ""
+msgstr "Enables or disables the plugin only for the selected storefront."
 
 msgid "setting.spoiler_summary"
-msgstr ""
+msgstr "Show settings"
 
 msgid "setting.hint_spoiler_summary"
-msgstr ""
+msgstr "Show hint"
 
 msgid "setting.reset"
-msgstr ""
+msgstr "Reset"
 
-msgid "Save"
-msgstr ""
+msgid "action.save"
+msgstr "Save"
 
-msgid "Согласие получено"
-msgstr ""
+msgid "message.consent.granted"
+msgstr "Consent saved"
 
-msgid "Согласие отозвано"
-msgstr ""
+msgid "message.consent.revoked"
+msgstr "Consent revoked"
 
-msgid "История очищена"
-msgstr ""
+msgid "message.history_cleared"
+msgstr "History cleared"
 
-msgid "Неизвестное действие"
-msgstr ""
+msgid "error.unknown_action"
+msgstr "Unknown action"
 
-msgid "Edit"
+msgid "action.edit"
 msgstr "Edit"
 
-msgid "Collapse"
+msgid "action.collapse"
 msgstr "Collapse"
 
 msgid "zen.price.free"
@@ -111,7 +108,7 @@ msgstr "Yes, clear"
 msgid "dialog.consent_revoke.cancel"
 msgstr "No"
 
-msgid "Данные формы очищены"
+msgid "message.form_data_cleared"
 msgstr "Form data cleared"
 
 msgid "tab.design"
@@ -504,20 +501,20 @@ msgstr ""
 msgid "zen.validation.error.button"
 msgstr ""
 
-msgid "Внутренняя ошибка"
-msgstr ""
+msgid "error.internal"
+msgstr "Internal error"
 
-msgid "Основные настройки для витрины"
-msgstr ""
+msgid "setting.group.storefront_main"
+msgstr "Main storefront settings"
 
-msgid "Настройте основные параметры плагина, которые будут влиять на всю витрину."
-msgstr ""
+msgid "hint.group.storefront_main"
+msgstr "Configure the main plugin settings for the selected storefront."
 
-msgid "Раздел будет заполнен на следующем этапе."
-msgstr ""
+msgid "setting.section.placeholder"
+msgstr "This section will be filled in at the next step."
 
-msgid "General"
-msgstr ""
+msgid "tab.general"
+msgstr "General"
 
 msgid "hint.tab.design"
 msgstr "Appearance of plugin elements on storefront."

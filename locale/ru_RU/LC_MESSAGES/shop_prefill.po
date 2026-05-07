@@ -30,44 +30,41 @@ msgstr "Витрины с индивидуальными настройками 
 msgid "setting.active"
 msgstr "Статус для витрины"
 
-msgid "Запомнить мои данные для следующего заказа"
-msgstr ""
+msgid "checkout.consent.remember_data"
+msgstr "Запомнить мои данные для следующих заказов"
 
 msgid "setting.prefill.integration.cityselect"
-msgstr ""
+msgstr "Интеграция с CitySelect"
 
 msgid "tooltip.prefill.integration.cityselect"
-msgstr ""
+msgstr "Передаёт выбранный город в плагин CitySelect для корректного расчёта доставки."
 
 msgid "tooltip.storefront_active"
-msgstr ""
-
-msgid "tab.{$tab|lower}"
-msgstr ""
+msgstr "Включает или отключает плагин только для выбранной витрины."
 
 msgid "setting.spoiler_summary"
-msgstr ""
+msgstr "Показать настройки"
 
 msgid "setting.hint_spoiler_summary"
-msgstr ""
+msgstr "Показать подсказку"
 
 msgid "setting.reset"
-msgstr ""
+msgstr "Сбросить"
 
-msgid "Save"
-msgstr ""
+msgid "action.save"
+msgstr "Сохранить"
 
-msgid "Согласие получено"
-msgstr ""
+msgid "message.consent.granted"
+msgstr "Согласие сохранено"
 
-msgid "Согласие отозвано"
-msgstr ""
+msgid "message.consent.revoked"
+msgstr "Согласие отозвано"
 
-msgid "История очищена"
-msgstr ""
+msgid "message.history_cleared"
+msgstr "История очищена"
 
-msgid "Неизвестное действие"
-msgstr ""
+msgid "error.unknown_action"
+msgstr "Неизвестное действие"
 
 msgid "zen.group.customer"
 msgstr "Покупатель"
@@ -90,10 +87,10 @@ msgstr "Сворачивает заполненные секции, оставл
 msgid "zen.groups.title"
 msgstr "Группы секций"
 
-msgid "Edit"
+msgid "action.edit"
 msgstr "Изменить"
 
-msgid "Collapse"
+msgid "action.collapse"
 msgstr "Свернуть"
 
 msgid "zen.price.free"
@@ -150,7 +147,7 @@ msgstr "Да, очистить"
 msgid "dialog.consent_revoke.cancel"
 msgstr "Нет"
 
-msgid "Данные формы очищены"
+msgid "message.form_data_cleared"
 msgstr "Данные формы очищены"
 
 msgid "tab.design"
@@ -852,23 +849,23 @@ msgstr "Доп. поля оплаты"
 msgid "Array of custom payment fields (e.g. INN, Company)"
 msgstr "Массив доп. полей оплаты (напр. ИНН, компания)"
 
-msgid "Внутренняя ошибка"
-msgstr ""
+msgid "error.internal"
+msgstr "Внутренняя ошибка"
 
-msgid "Основные настройки для витрины"
-msgstr ""
+msgid "setting.group.storefront_main"
+msgstr "Основные настройки для витрины"
 
-msgid "Настройте основные параметры плагина, которые будут влиять на всю витрину."
-msgstr ""
+msgid "hint.group.storefront_main"
+msgstr "Настройте основные параметры плагина для выбранной витрины."
 
-msgid "Раздел будет заполнен на следующем этапе."
-msgstr ""
+msgid "setting.section.placeholder"
+msgstr "Раздел будет заполнен на следующем этапе."
 
-msgid "General"
-msgstr ""
+msgid "tab.general"
+msgstr "Основные"
 
 msgid "tab.debug"
-msgstr "Дебаг"
+msgstr "Отладка"
 
 msgid "tab.debug.settings"
 msgstr "Настройки"

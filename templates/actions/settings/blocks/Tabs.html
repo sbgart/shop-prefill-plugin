@@ -4,7 +4,8 @@
         {foreach from=$tabs item=tab}
             <li>
                 <a href="#" data-tab-trigger="{$tab|lower}">
-                    [`tab.{$tab|lower}`]
+                    {assign var="tab_locale_key" value="tab.`$tab|lower`"}
+                    {_wp($tab_locale_key)}
                 </a>
             </li>
         {/foreach}
