@@ -532,7 +532,7 @@ msgid "zen.toggle_button_classes"
 msgstr "CSS classes for collapse button"
 
 msgid "hint.zen.toggle_button_classes"
-msgstr "Additional CSS classes for the collapse/expand section button."
+msgstr "Additional CSS classes to match the collapse/expand section button to your theme. List names separated by spaces, like an HTML class attribute (e.g. btn btn-default my-theme-button)."
 
 msgid "hint.zen.group.customer"
 msgstr "Settings for the collapsed Customer block in Zen Mode."
@@ -661,7 +661,7 @@ msgid "zen.custom_template.preview.error"
 msgstr "Template error"
 
 msgid "zen.summary_template.edit_in_editor"
-msgstr "Edit in editor"
+msgstr "Open editor"
 
 msgid "zen.custom_template.tooltip.cond_if.desc"
 msgstr "Replace each «$» with a variable or expression. The part between {if} and {/if} is output only when the condition is true."
@@ -860,6 +860,9 @@ msgstr ""
 
 msgid "zen.tooltip.active"
 msgstr ""
+
+msgid "hint.zen.active"
+msgstr "Zen Mode makes checkout more compact: completed sections are hidden behind a short summary so customers only see what still needs attention."
 
 msgid "tab.zen"
 msgstr ""

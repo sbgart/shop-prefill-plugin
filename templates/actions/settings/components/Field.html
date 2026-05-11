@@ -10,7 +10,7 @@
     {$hint_spoiler_summary=$hint_spoiler_summary|default: '[`setting.hint_spoiler_summary`]'}
 
     {$default=$default|default: false}
-    <div class="field">
+    <div class="field"{if isset($field_attrs)} {$field_attrs}{/if}>
         {if isset($label)}
             <div class="name">
                 {$label}

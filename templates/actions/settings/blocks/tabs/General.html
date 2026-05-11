@@ -52,7 +52,8 @@
                     label='[`setting.active`]'
                     value=$settings['active']
                     tooltip='[`tooltip.storefront_active`]'
-                    hint_after='[`hint.active`]'}
+                    hint_after='[`hint.active`]'
+                    on_change="prefillUpdateStorefrontStatus"}
 
                     {include file='../../components/Field.html'
                     name="{$name_prefix}[prefill][on_entry]"

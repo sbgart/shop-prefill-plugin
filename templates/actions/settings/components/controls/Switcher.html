@@ -3,7 +3,8 @@
     <span class="switch"
           data-type="switcher{if isset($collapse)},collapse{/if}"
             {if isset($collapse)} data-for="{$collapse}" {/if}
-            {if isset($id)} data-id="{$id}" {/if}>
+            {if isset($id)} data-id="{$id}" {/if}
+            {if isset($on_change)} data-on-change="{$on_change}"{/if}>
         <input type="checkbox"
                name="{$name}"
                value="true"

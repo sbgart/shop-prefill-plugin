@@ -175,11 +175,25 @@
     createOptionElement(value, label, showStatus, status) {
       const option = document.createElement("option");
       const v = value != null ? String(value) : "";
+      const l = label != null ? String(label) : "";
       option.value = v;
       option.dataset.code = v;
+      option.dataset.label = l;
       const statusIcon = showStatus ? (status ? "🟢 " : "⚪ ") : "";
-      option.textContent = statusIcon + (label != null ? String(label) : "");
+      option.textContent = statusIcon + l;
       return option;
+    }
+
+    updateOptionStatus(code, isActive) {
+      const select = this._els.select || this.querySelector("select");
+      if (!select || this.getAttribute("show-status") !== "true") {
+        return;
+      }
+      const option = select.querySelector('option[data-code="' + this.escapeSelector(code) + '"]');
+      if (!option) {
+        return;
+      }
+      option.textContent = (isActive ? "🟢 " : "⚪ ") + (option.dataset.label || "");
     }
 
     createLoadingElement() {

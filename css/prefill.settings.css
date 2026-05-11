@@ -36,6 +36,14 @@
     width: 100%;
 }
 
+#prefill .prefill-storefront-select-wrapper .wa-select {
+  padding-right: 2rem;
+}
+
+#prefill .prefill-storefront-select-wrapper select[data-id="storefront-select"] {
+    width: 100%;
+}
+
 #prefill .prefill-storefront-select-hint {
     margin-top: 8px;
     margin-bottom: 0;

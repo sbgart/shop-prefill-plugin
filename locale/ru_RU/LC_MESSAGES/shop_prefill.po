@@ -82,10 +82,13 @@ msgid "zen.setting.active"
 msgstr "Включить Дзен-режим"
 
 msgid "zen.tooltip.active"
-msgstr "Сворачивает заполненные секции, оставляя только краткую сводку"
+msgstr "Сворачивает заполненные блоки оформления заказа и показывает краткую сводку."
+
+msgid "hint.zen.active"
+msgstr "Дзен-режим делает оформление заказа компактнее: заполненные блоки скрываются под краткой сводкой, чтобы покупатель видел только то, что ещё требует внимания."
 
 msgid "zen.groups.title"
-msgstr "Группы секций"
+msgstr "Группы блоков"
 
 msgid "action.edit"
 msgstr "Изменить"
@@ -133,7 +136,7 @@ msgid "dialog.delivery_unavailable.button"
 msgstr "Выбрать другой способ"
 
 msgid "dialog.params_choice.empty"
-msgstr "У вас пока нет сохраненных вариантов доставки."
+msgstr "У вас пока нет сохранённых вариантов доставки."
 
 msgid "dialog.consent_revoke.title"
 msgstr "Очистить данные формы?"
@@ -154,25 +157,25 @@ msgid "tab.design"
 msgstr "Дизайн"
 
 msgid "zen.icon_display"
-msgstr "Иконки в свёрнутых секциях"
+msgstr "Иконки в свёрнутых блоках"
 
 msgid "zen.icon_display.plugin"
 msgstr "Логотипы способов доставки и оплаты"
 
 msgid "zen.icon_display.default"
-msgstr "Дефолтные иконки групп"
+msgstr "Стандартные иконки блоков"
 
 msgid "zen.icon_display.none"
 msgstr "Без иконок"
 
 msgid "zen.icon_display.hint"
-msgstr "При выборе «Без иконок» блок с иконкой в свёрнутых секциях не выводится."
+msgstr "При выборе «Без иконок» блок с иконкой в свёрнутых блоках не выводится."
 
 msgid "zen.icon_source.delivery"
-msgstr "Иконка секции «Доставка»"
+msgstr "Иконка блока «Доставка»"
 
 msgid "zen.icon_source.payment"
-msgstr "Иконка секции «Оплата»"
+msgstr "Иконка блока «Оплата»"
 
 msgid "zen.icon_source.plugin_logos"
 msgstr "Логотипы плагинов"
@@ -181,13 +184,13 @@ msgid "zen.icon_source.default_icons"
 msgstr "По умолчанию"
 
 msgid "hint.zen.icon_source.customer"
-msgstr "По умолчанию — стандартная иконка; Без иконки — не показывать; Своя иконка — использовать URL ниже; Аватар — аватар покупателя (для гостей будет иконка по умолчанию)."
+msgstr "Стандартная иконка, скрытие иконки, свой URL или аватар покупателя. Для гостей вместо аватара используется стандартная иконка."
 
 msgid "hint.zen.icon_source.delivery"
-msgstr "По умолчанию — стандартная иконка группы; Логотипы плагинов — логотип выбранного способа доставки; Своя иконка — использовать URL ниже."
+msgstr "Стандартная иконка блока, логотип выбранного способа доставки или свой URL."
 
 msgid "hint.zen.icon_source.payment"
-msgstr "По умолчанию — стандартная иконка группы; Логотипы плагинов — логотип выбранного способа оплаты; Своя иконка — использовать URL ниже."
+msgstr "Стандартная иконка блока, логотип выбранного способа оплаты или свой URL."
 
 msgid "zen.icon_size"
 msgstr "Размер иконок"
@@ -202,7 +205,7 @@ msgid "zen.icon_size.large"
 msgstr "Большой"
 
 msgid "zen.icon_size.hint"
-msgstr "Общая ширина и высота блока иконки во всех секциях для единообразия отступов"
+msgstr "Задаёт общий размер блока иконки во всех свёрнутых блоках."
 
 msgid "setting.prefill.my_delivery_variants"
 msgstr "Мои варианты доставки"
@@ -211,7 +214,7 @@ msgid "setting.prefill.debug_panel"
 msgstr "Панель отладки на витрине"
 
 msgid "setting.prefill.sections.label"
-msgstr "Группы предзаполнения"
+msgstr "Блоки предзаполнения"
 
 msgid "setting.prefill.sections.customer"
 msgstr "Покупатель (авторизация)"
@@ -232,19 +235,19 @@ msgid "hint.prefill.my_delivery_variants"
 msgstr "Показывает покупателю выбор из вариантов доставки на основе истории его заказов."
 
 msgid "hint.prefill.debug_panel"
-msgstr "Показывать плавающую панель и расширенные подсказки по чекауту только если включён режим отладки Webasyst. По умолчанию выключено, чтобы при постоянном debug у администратора панель не попадала покупателям."
+msgstr "Показывает плавающую панель и расширенные подсказки на витрине только при включённом режиме отладки Webasyst и этой настройке."
 
 msgid "hint.prefill.sections.customer"
-msgstr "Разрешает предзаполнение блока «Покупатель (авторизация)»."
+msgstr "Разрешает предзаполнять блок «Покупатель (авторизация)»."
 
 msgid "hint.prefill.sections.delivery"
-msgstr "Разрешает предзаполнение блока «Доставка (регион, способ, адрес)»."
+msgstr "Разрешает предзаполнять блок «Доставка (регион, способ, адрес)»."
 
 msgid "hint.prefill.sections.payment"
-msgstr "Разрешает предзаполнение блока «Оплата»."
+msgstr "Разрешает предзаполнять блок «Оплата»."
 
 msgid "hint.prefill.sections.confirm"
-msgstr "Разрешает предзаполнение блока «Подтверждение». Поле «Условия предоставления услуг» плагин не заполняет."
+msgstr "Разрешает предзаполнять блок «Подтверждение». Поле «Условия предоставления услуг» плагин не заполняет."
 
 msgid "setting.general.sidebar_heading"
 msgstr "Категории настроек"
@@ -277,13 +280,13 @@ msgid "setting.group.sections"
 msgstr "Блоки оформления"
 
 msgid "hint.group.sections"
-msgstr "Выбор блоков чекаута, для которых выполняется предзаполнение данных."
+msgstr "Выберите блоки оформления заказа, для которых будет выполняться предзаполнение."
 
 msgid "setting.prefill.on_entry"
 msgstr "Предзаполнение при открытии витрины"
 
 msgid "hint.prefill.on_entry"
-msgstr "При включении предзаполнение выполняется при первом заходе на любую страницу витрины. Если выключено — срабатывает при открытии корзины. Полезно, если цена в корзине зависит от способа доставки."
+msgstr "Если включено, предзаполнение запускается при открытии страниц витрины. Если выключено — при открытии корзины. Полезно, когда цена в корзине зависит от способа доставки."
 
 msgid "setting.prefill.guest.enabled"
 msgstr "Предзаполнение для гостей"
@@ -331,7 +334,7 @@ msgid "zen.toggle_button_classes"
 msgstr "CSS-классы кнопки сворачивания"
 
 msgid "hint.zen.toggle_button_classes"
-msgstr "Дополнительные CSS-классы для кнопки сворачивания и разворачивания блоков."
+msgstr "Дополнительные CSS-классы для подгонки кнопки сворачивания и разворачивания блоков под вёрстку темы дизайна. Перечисляйте через пробел, как в HTML-атрибуте class (например: btn btn-default my-theme-button)."
 
 msgid "hint.zen.group.customer"
 msgstr "Параметры свёрнутого блока «Покупатель» в Дзен-режиме."
@@ -349,7 +352,7 @@ msgid "hint.zen.groups.customer.hide_auth_header"
 msgstr "Применяется только к авторизованным покупателям. ФИО дублируется в сводке Дзен-режима."
 
 msgid "zen.icon_source.customer"
-msgstr "Иконка секции «Покупатель»"
+msgstr "Иконка блока «Покупатель»"
 
 msgid "zen.icon_source.none"
 msgstr "Без иконки"
@@ -370,7 +373,7 @@ msgid "zen.groups.customer.summary_template"
 msgstr "Шаблон сводки блока «Покупатель»"
 
 msgid "hint.zen.groups.customer.summary_template"
-msgstr "Краткая строка в свёрнутом блоке (шаблон Smarty)."
+msgstr "Сводка для свёрнутого блока. Поддерживаются переменные и условия Smarty."
 
 msgid "hint.zen.group.delivery"
 msgstr "Параметры свёрнутого блока «Доставка» в Дзен-режиме."
@@ -391,7 +394,7 @@ msgid "zen.groups.delivery.summary_template"
 msgstr "Общий шаблон сводки блока «Доставка»"
 
 msgid "hint.zen.groups.delivery.summary_template"
-msgstr "Краткая строка в свёрнутом блоке (шаблон Smarty)."
+msgstr "Сводка для свёрнутого блока. Поддерживаются переменные и условия Smarty."
 
 msgid "hint.zen.group.payment"
 msgstr "Параметры свёрнутого блока «Оплата» в Дзен-режиме."
@@ -412,13 +415,13 @@ msgid "zen.groups.payment.summary_template"
 msgstr "Общий шаблон сводки блока «Оплата»"
 
 msgid "hint.zen.groups.payment.summary_template"
-msgstr "Краткая строка в свёрнутом блоке (шаблон Smarty)."
+msgstr "Сводка для свёрнутого блока. Поддерживаются переменные и условия Smarty."
 
 msgid "zen.custom_templates.label"
 msgstr "Шаблоны для конкретных методов"
 
 msgid "zen.custom_templates.hint"
-msgstr "Если для метода включён персональный шаблон — он используется вместо общего шаблона выше"
+msgstr "Если для метода включён персональный шаблон, он используется вместо общего шаблона выше."
 
 msgid "zen.custom_template.switcher_title"
 msgstr "Включить персональный шаблон для этого метода"
@@ -451,16 +454,16 @@ msgid "zen.custom_template.tab.editor"
 msgstr "Редактор"
 
 msgid "zen.custom_template.tab.preview"
-msgstr "Превью"
+msgstr "Предпросмотр"
 
 msgid "zen.custom_template.preview.loading"
-msgstr "Рендерим превью…"
+msgstr "Формируем предпросмотр..."
 
 msgid "zen.custom_template.preview.error"
 msgstr "Ошибка шаблона"
 
 msgid "zen.summary_template.edit_in_editor"
-msgstr "Редактировать в редакторе"
+msgstr "Открыть редактор"
 
 msgid "zen.custom_template.tooltip.cond_if.desc"
 msgstr "Замените каждый «$» на имя переменной или выражение. Текст между {if} и {/if} выводится, только если условие истинно."
@@ -541,13 +544,13 @@ msgid "zen.custom_template.format.italic"
 msgstr "Курсив"
 
 msgid "zen.custom_template.format.underline"
-msgstr "Подчеркнутый"
+msgstr "Подчёркнутый текст"
 
 msgid "zen.custom_template.format.br"
 msgstr "Новая строка"
 
 msgid "zen.custom_template.format.bullet"
-msgstr "Маркер"
+msgstr "Разделитель"
 
 msgid "zen.custom_template.format.link"
 msgstr "Ссылка"
@@ -688,7 +691,7 @@ msgid "Service agreement hint"
 msgstr "Текст согласия"
 
 msgid "Text of the consent hint (data[customer][service_agreement_hint]) from checkout config."
-msgstr "Текст подсказки согласия из конфига чекаута."
+msgstr "Текст подсказки согласия из настроек оформления заказа."
 
 msgid "Shipping rate name"
 msgstr "Название тарифа доставки"
@@ -859,7 +862,7 @@ msgid "hint.group.storefront_main"
 msgstr "Настройте основные параметры плагина для выбранной витрины."
 
 msgid "setting.section.placeholder"
-msgstr "Раздел будет заполнен на следующем этапе."
+msgstr "Блок будет заполнен на следующем этапе."
 
 msgid "tab.general"
 msgstr "Основные"
@@ -877,7 +880,7 @@ msgid "setting.logging.level"
 msgstr "Уровень логирования"
 
 msgid "hint.logging.level"
-msgstr "off — не писать; warning — только ошибки и предупреждения (по умолчанию); info — добавить информационные; debug — писать всё"
+msgstr "off — не писать логи; warning — ошибки и предупреждения; info — информационные события; debug — подробная отладка."
 
 msgid "log.level.off"
 msgstr "Выключено"

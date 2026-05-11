@@ -20,6 +20,7 @@ var PrefillSettings = (function () {
             const $switcher = $(this);
             const target = $switcher.data("for");
             const $target = target ? $switcher.closest(".field").find('[data-id="' + target + '"]') : $();
+            const onChangeFn = $switcher.data("on-change");
 
             if ($target.length > 0) {
                 const isChecked = $switcher.find('input[type="checkbox"]').is(":checked");
@@ -38,6 +39,9 @@ var PrefillSettings = (function () {
                         } else {
                             $target.slideUp(200);
                         }
+                    }
+                    if (onChangeFn && typeof window[onChangeFn] === 'function') {
+                        window[onChangeFn](active, $switcher);
                     }
                 },
             });
@@ -936,3 +940,11 @@ document.addEventListener('prefill:storefront-content-shown', function (event) {
     if (!container) { return; }
     initPrefillSettings(container);
 });
+
+function prefillUpdateStorefrontStatus(active) {
+    var component = document.querySelector('prefill-storefront-select[show-status="true"]');
+    if (!component) { return; }
+    var code = $(component).find('select[data-id="storefront-select"]').val();
+    if (!code || code === '*') { return; }
+    component.updateOptionStatus(code, active);
+}
