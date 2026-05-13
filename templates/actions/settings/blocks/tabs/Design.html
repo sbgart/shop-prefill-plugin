@@ -10,5 +10,45 @@
             label='[`setting.styles.accent_color`]'
             value=$settings['styles']['accent_color']
             hint_after='[`hint.styles.accent_color`]'}
+
+        <div class="field">
+            <div class="name">[`setting.styles.custom_css`]</div>
+            <div class="value">
+
+                {* Кнопка — скрывается при открытии редактора *}
+                <button type="button"
+                        class="button light-gray js-prefill-css-edit-btn"
+                        data-prefill-css-code="{$storefront_code}"
+                        data-msg-loading="[`hint.styles.css_loading`]"
+                        data-msg-error="[`hint.styles.css_load_error`]"
+                        data-msg-is-custom="[`hint.styles.css_is_custom`]">
+                    <i class="fas fa-code custom-mr-4"></i>[`button.edit_css`]
+                </button>
+
+                {* Редактор — скрыт до нажатия кнопки *}
+                <div class="js-prefill-css-editor-panel" style="display:none">
+
+                    <div class="js-prefill-css-loading" style="display:none">
+                        <i class="icon16 loading"></i>
+                    </div>
+
+                    {* textarea для передачи значения через форму; значение синхронизируется ACE-редактором *}
+                    <textarea name="{$name_prefix}[styles][custom_css]"
+                              class="js-prefill-css-textarea"
+                              style="display:none">{$settings['styles']['custom_css']|escape:'html'}</textarea>
+
+                    {* Контейнер ACE-редактора (mode: css) *}
+                    <div class="prefill-css-ace js-prefill-css-ace" aria-hidden="true"></div>
+
+                    <div class="flexbox middle custom-mt-8">
+                        <span class="hint js-prefill-css-status"></span>
+                        <a href="#" class="js-prefill-css-reset-btn prefill-css-reset-link">[`button.reset_css`]</a>
+                    </div>
+                </div>
+
+                <p class="hint custom-mt-4">[`hint.styles.custom_css`]</p>
+            </div>
+        </div>
     </div>
 </div>
+

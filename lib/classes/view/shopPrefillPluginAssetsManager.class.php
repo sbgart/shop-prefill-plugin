@@ -23,6 +23,7 @@ class shopPrefillPluginAssetsManager
      * @param array $js_params Параметры для инициализации JS
      * @param callable $add_css Callback для добавления CSS (addCss из плагина)
      * @param callable $add_js Callback для добавления JS (addJs из плагина)
+     * @param string $storefront_css_url Публичный URL per-storefront CSS (пустой = грузить штатный frontend.css)
      * @throws waException
      */
     public function init(
@@ -30,14 +31,19 @@ class shopPrefillPluginAssetsManager
         array $css_variables,
         array $js_params,
         callable $add_css,
-        callable $add_js
+        callable $add_js,
+        string $storefront_css_url = ''
     ): void {
         if ($this->assets_initialized) {
             return;
         }
 
-        // Подключаем основные CSS файлы
-        $add_css('css/frontend.' . (!$is_debug ? 'min.' : '') . 'css');
+        // Per-storefront CSS заменяет штатный frontend.css; если файла нет — грузим штатный
+        if ($storefront_css_url !== '') {
+            $this->getResponse()->addCss($storefront_css_url);
+        } else {
+            $add_css('css/frontend.' . (!$is_debug ? 'min.' : '') . 'css');
+        }
 
         // Подключаем JS модули в правильном порядке (по зависимостям)
         // Модули без зависимостей
@@ -79,11 +85,12 @@ class shopPrefillPluginAssetsManager
     public function generateCssVariablesFile(array $css_variables): string
     {
         $css_variables_map = $this->createCssVariablesString($css_variables);
-        $css_variables_filename = 'variables_' . md5($css_variables_map) . '.css';
-        $css_public_dir = wa()->getDataPath('plugins/' . $this->plugin_id . '/css/', true, 'shop');
+        $hash = md5($css_variables_map);
+        $css_variables_filename = "variables_{$hash}.css";
+        $css_public_dir = wa()->getDataPath("plugins/{$this->plugin_id}/css/", true, 'shop');
 
-        if (!file_exists($css_public_dir . $css_variables_filename)) {
-            file_put_contents($css_public_dir . $css_variables_filename, $css_variables_map);
+        if (!file_exists("{$css_public_dir}{$css_variables_filename}")) {
+            file_put_contents("{$css_public_dir}{$css_variables_filename}", $css_variables_map);
         }
 
         return $css_variables_filename;
@@ -110,11 +117,12 @@ document.addEventListener('DOMContentLoaded', function() {
     window.prefill = new PrefillFrontendController(params);
 });
 JS;
-        $js_file_name = md5($inline_script) . '.js';
-        $js_public_dir = wa()->getDataPath('plugins/' . $this->plugin_id . '/js/', true, 'shop');
+        $hash = md5($inline_script);
+        $js_file_name = "{$hash}.js";
+        $js_public_dir = wa()->getDataPath("plugins/{$this->plugin_id}/js/", true, 'shop');
 
-        if (!file_exists($js_public_dir . $js_file_name)) {
-            file_put_contents($js_public_dir . $js_file_name, $inline_script);
+        if (!file_exists("{$js_public_dir}{$js_file_name}")) {
+            file_put_contents("{$js_public_dir}{$js_file_name}", $inline_script);
         }
 
         return $js_file_name;
@@ -151,7 +159,7 @@ JS;
      */
     private function getPublicDataPath(string $subdir): string
     {
-        return substr(wa()->getDataUrl('plugins/' . $this->plugin_id . '/' . $subdir . '/', true, 'shop'), 1);
+        return substr(wa()->getDataUrl("plugins/{$this->plugin_id}/{$subdir}/", true, 'shop'), 1);
     }
 
     /**

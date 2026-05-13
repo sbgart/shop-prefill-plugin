@@ -25,8 +25,6 @@ class shopPrefillPluginSettingsSaveLogLevelController extends waJsonController
         $provider = $plugin->getSettingProvider();
         $provider->setSetting('logging', ['level' => $level]);
 
-        // Сбросить runtime-кэш и сообщить Log-классу о новом уровне в этом же запросе
-        (new waRuntimeCache('prefill_settings'))->delete();
         shopPrefillPluginLog::setLevel($level);
 
         $this->response = ['saved' => true, 'level' => $level];

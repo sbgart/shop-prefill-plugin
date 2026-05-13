@@ -1,6 +1,6 @@
 <?php
 
-return array(
+return [
     'prefill/fill-checkout-params' => 'frontend/FillCheckoutParams',
     'prefill/params-choice' => 'frontend/ParamsChoice',
     'prefill/logs' => 'frontend/Logs',
@@ -12,4 +12,4 @@ return array(
     'prefill/consent' => 'frontend/Consent',
     'prefill/toggle-zen' => 'frontend/ToggleZen',
     'prefill/apply-delivery' => 'frontend/ApplyDelivery',
-);
+];

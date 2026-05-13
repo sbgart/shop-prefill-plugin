@@ -1,169 +1,62 @@
 {* Информация о статусе плагина *}
-<div style="
-            padding: 8px 15px;
-            background: {if $plugin_enabled}#d4edda{else}#f8d7da{/if};
-            border-bottom: 1px solid {if $plugin_enabled}#28a745{else}#dc3545{/if};
-            font-size: 10px;
-            flex-shrink: 0;
-        ">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px">
-        <div style="display: flex; align-items: center; gap: 8px">
-            <div
-                style="display: flex; align-items: center; gap: 5px; padding: 3px 8px; background: {if $plugin_enabled}#d4edda{else}#f8d7da{/if}; border-radius: 3px; border: 1px solid {if $plugin_enabled}#28a745{else}#dc3545{/if};">
-                <span style="font-size: 9px; font-weight: bold; color: {if $plugin_enabled}#155724{else}#721c24{/if};">
-                    {if $plugin_enabled}✅ Prefill ON{else}⚠️ Prefill OFF{/if}
-                </span>
-            </div>
-            <div
-                style="display: flex; align-items: center; gap: 5px; padding: 3px 8px; background: {if $zen_enabled}#e8f5e9{else}#fce4ec{/if}; border-radius: 3px; border: 1px solid {if $zen_enabled}#4caf50{else}#f06292{/if};">
-                <span style="font-size: 9px; font-weight: bold; color: {if $zen_enabled}#2e7d32{else}#ad1457{/if};">
-                    {if $zen_enabled}🧘 Zen ON{else}🧘 Zen OFF{/if}
-                </span>
-            </div>
-        </div>
-
-        <div style="display: flex; gap: 5px; position: relative;">
-            {* Меню действий *}
-            <button onclick="PrefillDebugHelper.toggleActionsMenu(event)" class="prefill-debug-btn" style="
-              background: #0277bd;
-              color: white;
-              border: none;
-              border-radius: 3px;
-              padding: 4px 8px;
-              cursor: pointer;
-              font-size: 10px;
-              font-weight: bold;
-            " title="Меню действий">
-                ⚡ Actions ▼
-            </button>
-
-            <div id="prefill-debug-actions-menu" style="
-              display: none;
-              position: absolute;
-              right: 0;
-              top: 100%;
-              background: white;
-              border: 1px solid #ccc;
-              border-radius: 4px;
-              box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-              z-index: 100000;
-              min-width: 200px;
-              margin-top: 5px;
-              color: #333;
-              text-align: left;
-            ">
-                {* === PREFILL ACTIONS === *}
-                <div style="
-                padding: 6px 12px;
-                background: #e3f2fd;
-                border-bottom: 2px solid #2196f3;
-                font-weight: bold;
-                font-size: 10px;
-                color: #1565c0;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-              ">
-                    📝 Prefill
-                </div>
-
-                {* Force Prefill *}
-                <div onclick="PrefillDebugHelper.forcePrefill()" onmouseover="this.style.background='#f5f5f5'"
-                    onmouseout="this.style.background='white'" style="
-                padding: 8px 12px;
-                cursor: pointer;
-                border-bottom: 1px solid #eee;
-              ">
-                    <div style="font-weight: bold; font-size: 11px; color: #2e7d32;">⚡ Force Prefill</div>
-                    <div style="font-size: 9px; color: #666;">Заполнить принудительно (без очистки)</div>
-                </div>
-
-                {* Reset & Refill *}
-                <div onclick="PrefillDebugHelper.resetAndRefill()" onmouseover="this.style.background='#f5f5f5'"
-                    onmouseout="this.style.background='white'" style="
-                padding: 8px 12px;
-                cursor: pointer;
-                border-bottom: 1px solid #eee;
-              ">
-                    <div style="font-weight: bold; font-size: 11px; color: #9c27b0;">🔄 Reset & Refill</div>
-                    <div style="font-size: 9px; color: #666;">Очистить всё и заполнить заново</div>
-                </div>
-
-                {* Reset Snapshot (Prefill Snapshot) *}
-                <div onclick="PrefillDebugHelper.resetSnapshot()" onmouseover="this.style.background='#f5f5f5'"
-                    onmouseout="this.style.background='white'" style="
-                padding: 8px 12px;
-                cursor: pointer;
-                border-bottom: 1px solid #eee;
-              ">
-                    <div style="font-weight: bold; font-size: 11px; color: #0277bd;">📸 Reset Snapshot</div>
-                    <div style="font-size: 9px; color: #666;">Clear Prefill Snapshot storage</div>
-                </div>
-
-                {* Clear Storage *}
-                <div onclick="PrefillDebugHelper.clearStorage()" onmouseover="this.style.background='#f5f5f5'"
-                    onmouseout="this.style.background='white'" style="
-                padding: 8px 12px;
-                cursor: pointer;
-                border-bottom: 2px solid #ddd;
-              ">
-                    <div style="font-weight: bold; font-size: 11px; color: #ff9800;">🗑️ Clear Storage</div>
-                    <div style="font-size: 9px; color: #666;">Полностью очистить сессию checkout</div>
-                </div>
-
-                {* === ZEN MODE === *}
-                <div style="
-                padding: 6px 12px;
-                background: #f3e5f5;
-                border-bottom: 2px solid #9c27b0;
-                font-weight: bold;
-                font-size: 10px;
-                color: #6a1b9a;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-              ">
-                    🧘 Zen Mode
-                </div>
-
-                {* Toggle Zen Mode *}
-                <div onclick="PrefillDebugHelper.toggleZen()" onmouseover="this.style.background='#f5f5f5'"
-                    onmouseout="this.style.background='white'" style="
-                padding: 8px 12px;
-                cursor: pointer;
-                border-bottom: 1px solid #eee;
-              ">
-                    <div style="font-weight: bold; font-size: 11px; color: #673ab7;">🧘 Toggle Zen Mode</div>
-                    <div style="font-size: 9px; color: #666;">Вкл/Выкл режим сворачивания</div>
-                </div>
-
-                {* === VALIDATION === *}
-                <div style="
-                padding: 6px 12px;
-                background: #ffebee;
-                border-bottom: 2px solid #ef5350;
-                font-weight: bold;
-                font-size: 10px;
-                color: #c62828;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-              ">
-                    ⚠️ Validation
-                </div>
-
-                {* Toggle Validation *}
-                <div onclick="PrefillDebugHelper.toggleValidationErrors()" onmouseover="this.style.background='#f5f5f5'"
-                    onmouseout="this.style.background='white'" style="
-                padding: 8px 12px;
-                cursor: pointer;
-              ">
-                    {if $show_validation}
-                    <div style="font-weight: bold; font-size: 11px; color: #c62828;">🚫 Disable Validation Debug</div>
-                    <div style="font-size: 9px; color: #666;">Выключить отображение ошибок</div>
-                    {else}
-                    <div style="font-weight: bold; font-size: 11px; color: #2e7d32;">👁️ Enable Validation Debug</div>
-                    <div style="font-size: 9px; color: #666;">Включить отображение ошибок</div>
-                    {/if}
-                </div>
-            </div>
-        </div>
+<div class="pd-status-bar {if $plugin_enabled}pd-status-bar--on{else}pd-status-bar--off{/if}">
+  <div class="pd-status-row">
+    <div class="pd-status-badges">
+      <div class="pd-badge {if $plugin_enabled}pd-badge--prefill-on{else}pd-badge--prefill-off{/if}">
+        <span class="pd-badge__text">{if $plugin_enabled}✅ Prefill ON{else}⚠️ Prefill OFF{/if}</span>
+      </div>
+      <div class="pd-badge {if $zen_enabled}pd-badge--zen-on{else}pd-badge--zen-off{/if}">
+        <span class="pd-badge__text">{if $zen_enabled}🧘 Zen ON{else}🧘 Zen OFF{/if}</span>
+      </div>
     </div>
+
+    <div class="pd-actions-wrap">
+      <button onclick="PrefillDebugHelper.toggleActionsMenu(event)" class="pd-actions-btn" title="Меню действий">
+        ⚡ Actions ▼
+      </button>
+
+      <div id="prefill-debug-actions-menu" class="pd-actions-menu">
+        <div class="pd-menu-group pd-menu-group--prefill">📝 Prefill</div>
+
+        <div class="pd-menu-item" onclick="PrefillDebugHelper.forcePrefill()">
+          <div class="pd-menu-item__title pd-menu-item__title--force">⚡ Force Prefill</div>
+          <div class="pd-menu-item__desc">Заполнить принудительно (без очистки)</div>
+        </div>
+
+        <div class="pd-menu-item" onclick="PrefillDebugHelper.resetAndRefill()">
+          <div class="pd-menu-item__title pd-menu-item__title--reset">🔄 Reset &amp; Refill</div>
+          <div class="pd-menu-item__desc">Очистить всё и заполнить заново</div>
+        </div>
+
+        <div class="pd-menu-item" onclick="PrefillDebugHelper.resetSnapshot()">
+          <div class="pd-menu-item__title pd-menu-item__title--snapshot">📸 Reset Snapshot</div>
+          <div class="pd-menu-item__desc">Clear Prefill Snapshot storage</div>
+        </div>
+
+        <div class="pd-menu-item pd-menu-item--last-in-group" onclick="PrefillDebugHelper.clearStorage()">
+          <div class="pd-menu-item__title pd-menu-item__title--clear">🗑️ Clear Storage</div>
+          <div class="pd-menu-item__desc">Полностью очистить сессию checkout</div>
+        </div>
+
+        <div class="pd-menu-group pd-menu-group--zen">🧘 Zen Mode</div>
+
+        <div class="pd-menu-item pd-menu-item--last-in-group" onclick="PrefillDebugHelper.toggleZen()">
+          <div class="pd-menu-item__title pd-menu-item__title--zen">🧘 Toggle Zen Mode</div>
+          <div class="pd-menu-item__desc">Вкл/Выкл режим сворачивания</div>
+        </div>
+
+        <div class="pd-menu-group pd-menu-group--validation">⚠️ Validation</div>
+
+        <div class="pd-menu-item" onclick="PrefillDebugHelper.toggleValidationErrors()">
+          {if $show_validation}
+          <div class="pd-menu-item__title pd-menu-item__title--disable">🚫 Disable Validation Debug</div>
+          <div class="pd-menu-item__desc">Выключить отображение ошибок</div>
+          {else}
+          <div class="pd-menu-item__title pd-menu-item__title--enable">👁️ Enable Validation Debug</div>
+          <div class="pd-menu-item__desc">Включить отображение ошибок</div>
+          {/if}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

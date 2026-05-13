@@ -2,76 +2,67 @@
 
 class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstractSettingProvider
 {
-
-    /**
-     * @throws waException
-     */
     public function __construct()
     {
-        parent::__construct();
-
-        $config = shopPrefillPlugin::getConfig('storefront.settings') ?? [];
-        $this->structure = $this->buildStructure($config);
+        parent::__construct(
+            new shopPrefillPluginSettingsModel(),
+            shopPrefillPluginSettingsConfig::create('storefront.settings')
+        );
     }
 
-    /**
-     * @throws waDbException
-     */
-    public function getSettings($storefront_code): array
+    public function getSettings(string $storefront_code): array
     {
-        $cache = new waRuntimeCache('prefill_settings_' . $storefront_code);
-        if ($cache->isCached()) {
-            $settings = $cache->get();
-        } else {
-            $settings = $this->getSettingsModel()->get($storefront_code);
-            $cache->set($settings);
-        }
-
-        return $this->validate($settings);
+        return $this->validate($this->model->get($storefront_code));
     }
 
-    /**
-     * @throws waException
-     */
-    public function setSetting($storefront_code, $key, $value, $groups = null)
+    public function setSetting(string $storefront_code, $key, $value, $groups = null): void
     {
         if (is_array($value)) {
             foreach ($value as $k => $v) {
-                if (empty($groups)) {
-                    $groups = [];
-                }
-
-                $this->setSetting($storefront_code, $k, $v, array_merge($groups, [$key]));
+                $this->setSetting($storefront_code, $k, $v, array_merge((array) $groups, [$key]));
             }
-        } else {
-            // Преобразуем bool в int (false -> 0, true -> 1) для корректного сохранения в БД
-            // Без этого false сохраняется как пустая строка и при чтении заменяется на default значение
-            if (is_bool($value)) {
-                $value = (int) $value;
-            }
-            $this->getSettingsModel()->set($storefront_code, $key, $value, $groups);
+            return;
         }
+
+        // bool → int so false isn't stored as empty string
+        if (is_bool($value)) {
+            $value = (int) $value;
+        }
+
+        $this->model->set($storefront_code, $key, $value, $groups);
     }
 
-    /**
-     * @throws waException
-     */
-    public function saveSettings($storefront_code, $settings = [])
+    public function saveSettings(string $storefront_code, array $settings = []): void
     {
         foreach ($settings as $key => $value) {
             $this->setSetting($storefront_code, $key, $value);
         }
 
         $this->setSetting($storefront_code, 'update_time', time());
-        $this->setSetting($storefront_code, 'updated_by', wa()->getUser()->getId() ?? []);
+        $this->setSetting($storefront_code, 'updated_by', wa()->getUser()->getId() ?? 0);
 
-        // Очищаем кэш после сохранения
-        $cache = new waRuntimeCache('prefill_settings_' . $storefront_code);
-        $cache->delete();
+        $this->syncCssFile($storefront_code, $settings);
 
         shopPrefillPluginLog::info('Storefront settings saved', [
             'storefront_code' => $storefront_code,
-            'updated_by' => wa()->getUser()->getId()
+            'updated_by'      => wa()->getUser()->getId(),
         ]);
+    }
+
+    /**
+     * Синхронизирует CSS-файл на диске с сохранённым custom_css.
+     * Вызывается только если в $settings передан ключ styles.custom_css.
+     *
+     * @throws waException
+     */
+    private function syncCssFile(string $storefront_code, array $settings): void
+    {
+        $custom_css = $settings['styles']['custom_css'] ?? null;
+
+        if ($custom_css === null) {
+            return;
+        }
+
+        shopPrefillPlugin::getInstance()->getCssManager()->saveFile($storefront_code, $custom_css);
     }
 }

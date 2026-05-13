@@ -15,6 +15,7 @@ class shopPrefillPluginFrontendHooks
     private bool                                    $is_debug;
     private bool                                    $is_debug_panel;
     private array                                   $storefront_settings;
+    private string                                  $storefront_css_url;
     /** @var callable */
     private $add_css_callback;
     /** @var callable */
@@ -31,7 +32,8 @@ class shopPrefillPluginFrontendHooks
         bool $is_debug_panel,
         array $storefront_settings,
         callable $add_css_callback,
-        callable $add_js_callback
+        callable $add_js_callback,
+        string $storefront_css_url = ''
     ) {
         $this->session_storage      = $session_storage;
         $this->fill_params_provider = $fill_params_provider;
@@ -44,6 +46,7 @@ class shopPrefillPluginFrontendHooks
         $this->storefront_settings  = $storefront_settings;
         $this->add_css_callback     = $add_css_callback;
         $this->add_js_callback      = $add_js_callback;
+        $this->storefront_css_url   = $storefront_css_url;
     }
 
 
@@ -101,7 +104,6 @@ class shopPrefillPluginFrontendHooks
         $this->initializeFrontendAssets();
 
         if ($this->is_debug_panel) {
-            $head_html .= shopPrefillPluginDebug::scheduleDebugStackRender();
             $head_html .= shopPrefillPluginDebug::renderDebugStack();
         }
 
@@ -282,7 +284,8 @@ class shopPrefillPluginFrontendHooks
             $css_variables,
             $js_params,
             $this->add_css_callback,
-            $this->add_js_callback
+            $this->add_js_callback,
+            $this->storefront_css_url
         );
     }
 

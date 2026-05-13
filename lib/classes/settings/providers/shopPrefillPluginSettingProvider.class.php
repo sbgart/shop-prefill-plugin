@@ -2,68 +2,50 @@
 
 class shopPrefillPluginSettingProvider extends shopPrefillPluginAbstractSettingProvider
 {
+    // Global settings use '-' as the storefront code
+    private const CODE = '-';
+
     public function __construct()
     {
-        parent::__construct();
-
-        $config = shopPrefillPlugin::getConfig('settings') ?? [];
-        $this->structure = $this->buildStructure($config);
+        parent::__construct(
+            new shopPrefillPluginSettingsModel(),
+            shopPrefillPluginSettingsConfig::create('settings')
+        );
     }
 
-    /**
-     * @throws waDbException
-     */
     public function getSettings(): array
     {
-        $cache = new waRuntimeCache('prefill_settings');
-
-        if ($cache->isCached()) {
-            $settings = $cache->get();
-        } else {
-            $settings = $this->getSettingsModel()->get('-');
-            $cache->set($settings);
-        }
-
-        return $this->validate($settings);
+        return $this->validate($this->model->get(self::CODE));
     }
 
-    /**
-     * @throws waException
-     */
-    public function setSetting($key, $value, $groups = null)
+    public function setSetting($key, $value, $groups = null): void
     {
         if (is_array($value)) {
             foreach ($value as $k => $v) {
-                if (empty($groups)) {
-                    $groups = [];
-                }
-
-                $this->setSetting($k, $v, array_merge($groups, [$key]));
+                $this->setSetting($k, $v, array_merge((array) $groups, [$key]));
             }
-        } else {
-            // Преобразуем bool в int (false -> 0, true -> 1) для корректного сохранения в БД
-            // Без этого false сохраняется как пустая строка и при чтении заменяется на default значение
-            if (is_bool($value)) {
-                $value = (int) $value;
-            }
-            $this->getSettingsModel()->set('-', $key, $value, $groups);
+            return;
         }
+
+        // bool → int so false isn't stored as empty string
+        if (is_bool($value)) {
+            $value = (int) $value;
+        }
+
+        $this->model->set(self::CODE, $key, $value, $groups);
     }
 
-    /**
-     * @throws waException
-     */
-    public function saveSettings($settings = [])
+    public function saveSettings($settings = []): void
     {
         foreach ($settings as $name => $value) {
             $this->setSetting($name, $value);
         }
 
         $this->setSetting('update_time', time());
-        $this->setSetting('updated_by', wa()->getUser()->getId() ?? []);
+        $this->setSetting('updated_by', wa()->getUser()->getId() ?? 0);
 
         shopPrefillPluginLog::info('Global plugin settings saved', [
-            'updated_by' => wa()->getUser()->getId() ?? 'system'
+            'updated_by' => wa()->getUser()->getId() ?? 'system',
         ]);
     }
 }

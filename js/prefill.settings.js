@@ -445,6 +445,62 @@ var PrefillSettings = (function () {
             });
     };
 
+    PrefillSettings.prototype.cssEditor = function () {
+        var self = this;
+
+        self.$wrapper.on('click', '.js-prefill-css-edit-btn', function (e) {
+            e.preventDefault();
+            var $btn    = $(this);
+            var code    = $btn.data('prefill-css-code') || '';
+            var msgErr  = $btn.data('msg-error') || 'Load error';
+            var $value  = $btn.closest('.value');
+            var $panel  = $value.find('.js-prefill-css-editor-panel');
+            var $loading = $panel.find('.js-prefill-css-loading');
+            var $ta     = $panel.find('.js-prefill-css-textarea');
+
+            $btn.hide();
+            $panel.show();
+            $loading.show();
+
+            $.get('?module=prefillPluginSettingsGetCss', { code: code })
+                .done(function (r) {
+                    $loading.hide();
+                    if (r && r.status === 'ok' && r.data) {
+                        var currentCss = r.data.current_css || '';
+                        var defaultCss = r.data.default_css || '';
+                        var isCustom   = !!r.data.is_custom;
+
+                        $ta.val(currentCss);
+                        $panel.data('prefill-default-css', defaultCss);
+
+                        var $status = $panel.find('.js-prefill-css-status');
+                        var msgCustom = $btn.data('msg-is-custom') || '';
+                        $status.text(isCustom && msgCustom ? msgCustom : '');
+
+                        prefillCssAceInit($panel, currentCss);
+                    } else {
+                        $panel.find('.js-prefill-css-ace').hide();
+                        $ta.show();
+                        $panel.find('.js-prefill-css-ace').before(
+                            '<p class="errormsg">' + prefillEscapeHtml(msgErr) + '</p>'
+                        );
+                    }
+                })
+                .fail(function () {
+                    $loading.hide();
+                    $ta.show();
+                });
+        });
+
+        self.$wrapper.on('click', '.js-prefill-css-reset-btn', function (e) {
+            e.preventDefault();
+            if (!confirm($_('dialog.css_reset.confirm'))) { return; }
+            var $panel = $(this).closest('.js-prefill-css-editor-panel');
+            prefillCssAceSetValue($panel, $panel.data('prefill-default-css') || '');
+            $panel.find('.js-prefill-css-status').text('');
+        });
+    };
+
     PrefillSettings.prototype.debugLogs = function () {
         var self = this;
         var $tab = self.$wrapper.find('#prefill-debug-tab');
@@ -917,6 +973,71 @@ function prefillInsertAtCursor(el, text) {
     }
 }
 
+/**
+ * Инициализирует ACE-редактор в режиме CSS внутри $container.
+ * @param {jQuery} $container Панель редактора (.js-prefill-css-editor-panel)
+ * @param {string} initialValue Начальное содержимое
+ */
+function prefillCssAceInit($container, initialValue) {
+    var $ta    = $container.find('.js-prefill-css-textarea');
+    var $mount = $container.find('.js-prefill-css-ace');
+
+    if (typeof ace === 'undefined' || !$mount.length) {
+        $ta.show().val(initialValue);
+        return;
+    }
+
+    var editor = ace.edit($mount[0]);
+    ace.config.set('basePath', (window.wa_url || '') + 'wa-content/js/ace/');
+    editor.commands.removeCommand('find');
+
+    function applyTheme() {
+        editor.setTheme(
+            document.documentElement.dataset.theme === 'dark'
+                ? 'ace/theme/monokai'
+                : 'ace/theme/eclipse'
+        );
+    }
+    applyTheme();
+    var themeHandler = function () { applyTheme(); };
+    document.documentElement.addEventListener('wa-theme-change', themeHandler);
+    $container.data('prefillCssAceThemeHandler', themeHandler);
+
+    var session = editor.getSession();
+    session.setMode('ace/mode/css');
+    session.setUseWrapMode(true);
+    editor.setShowPrintMargin(false);
+    editor.renderer.setShowGutter(true);
+    editor.setAutoScrollEditorIntoView(false);
+
+    var v = initialValue == null ? '' : String(initialValue);
+    session.setValue(v);
+    editor.clearSelection();
+    editor.navigateFileStart();
+
+    session.on('change', function () { $ta.val(editor.getValue()); });
+
+    $container.data('prefillCssAce', editor);
+    setTimeout(function () { editor.resize(); editor.focus(); }, 50);
+}
+
+/**
+ * @param {jQuery} $container
+ * @param {string} value
+ */
+function prefillCssAceSetValue($container, value) {
+    var v      = value == null ? '' : String(value);
+    var editor = $container.data('prefillCssAce');
+    var $ta    = $container.find('.js-prefill-css-textarea');
+    $ta.val(v);
+    if (editor) {
+        editor.setValue(v);
+        editor.clearSelection();
+        editor.navigateFileStart();
+        editor.focus();
+    }
+}
+
 function initPrefillSettings(container) {
     const settings = new PrefillSettings(container);
     settings.switcher();
@@ -926,6 +1047,7 @@ function initPrefillSettings(container) {
     settings.colorPicker();
     settings.valueReveal();
     settings.customTemplates();
+    settings.cssEditor();
     settings.debugLogs();
 }
 

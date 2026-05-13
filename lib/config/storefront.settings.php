@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'active'      => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+    'active'      => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
     'prefill'     => [
         'my_delivery_variants'                => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'my_delivery_variants_button_classes' => ['value' => ''],
@@ -30,6 +30,7 @@ return [
     ],
     'styles'      => [
         'accent_color' => ['value' => '#000'],
+        'custom_css'   => ['value' => ''],
     ],
     // Zen Mode — сворачивание секций чекаута
     'zen'         => [

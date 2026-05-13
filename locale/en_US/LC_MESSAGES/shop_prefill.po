@@ -935,3 +935,27 @@ msgstr "Loading..."
 
 msgid "log.load_error"
 msgstr "Load error"
+
+msgid "setting.styles.custom_css"
+msgstr "Custom CSS"
+
+msgid "button.edit_css"
+msgstr "Edit styles"
+
+msgid "button.reset_css"
+msgstr "Reset to original"
+
+msgid "dialog.css_reset.confirm"
+msgstr "Reset CSS to original? All changes will be lost."
+
+msgid "hint.styles.custom_css"
+msgstr "Edit the plugin CSS styles for this storefront. Changes take effect after saving settings."
+
+msgid "hint.styles.css_loading"
+msgstr "Loading..."
+
+msgid "hint.styles.css_load_error"
+msgstr "Failed to load CSS"
+
+msgid "hint.styles.css_is_custom"
+msgstr "Modified"

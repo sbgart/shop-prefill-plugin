@@ -42,6 +42,8 @@ class shopPrefillPlugin extends shopPlugin
 
     private ?shopPrefillPluginAssetsManager $assets_manager = null;
 
+    private ?shopPrefillPluginCssManager $css_manager = null;
+
     private ?shopPrefillPluginCheckoutHooks $checkout_hooks = null;
 
     public function __construct($info)
@@ -280,7 +282,8 @@ class shopPrefillPlugin extends shopPlugin
             $this->isDebugPanelEnabled(),
             $this->getStorefrontSettings(),
             fn($path) => $this->addCss($path),
-            fn($path) => $this->addJs($path)
+            fn($path) => $this->addJs($path),
+            $this->resolveStorefrontCssUrl()
         );
     }
 
@@ -292,6 +295,48 @@ class shopPrefillPlugin extends shopPlugin
     public function getAssetsManager(): shopPrefillPluginAssetsManager
     {
         return $this->assets_manager ??= new shopPrefillPluginAssetsManager(self::PLUGIN_ID);
+    }
+
+    /**
+     * @throws waException
+     */
+    public function getCssManager(): shopPrefillPluginCssManager
+    {
+        return $this->css_manager ??= new shopPrefillPluginCssManager(self::PLUGIN_ID, self::getPluginPath());
+    }
+
+    /**
+     * Возвращает публичный URL per-storefront CSS-файла, или '' если custom_css не задан.
+     * Если файл на диске отсутствует (например, после очистки wa-data) — пересоздаёт его.
+     *
+     * @throws waException
+     * @throws waDbException
+     */
+    private function resolveStorefrontCssUrl(): string
+    {
+        $settings   = $this->getStorefrontSettings();
+        $custom_css = $settings['styles']['custom_css'] ?? '';
+
+        if ($custom_css === '') {
+            shopPrefillPluginLog::debug('CSS: no custom CSS, using original frontend.css');
+            return '';
+        }
+
+        $code        = $this->getStorefrontProvider()->getCurrentStorefront()->getCode();
+        $css_manager = $this->getCssManager();
+
+        if (!$css_manager->fileExists($code)) {
+            // Файл мог быть удалён при очистке wa-data — пересоздаём
+            $css_manager->saveFile($code, $custom_css);
+        }
+
+        $url = $css_manager->getPublicUrl($code, (int) ($settings['update_time'] ?? 0));
+        shopPrefillPluginLog::debug('CSS: applying custom CSS file', [
+            'storefront_code' => $code,
+            'url'             => $url,
+        ]);
+
+        return $url;
     }
 
     /**

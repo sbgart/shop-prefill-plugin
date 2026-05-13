@@ -2,7 +2,6 @@
 
 class shopPrefillPluginStorefront
 {
-
     private string $domain;
     private string $url;
     private string $code;
@@ -16,10 +15,10 @@ class shopPrefillPluginStorefront
         shopPrefillPluginStorefrontSettingProvider $setting_provider,
         array $route = []
     ) {
-        $this->domain = $domain;
-        $this->url = $url;
-        $this->code = $domain === '*' && $url === '*' ? '*' : base64_encode($domain . '/' . $url);
-        $this->route = $route;
+        $this->domain           = $domain;
+        $this->url              = $url;
+        $this->code             = $domain === '*' && $url === '*' ? '*' : base64_encode($domain . '/' . $url);
+        $this->route            = $route;
         $this->setting_provider = $setting_provider;
     }
 
@@ -57,30 +56,23 @@ class shopPrefillPluginStorefront
      */
     public function getRouteUrl(string $path, array $params = [], bool $absolute = false): ?string
     {
-        $domain = $this->getDomain();
-        $url = $this->getRoute('url');
-
-        return wa()->getRouting()->getUrl($path, $params, $absolute, $domain, $url);
+        return wa()->getRouting()->getUrl($path, $params, $absolute, $this->getDomain(), $this->getRoute('url'));
     }
 
     /**
+     * Always returns this storefront's own settings — no fallback to global.
+     *
      * @throws waDbException
      */
     public function getSettings(): array
     {
-        $storefront_code = $this->code;
-
-        if (!$this->isActive()) {
-            $storefront_code = '*';
-        }
-
-        return $this->setting_provider->getSettings($storefront_code);
+        return $this->setting_provider->getSettings($this->code);
     }
 
     /**
      * @throws waException
      */
-    public function setSetting($key, $value, $groups = null)
+    public function setSetting($key, $value, $groups = null): void
     {
         $this->setting_provider->setSetting($this->code, $key, $value, $groups);
     }
@@ -88,7 +80,7 @@ class shopPrefillPluginStorefront
     /**
      * @throws waException
      */
-    public function saveSettings($settings = [])
+    public function saveSettings(array $settings = []): void
     {
         $this->setting_provider->saveSettings($this->code, $settings);
     }
@@ -98,6 +90,6 @@ class shopPrefillPluginStorefront
      */
     public function isActive(): bool
     {
-        return $this->setting_provider->getSettings($this->code)['active'];
+        return (bool) $this->getSettings()['active'];
     }
 }

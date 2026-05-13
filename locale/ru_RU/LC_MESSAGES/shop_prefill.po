@@ -327,6 +327,30 @@ msgstr "Акцентный цвет оформления"
 msgid "hint.styles.accent_color"
 msgstr "Задаёт акцентный цвет элементов плагина на витрине для подгонки под тему дизайна."
 
+msgid "setting.styles.custom_css"
+msgstr "Пользовательский CSS"
+
+msgid "button.edit_css"
+msgstr "Редактировать стили"
+
+msgid "button.reset_css"
+msgstr "Сбросить к оригиналу"
+
+msgid "dialog.css_reset.confirm"
+msgstr "Сбросить CSS к оригиналу? Все внесённые изменения будут потеряны."
+
+msgid "hint.styles.custom_css"
+msgstr "Редактирование CSS-стилей плагина для этой витрины. Изменения применяются после сохранения настроек."
+
+msgid "hint.styles.css_loading"
+msgstr "Загрузка..."
+
+msgid "hint.styles.css_load_error"
+msgstr "Не удалось загрузить CSS"
+
+msgid "hint.styles.css_is_custom"
+msgstr "Изменён"
+
 msgid "hint.zen.group.main"
 msgstr "Основные параметры Дзен-режима на витрине."
 

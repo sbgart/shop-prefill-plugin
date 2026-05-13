@@ -3,7 +3,6 @@
 /**
  * Класс для отладки состояния хранилища checkout_params
  *
- * Предоставляет функции для вывода состояния хранилища в режиме отладки:
  * - addDebugEntry() - добавить запись в стек дебага
  * - renderDebugStack() - вывести весь накопленный стек одним летающим окном
  * - renderErrorsDebugHtml() - вывести ошибки валидации (для checkout хуков)
@@ -49,43 +48,6 @@ class shopPrefillPluginDebug
         if (!in_array($hook_name, self::$called_hooks)) {
             self::$called_hooks[] = $hook_name;
         }
-    }
-
-    /**
-     * Регистрирует отложенный вывод стека (через JavaScript callback)
-     * Используется чтобы собрать записи из всех хуков перед выводом
-     *
-     * @return string
-     */
-    public static function scheduleDebugStackRender(): string
-    {
-        static $scheduled = false;
-
-        if ($scheduled) {
-            return '';
-        }
-
-        $scheduled = true;
-
-        // Регистрируем callback который выведет стек после загрузки DOM.
-        // Используем setTimeout, чтобы дать время всем хукам собрать stack.
-        return "<script>
-        (function() {
-            function renderPrefillDebugStack() {
-                setTimeout(function() {
-                    if (window.PrefillDebugHelper && window.PrefillDebugHelper.renderStack) {
-                        window.PrefillDebugHelper.renderStack();
-                    }
-                }, 100);
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', renderPrefillDebugStack);
-            } else {
-                renderPrefillDebugStack();
-            }
-        })();
-        </script>";
     }
 
     /**
@@ -229,8 +191,12 @@ class shopPrefillPluginDebug
             $view->assign($template_vars);
 
             $template_path = shopPrefillPlugin::getPluginPath() . '/templates/debug/';
-            $html_storage = $view->fetch('file:' . $template_path . 'DebugStorageDetails.html');
+            $html_status     = $view->fetch('file:' . $template_path . 'DebugStatusPanel.html');
+            $html_storage    = $view->fetch('file:' . $template_path . 'DebugStorageDetails.html');
+            $html_fill_params = $view->fetch('file:' . $template_path . 'DebugFillParams.html');
+            $view->assign('html_status', $html_status);
             $view->assign('html_storage', $html_storage);
+            $view->assign('html_fill_params', $html_fill_params);
 
             $debug_html = $view->fetch('string:' . file_get_contents(
                 $template_path . 'DebugStack.html'
@@ -241,9 +207,12 @@ class shopPrefillPluginDebug
                 $debug_html_json = json_encode('', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
 
-            // Подключаем JS файл
+            // Подключаем JS и CSS файлы
             $plugin_id = 'prefill';
-            $js_url = wa()->getAppStaticUrl('shop') . "plugins/{$plugin_id}/js/prefill.debug.js?v=" . date('YmdHi');
+            $static_base = wa()->getAppStaticUrl('shop') . "plugins/{$plugin_id}/";
+            $version = date('YmdHi');
+            $js_url  = $static_base . "js/prefill.debug.js?v={$version}";
+            $css_url = $static_base . "css/prefill.debug.css?v={$version}";
 
             // Определяем базовый URL для AJAX запросов
             $base_url = wa()->getRouteUrl('shop/frontend');
@@ -253,7 +222,8 @@ class shopPrefillPluginDebug
             }
 
             // Передаем данные в JS
-            return "<script src=\"{$js_url}\"></script>"
+            return "<link rel=\"stylesheet\" href=\"{$css_url}\">"
+                . "<script src=\"{$js_url}\"></script>"
                 . "<script>
             (function() {
                 window.PrefillDebugHelper = window.PrefillDebugHelper || {};
