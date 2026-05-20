@@ -419,9 +419,9 @@
     font-family: monospace;
     font-size: 12px;
     line-height: 1.4;
-    border: 1px solid var(--border-color, #e0e0e0);
+    border: 1px solid var(--border-color-soft);
     border-radius: 4px;
-    background: var(--background-secondary, #fafafa);
+    background: var(--background-color-blank);
     padding: 4px 0;
 }
 
@@ -435,7 +435,7 @@
     display: flex;
     gap: 10px;
     padding: 5px 10px;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-bottom: 1px solid var(--border-color-soft);
     border-left: 3px solid transparent;
 }
 
@@ -443,10 +443,10 @@
     border-bottom: none;
 }
 
-.prefill-log-entry--debug   { border-left-color: #ccc; }
-.prefill-log-entry--info    { border-left-color: #1976d2; }
-.prefill-log-entry--warning { border-left-color: #e65100; }
-.prefill-log-entry--error   { border-left-color: #c62828; }
+.prefill-log-entry--debug   { border-left-color: var(--gray); }
+.prefill-log-entry--info    { border-left-color: var(--blue); }
+.prefill-log-entry--warning { border-left-color: var(--orange); }
+.prefill-log-entry--error   { border-left-color: var(--red); }
 
 /* Left rail: badge + time */
 .prefill-log-entry__rail {
@@ -458,27 +458,25 @@
     padding-top: 1px;
 }
 
+/* Sizing tweaks only — colors come from native .badge.{color} classes */
 .prefill-log-entry__badge {
-    display: inline-block;
     font-size: 10px;
-    font-weight: bold;
-    letter-spacing: 0.04em;
-    padding: 1px 5px;
-    border-radius: 3px;
-    text-align: center;
     min-width: 52px;
+    text-align: center;
 }
-
-.prefill-log-entry--debug   .prefill-log-entry__badge { background: #f0f0f0; color: #777; }
-.prefill-log-entry--info    .prefill-log-entry__badge { background: #e3f2fd; color: #1565c0; }
-.prefill-log-entry--warning .prefill-log-entry__badge { background: #fff3e0; color: #bf6300; }
-.prefill-log-entry--error   .prefill-log-entry__badge { background: #ffebee; color: #c62828; }
 
 .prefill-log-entry__time {
     font-size: 11px;
     font-weight: 600;
     color: var(--text-color, #333);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.prefill-log-entry__date {
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-color-hint);
     white-space: nowrap;
 }
 
@@ -493,15 +491,15 @@
     word-break: break-word;
 }
 
+/* JS source tag — amber/yellow, dark text для контраста на жёлтом */
+.prefill-js-tag {
+    background: var(--yellow);
+    color: #1a1a1a;
+}
+
+/* Позиционирование только — визуал от .badge.squared + .prefill-js-tag */
 .prefill-log-entry__src-js {
-    display: inline-block;
-    background: #e3f2fd;
-    color: #1565c0;
-    border-radius: 2px;
-    padding: 0 3px;
     font-size: 10px;
-    margin-left: 3px;
-    vertical-align: middle;
 }
 
 /* Secondary meta row: date · IP · user */
@@ -527,11 +525,11 @@
 .prefill-log-entry__context {
     margin: 4px 0 2px;
     padding: 4px 6px;
-    background: rgba(0,0,0,0.03);
-    border-left: 2px solid var(--border-color, #e0e0e0);
+    background: var(--background-color-input);
+    border-left: 2px solid var(--border-color-soft);
     border-radius: 2px;
     font-size: 11px;
-    color: #666;
+    color: var(--text-color-hint);
     white-space: pre-wrap;
     overflow-x: auto;
 }
@@ -544,7 +542,7 @@
 }
 
 .prefill-log-state--error {
-    color: #c62828;
+    color: var(--red);
 }
 
 /* Load more row — рендерится внутри #prefill-log-entries */
@@ -559,10 +557,10 @@
     font-size: 14px;
 }
 
-.prefill-level-icon--debug   { color: #aaa; }
-.prefill-level-icon--info    { color: #1976d2; }
-.prefill-level-icon--warning { color: #e65100; }
-.prefill-level-icon--error   { color: #c62828; }
+.prefill-level-icon--debug   { color: var(--gray); }
+.prefill-level-icon--info    { color: var(--blue); }
+.prefill-level-icon--warning { color: var(--orange); }
+.prefill-level-icon--error   { color: var(--red); }
 
 .prefill-log-header-actions {
     display: flex;
@@ -573,7 +571,7 @@
 
 .prefill-css-ace {
     height: 400px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color-soft);
     border-radius: 4px;
 }
 

@@ -610,7 +610,7 @@ msgid "zen.custom_template.example_value.service_agreement_hint"
 msgstr "Я согласен на обработку персональных данных"
 
 msgid "zen.custom_template.example_value.shipping_name"
-msgstr "Курьер, 1–2 рабочих дня"
+msgstr "Курьерская доставка"
 
 msgid "zen.custom_template.example_value.shipping_rate"
 msgstr "300 ₽"
@@ -623,6 +623,15 @@ msgstr "https://cdn.example.ru/icons/delivery.png"
 
 msgid "zen.custom_template.example_value.est_delivery"
 msgstr "1–2 дня"
+
+msgid "zen.custom_template.example_value.delivery_pickup_address"
+msgstr "630082, Россия, Новосибирская область, Новосибирск, ул. Вавилова, 3"
+
+msgid "Pickup point address"
+msgstr "Адрес пункта выдачи"
+
+msgid "Full address of the pickup point (from custom_data description). Plain text, not the delivery method description."
+msgstr "Полный адрес ПВЗ (из custom_data description). Простой текст, не описание метода доставки."
 
 msgid "zen.custom_template.example_value.delivery_description"
 msgstr "Доставка до двери"
@@ -639,6 +648,15 @@ msgstr "5"
 msgid "zen.custom_template.example_value.delivery_photos"
 msgstr "Фото пункта выдачи (превью в ряд)"
 
+msgid "zen.custom_template.example_value.delivery_photos_html"
+msgstr "Галерея с лайтбоксом (HTML)"
+
+msgid "Photo gallery"
+msgstr "Фотогалерея"
+
+msgid "Native photo gallery with lightbox and horizontal scroll (HTML). Works automatically inside the delivery step."
+msgstr "Готовая галерея с лайтбоксом и горизонтальной прокруткой (HTML). Работает автоматически внутри блока доставки."
+
 msgid "zen.custom_template.example_value.shipping_custom"
 msgstr "time_interval: 14:00–18:00"
 
@@ -646,7 +664,7 @@ msgid "zen.custom_template.example_value.city"
 msgstr "Москва"
 
 msgid "zen.custom_template.example_value.region"
-msgstr "77"
+msgstr "Московская область"
 
 msgid "zen.custom_template.example_value.street"
 msgstr "ул. Ленина"
@@ -668,6 +686,15 @@ msgstr "Наличными при получении"
 
 msgid "zen.custom_template.example_value.payment_custom"
 msgstr "inn: 7707083893"
+
+msgid "zen.custom_template.example_value.delivery_plugin"
+msgstr "СДЭК"
+
+msgid "zen.custom_template.example_value.delivery_tariff"
+msgstr "Самовывоз из магазина"
+
+msgid "zen.custom_template.example_value.payment_description"
+msgstr "Оплата при получении заказа"
 
 msgid "First name"
 msgstr "Имя"
@@ -709,7 +736,7 @@ msgid "Service agreement"
 msgstr "Согласие на обработку данных"
 
 msgid "Consent to personal data processing (auth[service_agreement]). Localized Yes/No or empty."
-msgstr "Согласие на обработку персональных данных. Локализованное Да/Нет или пусто."
+msgstr "Согласие на обработку персональных данных. Значения: «Согласен», «Не согласен» или пусто."
 
 msgid "Service agreement hint"
 msgstr "Текст согласия"
@@ -729,11 +756,17 @@ msgstr "Стоимость доставки"
 msgid "Formatted shipping cost"
 msgstr "Стоимость доставки (форматированная)"
 
+msgid "Formatted shipping cost (HTML)"
+msgstr "Стоимость доставки (HTML-разметка)"
+
 msgid "Delivery method name"
 msgstr "Название метода доставки"
 
 msgid "Name of the shipping method in store settings"
 msgstr "Название метода доставки в настройках магазина"
+
+msgid "Shipping plugin name from store DB (may be empty if not found)"
+msgstr "Название плагина доставки из БД магазина (может быть пустым, если не найден)"
 
 msgid "Shipping logo URL"
 msgstr "URL логотипа доставки"
@@ -746,6 +779,9 @@ msgstr "Название плагина"
 
 msgid "Delivery plugin name"
 msgstr "Название плагина доставки"
+
+msgid "Shipping carrier name from checkout data (always set when delivery is selected)"
+msgstr "Название службы доставки из данных чекаута (всегда заполнено при выбранной доставке)"
 
 msgid "Pickup point"
 msgstr "Пункт самовывоза"

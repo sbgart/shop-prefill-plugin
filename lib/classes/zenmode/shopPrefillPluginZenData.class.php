@@ -145,13 +145,13 @@ class shopPrefillPluginZenData
             'shipping_rate' => [
                 'group' => 'delivery',
                 'name' => _wp('Shipping cost'),
-                'description' => _wp('Formatted shipping cost'),
+                'description' => _wp('Formatted shipping cost (HTML)'),
                 'example' => _wp('zen.custom_template.example_value.shipping_rate'),
             ],
             'delivery_method_name' => [
                 'group' => 'delivery',
                 'name' => _wp('Delivery method name'),
-                'description' => _wp('Name of the shipping method in store settings'),
+                'description' => _wp('Shipping plugin name from store DB (may be empty if not found)'),
                 'example' => _wp('zen.custom_template.example_value.delivery_method_name'),
             ],
             'shipping_logo' => [
@@ -163,14 +163,14 @@ class shopPrefillPluginZenData
             'delivery_plugin' => [
                 'group' => 'delivery',
                 'name' => _wp('Plugin name'),
-                'description' => _wp('Delivery plugin name'),
-                'example' => _wp('Pickup point'),
+                'description' => _wp('Shipping carrier name from checkout data (always set when delivery is selected)'),
+                'example' => _wp('zen.custom_template.example_value.delivery_plugin'),
             ],
             'delivery_tariff' => [
                 'group' => 'delivery',
                 'name' => _wp('Delivery tariff'),
                 'description' => _wp('Delivery tariff/service name'),
-                'example' => _wp('Store pickup'),
+                'example' => _wp('zen.custom_template.example_value.delivery_tariff'),
             ],
             'delivery_type' => [
                 'group' => 'delivery',
@@ -196,6 +196,12 @@ class shopPrefillPluginZenData
                 'description' => _wp('Pickup point business hours (HTML structure)'),
                 'example' => _wp('zen.custom_template.example_value.schedule_fragment'),
             ],
+            'delivery_pickup_address' => [
+                'group' => 'delivery',
+                'name' => _wp('Pickup point address'),
+                'description' => _wp('Full address of the pickup point (from custom_data description). Plain text, not the delivery method description.'),
+                'example' => _wp('zen.custom_template.example_value.delivery_pickup_address'),
+            ],
             'delivery_way' => [
                 'group' => 'delivery',
                 'name' => _wp('Way to reach'),
@@ -216,6 +222,12 @@ class shopPrefillPluginZenData
                 'is_array' => true,
                 'example_code' => '{foreach $delivery_photos as $photo}{$photo.thumb_uri|default:$photo.uri}{/foreach}',
                 'snippet_loop' => '{foreach $delivery_photos as $photo}<img src="{if !empty($photo.thumb_uri)}{$photo.thumb_uri|escape}{else}{$photo.uri|escape}{/if}" alt="" />{/foreach}',
+            ],
+            'delivery_photos_html' => [
+                'group' => 'delivery',
+                'name' => _wp('Photo gallery'),
+                'description' => _wp('Native photo gallery with lightbox and horizontal scroll (HTML). Works automatically inside the delivery step.'),
+                'example' => _wp('zen.custom_template.example_value.delivery_photos_html'),
             ],
             'shipping_custom' => [
                 'group' => 'delivery',
@@ -291,7 +303,7 @@ class shopPrefillPluginZenData
                 'group' => 'payment',
                 'name' => _wp('Payment description'),
                 'description' => _wp('Payment method description'),
-                'example' => _wp('Payment upon receipt'),
+                'example' => _wp('zen.custom_template.example_value.payment_description'),
             ],
             'payment_custom' => [
                 'group' => 'payment',
@@ -319,6 +331,13 @@ class shopPrefillPluginZenData
 
         $data = array_fill_keys(array_keys($fields), '');
 
+        // Массивы инициализируем как [], а не '' — чтобы тип совпадал даже если поле не попало в спец-блоки ниже.
+        foreach ($fields as $key => $field) {
+            if (!empty($field['is_array'])) {
+                $data[$key] = [];
+            }
+        }
+
         $allowed_groups = self::TEMPLATE_EDITOR_FIELD_GROUPS[$group] ?? [];
 
         foreach ($fields as $key => $field) {
@@ -341,6 +360,16 @@ class shopPrefillPluginZenData
             $data[$key] = '<span class="prefill-ct-placeholder">[ ' . $safe_name . ' ]</span>';
         }
 
+        // Поля, которые в реальности содержат HTML (не plain text) — оборачиваем, чтобы превью совпадало с реальным выводом.
+        if ($data['shipping_rate'] !== '') {
+            $safe = htmlspecialchars((string)$data['shipping_rate'], ENT_QUOTES, 'UTF-8');
+            $data['shipping_rate'] = '<span class="prefill-zen-price">' . $safe . '</span>';
+        }
+        if ($data['delivery_schedule'] !== '') {
+            $safe = htmlspecialchars((string)$data['delivery_schedule'], ENT_QUOTES, 'UTF-8');
+            $data['delivery_schedule'] = '<p>' . $safe . '</p>';
+        }
+
         // Минимальные массивы, чтобы foreach-циклы выглядели правдоподобно.
         if (in_array($group, self::groupsWithContactCustom(), true)) {
             $data['contact_custom'] = [
@@ -354,7 +383,9 @@ class shopPrefillPluginZenData
             $data['address_custom'] = [
                 'metro' => 'Сокольники',
             ];
-            $data['delivery_photos'] = [];
+            $sample_photos = [['uri' => '#', 'thumb_uri' => '']];
+            $data['delivery_photos'] = $sample_photos;
+            $data['delivery_photos_html'] = self::buildPhotosHtml($sample_photos, $data['shipping_name']);
         }
         if ($group === 'payment') {
             $data['payment_custom'] = [
@@ -380,8 +411,14 @@ class shopPrefillPluginZenData
      */
     public function extractSummaryData(string $group, shopPrefillCheckoutState $state): array
     {
-        // Инициализируем массив данными по умолчанию
-        $data = array_fill_keys(array_keys(self::getAvailableFields()), '');
+        $fields = self::getAvailableFields();
+        $data = array_fill_keys(array_keys($fields), '');
+
+        foreach ($fields as $key => $field) {
+            if (!empty($field['is_array'])) {
+                $data[$key] = [];
+            }
+        }
 
         $this->extractContactData($state, $data);
         $this->extractDeliveryData($state, $data);
@@ -433,12 +470,15 @@ class shopPrefillPluginZenData
         $data['delivery_tariff'] = $state->getShippingService();
         $data['delivery_type'] = $this->formatDeliveryType($state->getShippingType());
         $data['delivery_description'] = $state->getShippingDescription();
+        $data['delivery_pickup_address'] = $state->getShippingPickupAddress();
         $data['delivery_way'] = $state->getShippingWay();
         $data['delivery_storage_days'] = $state->getShippingStorageDays();
-        $data['delivery_photos'] = $state->getShippingPhotos();
+        $photos = $state->getShippingPhotos();
+        $data['delivery_photos'] = $photos;
+        $data['delivery_photos_html'] = self::buildPhotosHtml($photos, $data['shipping_name']);
         $data['delivery_schedule'] = $state->getShippingScheduleHtml();
         $data['shipping_custom'] = $state->getShippingCustomFields();
-        $data['shipping_logo'] = $state->getShippingLogoUrl();
+        $data['shipping_logo'] = $state->getShippingLogoUrl() ?? '';
 
         // 4. Адресные данные
         $data['city'] = $state->getCity();
@@ -458,7 +498,7 @@ class shopPrefillPluginZenData
         $data['payment_name'] = $state->getPaymentName();
         $data['payment_description'] = $state->getPaymentDescription();
         $data['payment_custom'] = $state->getCustomPaymentFields();
-        $data['payment_logo'] = $state->getPaymentLogoUrl();
+        $data['payment_logo'] = $state->getPaymentLogoUrl() ?? '';
     }
 
     /**
@@ -476,6 +516,55 @@ class shopPrefillPluginZenData
 
         $formatted = wa_currency_html($price, $this->currency, '%t{h}');
         return '<span class="prefill-zen-price">' . $formatted . '</span>';
+    }
+
+    /**
+     * Генерирует нативную HTML-структуру `.wa-photos-section` для фотографий ПВЗ.
+     * Совместима с Details.prototype.initPhotos() из shop/js/frontend/order/form.js —
+     * лайтбокс и прокрутка инициализируются автоматически, если блок находится внутри шага details.
+     *
+     * @param array  $photos Массив фотографий: [['uri' => ..., 'thumb_uri' => ...], ...]
+     * @param string $name   Имя тарифа (используется как заголовок в диалоге лайтбокса)
+     * @return string HTML или '' если photos пуст
+     */
+    private static function buildPhotosHtml(array $photos, string $name): string
+    {
+        $items_html = '';
+        foreach ($photos as $photo) {
+            $uri = isset($photo['uri']) ? trim((string)$photo['uri']) : '';
+            if ($uri === '') {
+                continue;
+            }
+            $thumb_uri = !empty($photo['thumb_uri']) ? (string)$photo['thumb_uri'] : $uri;
+            $uri_esc   = htmlspecialchars($uri, ENT_QUOTES, 'UTF-8');
+            $thumb_esc = htmlspecialchars($thumb_uri, ENT_QUOTES, 'UTF-8');
+
+            $items_html .= '<div class="wa-photo-wrapper" data-image-uri="' . $uri_esc . '" data-thumb-uri="' . $thumb_esc . '">'
+                . '<a class="wa-photo js-show-photo" href="' . $uri_esc . '" style="background-image: url(' . $thumb_esc . ');" target="_blank"></a>'
+                . '</div>';
+        }
+
+        if ($items_html === '') {
+            return '';
+        }
+
+        $root_url   = wa()->getRootUrl();
+        $version    = wa()->getVersion('shop');
+        $sprite_url = htmlspecialchars(
+            $root_url . 'wa-apps/shop/img/frontend/order/svg/sprite.svg?v=' . $version,
+            ENT_QUOTES,
+            'UTF-8'
+        );
+        $data_name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+
+        $arrow_l = '<i class="wa-icon arrow-left"><svg><use xlink:href="' . $sprite_url . '#arrow-left"></use></svg></i>';
+        $arrow_r = '<i class="wa-icon arrow-right"><svg><use xlink:href="' . $sprite_url . '#arrow-right"></use></svg></i>';
+
+        return '<div class="wa-line wa-photos-section" data-name="' . $data_name . '">'
+            . '<div class="wa-action left js-scroll-prev">' . $arrow_l . '</div>'
+            . '<div class="wa-photos-list">' . $items_html . '</div>'
+            . '<div class="wa-action right js-scroll-next">' . $arrow_r . '</div>'
+            . '</div>';
     }
 
     /**

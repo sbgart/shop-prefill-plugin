@@ -331,11 +331,75 @@ class shopPrefillCheckoutState
 
     /**
      * Возвращает HTML расписания пункта выдачи.
+     *
+     * Поддерживает два формата, которые генерирует ядро Shop-Script:
+     * - pickup_schedule.days (массив) — современный формат (CDEK и др.); рендерится в .wa-day-wrapper элементы
+     * - pickup_schedule_html (строка) — устаревший формат от плагинов, возвращается как есть
+     *
+     * Возвращает внутреннее содержимое (без внешней обёртки .wa-schedule-wrapper).
      */
     public function getShippingScheduleHtml(): string
     {
         $variant = $this->getSelectedVariant();
-        return $variant['pickup_schedule_html'] ?? '';
+
+        $schedule = $variant['pickup_schedule'] ?? [];
+        if (!empty($schedule['days']) && is_array($schedule['days'])) {
+            return $this->renderPickupScheduleDays($schedule['days']);
+        }
+
+        return (string)($variant['pickup_schedule_html'] ?? '');
+    }
+
+    /**
+     * Возвращает адрес пункта выдачи из custom_data[type]['description'].
+     * Отдельно от getShippingDescription() — всегда даёт адрес ПВЗ,
+     * а не общее описание метода доставки.
+     */
+    public function getShippingPickupAddress(): string
+    {
+        $service_data = $this->getFirstCustomData();
+        return (string)($service_data['description'] ?? '');
+    }
+
+    /**
+     * Рендерит структурированное расписание (pickup_schedule.days) в HTML.
+     * Формат вывода совпадает с тем, что генерирует details.html для этого же источника.
+     *
+     * @param array $days Массив дней из pickup_schedule.days
+     * @return string HTML: набор .wa-day-wrapper элементов
+     */
+    private function renderPickupScheduleDays(array $days): string
+    {
+        $locale = substr((string)wa()->getLocale(), 0, 2);
+        $items = '';
+
+        foreach ($days as $day) {
+            if (!is_array($day)) {
+                continue;
+            }
+
+            $date = htmlspecialchars((string)($day['date_formatted'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $wday = (string)($day['weekday_full'] ?? '');
+            if ($locale === 'ru') {
+                $wday = mb_strtolower($wday, 'UTF-8');
+            }
+            $wday = htmlspecialchars($wday, ENT_QUOTES, 'UTF-8');
+
+            if (!empty($day['works'])) {
+                $start = htmlspecialchars((string)($day['time_start'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $end   = htmlspecialchars((string)($day['time_end'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $value = '<span class="wa-time">' . $start . '—' . $end . '</span>';
+            } else {
+                $value = '<span class="wa-text">' . htmlspecialchars(_w('day off'), ENT_QUOTES, 'UTF-8') . '</span>';
+            }
+
+            $items .= '<div class="wa-day-wrapper">'
+                . '<div class="wa-date">' . $date . ($wday !== '' ? ', ' . $wday : '') . '</div>'
+                . '<div class="wa-value">' . $value . '</div>'
+                . '</div>';
+        }
+
+        return $items;
     }
 
     /**

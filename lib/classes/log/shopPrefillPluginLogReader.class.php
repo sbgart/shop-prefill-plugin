@@ -119,10 +119,11 @@ class shopPrefillPluginLogReader
         $level   = strtolower($m[1]);
         $message = trim($m[2]);
 
-        // Определяем источник
+        // Определяем источник и стрипаем технический префикс из текста
         $source = 'backend';
         if (strpos($message, '[Frontend]') !== false) {
             $source = 'frontend';
+            $message = trim(str_replace('[Frontend]', '', $message));
         }
 
         // Оставшиеся строки — опциональный Context

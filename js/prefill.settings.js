@@ -520,29 +520,31 @@ var PrefillSettings = (function () {
         var hasMore       = false;
         var totalInFile   = 0;
 
-        var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
         function prefillFormatDate(dateStr) {
             var parts = dateStr ? dateStr.split('-') : [];
             if (parts.length !== 3) { return dateStr || ''; }
-            return MONTHS[parseInt(parts[1], 10) - 1] + ' ' + parseInt(parts[2], 10);
+            var yy = parts[0].substring(2);
+            var mm = parts[1];
+            var dd = parts[2].length === 1 ? '0' + parts[2] : parts[2];
+            return dd + '.' + mm + '.' + yy;
         }
+
+        var LEVEL_BADGE_COLOR = { debug: 'gray', info: 'blue', warning: 'orange', error: 'red' };
 
         function renderEntry(entry) {
             var level = entry.level || 'debug';
-            var time  = entry.datetime ? entry.datetime.substring(11) : '';
+            var time  = entry.datetime ? entry.datetime.substring(11, 19) : '';
             var date  = entry.datetime ? prefillFormatDate(entry.datetime.substring(0, 10)) : '';
 
             var msg = prefillEscapeHtml(entry.message);
-            if (entry.source === 'frontend') {
-                msg += '<span class="prefill-log-entry__src-js">JS</span>';
-            }
 
-            // Вторичная строка: дата · IP · user
+            // Вторичная строка: IP · user · JS-тег
             var metaParts = [];
-            if (date) { metaParts.push('<span class="prefill-log-entry__date">' + prefillEscapeHtml(date) + '</span>'); }
             if (entry.ip) { metaParts.push('<span class="prefill-log-entry__ip">' + prefillEscapeHtml(entry.ip) + '</span>'); }
             if (entry.user_id) { metaParts.push('<span class="prefill-log-entry__user">#' + parseInt(entry.user_id, 10) + '</span>'); }
+            if (entry.source === 'frontend') {
+                metaParts.push('<span class="badge squared prefill-js-tag prefill-log-entry__src-js">JS</span>');
+            }
             var sep = '<span class="prefill-log-entry__meta-sep">·</span>';
             var meta = metaParts.length
                 ? '<div class="prefill-log-entry__meta">' + metaParts.join(sep) + '</div>'
@@ -556,10 +558,13 @@ var PrefillSettings = (function () {
                 ctx = '<pre class="prefill-log-entry__context">' + prefillEscapeHtml(ctxStr) + '</pre>';
             }
 
+            var dateHtml = date ? '<span class="prefill-log-entry__date">' + prefillEscapeHtml(date) + '</span>' : '';
+            var badgeColor = LEVEL_BADGE_COLOR[level] || 'gray';
             return '<div class="prefill-log-entry prefill-log-entry--' + prefillEscapeHtml(level) + '">'
                 + '<div class="prefill-log-entry__rail">'
-                +   '<span class="prefill-log-entry__badge">' + prefillEscapeHtml(level.toUpperCase()) + '</span>'
+                +   '<span class="badge squared ' + badgeColor + ' prefill-log-entry__badge">' + prefillEscapeHtml(level.toUpperCase()) + '</span>'
                 +   '<span class="prefill-log-entry__time">' + prefillEscapeHtml(time) + '</span>'
+                +   dateHtml
                 + '</div>'
                 + '<div class="prefill-log-entry__body">'
                 +   '<div class="prefill-log-entry__message">' + msg + '</div>'
