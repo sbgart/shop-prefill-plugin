@@ -15,6 +15,7 @@ class shopPrefillPluginSettingsAction extends waViewAction
         $plugin = shopPrefillPlugin::getInstance();
         $paymentMethods = shopPrefillPluginPluginsProvider::getPaymentMethods();
         $storefronts = $plugin->getStorefrontProvider()->getStorefronts();
+        $global_storefront = $plugin->getStorefrontProvider()->getStorefront('*');
 
         $this->view->assign([
             'app_id'          => shopPrefillPlugin::APP_ID,
@@ -23,7 +24,7 @@ class shopPrefillPluginSettingsAction extends waViewAction
             'plugin_version'  => $plugin->getVersion(),
             'settings'        => $plugin->getSettingProvider()->getSettings(),
             'storefronts'     => $storefronts->getTree(),
-            'storefronts_json'=> $storefronts->toJson(),
+            'storefronts_json'=> $storefronts->toJson($global_storefront),
             'payment_methods' => array_map(fn($method) => $method['name'], $paymentMethods),
         ]);
     }

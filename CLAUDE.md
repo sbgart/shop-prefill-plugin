@@ -14,18 +14,14 @@ This is a **Webasyst Shop-Script plugin** (`shop/plugins/prefill`) that prefills
 
 ## Key Commands
 
-All commands run from the Webasyst root (`/Users/user/Project/wa-dev`):
+All commands run from the Webasyst root (`/Users/artem/Project/wa-dev`):
 
 ```bash
-# Compile .po → .mo locale files (required after any .po change)
-XDEBUG_MODE=off php wa.php locale shop/plugins/prefill
-
 # Create release archive (validates PHP syntax, config, DB structure, excludes docs/)
 php wa.php compress shop/plugins/prefill -style false
-
-# Clear plugin cache
-rm -rf wa-cache/*/apps/shop_prefill/
 ```
+
+For locale compilation and cache clearing — use `/compile-plugin-mo`.
 
 ## Architecture
 
@@ -44,14 +40,13 @@ The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as
 | Group | Purpose |
 |-------|---------|
 | `hooks/` | `FrontendHooks`, `CheckoutHooks`, `OrderHooks` — delegate plugin hook handling |
-| `fillparams/` | `FillParamsProvider` — fetches prefill data from DB; `FillParams` — data object; `FillParamsStorage` — writes to PHP session (`shop/checkout`) |
+| `fillparams/` | `FillParamsProvider` — fetches prefill data from DB; `FillParams` — data object; `FillParamsStorage` — writes to PHP session (`shop/checkout`); `GuestHashStorage` — manages `prefill_guest_hash` HTTP-only cookie + DB linkage |
 | `sessionstorage/` | `SessionStorageProvider` — reads/writes checkout params in Webasyst session |
 | `storefronts/` | `StorefrontProvider`, `Storefront`, `StorefrontCollection` — per-storefront settings |
 | `settings/providers/` | `SettingProvider`, `StorefrontSettingProvider` — read/write plugin settings from `shop_prefill_settings` table |
 | `zenmode/` | `ZenMode`, `ZenData` — collapsible checkout section logic |
 | `view/` | `AssetsManager` — generates CSS variables file and JS initializer file dynamically into `wa-data/` |
 | `consent/` | `ConsentStorage` — manages `prefill_consent` HTTP-only cookie for guests |
-| `fillparams/` | `GuestHashStorage` — manages `prefill_guest_hash` HTTP-only cookie + DB linkage |
 
 **Settings storage:** `shop_prefill_settings` table (one row per `storefront_code` + `name`). Defaults defined in `lib/config/storefront.settings.php` (per-storefront) and `lib/config/settings.php` (global).
 
@@ -102,16 +97,18 @@ Key conventions:
 - JS translations passed via `$_locale` object in `templates/actions/settings/blocks/Head.html`
 - Always call `waLocale::loadByDomain(['shop', 'prefill'])` and `waSystem::pushActivePlugin('prefill', 'shop')` in action `execute()` methods
 
+After editing `.po` files — run `/compile-plugin-mo`. The skill handles all cache levels including PHP-FPM restart if needed.
+
 ## Release Process
 
-1. Update version in `lib/config/plugin.php`
-2. Update `CHANGELOG.md` and `README.md`
-3. Recompile locale: `XDEBUG_MODE=off php wa.php locale shop/plugins/prefill`
-4. Create archive: `php wa.php compress shop/plugins/prefill -style false`
-   - Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`
-   - Must be `.tar.gz` — Webasyst store rejects other formats
-   - `docs/` and all `*.md` files are excluded via `lib/config/exclude.php`
-5. Verify: ~92 KB, ~117 files, no `.md` files, no `docs/`
+Use the skills — they handle all steps including edge cases:
+
+- `/release-start` — bump version, create branch, update CHANGELOG
+- `/compile-plugin-mo` — recompile locale after any `.po` changes
+- `/release-pack` — create archive (`prefill.tar.gz`, excludes `docs/` and `*.md` via `lib/config/exclude.php`)
+- `/release-publish` — git tag, push, `gh release create`
+
+Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`. Must be `.tar.gz` — Webasyst store rejects other formats.
 
 ## Important Notes
 

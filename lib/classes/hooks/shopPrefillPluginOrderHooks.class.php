@@ -47,10 +47,13 @@ class shopPrefillPluginOrderHooks
             return;
         }
 
+        // Витрина неактивна — не сохраняем prefill-данные заказа и хеш гостя.
+        if (!$this->storefront_settings['active']) {
+            return;
+        }
+
         $order_id = (int) $data['order_id'];
 
-        // Операции предзаполнения выполняем всегда для активной витрины:
-        // настройка prefill.active больше не используется.
         $checkout_params = $this->session_storage->getCheckoutParams();
 
         // Сохраняем shipping_type_id (для предзаполнения следующего заказа)

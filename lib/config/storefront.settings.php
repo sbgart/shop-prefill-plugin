@@ -54,14 +54,14 @@ return [
                 'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon'             => ['value' => ''],
                 'icon_source'      => ['value' => 'default'], // 'default' | 'plugin' | 'custom'
-                'summary_template' => ['value' => '<strong>{$delivery_plugin}</strong><br />{$shipping_name} • {$shipping_rate}'],
+                'summary_template' => ['value' => '<div class="wa-header">{$delivery_plugin}</div> <strong>{$shipping_name}</strong> • {$shipping_rate}{if $delivery_pickup_address}<br />{$delivery_pickup_address}{elseif $city || $street}<br />{$city}{if $street}, {$street}{/if}{if $building}, {$building}{/if}{if $apartment}, {$apartment}{/if}{/if}{if $delivery_est_delivery}<br /><strong>Доставим {$delivery_est_delivery}</strong>{/if}'],
                 'custom_templates' => ['value' => []],
             ],
             'payment'  => [
                 'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon'             => ['value' => ''],
                 'icon_source'      => ['value' => 'default'], // 'default' | 'plugin' | 'custom'
-                'summary_template' => ['value' => '<strong>{$payment_name}</strong><br />{$payment_description}'],
+                'summary_template' => ['value' => '<div class="wa-header">{$payment_name}</div>{$payment_description}'],
                 'custom_templates' => ['value' => []],
             ],
         ],

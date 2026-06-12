@@ -18,6 +18,30 @@ msgstr "Предзаполнение полей оформления заказ�
 msgid "menu.help"
 msgstr "Поддержка"
 
+msgid "menu.contacts"
+msgstr "Контакты"
+
+msgid "menu.contacts.dialog.title"
+msgstr "Мы на связи"
+
+msgid "menu.contacts.support.title"
+msgstr "Написать в поддержку"
+
+msgid "menu.contacts.support.hint"
+msgstr "Помогаем разобраться с настройкой, решаем технические вопросы и отвечаем на любые вопросы по плагину"
+
+msgid "menu.contacts.dev.title"
+msgstr "Написать разработчику"
+
+msgid "menu.contacts.dev.hint"
+msgstr "Делитесь идеями и пожеланиями — ваши предложения помогают делать плагин лучше"
+
+msgid "menu.contacts.close"
+msgstr "Закрыть"
+
+msgid "menu.contacts.copied"
+msgstr "Скопировано"
+
 msgid "setting.storefront_selector"
 msgstr "Витрина"
 
@@ -28,7 +52,10 @@ msgid "hint.storefront_selector_status"
 msgstr "Витрины с индивидуальными настройками в списке отмечены зелёным маркером. Общие настройки для всех витрин на них не распространяются."
 
 msgid "setting.active"
-msgstr "Статус для витрины"
+msgstr "Использовать индивидуальные настройки"
+
+msgid "setting.active_default"
+msgstr "Применять общие настройки для всех витрин"
 
 msgid "checkout.consent.remember_data"
 msgstr "Запомнить мои данные для следующих заказов"
@@ -229,7 +256,10 @@ msgid "setting.prefill.sections.confirm"
 msgstr "Подтверждение (комментарий)"
 
 msgid "hint.active"
-msgstr "Включает работу плагина на текущей витрине."
+msgstr "Если включено — плагин работает с настройками этой витрины. Если выключено — применяются общие настройки для всех витрин."
+
+msgid "hint.active_default"
+msgstr "Если включено — общие настройки применяются ко всем витринам, для которых не заданы индивидуальные настройки. Если выключено — на витринах без индивидуальных настроек плагин работать не будет."
 
 msgid "hint.prefill.my_delivery_variants"
 msgstr "Показывает покупателю выбор из вариантов доставки на основе истории его заказов."
@@ -985,7 +1015,7 @@ msgid "log.clear"
 msgstr "Очистить"
 
 msgid "log.clear.confirm"
-msgstr "Очистить файл лога? Это действие нельзя отменить."
+msgstr "Будет очищен весь файл лога — записи всех уровней, независимо от выбранной вкладки. Это действие нельзя отменить."
 
 msgid "log.empty"
 msgstr "Записей нет"

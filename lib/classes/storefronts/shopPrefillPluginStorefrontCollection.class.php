@@ -43,12 +43,15 @@ class shopPrefillPluginStorefrontCollection
     }
 
     /**
+     * @param shopPrefillPluginStorefront|null $global_storefront Глобальная '*'-витрина для чтения реального статуса.
+     *                                                            Без неё статус '*' будет захардкожен как true.
      * @throws waDbException
      */
-    public function toJson(): string
+    public function toJson(?shopPrefillPluginStorefront $global_storefront = null): string
     {
         $storefront_groups = [];
-        $statuses = ['*' => true];
+        // Реальный статус '*' берём из переданного объекта; fallback true — для обратной совместимости.
+        $statuses = ['*' => $global_storefront !== null ? $global_storefront->isActive() : true];
         $storefront_list = $this->getList();
 
         foreach ($storefront_list as $storefront) {

@@ -8,7 +8,12 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
      */
     public function execute()
     {
-        $instance               = shopPrefillPlugin::getInstance();
+        $instance = shopPrefillPlugin::getInstance();
+
+        if (!$instance->getStorefrontSettings()['active']) {
+            return;
+        }
+
         $fill_params_collection = $instance->getFillParamsProvider()->getFillParamsCollection();
         $fill_params_array      = [];
         $items                  = $fill_params_collection->get();

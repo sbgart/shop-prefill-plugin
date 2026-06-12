@@ -113,7 +113,7 @@ class ZenModeToggle {
       form.update();
     } else {
       if (this.logger) {
-        this.logger.warn("User attempted to collapse the " + group + " group section, but validation failed");
+        this.logger.info("User attempted to collapse the " + group + " group section, but validation failed");
       }
       // Валидация не прошла → показываем модальное окно с warning
       this.showValidationErrorDialog();

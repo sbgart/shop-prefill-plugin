@@ -735,6 +735,7 @@ var PrefillSettings = (function () {
             $.post('?module=prefillPluginSettingsClearLog')
                 .done(function () {
                     allEntries = []; currentOffset = 0; hasMore = false; totalInFile = 0;
+                    $tab.find('[data-count-level]').hide();
                     renderLogs();
                 });
         });
@@ -1062,16 +1063,11 @@ document.addEventListener('prefill:storefront-content-loaded', function (event) 
     initPrefillSettings(container);
 });
 
-document.addEventListener('prefill:storefront-content-shown', function (event) {
-    const container = event.detail && event.detail.container ? event.detail.container : null;
-    if (!container) { return; }
-    initPrefillSettings(container);
-});
 
 function prefillUpdateStorefrontStatus(active) {
     var component = document.querySelector('prefill-storefront-select[show-status="true"]');
     if (!component) { return; }
     var code = $(component).find('select[data-id="storefront-select"]').val();
-    if (!code || code === '*') { return; }
+    if (!code) { return; }
     component.updateOptionStatus(code, active);
 }

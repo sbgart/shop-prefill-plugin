@@ -8,9 +8,14 @@ class shopPrefillPluginFrontendFillCheckoutParamsController extends waJsonContro
      */
     public function execute()
     {
-        $fill_params_id = waRequest::post('id', null);
-
         $instance = shopPrefillPlugin::getInstance();
+
+        if (!$instance->getStorefrontSettings()['active']) {
+            $this->setError('Plugin is inactive for this storefront');
+            return;
+        }
+
+        $fill_params_id = waRequest::post('id', null);
 
         try {
             $fill_params = $instance->getFillParamsProvider()->getFillParams($fill_params_id);

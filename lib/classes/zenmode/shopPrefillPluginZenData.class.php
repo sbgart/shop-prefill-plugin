@@ -21,30 +21,19 @@ class shopPrefillPluginZenData
     ];
 
     /**
-     * Иммутабельные шаблоны по умолчанию для каждой группы.
-     * Используются как стартовая точка при первой активации кастомного шаблона
-     * и как цель кнопки «Сбросить к стандартному» в модальном окне редактора.
+     * Возвращает дефолтный шаблон сводки для группы.
      *
-     * ВАЖНО: строки намеренно дублируются в lib/config/storefront.settings.php (значения 'value').
-     * Менять здесь — значит менять factory defaults для сброса; менять в storefront.settings.php —
-     * значит менять defaults для новых установок плагина.
-     */
-    private const DEFAULT_SUMMARY_TEMPLATES = [
-        'customer' => '{if $company}{$company} • {/if}{$firstname} {$lastname} • {$phone}',
-        'delivery' => '<strong>{$delivery_plugin}</strong><br />{$shipping_name} • {$shipping_rate}',
-        'payment'  => '<strong>{$payment_name}</strong><br />{$payment_description}',
-    ];
-
-    /**
-     * Возвращает иммутабельный шаблон по умолчанию для группы.
-     * Используется для кнопки «Сбросить к стандартному» в UI редактора кастомного шаблона.
+     * Единственный источник правды — lib/config/storefront.settings.php (поле 'value').
+     * Читаем оттуда, а не дублируем строки здесь, чтобы изменение шаблона в конфиге
+     * автоматически отражалось и в кнопке «Сбросить к стандартному» в UI редактора.
      *
      * @param string $group customer|delivery|payment
      * @return string
      */
     public static function getDefaultTemplate(string $group): string
     {
-        return self::DEFAULT_SUMMARY_TEMPLATES[$group] ?? '';
+        $config = shopPrefillPlugin::getConfig('storefront.settings');
+        return $config['zen']['groups'][$group]['summary_template']['value'] ?? '';
     }
 
     private waView $view;

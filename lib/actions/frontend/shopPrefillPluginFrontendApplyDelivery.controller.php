@@ -7,14 +7,19 @@ class shopPrefillPluginFrontendApplyDeliveryController extends waJsonController
      */
     public function execute()
     {
+        $instance = shopPrefillPlugin::getInstance();
+
+        if (!$instance->getStorefrontSettings()['active']) {
+            $this->errors = 'Plugin is inactive for this storefront';
+            return;
+        }
+
         $order_id = waRequest::post('order_id', null, waRequest::TYPE_INT);
 
         if (!$order_id) {
             $this->errors = 'Missing order_id';
             return;
         }
-
-        $instance = shopPrefillPlugin::getInstance();
 
         try {
             $fill_params = $instance->getFillParamsProvider()->getFillParams($order_id);

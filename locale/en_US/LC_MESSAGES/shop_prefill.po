@@ -18,6 +18,30 @@ msgstr "Pre-filling checkout fields"
 msgid "menu.help"
 msgstr "Support"
 
+msgid "menu.contacts"
+msgstr "Contacts"
+
+msgid "menu.contacts.dialog.title"
+msgstr "Get in touch"
+
+msgid "menu.contacts.support.title"
+msgstr "Contact support"
+
+msgid "menu.contacts.support.hint"
+msgstr "We'll help you with setup, answer your questions, and resolve any technical issues"
+
+msgid "menu.contacts.dev.title"
+msgstr "Write to the developer"
+
+msgid "menu.contacts.dev.hint"
+msgstr "Share ideas and feature requests — your feedback helps make the plugin better"
+
+msgid "menu.contacts.close"
+msgstr "Close"
+
+msgid "menu.contacts.copied"
+msgstr "Copied"
+
 msgid "setting.storefront_selector"
 msgstr "Storefront"
 
@@ -28,7 +52,10 @@ msgid "hint.storefront_selector_status"
 msgstr "Storefronts that use their own settings are marked with a green indicator in the list. General settings for all storefronts do not apply to them."
 
 msgid "setting.active"
-msgstr "Status"
+msgstr "Use individual settings"
+
+msgid "setting.active_default"
+msgstr "Apply general settings to all storefronts"
 
 msgid "checkout.consent.remember_data"
 msgstr "Remember my details for future orders"
@@ -187,7 +214,10 @@ msgid "setting.prefill.sections.confirm"
 msgstr "Confirmation (comment)"
 
 msgid "hint.active"
-msgstr "Enables the plugin on the selected storefront."
+msgstr "If enabled — the plugin uses this storefront's individual settings. If disabled — the general settings for all storefronts are applied."
+
+msgid "hint.active_default"
+msgstr "If enabled — general settings are applied to all storefronts that have no individual settings configured. If disabled — the plugin will not work on storefronts without individual settings."
 
 msgid "hint.prefill.my_delivery_variants"
 msgstr "Shows the customer a choice of delivery options based on their order history."
@@ -961,7 +991,7 @@ msgid "log.clear"
 msgstr "Clear"
 
 msgid "log.clear.confirm"
-msgstr "Clear the log file? This cannot be undone."
+msgstr "The entire log file will be cleared — all entries from all levels, regardless of the selected tab. This cannot be undone."
 
 msgid "log.empty"
 msgstr "No entries"

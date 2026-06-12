@@ -49,10 +49,10 @@
                     {include file='../../components/Field.html'
                     name="{$name_prefix}[active]"
                     type='Switcher'
-                    label='[`setting.active`]'
+                    label="{if $storefront_code === '*'}[`setting.active_default`]{else}[`setting.active`]{/if}"
                     value=$settings['active']
                     tooltip='[`tooltip.storefront_active`]'
-                    hint_after='[`hint.active`]'
+                    hint_after="{if $storefront_code === '*'}[`hint.active_default`]{else}[`hint.active`]{/if}"
                     on_change="prefillUpdateStorefrontStatus"}
 
                     {include file='../../components/Field.html'

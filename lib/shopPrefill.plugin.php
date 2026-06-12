@@ -146,12 +146,38 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
+     * Возвращает настройки витрины для текущего запроса (request-scoped кэш).
+     *
+     * Логика наследования: если конкретная витрина неактивна (active=false),
+     * возвращаем глобальные настройки '*' целиком — это позволяет включить плагин
+     * один раз глобально, не активируя каждую витрину вручную.
+     * Отключение конкретной витрины работает только если её global-аналог тоже неактивен.
+     *
+     * Важно: этот метод используется исключительно на фронтенде и в хуках.
+     * Для чтения/записи настроек в админке используй getStorefrontProvider()->getStorefront($code) напрямую,
+     * чтобы видеть реальные данные конкретной витрины без фоллбэка.
+     *
      * @throws waException
      * @throws waDbException
      */
     public function getStorefrontSettings(): array
     {
-        return self::$storefront_settings ??= $this->getStorefrontProvider()->getCurrentStorefront()->getSettings();
+        if (self::$storefront_settings === null) {
+            $storefront = $this->getStorefrontProvider()->getCurrentStorefront();
+            $settings   = $storefront->getSettings();
+
+            // Витрина неактивна → используем глобальные настройки '*' целиком.
+            // Это намеренный фоллбэк: per-storefront active=false может означать
+            // «ещё не настроена», а не «явно отключена», поэтому глобальный active=true
+            // должен иметь приоритет.
+            if (!$settings['active']) {
+                $settings = $this->getStorefrontProvider()->getStorefront('*')->getSettings();
+            }
+
+            self::$storefront_settings = $settings;
+        }
+
+        return self::$storefront_settings;
     }
 
     /**

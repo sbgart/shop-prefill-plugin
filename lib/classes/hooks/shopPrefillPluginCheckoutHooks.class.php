@@ -50,6 +50,11 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutBeforeAuth(array &$params): void
     {
+        // Витрина неактивна — prefill-логика не выполняется.
+        if (!$this->storefront_settings['active']) {
+            return;
+        }
+
         $fill_params = $this->fill_params_provider->getFillParams();
         $filled_order = $this->session_storage->preFillCheckoutParams($fill_params);
 
@@ -73,6 +78,10 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderAuth(array &$params): string
     {
+        if (!$this->storefront_settings['active']) {
+            return '';
+        }
+
         $state = new shopPrefillCheckoutState($params);
         return $this->renderZenModeStylesheet()
             . $this->buildZenModeGroupBlock('customer', $state, 'checkoutRenderAuth')
@@ -88,6 +97,10 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderRegion(array &$params): string
     {
+        if (!$this->storefront_settings['active']) {
+            return '';
+        }
+
         $state = new shopPrefillCheckoutState($params);
         return $this->renderSectionErrorsAndDebug($state, 'checkoutRenderRegion', 'REGION SECTION');
     }
@@ -101,6 +114,10 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderShipping(array &$params): string
     {
+        if (!$this->storefront_settings['active']) {
+            return '';
+        }
+
         $state = new shopPrefillCheckoutState($params);
         return $this->renderSectionErrorsAndDebug($state, 'checkoutRenderShipping', 'SHIPPING SECTION');
     }
@@ -114,6 +131,10 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderDetails(array &$params): string
     {
+        if (!$this->storefront_settings['active']) {
+            return '';
+        }
+
         $state = new shopPrefillCheckoutState($params);
         return $this->buildZenModeGroupBlock('delivery', $state, 'checkoutRenderDetails')
             . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderDetails', 'DETAILS SECTION');
@@ -128,6 +149,10 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderPayment(array &$params): string
     {
+        if (!$this->storefront_settings['active']) {
+            return '';
+        }
+
         $state = new shopPrefillCheckoutState($params);
         return $this->buildZenModeGroupBlock('payment', $state, 'checkoutRenderPayment')
             . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderPayment', 'PAYMENT SECTION');
@@ -142,6 +167,10 @@ class shopPrefillPluginCheckoutHooks
      */
     public function handleCheckoutRenderConfirm(array &$params): string
     {
+        if (!$this->storefront_settings['active']) {
+            return '';
+        }
+
         $state = new shopPrefillCheckoutState($params);
         return $this->renderDeliveryUnavailableScript($state)
             . $this->renderZenModeConfirmStyles($state)
