@@ -5,18 +5,21 @@
  * Requires:
  *   - appark.contacts.css
  *   - appark.contacts.js
- *   - Locale keys: menu.help, menu.contacts.dialog.title,
+ *   - Locale keys: menu.help, menu.bubble.v1, menu.contacts.dialog.title,
  *                  menu.contacts.support.*, menu.contacts.dev.*,
  *                  menu.contacts.close, menu.contacts.copied
  *}
-<button type="button"
-        class="js-appark-contacts button nobutton small rounded gray nowrap custom-mt-4"
-        data-dialog-title="[`menu.contacts.dialog.title`]"
-        data-support-email="support@appark.com"
-        data-support-title="[`menu.contacts.support.title`]"
-        data-support-hint="[`menu.contacts.support.hint`]"
-        data-dev-email="contact@appark.ru"
-        data-dev-title="[`menu.contacts.dev.title`]"
-        data-dev-hint="[`menu.contacts.dev.hint`]"
-        data-copied-label="[`menu.contacts.copied`]"
-><i class="fas fa-headset fa-xs custom-mr-4"></i>[`menu.help`]</button>
+<span class="appark-contacts-wrapper custom-mt-4">
+    <span class="appark-contacts-bubble js-appark-bubble">[`menu.bubble.v1`]<button class="appark-contacts-bubble__close js-appark-bubble-close" type="button" aria-label="Закрыть">&times;</button></span>
+    <button type="button"
+            class="js-appark-contacts button nobutton small rounded gray nowrap"
+            data-dialog-title="[`menu.contacts.dialog.title`]"
+            data-support-email="support@appark.com"
+            data-support-title="[`menu.contacts.support.title`]"
+            data-support-hint="[`menu.contacts.support.hint`]"
+            data-dev-email="contact@appark.ru"
+            data-dev-title="[`menu.contacts.dev.title`]"
+            data-dev-hint="[`menu.contacts.dev.hint`]"
+            data-copied-label="[`menu.contacts.copied`]"
+    ><i class="fas fa-headset fa-xs custom-mr-4"></i>[`menu.help`]</button>
+</span>

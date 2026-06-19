@@ -42,6 +42,9 @@ msgstr "Close"
 msgid "menu.contacts.copied"
 msgstr "Copied"
 
+msgid "menu.bubble.v1"
+msgstr "This is the first version of the plugin — we'd love your ideas and feedback! 😇"
+
 msgid "setting.storefront_selector"
 msgstr "Storefront"
 

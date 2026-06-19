@@ -139,4 +139,42 @@
         if (text !== undefined) node.textContent = text;
         return node;
     }
+
+    // Announcement bubble — dismissed for 24 h, then reappears automatically.
+    // Change V1_BUBBLE_KEY when the announcement text changes so it shows again immediately.
+    var V1_BUBBLE_KEY = 'appark_prefill_bubble_v1';
+    var BUBBLE_TTL    = 24 * 60 * 60 * 1000; // 24 hours in ms
+
+    // Hide on load if dismissed recently (runs as soon as DOM is available)
+    function initBubble() {
+        var bubble = document.querySelector('.js-appark-bubble');
+        if (!bubble) return;
+        try {
+            var raw = localStorage.getItem(V1_BUBBLE_KEY);
+            if (raw) {
+                var saved = JSON.parse(raw);
+                if (Date.now() - saved.t < BUBBLE_TTL) {
+                    bubble.style.display = 'none';
+                }
+            }
+        } catch (e) {}
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initBubble);
+    } else {
+        initBubble();
+    }
+
+    // Delegated click — works regardless of script load timing
+    document.addEventListener('click', function (e) {
+        var closeBtn = e.target.closest('.js-appark-bubble-close');
+        if (!closeBtn) return;
+        var bubble = closeBtn.closest('.js-appark-bubble');
+        if (!bubble) return;
+        bubble.style.transition = 'opacity 0.2s ease';
+        bubble.style.opacity = '0';
+        setTimeout(function () { bubble.style.display = 'none'; }, 220);
+        try { localStorage.setItem(V1_BUBBLE_KEY, JSON.stringify({ t: Date.now() })); } catch (e) {}
+    });
 }());

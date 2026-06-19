@@ -42,6 +42,9 @@ msgstr "Закрыть"
 msgid "menu.contacts.copied"
 msgstr "Скопировано"
 
+msgid "menu.bubble.v1"
+msgstr "Это первая версия плагина, мы очень ждем ваших идей и замечаний 😇"
+
 msgid "setting.storefront_selector"
 msgstr "Витрина"
 
