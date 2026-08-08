@@ -5,12 +5,19 @@
 * @param string $group Имя группы
 * @param bool $is_collapsed Состояние группы
 * @param string $icon_url URL иконки (опционально)
+* @param bool $icon_is_default Дефолтная моно-иконка группы (рендерится инлайново через спрайт)
+* @param string $icon_sprite_url URL спрайта для инлайновых иконок (опционально)
 * @param string $summary_html HTML сводки (опционально)
 *}
 
 <div class="prefill-zen-collapse-block {if $is_collapsed}js-prefill-zen-toggle{/if}" {if
     $is_collapsed}data-group="{$group|escape}" data-action="expand" {/if}>
-    {if $is_collapsed && !empty($icon_url)}
+    {if $is_collapsed && $icon_is_default}
+    {* Дефолтная иконка: инлайн через спрайт, чтобы stroke="currentColor" наследовал цвет темы витрины *}
+    <svg class="js-prefill-zen-icon prefill-zen-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <use xlink:href="{$icon_sprite_url|escape}#{$group|escape}"></use>
+    </svg>
+    {elseif $is_collapsed && !empty($icon_url)}
     <img src="{$icon_url|escape}" class="js-prefill-zen-icon prefill-zen-icon" alt="">
     {/if}
 

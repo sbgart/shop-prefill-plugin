@@ -1,0 +1,21 @@
+{
+  "css": {
+    "entry": [
+      "css/frontend.css"
+    ],
+    "output": "css/frontend.min.css"
+  },
+  "js": {
+    "entry": [
+      "js/modules/HttpClient.js",
+      "js/modules/DialogManager.js",
+      "js/modules/Logger.js",
+      "js/modules/ConsentManager.js",
+      "js/modules/ParamsChoiceManager.js",
+      "js/modules/OrderFormManager.js",
+      "js/modules/ZenModeToggle.js",
+      "js/prefill.frontend.js"
+    ],
+    "output": "js/prefill.frontend.min.js"
+  }
+}

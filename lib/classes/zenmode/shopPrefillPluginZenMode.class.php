@@ -191,28 +191,32 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Возвращает URL иконки для группы delivery или payment согласно настройке icon_source.
+     * Возвращает иконку для группы delivery или payment согласно настройке icon_source.
      *
-     * icon_source: 'default' — дефолтный SVG группы;
+     * icon_source: 'default' — дефолтный SVG группы (рендерится инлайново через спрайт,
+     *              чтобы stroke="currentColor" наследовал цвет темы витрины, в т.ч. тёмной);
      *              'plugin'  — логотип активного плагина → fallback на дефолтный SVG;
      *              'custom'  — URL из поля icon.
      *
      * @param string $group Имя группы (delivery | payment)
      * @param shopPrefillCheckoutState $state Состояние чекаута
-     * @return string URL иконки или пустая строка
+     * @return array{url: string, is_default: bool}
      */
-    private function getPluginGroupIcon(string $group, shopPrefillCheckoutState $state): string
+    private function getPluginGroupIcon(string $group, shopPrefillCheckoutState $state): array
     {
         $source = $this->settings['groups'][$group]['icon_source'] ?? 'default';
 
         switch ($source) {
             case 'custom':
-                return $this->settings['groups'][$group]['icon'] ?? '';
+                return ['url' => $this->settings['groups'][$group]['icon'] ?? '', 'is_default' => false];
             case 'plugin':
                 $logo = $this->getGroupPluginLogo($group, $state);
-                return $logo ?: shopPrefillPlugin::getStaticUrl("img/zen/{$group}.svg");
+                if ($logo) {
+                    return ['url' => $logo, 'is_default' => false];
+                }
+                return ['url' => '', 'is_default' => true];
             default: // 'default'
-                return shopPrefillPlugin::getStaticUrl("img/zen/{$group}.svg");
+                return ['url' => '', 'is_default' => true];
         }
     }
 
@@ -231,45 +235,51 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Возвращает URL иконки для группы «Покупатель» согласно настройке icon_source.
+     * Возвращает иконку для группы «Покупатель» согласно настройке icon_source.
      *
-     * @return string URL иконки или пустая строка (без иконки)
+     * Дефолтная иконка рендерится инлайново через спрайт (см. getPluginGroupIcon()),
+     * чтобы stroke="currentColor" наследовал цвет темы витрины, в т.ч. тёмной.
+     *
+     * @return array{url: string, is_default: bool}
      */
-    private function getCustomerGroupIcon(): string
+    private function getCustomerGroupIcon(): array
     {
         $source = $this->settings['groups']['customer']['icon_source'] ?? 'default';
 
         switch ($source) {
             case 'none':
-                return '';
+                return ['url' => '', 'is_default' => false];
             case 'custom':
-                return $this->settings['groups']['customer']['icon'] ?? '';
+                return ['url' => $this->settings['groups']['customer']['icon'] ?? '', 'is_default' => false];
             case 'avatar':
-                return $this->getContactAvatarUrl();
+                return $this->getContactAvatarIcon();
             default: // 'default'
-                return shopPrefillPlugin::getStaticUrl('img/zen/customer.svg');
+                return ['url' => '', 'is_default' => true];
         }
     }
 
     /**
-     * Возвращает URL аватара текущего авторизованного покупателя.
-     * Для гостей или при ошибке — fallback на стандартную иконку customer.svg.
+     * Возвращает иконку аватара текущего авторизованного покупателя.
+     * Для гостей или при ошибке — fallback на стандартную иконку customer.
      *
-     * @return string URL аватара или стандартной иконки
+     * @return array{url: string, is_default: bool}
      */
-    private function getContactAvatarUrl(): string
+    private function getContactAvatarIcon(): array
     {
         $user = wa()->getUser();
         if (! $user || ! $user->isAuth()) {
-            return shopPrefillPlugin::getStaticUrl('img/zen/customer.svg');
+            return ['url' => '', 'is_default' => true];
         }
 
         try {
             $contact = new waContact($user->getId());
             $url     = $contact->getPhoto(100, 100);
-            return $url ?: shopPrefillPlugin::getStaticUrl('img/zen/customer.svg');
+            if ($url) {
+                return ['url' => $url, 'is_default' => false];
+            }
+            return ['url' => '', 'is_default' => true];
         } catch (waException $e) {
-            return shopPrefillPlugin::getStaticUrl('img/zen/customer.svg');
+            return ['url' => '', 'is_default' => true];
         }
     }
 
@@ -436,8 +446,9 @@ class shopPrefillPluginZenMode
      */
     public function renderCollapseBlock(string $group, shopPrefillCheckoutState $state, bool $is_collapsed = true): string
     {
-        $icon_url     = null;
-        $summary_html = null;
+        $icon_url        = null;
+        $icon_is_default = false;
+        $summary_html    = null;
 
         if ($is_collapsed) {
             // Иконка группы: только если глобальный режим не 'none'
@@ -445,11 +456,13 @@ class shopPrefillPluginZenMode
             if ($icon_mode !== 'none') {
                 if ($group === 'customer') {
                     // Для customer — собственная логика icon_source (default/none/custom/avatar)
-                    $icon_url = $this->getCustomerGroupIcon();
+                    $icon = $this->getCustomerGroupIcon();
                 } else {
                     // Для delivery/payment — per-group icon_source (default/plugin/custom)
-                    $icon_url = $this->getPluginGroupIcon($group, $state);
+                    $icon = $this->getPluginGroupIcon($group, $state);
                 }
+                $icon_url        = $icon['url'] !== '' ? $icon['url'] : null;
+                $icon_is_default = $icon['is_default'];
             }
 
             // Свёрнуто: сводка + кнопка "Изменить"
@@ -459,7 +472,11 @@ class shopPrefillPluginZenMode
         $this->view->assign([
             'group'                           => $group,
             'is_collapsed'                    => $is_collapsed,
-            'icon_url'                        => $icon_url ?? null,
+            'icon_url'                        => $icon_url,
+            // Дефолтная иконка рендерится инлайново (спрайт + <use>), а не через <img src>,
+            // иначе stroke="currentColor" не подхватывает цвет темы витрины (актуально для тёмной темы)
+            'icon_is_default'                 => $icon_is_default,
+            'icon_sprite_url'                 => $icon_is_default ? shopPrefillPlugin::getStaticUrl('img/zen/sprite.svg') : null,
             'summary_html'                    => $summary_html ?? null,
             'zen_toggle_button_extra_classes' => $this->settings['toggle_button_classes'] ?? '',
         ]);
@@ -523,8 +540,12 @@ class shopPrefillPluginZenMode
             return '';
         }
 
-        // Проверяем, что сводка не пустая после рендеринга
-        if (empty(trim(strip_tags($summary)))) {
+        // Проверяем, что в сводке остались смысловые символы (буквы/цифры), а не только
+        // артефакты шаблона-разделителя вроде "•" — их trim()/strip_tags() не убирают
+        if (preg_replace('/[^\p{L}\p{N}]/u', '', strip_tags($summary)) === '') {
+            if ($group === 'customer') {
+                return htmlspecialchars(_wp('zen.groups.customer.summary_empty'));
+            }
             return '';
         }
 

@@ -432,6 +432,9 @@ msgstr "Шаблон сводки блока «Покупатель»"
 msgid "hint.zen.groups.customer.summary_template"
 msgstr "Сводка для свёрнутого блока. Поддерживаются переменные и условия Smarty."
 
+msgid "zen.groups.customer.summary_empty"
+msgstr "Гость (нажмите «Изменить», чтобы указать данные о себе)"
+
 msgid "hint.zen.group.delivery"
 msgstr "Параметры свёрнутого блока «Доставка» в Дзен-режиме."
 

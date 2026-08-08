@@ -615,6 +615,9 @@ msgstr "Customer block summary template"
 msgid "hint.zen.groups.customer.summary_template"
 msgstr "Short line shown when the block is collapsed (Smarty template)."
 
+msgid "zen.groups.customer.summary_empty"
+msgstr "Guest (click “Edit” to fill in your details)"
+
 msgid "hint.zen.group.delivery"
 msgstr "Settings for the collapsed Delivery block in Zen Mode."
 

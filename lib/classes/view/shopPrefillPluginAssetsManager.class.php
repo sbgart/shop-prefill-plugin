@@ -45,22 +45,22 @@ class shopPrefillPluginAssetsManager
             $add_css('css/frontend.' . (!$is_debug ? 'min.' : '') . 'css');
         }
 
-        // Подключаем JS модули в правильном порядке (по зависимостям)
-        // Модули без зависимостей
-        $add_js('js/modules/HttpClient.js');
-        $add_js('js/modules/DialogManager.js');
-
-        // Модули с зависимостями от базовых
-        $add_js('js/modules/Logger.js'); // зависит от HttpClient
-
-        // Модули бизнес-логики
-        $add_js('js/modules/ConsentManager.js'); // зависит от HttpClient, Logger
-        $add_js('js/modules/ParamsChoiceManager.js'); // зависит от HttpClient, DialogManager, Logger
-        $add_js('js/modules/OrderFormManager.js'); // зависит от ParamsChoiceManager, Logger
-        $add_js('js/modules/ZenModeToggle.js'); // управление Zen Mode (без зависимостей)
-
-        // Главный контроллер (координатор)
-        $add_js('js/prefill.frontend.' . (!$is_debug ? 'min.' : '') . 'js?');
+        if ($is_debug) {
+            // Debug: модули отдельными файлами (по зависимостям) + неминифицированный контроллер.
+            // Так удобнее дебажить в devtools и не нужно пересобирать бандл на каждое изменение.
+            $add_js('js/modules/HttpClient.js');
+            $add_js('js/modules/DialogManager.js');
+            $add_js('js/modules/Logger.js'); // зависит от HttpClient
+            $add_js('js/modules/ConsentManager.js'); // зависит от HttpClient, Logger
+            $add_js('js/modules/ParamsChoiceManager.js'); // зависит от HttpClient, DialogManager, Logger
+            $add_js('js/modules/OrderFormManager.js'); // зависит от ParamsChoiceManager, Logger
+            $add_js('js/modules/ZenModeToggle.js'); // управление Zen Mode (без зависимостей)
+            $add_js('js/prefill.frontend.js?');
+        } else {
+            // Prod: один самодостаточный минифицированный бандл (модули уже внутри).
+            // Собирается скиллом build-plugin-frontend из js/bundle.config.json.
+            $add_js('js/prefill.frontend.min.js?');
+        }
 
         // Генерируем и подключаем CSS переменные
         if (!empty($css_variables)) {

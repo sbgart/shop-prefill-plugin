@@ -35,6 +35,12 @@
   flex-shrink: 0;
 }
 
+/* Дефолтная моно-иконка (инлайн svg): цвет наследуется от темы витрины через currentColor,
+   поэтому корректно отображается и в тёмной, и в светлой теме */
+svg.prefill-zen-icon {
+  color: var(--text-color-secondary, currentColor);
+}
+
 /* Иконка стрелки в кнопках */
 .prefill-zen-toggle-btn .wa-icon.prefill-zen-arrow {
   display: inline-block;
