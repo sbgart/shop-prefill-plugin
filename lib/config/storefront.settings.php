@@ -29,8 +29,9 @@ return [
         ],
     ],
     'styles'      => [
-        'accent_color' => ['value' => '#000'],
-        'custom_css'   => ['value' => ''],
+        'accent_color'      => ['value' => '#000'],
+        'accent_color_dark' => ['value' => '#fff'],
+        'custom_css'        => ['value' => ''],
     ],
     // Zen Mode — сворачивание секций чекаута
     'zen'         => [

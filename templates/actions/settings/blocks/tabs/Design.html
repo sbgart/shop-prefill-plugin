@@ -11,6 +11,13 @@
             value=$settings['styles']['accent_color']
             hint_after='[`hint.styles.accent_color`]'}
 
+        {include file='../../components/Field.html'
+            name="{$name_prefix}[styles][accent_color_dark]"
+            type='Color'
+            label='[`setting.styles.accent_color_dark`]'
+            value=$settings['styles']['accent_color_dark']
+            hint_after='[`hint.styles.accent_color_dark`]'}
+
         <div class="field">
             <div class="name">[`setting.styles.custom_css`]</div>
             <div class="value">

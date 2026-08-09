@@ -562,10 +562,16 @@ msgid "hint.tab.design"
 msgstr "Appearance of plugin elements on storefront."
 
 msgid "setting.styles.accent_color"
-msgstr "Accent color"
+msgstr "Accent color (light theme)"
 
 msgid "hint.styles.accent_color"
 msgstr "Sets the accent color for plugin elements on the storefront to match the design theme."
+
+msgid "setting.styles.accent_color_dark"
+msgstr "Accent color (dark theme)"
+
+msgid "hint.styles.accent_color_dark"
+msgstr "Accent color for plugin elements when the customer's device has dark theme enabled."
 
 msgid "hint.zen.group.main"
 msgstr "Main Zen Mode parameters for this storefront."

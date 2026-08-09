@@ -238,7 +238,8 @@ class shopPrefillPluginFrontendHooks
     private function initializeFrontendAssets(): void
     {
         $css_variables = [
-            'prefill-accent-color' => $this->storefront_settings['styles']['accent_color'],
+            'prefill-accent-color-light' => $this->storefront_settings['styles']['accent_color'],
+            'prefill-accent-color-dark'  => $this->storefront_settings['styles']['accent_color_dark'],
         ];
 
         // Добавляем переменную для скрытия элементов шапки авторизации в Дзен-режиме

@@ -355,10 +355,16 @@ msgid "hint.tab.design"
 msgstr "Внешний вид элементов плагина на витрине."
 
 msgid "setting.styles.accent_color"
-msgstr "Акцентный цвет оформления"
+msgstr "Акцентный цвет оформления (светлая тема)"
 
 msgid "hint.styles.accent_color"
 msgstr "Задаёт акцентный цвет элементов плагина на витрине для подгонки под тему дизайна."
+
+msgid "setting.styles.accent_color_dark"
+msgstr "Акцентный цвет оформления (тёмная тема)"
+
+msgid "hint.styles.accent_color_dark"
+msgstr "Акцентный цвет элементов плагина, когда на устройстве покупателя включена тёмная тема оформления."
 
 msgid "setting.styles.custom_css"
 msgstr "Пользовательский CSS"

@@ -1,9 +1,22 @@
 /* === CSS VARIABLES ===
- * Акцентный цвет задаётся через настройку styles.accent_color витрины.
- * AssetsManager генерирует файл с переопределением :root для каждой витрины.
+ * Акцентный цвет задаётся через настройки styles.accent_color (светлая тема)
+ * и styles.accent_color_dark (тёмная тема) витрины.
+ * AssetsManager генерирует файл с переопределением --prefill-accent-color-light/-dark
+ * для каждой витрины; --prefill-accent-color вычисляется из них через light-dark()
+ * и остаётся единственной точкой использования акцента во всём остальном CSS.
  */
 :root {
-    --prefill-accent-color: #000000;
+    --prefill-accent-color-light: #000000;
+    --prefill-accent-color-dark: #ffffff;
+    --prefill-accent-color: light-dark(var(--prefill-accent-color-light), var(--prefill-accent-color-dark));
+}
+
+/* Фолбэк для браузеров без поддержки light-dark() (Safari <17.5 и т.п.) —
+   плоские светлые значения, поведение как до появления тёмной темы. */
+@supports not (color: light-dark(white, black)) {
+    :root {
+        --prefill-accent-color: var(--prefill-accent-color-light);
+    }
 }
 
 
@@ -15,14 +28,25 @@
 /* --- Оболочка диалога --- */
 
 .prefill-dialog {
+    display: flex;
+    flex-direction: column;
     border: none;
     border-radius: 1.5em;
     padding: 0;
     max-width: 50em;
+    max-height: 90vh;   /* чтобы был запас под скролл контента, а не обрезание диалога краем экрана */
     overflow: hidden;   /* чтобы хедер не вылезал за border-radius */
     outline: none;      /* убираем стандартную обводку фокуса */
+    background: light-dark(#fff, #1e1e1e);
+    color: light-dark(#1a1a1a, #eee);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     animation: prefillFadeIn 0.15s ease-out forwards;
+}
+
+/* Авторский display всегда перебивает UA-стиль браузера (dialog:not([open]) { display:none }),
+   поэтому без этого правила закрытый диалог остаётся видимым как обычный блок в потоке. */
+.prefill-dialog:not([open]) {
+    display: none;
 }
 
 .prefill-dialog.is-closing {
@@ -67,6 +91,7 @@
     align-items: flex-start;
     justify-content: space-between;
     padding: 1.5em 1.5em 0.5em;
+    flex-shrink: 0;
 }
 
 .prefill-dialog__title {
@@ -77,8 +102,10 @@
 }
 
 .prefill-dialog__content {
-    height: 100%;
     padding: 0.5em 1.5em 2em;
+    overflow-y: auto;   /* скролл контента внутри диалога, если он выше max-height */
+    flex: 1 1 auto;
+    min-height: 0;      /* иначе flex-элемент не сжимается меньше содержимого и скролл не появляется */
 }
 
 /* Плавное проявление контента при загрузке */
@@ -106,7 +133,8 @@
     position: relative;
     width: 2em;
     height: 2em;
-    background-color: #f1f1f1;
+    background-color: light-dark(#f1f1f1, rgba(255, 255, 255, .12));
+    color: light-dark(#000, #fff);
     border-radius: 50%;
     transition: .3s;
     flex-shrink: 0;
@@ -114,7 +142,7 @@
 }
 
 .prefill-dialog__close-button:hover {
-    background-color: #ececec;
+    background-color: light-dark(#ececec, rgba(255, 255, 255, .18));
 }
 
 .prefill-dialog__close-button:before,
@@ -123,7 +151,7 @@
     position: absolute;
     width: 0.9em;
     height: 0.19em;
-    background: #000;
+    background: currentColor;
     top: calc(50% - 0.095em);
     left: calc(50% - 0.45em);
 }
@@ -170,12 +198,12 @@
 }
 
 .prefill-dialog__cancel-btn {
-    background-color: #e8e8e8;
-    color: #333;
+    background-color: light-dark(#e8e8e8, rgba(255, 255, 255, .12));
+    color: light-dark(#333, #eee);
 }
 
 .prefill-dialog__cancel-btn:hover {
-    background-color: #ddd;
+    background-color: light-dark(#ddd, rgba(255, 255, 255, .18));
 }
 
 /* Блокируем прокрутку страницы пока открыт диалог */
@@ -200,7 +228,7 @@ body.prefill-dialog-open {
     gap: 1em;
     flex-direction: column;
     padding: 1em;
-    border: 0.06em solid #e0e0e0;
+    border: 0.06em solid light-dark(#e0e0e0, rgba(255, 255, 255, .18));
     border-radius: 0.6em;
     cursor: pointer;
     box-sizing: border-box;
@@ -220,7 +248,7 @@ body.prefill-dialog-open {
 .prefill-params__card-title {
     font-weight: 600;
     line-height: 1.2em;
-    color: #333;
+    color: light-dark(#333, #eee);
     display: flex;
     justify-content: space-between;
     word-break: break-word;
@@ -233,7 +261,7 @@ body.prefill-dialog-open {
 .prefill-params__empty {
     padding: 2em 0;
     text-align: center;
-    color: #555;
+    color: light-dark(#555, #aaa);
 }
 
 /* Ссылка «Мои варианты» в заголовке секции региона.
@@ -264,7 +292,7 @@ body.prefill-dialog-open {
 
 .prefill-warning__text {
     margin: 0.8em 0;
-    color: #555;
+    color: light-dark(#555, #aaa);
     line-height: 1.5;
     max-width: 22em;
 }
