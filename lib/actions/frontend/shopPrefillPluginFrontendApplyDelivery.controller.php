@@ -9,7 +9,7 @@ class shopPrefillPluginFrontendApplyDeliveryController extends waJsonController
     {
         $instance = shopPrefillPlugin::getInstance();
 
-        if (!$instance->getStorefrontSettings()['active']) {
+        if (!$instance->getEffectiveStorefrontSettings()['active']) {
             $this->errors = 'Plugin is inactive for this storefront';
             return;
         }

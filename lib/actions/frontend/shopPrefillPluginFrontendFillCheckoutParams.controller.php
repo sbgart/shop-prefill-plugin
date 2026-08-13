@@ -10,7 +10,7 @@ class shopPrefillPluginFrontendFillCheckoutParamsController extends waJsonContro
     {
         $instance = shopPrefillPlugin::getInstance();
 
-        if (!$instance->getStorefrontSettings()['active']) {
+        if (!$instance->getEffectiveStorefrontSettings()['active']) {
             $this->setError('Plugin is inactive for this storefront');
             return;
         }

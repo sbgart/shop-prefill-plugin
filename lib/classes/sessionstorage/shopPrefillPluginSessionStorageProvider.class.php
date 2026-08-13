@@ -41,16 +41,21 @@ class shopPrefillPluginSessionStorageProvider
     }
 
     /**
-     * Получает параметры checkout из хранилища
+     * Получает параметры checkout из хранилища.
      *
-     * @return array|null Параметры checkout или null если хранилище пустое
+     * Всегда массив: ключа сессии может не быть (заказ вне обычного оформления),
+     * а вызывающие всё равно нигде не отличают «нет сессии» от «пустая сессия».
+     *
+     * @return array Параметры checkout или пустой массив, если хранилище пустое
      */
-    public function getCheckoutParams(): ?array
+    public function getCheckoutParams(): array
     {
-        return $this->getStorage()->get('shop/checkout');
+        $params = $this->getStorage()->get('shop/checkout');
+
+        return is_array($params) ? $params : [];
     }
 
-    public function setCheckoutParams($params): bool
+    public function setCheckoutParams(array $params): bool
     {
         try {
             $this->getStorage()->set('shop/checkout', $params);
@@ -151,7 +156,6 @@ class shopPrefillPluginSessionStorageProvider
         }
 
         $checkout_params = $this->getCheckoutParams();
-        $checkout_params = is_array($checkout_params) ? $checkout_params : [];
 
         $snapshot = $this->getSnapshot();
 
@@ -384,7 +388,7 @@ class shopPrefillPluginSessionStorageProvider
      */
     public function applyDeliveryAddress(shopPrefillPluginFillParams $fill_params): void
     {
-        $checkout_params = $this->getCheckoutParams() ?: [];
+        $checkout_params = $this->getCheckoutParams();
         $final_params = [];
 
         $this->prepareRegionSectionParams($fill_params, $final_params, null);

@@ -10,7 +10,7 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
     {
         $instance = shopPrefillPlugin::getInstance();
 
-        if (!$instance->getStorefrontSettings()['active']) {
+        if (!$instance->getEffectiveStorefrontSettings()['active']) {
             return;
         }
 
@@ -27,7 +27,7 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
         $items = array_slice($items, 0, 5);
 
         // Определяем текущий сценарий доставки для подсветки активной карточки
-        $checkout_params = $instance->getSessionStorageProvider()->getCheckoutParams() ?: [];
+        $checkout_params = $instance->getSessionStorageProvider()->getCheckoutParams();
         $current         = $instance->getFillParamsProvider()->getFillParamsByCheckoutParams($checkout_params);
 
         foreach ($items as $item_obj) {

@@ -17,8 +17,9 @@ class shopPrefillPluginFrontendToggleZenController extends waJsonController
             // Получаем экземпляр плагина
             $plugin = shopPrefillPlugin::getInstance();
 
-            // Получаем текущие настройки витрины
-            $storefront = $plugin->getStorefrontProvider()->getCurrentStorefront();
+            // Переключаем ту витрину, настройки которой реально действуют:
+            // если текущая неактивна, в силе глобальные настройки — их и меняем
+            $storefront = $plugin->getEffectiveStorefront();
             $settings = $storefront->getSettings();
 
             // Переключаем состояние (toggle)
@@ -31,8 +32,8 @@ class shopPrefillPluginFrontendToggleZenController extends waJsonController
             // Сохраняем настройки
             $storefront->saveSettings($settings);
 
-            // Очищаем статический кэш настроек витрины в плагине
-            shopPrefillPlugin::clearStorefrontSettingsCache();
+            // Очищаем статический кэш эффективной витрины в плагине
+            shopPrefillPlugin::clearEffectiveStorefrontCache();
 
             $this->response = [
                 'status' => 'ok',

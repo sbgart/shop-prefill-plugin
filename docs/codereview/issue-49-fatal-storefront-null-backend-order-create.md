@@ -1,6 +1,6 @@
 # Issue 49 — БЛОКЕР: фатальная ошибка при создании заказа вне фронтенда
 
-**Статус:** ⬜ Открыта
+**Статус:** ✅ Закрыта
 **Приоритет:** 🔴 Блокер релиза
 **Сложность фикса:** 🔧 Небольшой
 **Файл:** `lib/shopPrefill.plugin.php:163-181` (`getStorefrontSettings`), `lib/classes/storefronts/shopPrefillPluginStorefrontProvider.class.php` (`getCurrentStorefront`)
@@ -51,3 +51,14 @@ $storefront = $this->getStorefrontProvider()->getCurrentStorefront()
 2. `getStorefront('*')` тоже может вернуть `null` (см. [issue-57](issue-57-minor-robustness-findings.md)) — гарантировать создание объекта витрины по коду, а не поиск в коллекции.
 3. Проверить остальные точки вызова `getCurrentStorefront()` (`resolveStorefrontCssUrl`, `FrontendToggleZen`) на ту же ошибку.
 4. Добавить в ручные тесты релиза: создание заказа в бэкенде и через API при включённом плагине.
+
+## Как исправлено
+
+Вместо точечной заплатки резолв витрины сведён в одну точку, а nullable-методы получили честные имена:
+
+1. `shopPrefillPluginStorefrontProvider`: `getCurrentStorefront()` → `findCurrentStorefront()` с ранним выходом при `getRoute('url') === null`; добавлены `hasCurrentStorefront()`, `findStorefront($code)` (строгий поиск) и `getGlobalStorefront()`, который **конструирует** витрину `'*'`, а не ищет её в коллекции. Старые `getStorefront()` / `getCurrentStorefront()` удалены.
+2. `shopPrefillPlugin::getEffectiveStorefront()` — витрина текущего запроса либо глобальная `'*'`, если текущей нет или она неактивна. `getStorefrontSettings()` → `getEffectiveStorefrontSettings()`, `clearStorefrontSettingsCache()` → `clearEffectiveStorefrontCache()`.
+3. `orderActionCreate()` — проверка `isStorefrontRequest()` **до** `isActive()` и до сборки `getOrderHooks()` (фатал возникал именно на аргументе конструктора, поэтому guard внутри `OrderHooks` не помог бы). Побочный эффект: в бэкенде больше не создаётся гостевой хеш из cookie администратора и не пишется в заказ покупателя.
+4. Админские экшены (`SettingsStorefront`, `SettingsGetCss`, `saveSettings`) переведены на `findStorefront()` с явной ошибкой `error.storefront_not_found` — закрывает [issue-57 п.1](issue-57-minor-robustness-findings.md).
+
+Проверено: в контексте `SystemConfig('backend')` `orderActionCreate(['order_id' => 1])` завершается тихо, `findCurrentStorefront()` → `null`, эффективная витрина → `'*'`.

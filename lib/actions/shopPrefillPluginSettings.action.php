@@ -15,7 +15,7 @@ class shopPrefillPluginSettingsAction extends waViewAction
         $plugin = shopPrefillPlugin::getInstance();
         $paymentMethods = shopPrefillPluginPluginsProvider::getPaymentMethods();
         $storefronts = $plugin->getStorefrontProvider()->getStorefronts();
-        $global_storefront = $plugin->getStorefrontProvider()->getStorefront('*');
+        $global_storefront = $plugin->getStorefrontProvider()->getGlobalStorefront();
 
         $this->view->assign([
             'app_id'          => shopPrefillPlugin::APP_ID,

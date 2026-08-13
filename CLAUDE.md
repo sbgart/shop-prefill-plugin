@@ -115,5 +115,8 @@ Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`. Must be `.tar.gz`
 - **No test suite** exists for this plugin — test manually in browser against a running Webasyst instance
 - CSS variables and JS initializer are generated dynamically into `wa-data/public/shop/plugins/prefill/` (cached by hash, not versioned)
 - `shopPrefillPlugin::$instance` is a static singleton — use `shopPrefillPlugin::getInstance()` to access it
-- `self::$storefront_settings` is request-scoped cache; call `shopPrefillPlugin::clearStorefrontSettingsCache()` after saving settings
+- **Effective storefront** — the single place where the fallback to the global `'*'` storefront lives. `getEffectiveStorefront()` returns the current storefront, or the global one when there is no current storefront (backend/API/CLI) or it is inactive (`active = false` is the default). Always take both settings and storefront code from that one object — taking the code elsewhere produced a per-storefront CSS file with global content that never refreshed
+- `self::$effective_storefront` / `self::$effective_storefront_settings` are request-scoped caches; call `shopPrefillPlugin::clearEffectiveStorefrontCache()` after saving settings
+- Storefront lookups are nullable by name: `findCurrentStorefront()` / `findStorefront($code)` return `null` (use them in backend actions and report a clear error), while `getGlobalStorefront()` and `getEffectiveStorefront()` always return an object
+- `order_action.create` fires outside the storefront too (backend, API, CLI, import). The hook exits early via `isStorefrontRequest()`: there is no checkout session there, and the admin's guest cookie would otherwise be attached to a customer's order
 - Debug mode is tied to `waSystemConfig::isDebug()` (Webasyst global debug flag)

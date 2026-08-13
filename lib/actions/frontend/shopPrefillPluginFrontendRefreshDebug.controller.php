@@ -19,7 +19,7 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
             }
 
             // Получаем настройки витрины
-            $storefront_settings = $plugin->getStorefrontSettings();
+            $storefront_settings = $plugin->getEffectiveStorefrontSettings();
             $plugin_enabled = !empty($storefront_settings['active']);
 
             // Получаем параметры предзаполнения и состояние хранилища

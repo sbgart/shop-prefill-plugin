@@ -1,6 +1,6 @@
 # Issue 50 — БЛОКЕР: TypeError в `handleOrderActionCreate` при пустой checkout-сессии
 
-**Статус:** ⬜ Открыта
+**Статус:** ✅ Закрыта
 **Приоритет:** 🔴 Блокер релиза
 **Сложность фикса:** 🔧 Тривиальный
 **Файл:** `lib/classes/hooks/shopPrefillPluginOrderHooks.class.php:57-60, 79`
@@ -34,3 +34,30 @@ $checkout_params = $this->session_storage->getCheckoutParams() ?: [];
 ```
 
 и/или сменить сигнатуру на `?array $checkout_params`. Заодно проверить все прочие места, где результат `?array`-геттеров уходит в типизированные параметры.
+
+## Как исправлено
+
+Вместо точечной заплатки в месте падения ужесточён сам контракт геттера — `null` больше не выходит наружу:
+
+1. `shopPrefillPluginSessionStorageProvider::getCheckoutParams()`: `?array` → `array`, внутри `is_array($params) ? $params : []`. `is_array` вместо `?:` заодно страхует от нечаянного скаляра в ключе сессии. Различие «нет сессии» / «пустая сессия» ни один вызывающий не использовал, так что сужение типа ничего не ломает.
+2. Убраны ставшие лишними защиты у всех вызывающих: `OrderHooks` (место падения), `FrontendHooks` (×2, `logDebugBeforePrefill` / `logDebugAfterPrefill`), `SessionStorageProvider::preFillCheckoutParams` и `::applyDeliveryAddress`, `Debug`, `FrontendParamsChoice`.
+3. `setCheckoutParams(array $params)` — параметр был без типа.
+4. `shopPrefill.plugin.php::orderActionCreate()` — вызов хука обёрнут в `catch (Throwable)` с логом `error`. Защита в глубину: `waEvent::runPlugins()` ловит только `Exception`, а цена любого будущего `Error` в плагине — неоформленный заказ.
+
+### Проверка
+
+```php
+$ssp = $plugin->getSessionStorageProvider();
+$ssp->getStorage()->remove('shop/checkout');
+$ssp->getCheckoutParams();                            // → [] (было null)
+// saveShippingType(0, []) отрабатывает тихо; saveShippingType(0, null) до фикса давал
+// TypeError: Argument 2 passed to ... must be of the type array, null given
+```
+
+### Остальные nullable-геттеры
+
+Проверены все: `getSnapshot()`, `getShippingCustom()`, `getPaymentCustom()`, `getOrderParams()`, `getUserOrdersId()` — везде результат уходит либо под `?:`/`is_array()`, либо в `foreach` под `if`. Незащищённых точек больше нет.
+
+### Про исходный сценарий
+
+Ветки «бэкенд / API / CLI / импорт» до `handleOrderActionCreate()` уже не доходят — [issue-49](issue-49-fatal-storefront-null-backend-order-create.md) добавил ранний выход по `isStorefrontRequest()`. Реальным оставался фронтовый запрос без ключа `shop/checkout` (все секции предзаполнения выключены, кастомные сценарии оформления, покупка в 1 клик, повтор заказа).

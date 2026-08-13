@@ -8,6 +8,9 @@ class shopPrefillPluginSettingsGetCssController extends waJsonController
      */
     public function execute()
     {
+        waLocale::loadByDomain(['shop', 'prefill']);
+        waSystem::pushActivePlugin('prefill', 'shop');
+
         $storefront_code = waRequest::request('code', '', 'string');
 
         if ($storefront_code === '') {
@@ -19,7 +22,15 @@ class shopPrefillPluginSettingsGetCssController extends waJsonController
         $css_manager = $plugin->getCssManager();
         $default     = $css_manager->getDefaultContent();
 
-        $settings   = $plugin->getStorefrontProvider()->getStorefront($storefront_code)->getSettings();
+        // Витрину могли удалить или переименовать после загрузки списка в браузере
+        $storefront = $plugin->getStorefrontProvider()->findStorefront($storefront_code);
+
+        if ($storefront === null) {
+            $this->setError(_wp('error.storefront_not_found'));
+            return;
+        }
+
+        $settings   = $storefront->getSettings();
         $custom_css = $settings['styles']['custom_css'] ?? '';
 
         if ($custom_css !== '') {

@@ -12,7 +12,9 @@ class shopPrefillPlugin extends shopPlugin
 
     private static ?array  $installed_shop_plugins = null;
     private static ?string $plugin_path            = null;
-    private static ?array  $storefront_settings    = null;
+
+    private static ?shopPrefillPluginStorefront $effective_storefront          = null;
+    private static ?array                       $effective_storefront_settings = null;
 
     private ?shopPrefillPluginFillParams         $prefill_params      = null;
     private ?shopPrefillPluginSettingProvider    $setting_provider    = null;
@@ -103,7 +105,7 @@ class shopPrefillPlugin extends shopPlugin
             return false;
         }
 
-        $settings = $this->getStorefrontSettings();
+        $settings = $this->getEffectiveStorefrontSettings();
 
         return ! empty($settings['prefill']['debug_panel']);
     }
@@ -146,47 +148,72 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
-     * Возвращает настройки витрины для текущего запроса (request-scoped кэш).
+     * Возвращает витрину, настройки которой действуют в текущем запросе (request-scoped кэш).
      *
-     * Логика наследования: если конкретная витрина неактивна (active=false),
-     * возвращаем глобальные настройки '*' целиком — это позволяет включить плагин
-     * один раз глобально, не активируя каждую витрину вручную.
+     * Это текущая витрина, а если её нет (бэкенд, API, CLI) или она неактивна — глобальная '*'.
+     * Неактивность конкретной витрины трактуем как «ещё не настроена», а не «явно отключена»:
+     * это позволяет включить плагин один раз глобально, не активируя каждую витрину вручную.
      * Отключение конкретной витрины работает только если её global-аналог тоже неактивен.
      *
-     * Важно: этот метод используется исключительно на фронтенде и в хуках.
-     * Для чтения/записи настроек в админке используй getStorefrontProvider()->getStorefront($code) напрямую,
-     * чтобы видеть реальные данные конкретной витрины без фоллбэка.
+     * Единственное место, где живёт этот фоллбэк: и настройки, и код витрины берутся
+     * у одного объекта, иначе они разъезжаются (per-storefront CSS-файл с глобальным содержимым).
+     *
+     * Важно: метод предназначен для фронтенда и хуков. Для чтения/записи настроек в админке
+     * используй getStorefrontProvider()->findStorefront($code), чтобы видеть реальные данные
+     * конкретной витрины без фоллбэка.
      *
      * @throws waException
      * @throws waDbException
      */
-    public function getStorefrontSettings(): array
+    public function getEffectiveStorefront(): shopPrefillPluginStorefront
     {
-        if (self::$storefront_settings === null) {
-            $storefront = $this->getStorefrontProvider()->getCurrentStorefront();
-            $settings   = $storefront->getSettings();
+        if (self::$effective_storefront === null) {
+            $provider   = $this->getStorefrontProvider();
+            $storefront = $provider->findCurrentStorefront();
 
-            // Витрина неактивна → используем глобальные настройки '*' целиком.
-            // Это намеренный фоллбэк: per-storefront active=false может означать
-            // «ещё не настроена», а не «явно отключена», поэтому глобальный active=true
-            // должен иметь приоритет.
-            if (!$settings['active']) {
-                $settings = $this->getStorefrontProvider()->getStorefront('*')->getSettings();
+            if ($storefront === null || !$storefront->getSettings()['active']) {
+                $storefront = $provider->getGlobalStorefront();
             }
 
-            self::$storefront_settings = $settings;
+            self::$effective_storefront = $storefront;
         }
 
-        return self::$storefront_settings;
+        return self::$effective_storefront;
     }
 
     /**
-     * Очищает статический кэш настроек витрины
+     * Настройки эффективной витрины — в отличие от shopPrefillPluginStorefront::getSettings()
+     * учитывают фоллбэк на глобальную витрину.
+     *
+     * @throws waException
+     * @throws waDbException
+     */
+    public function getEffectiveStorefrontSettings(): array
+    {
+        return self::$effective_storefront_settings ??= $this->getEffectiveStorefront()->getSettings();
+    }
+
+    /**
+     * Очищает статический кэш эффективной витрины и её настроек
      * Используется после сохранения настроек для обновления данных
      */
-    public static function clearStorefrontSettingsCache(): void
+    public static function clearEffectiveStorefrontCache(): void
     {
-        self::$storefront_settings = null;
+        self::$effective_storefront          = null;
+        self::$effective_storefront_settings = null;
+    }
+
+    /**
+     * Пришёл ли запрос с витрины магазина.
+     *
+     * Плагин работает только с оформлением заказа на витрине: в бэкенде, API и CLI
+     * нет ни checkout-сессии, ни гостевых cookie покупателя.
+     *
+     * @throws waException
+     */
+    private function isStorefrontRequest(): bool
+    {
+        return $this->getStorefrontProvider()->hasCurrentStorefront();
     }
 
     public function getPluginsProvider(): shopPrefillPluginPluginsProvider
@@ -285,7 +312,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getZenMode(),
             $this->getUserProvider(),
             $this->getConsentStorage(),
-            $this->getStorefrontSettings(),
+            $this->getEffectiveStorefrontSettings(),
             wa()->getRequest()
         );
     }
@@ -306,7 +333,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getAssetsManager(),
             $this->isDebug(),
             $this->isDebugPanelEnabled(),
-            $this->getStorefrontSettings(),
+            $this->getEffectiveStorefrontSettings(),
             fn($path) => $this->addCss($path),
             fn($path) => $this->addJs($path),
             $this->resolveStorefrontCssUrl()
@@ -340,7 +367,11 @@ class shopPrefillPlugin extends shopPlugin
      */
     private function resolveStorefrontCssUrl(): string
     {
-        $settings   = $this->getStorefrontSettings();
+        // Настройки и код берём у одного объекта: при фоллбэке на глобальную витрину
+        // отдать её CSS под кодом текущей витрины — значит навсегда закешировать копию,
+        // которая не обновится при следующем сохранении общих настроек.
+        $storefront = $this->getEffectiveStorefront();
+        $settings   = $storefront->getSettings();
         $custom_css = $settings['styles']['custom_css'] ?? '';
 
         if ($custom_css === '') {
@@ -348,7 +379,7 @@ class shopPrefillPlugin extends shopPlugin
             return '';
         }
 
-        $code        = $this->getStorefrontProvider()->getCurrentStorefront()->getCode();
+        $code        = $storefront->getCode();
         $css_manager = $this->getCssManager();
 
         if (!$css_manager->fileExists($code)) {
@@ -379,7 +410,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getSessionStorageProvider(),
             $this->getFillParamsProvider(),
             $this->isDebugPanelEnabled(),
-            $this->getStorefrontSettings(),
+            $this->getEffectiveStorefrontSettings(),
             wa()->getRequest(),
             wa()->getResponse()
         );
@@ -395,7 +426,7 @@ class shopPrefillPlugin extends shopPlugin
         return $this->session_storage_provider ??= new shopPrefillPluginSessionStorageProvider(
             wa()->getStorage(),
             $this->getUserProvider(),
-            $this->getStorefrontSettings()
+            $this->getEffectiveStorefrontSettings()
         );
     }
 
@@ -409,7 +440,7 @@ class shopPrefillPlugin extends shopPlugin
     public function getZenMode(): shopPrefillPluginZenMode
     {
         if ($this->zen_mode === null) {
-            $storefront_settings = $this->getStorefrontSettings();
+            $storefront_settings = $this->getEffectiveStorefrontSettings();
             $view                = wa()->getView();
             $this->zen_mode      = new shopPrefillPluginZenMode(
                 $storefront_settings['zen'] ?? [],
@@ -563,7 +594,7 @@ class shopPrefillPlugin extends shopPlugin
 
 
     /**
-     * Хук срабатывает при создании заказа.
+     * Хук срабатывает при создании заказа — в том числе в бэкенде, API, CLI и импорте.
      * Делегирует выполнение в OrderHooks.
      *
      * @param array $data Данные заказа
@@ -571,11 +602,24 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function orderActionCreate($data)
     {
-        if (! $this->isActive()) {
+        // Проверка витрины идёт первой: вне фронтенда сохранять нечего (нет checkout-сессии),
+        // а гостевой хеш из cookie администратора приклеился бы к заказу покупателя.
+        if (! $this->isStorefrontRequest() || ! $this->isActive()) {
             return;
         }
 
-        $this->getOrderHooks()->handleOrderActionCreate($data);
+        // waEvent::runPlugins() ловит только Exception: любой Error (TypeError, вызов на null)
+        // ушёл бы наверх и уронил создание заказа 500-й. Предзаполнение следующего заказа
+        // не стоит того, чтобы магазин терял оформленный заказ.
+        try {
+            $this->getOrderHooks()->handleOrderActionCreate($data);
+        } catch (Throwable $e) {
+            shopPrefillPluginLog::error('Order creation hook failed', [
+                'order_id' => $data['order_id'] ?? null,
+                'message'  => $e->getMessage(),
+                'file'     => $e->getFile() . ':' . $e->getLine(),
+            ]);
+        }
     }
 
     /**
@@ -585,7 +629,18 @@ class shopPrefillPlugin extends shopPlugin
     {
         if (isset($settings['storefront'])) {
             foreach ($settings['storefront'] as $storefront_code => $storefront_settings) {
-                $this->getStorefrontProvider()->getStorefront($storefront_code)->saveSettings($storefront_settings);
+                $storefront = $this->getStorefrontProvider()->findStorefront((string) $storefront_code);
+
+                // Витрину могли удалить или переименовать после открытия формы настроек —
+                // пропускаем её, но сохраняем настройки остальных
+                if ($storefront === null) {
+                    shopPrefillPluginLog::warning('Skipping settings for unknown storefront', [
+                        'storefront_code' => $storefront_code,
+                    ]);
+                    continue;
+                }
+
+                $storefront->saveSettings($storefront_settings);
             }
             unset($settings['storefront']);
         }

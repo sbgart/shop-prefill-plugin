@@ -136,7 +136,6 @@ class shopPrefillPluginFrontendHooks
         }
 
         $checkout_params_before = $this->session_storage->getCheckoutParams();
-        $checkout_params_before = is_array($checkout_params_before) ? $checkout_params_before : [];
 
         // Получаем статус секций для отображения в дебаге
         $section_checker         = $this->session_storage->getSectionChecker();
@@ -177,7 +176,6 @@ class shopPrefillPluginFrontendHooks
         }
 
         $checkout_params_after = $this->session_storage->getCheckoutParams();
-        $checkout_params_after = is_array($checkout_params_after) ? $checkout_params_after : [];
 
         // Получаем статус заполненности секций после предзаполнения
         $section_checker        = $this->session_storage->getSectionChecker();

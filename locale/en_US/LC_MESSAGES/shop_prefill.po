@@ -546,6 +546,9 @@ msgstr "Got it"
 msgid "error.internal"
 msgstr "Internal error"
 
+msgid "error.storefront_not_found"
+msgstr "Storefront not found. Reload the settings page."
+
 msgid "setting.group.storefront_main"
 msgstr "Main storefront settings"
 

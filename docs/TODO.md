@@ -6,8 +6,8 @@
 
 ### 🔴 Блокеры релиза (ревью 09.08.2026)
 
-- [ ] [Фатал при создании заказа вне фронтенда (storefront = null)](codereview/issue-49-fatal-storefront-null-backend-order-create.md)
-- [ ] [TypeError в orderActionCreate при пустой checkout-сессии](codereview/issue-50-type-error-null-checkout-params.md)
+- [x] [Фатал при создании заказа вне фронтенда (storefront = null)](codereview/issue-49-fatal-storefront-null-backend-order-create.md)
+- [x] [TypeError в orderActionCreate при пустой checkout-сессии](codereview/issue-50-type-error-null-checkout-params.md)
 - [ ] [Плагин молча выдаёт cookie авторизации auth_token на 90 дней](codereview/issue-51-remember-me-auth-token-forced.md)
 
 ### 🟠 Важное до продажи
@@ -17,7 +17,7 @@
 - [ ] [Часть бэкенд-эндпоинтов без проверки прав](codereview/issue-54-backend-actions-no-rights-check.md)
 - [ ] [Для гостя apply-delivery игнорирует выбранный заказ](codereview/issue-55-guest-apply-delivery-ignores-order-id.md)
 - [ ] [Данные покупателя выводятся в шаблонах без экранирования](codereview/issue-56-zen-summary-no-escaping.md)
-- [ ] [CSS витрины: настройки от одной витрины, код файла от другой — правки глобального CSS не доезжают](codereview/issue-58-storefront-css-settings-code-mismatch.md)
+- [x] [CSS витрины: настройки от одной витрины, код файла от другой — правки глобального CSS не доезжают](codereview/issue-58-storefront-css-settings-code-mismatch.md)
 
 ### 🟢 Мелочи
 
@@ -33,7 +33,6 @@
 - [x] Диалог выбора адреса не разворачивается во всю высоту
 - [x] Диалог  выбора адреса - темная тема проверить
 - [x] Диалог предупреждения о проблемах заполнения - темная тема от части применилась, цвет шрифтов яркий, кнопка закрыть светлая.
-
 
 ### Войдет в релиз
 

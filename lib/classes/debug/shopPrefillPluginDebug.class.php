@@ -74,7 +74,7 @@ class shopPrefillPluginDebug
             $plugin = shopPrefillPlugin::getInstance();
 
             // Получаем настройки витрины
-            $storefront_settings = $plugin->getStorefrontSettings();
+            $storefront_settings = $plugin->getEffectiveStorefrontSettings();
             $plugin_enabled = !empty($storefront_settings['active']);
             $zen_enabled = !empty($storefront_settings['zen']['active']);
 
@@ -316,7 +316,7 @@ class shopPrefillPluginDebug
         $snapshot_storage = [];
         try {
             $session_storage = $plugin->getSessionStorageProvider();
-            $current_storage = $session_storage->getCheckoutParams() ?: [];
+            $current_storage = $session_storage->getCheckoutParams();
             $snapshot_storage = $session_storage->getSnapshot() ?: [];
         } catch (Exception $e) {
             shopPrefillPluginLog::warning('Failed fetching session storage in shopPrefillPluginDebug', [

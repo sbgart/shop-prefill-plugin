@@ -1,6 +1,6 @@
 # Issue 58 — CSS витрины: настройки берутся у одной витрины, код файла — у другой
 
-**Статус:** ⬜ Открыта
+**Статус:** ✅ Закрыта
 **Приоритет:** 🟠 Средний (видимый на витрине баг + мусор в `wa-data`)
 **Сложность фикса:** 🔧 Небольшой
 **Файл:** `lib/shopPrefill.plugin.php:341-366` (`resolveStorefrontCssUrl`), `lib/shopPrefill.plugin.php:163-181` (`getStorefrontSettings`)
@@ -66,6 +66,19 @@ private function getEffectiveStorefront(): shopPrefillPluginStorefront
 - `clearStorefrontSettingsCache()` сбрасывает и `$effective_storefront`.
 
 При фоллбэке витрина получает URL файла `frontend_*.css` — того самого, который синхронизируется в `syncCssFile('*')` при сохранении общих настроек. Дубликаты не создаются, устаревшего содержимого не остаётся.
+
+## Как исправлено
+
+`resolveStorefrontCssUrl()` берёт настройки и код у одного объекта — `shopPrefillPlugin::getEffectiveStorefront()`. Фоллбэк живёт только внутри него.
+
+Проверено на деве (глобальные `active = true`, обе витрины `active = false`):
+
+| Сценарий | URL на витрине | Файлы в `wa-data` |
+| --- | --- | --- |
+| глобальный `custom_css` = V1 | `frontend__.css?1786281835` | только `frontend__.css` |
+| глобальный `custom_css` → V2 | `frontend__.css?1786281853`, отдаётся **V2** | только `frontend__.css` |
+| витрина активна + свой `custom_css` | `frontend_d2EtZGV2LmxvYy9zaG9wLyo_.css?…` | + свой файл витрины |
+| вторая витрина (неактивна) | `frontend__.css?1786281853` | без дубликата |
 
 ## Связанные
 

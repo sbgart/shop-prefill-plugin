@@ -24,12 +24,19 @@ class shopPrefillPluginSettingsStorefrontAction extends waViewAction
         waLocale::loadByDomain(['shop', 'prefill']);
         waSystem::pushActivePlugin('prefill', 'shop');
 
+        // Витрину могли удалить или переименовать после загрузки списка в браузере
+        $storefront = $plugin->getStorefrontProvider()->findStorefront($storefront_code);
+
+        if ($storefront === null) {
+            throw new waException(_wp('error.storefront_not_found'), 404);
+        }
+
         $this->view->assign([
             'app_id'               => shopPrefillPlugin::APP_ID,
             'plugin_id'            => shopPrefillPlugin::PLUGIN_ID,
             'name_prefix'          => $app_id.'_'.$plugin_id.'[storefront]['.$storefront_code.']',
             'storefront_code'      => $storefront_code,
-            'settings'             => $plugin->getStorefrontProvider()->getStorefront($storefront_code)->getSettings(),
+            'settings'             => $storefront->getSettings(),
             'global_settings'      => $plugin->getSettingProvider()->getSettings(),
             'shipping_methods'     => $shippingMethods,
             'payment_methods'      => $paymentMethods,

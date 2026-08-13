@@ -957,6 +957,9 @@ msgstr "Массив доп. полей оплаты (напр. ИНН, комп
 msgid "error.internal"
 msgstr "Внутренняя ошибка"
 
+msgid "error.storefront_not_found"
+msgstr "Витрина не найдена. Обновите страницу настроек."
+
 msgid "setting.group.storefront_main"
 msgstr "Основные настройки для витрины"
 

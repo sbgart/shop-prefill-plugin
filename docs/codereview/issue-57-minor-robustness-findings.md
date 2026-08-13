@@ -6,7 +6,7 @@
 
 Сборник мелочей, найденных при ревью перед релизом v1.0. Каждый пункт независим.
 
-## 1. `getStorefront($code)` может вернуть `null`
+## 1. `getStorefront($code)` может вернуть `null` — ✅ закрыто в [issue-49](issue-49-fatal-storefront-null-backend-order-create.md)
 
 `shopPrefillPluginStorefrontProvider::getStorefront()` ищет витрину в коллекции и возвращает `null`, если кода нет. Использования без проверки:
 
