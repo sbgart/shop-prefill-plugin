@@ -20,8 +20,13 @@ return [
             'dp'         => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         ],
         'remember_me'                         => [
-            'active'  => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
-            'expires' => ['value' => 90, 'filter' => FILTER_VALIDATE_INT], // 90 days
+            // Продлевать уже выданный фреймворком auth_token (покупатель сам отметил «Запомнить меня»)
+            'active'   => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            // Выдавать auth_token после оформления заказа, где выбора у покупателя нет.
+            // Opt-in: авторизация без явного согласия — решение магазина, не наше умолчание.
+            'on_order' => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            // 0 — стандартный срок Webasyst (30 дней), >0 — кастомный срок в днях
+            'expires'  => ['value' => 0, 'filter' => FILTER_VALIDATE_INT],
         ],
         'guest'                               => [
             'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN], // Разрешить предзаполнение для гостей

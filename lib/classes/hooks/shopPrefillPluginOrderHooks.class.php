@@ -62,12 +62,67 @@ class shopPrefillPluginOrderHooks
         // Для неавторизованных: сохраняем хеш гостя
         $this->saveGuestHash($order_id);
 
+        // Помечаем заказ, который авторизует покупателя без его выбора
+        $this->markPendingAuth();
+
         // Очищаем cookies Zen Mode
         $this->zen_mode->clearCookies();
 
         shopPrefillPluginLog::info('Order creation hook processed successfully', [
             'order_id' => $order_id
         ]);
+    }
+
+    /**
+     * Ставит метку, если этот заказ авторизует покупателя, а выбора у него не было.
+     *
+     * Хук order_action.create срабатывает внутри $order->save(), то есть ДО
+     * shopConfirmationChannel::postConfirm(), где и происходит авторизация — здесь
+     * покупатель ещё гость. Сама метка потребляется на следующей загрузке страницы:
+     * постфактум по cookie этот случай неотличим от явного отказа от «Запомнить меня».
+     */
+    private function markPendingAuth(): void
+    {
+        if (empty($this->storefront_settings['prefill']['remember_me']['on_order'])) {
+            return;
+        }
+
+        // Уже авторизован — его согласием (галочкой) ведает продление на frontend_head
+        if ($this->user_provider->isAuth()) {
+            return;
+        }
+
+        if ($this->getOrderWithoutAuthMode() === 'create_contact') {
+            // Разовый контакт: postConfirm() не авторизует покупателя вовсе
+            return;
+        }
+
+        $this->session_storage->setPendingAuth();
+    }
+
+    /**
+     * Режим обновления профилей покупателей из настроек чекаута магазина.
+     *
+     * @return string 'create_contact' | 'existing_contact' | 'confirm_contact' | '' при ошибке чтения
+     */
+    private function getOrderWithoutAuthMode(): string
+    {
+        if (!class_exists('shopCheckoutConfig')) {
+            return '';
+        }
+
+        try {
+            $config = new shopCheckoutConfig(true);
+        } catch (Exception $e) {
+            shopPrefillPluginLog::warning('Failed reading checkout config for pending auth', [
+                'message' => $e->getMessage()
+            ]);
+            return '';
+        }
+
+        $mode = $config['confirmation']['order_without_auth'] ?? '';
+
+        return is_string($mode) ? $mode : '';
     }
 
     /**

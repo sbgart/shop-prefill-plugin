@@ -72,6 +72,10 @@ class shopPrefillPluginFrontendHooks
             return '';
         }
 
+        // Авторизация не зависит от гостевых настроек, поэтому обрабатывается до раннего
+        // выхода ниже: иначе одноразовая метка pending auth зависла бы в сессии.
+        $this->handleRememberMeCookie();
+
         // Для гостей: пропускаем если функция отключена
         $guest_enabled = $this->storefront_settings['prefill']['guest']['enabled'];
         if (!$guest_enabled && !$this->user_provider->isAuth()) {
@@ -85,8 +89,7 @@ class shopPrefillPluginFrontendHooks
         // DEBUG: Состояние ПЕРЕД предзаполнением
         $this->logDebugBeforePrefill('frontendHead', $fill_params);
 
-        // Управление cookies авторизации и гостевых cookies
-        $this->handleRememberMeCookie();
+        // Управление гостевыми cookies
         $this->handleGuestCookies();
 
         // Предзаполнение при входе на сайт
@@ -192,14 +195,53 @@ class shopPrefillPluginFrontendHooks
     }
 
     /**
-     * Управляет cookie "Remember Me" для авторизованных пользователей
+     * Управляет cookie авторизации `auth_token`.
+     *
+     * Два независимых сценария:
+     *  A. Покупатель сам отметил «Запомнить меня» — фреймворк уже выдал токен,
+     *     мы только продлеваем его до заданного срока.
+     *  B. Покупателя авторизовало оформление заказа, где галочки нет вовсе —
+     *     токен выдаём сами, но лишь по явно включённой настройке магазина.
      *
      * @throws waException
      */
     private function handleRememberMeCookie(): void
     {
-        if ($this->storefront_settings['prefill']['remember_me']['active'] && $this->user_provider->isAuth()) {
-            $this->user_provider->rememberMe($this->storefront_settings['prefill']['remember_me']['expires']);
+        $settings = $this->storefront_settings['prefill']['remember_me'] ?? [];
+        $expires  = (int) ($settings['expires'] ?? 0);
+
+        // Метка одноразовая — гасим её всегда, даже если продлевать не будем
+        $pending_auth = $this->session_storage->consumePendingAuth();
+
+        // Авторизация могла не состояться (бан, ошибка) — метка просто сгорает
+        if (! $this->user_provider->isAuth()) {
+            return;
+        }
+
+        // Без «Запомнить меня» на домене waAuth::_authByCookie() не читает auth_token,
+        // так что выдавать его бессмысленно.
+        if (! $this->user_provider->isDomainRememberMeEnabled()) {
+            if ($pending_auth) {
+                shopPrefillPluginLog::warning(
+                    'Cannot keep customer signed in: "remember me" is disabled for this domain'
+                );
+            }
+            return;
+        }
+
+        // Сценарий B
+        if ($pending_auth && !empty($settings['on_order'])) {
+            $this->user_provider->rememberMe($expires);
+            shopPrefillPluginLog::info('Auth token issued after order confirmation', [
+                'expires_days' => $expires,
+            ]);
+            return;
+        }
+
+        // Сценарий A: наличие токена — единственный надёжный признак согласия покупателя
+        if (!empty($settings['active']) && $this->user_provider->hasAuthToken()) {
+            $this->user_provider->rememberMe($expires);
+            shopPrefillPluginLog::debug('Auth token extended', ['expires_days' => $expires]);
         }
     }
 

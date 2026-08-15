@@ -298,16 +298,43 @@ msgid "hint.prefill.my_delivery_variants_button_classes"
 msgstr "Additional CSS classes to match the buttons to your theme. List names separated by spaces, like an HTML class attribute (e.g. btn btn-default my-theme-button)."
 
 msgid "setting.prefill.remember_me.active"
-msgstr "Renew storefront authorization"
+msgstr "Renew authorization for customers who chose \"Remember me\""
 
 msgid "hint.prefill.remember_me.active"
-msgstr "Extends the customer's Webasyst authorization on each storefront visit."
+msgstr "Applies only to customers who ticked \"Remember me\" themselves when signing in. When disabled they still stay signed in: Webasyst renews their authorization on its own — 30 days from the last visit. This setting exists only to set a longer lifetime in the field below."
+
+msgid "setting.prefill.remember_me.on_order"
+msgstr "Keep customers signed in after checkout"
+
+msgid "hint.prefill.remember_me.on_order"
+msgstr "During checkout customers are signed in automatically and are never shown a \"Remember me\" checkbox. Enable this to keep that authorization after the browser is closed, so prefill works on their next visits."
 
 msgid "setting.prefill.remember_me.expires"
 msgstr "Authorization cookie lifetime, days"
 
 msgid "hint.prefill.remember_me.expires"
-msgstr "Number of days ahead the authorization is extended on each visit."
+msgstr "Shared lifetime for both settings above. 0 — the Webasyst default (30 days from the last visit). Values below 30 are pointless: Webasyst renews the cookie up to 30 days on its own."
+
+msgid "hint.auth_dependency.rememberme.on"
+msgstr "\"Remember me\" is enabled for this storefront's domain — the settings below are in effect."
+
+msgid "hint.auth_dependency.rememberme.off"
+msgstr "\"Remember me\" is disabled for this storefront's domain: Webasyst ignores the authorization cookie, so the settings below will have no effect."
+
+msgid "hint.auth_dependency.rememberme.unknown"
+msgstr "\"Remember me\" is configured per domain."
+
+msgid "hint.auth_dependency.rememberme.link"
+msgstr "Site → domain → Auth & Sign Up"
+
+msgid "hint.auth_dependency.order_without_auth.on"
+msgstr "The store signs customers in during checkout."
+
+msgid "hint.auth_dependency.order_without_auth.off"
+msgstr "The store creates a new profile for every order and never signs customers in — \"Keep customers signed in after checkout\" will have no effect."
+
+msgid "hint.auth_dependency.order_without_auth.link"
+msgstr "Checkout settings"
 
 msgid "First name"
 msgstr "First name"

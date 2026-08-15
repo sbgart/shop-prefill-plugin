@@ -2,13 +2,12 @@
 
 class shopPrefillPluginUserProvider
 {
+    /** Стандартный срок жизни auth_token в Webasyst, см. waAuth::_remember() */
+    private const DEFAULT_TTL = 2592000;
 
     private waAuthUser $user;
-    private ?int       $id              = null;
-    private ?bool      $isAuth          = null;
-    private ?string    $create_datetime = null;
-    private ?string    $login           = null;
-    private ?string    $password        = null;
+    private ?int       $id     = null;
+    private ?bool      $isAuth = null;
 
     public function __construct(waAuthUser $user)
     {
@@ -30,47 +29,74 @@ class shopPrefillPluginUserProvider
         return $this->isAuth ??= $this->getUser()->isAuth();
     }
 
-    public function getCreateDatetime(): string
+    /**
+     * Выдал ли фреймворк постоянный токен авторизации.
+     *
+     * Единственный надёжный признак того, что покупатель сам отметил «Запомнить меня».
+     * Cookie `remember` для этого не годится: waAuth::_remember() пишет в неё 0 и тем,
+     * кто снял галочку, и тем, кому её вообще не показывали (авторизация при заказе).
+     */
+    public function hasAuthToken(): bool
     {
-        return $this->create_datetime ??= $this->getUser()->get('create_datetime') ?? '';
-    }
-
-    public function getLogin(): string
-    {
-        return $this->login ??= $this->getUser()->get('login') ?? '';
-    }
-
-    public function getPassword(): string
-    {
-        return $this->password ??= $this->getUser()->get('password') ?? '';
+        return (bool) waRequest::cookie('auth_token');
     }
 
     /**
+     * Включён ли «Запомнить меня» на домене витрины.
+     *
+     * Без него waAuth::_authByCookie() не читает auth_token вовсе — токен становится
+     * бесполезным, поэтому выдавать его в этом случае незачем.
+     */
+    public function isDomainRememberMeEnabled(): bool
+    {
+        $config = waDomainAuthConfig::factory();
+
+        return $config && $config->getRememberMe();
+    }
+
+    /**
+     * Ставит или продлевает cookie авторизации фреймворка.
+     *
+     * @param int $expires_days 0 — стандартный срок Webasyst, > 0 — кастомный срок в днях
      * @throws waException
      */
-    public function rememberMe(int $expires = 90): void
+    public function rememberMe(int $expires_days = 0): void
     {
         if (! $this->isAuth()) {
             return;
         }
 
-        $response = waSystem::getInstance()->getResponse();
-        $response->setCookie(
+        $token = $this->getAuthToken();
+        if ($token === '') {
+            return;
+        }
+
+        $ttl = $expires_days > 0 ? $expires_days * 86400 : self::DEFAULT_TTL;
+
+        // Cookie `remember` намеренно не ставим: она лишь предотмечает галочку в форме
+        // логина, а покупатель мог никакого выбора и не делать.
+        waSystem::getInstance()->getResponse()->setCookie(
             'auth_token',
-            $this->getAuthToken(),
-            time() + ($expires * 86400),
+            $token,
+            time() + $ttl,
             null,
             '',
-            false,
+            waRequest::isHttps(),
             true
         );
-        $response->setCookie('remember', 1);
     }
 
+    /**
+     * Токен считает сам фреймворк — не дублируем md5-формулу waAuth::getToken()
+     * и не читаем password контакта напрямую.
+     */
     private function getAuthToken(): string
     {
-        $hash = md5($this->getCreateDatetime() . $this->getLogin() . $this->getPassword());
+        $auth = waSystem::getInstance()->getAuth();
+        if (! method_exists($auth, 'getToken')) {
+            return '';
+        }
 
-        return substr($hash, 0, 15) . $this->getId() . substr($hash, -15);
+        return (string) $auth->getToken($this->getUser());
     }
 }

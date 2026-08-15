@@ -340,16 +340,43 @@ msgid "hint.prefill.my_delivery_variants_button_classes"
 msgstr "Дополнительные CSS-классы для подгонки кнопок под вёрстку темы дизайна. Перечисляйте через пробел, как в HTML-атрибуте class (например: btn btn-default my-theme-button)."
 
 msgid "setting.prefill.remember_me.active"
-msgstr "Продлевать авторизацию на витрине"
+msgstr "Продлевать авторизацию тех, кто выбрал «Запомнить меня»"
 
 msgid "hint.prefill.remember_me.active"
-msgstr "При каждом посещении витрины авторизованным покупателем продлевает срок его авторизации в Webasyst."
+msgstr "Касается только покупателей, которые сами отметили «Запомнить меня» при входе. Если выключено, они всё равно остаются авторизованными: Webasyst продлевает их авторизацию сам — 30 дней с последнего визита. Настройка нужна лишь для того, чтобы задать срок больше стандартного в поле ниже."
+
+msgid "setting.prefill.remember_me.on_order"
+msgstr "Сохранять авторизацию после оформления заказа"
+
+msgid "hint.prefill.remember_me.on_order"
+msgstr "При оформлении заказа покупатель авторизуется автоматически, и галочки «Запомнить меня» ему не показывают. Включите, чтобы такая авторизация сохранялась после закрытия браузера — предзаполнение будет срабатывать при следующих визитах."
 
 msgid "setting.prefill.remember_me.expires"
 msgstr "Срок жизни cookie авторизации, дней"
 
 msgid "hint.prefill.remember_me.expires"
-msgstr "Количество дней вперёд, на которые продлевается авторизация при каждом посещении."
+msgstr "Общий срок для обеих настроек выше. 0 — стандартный срок Webasyst (30 дней с последнего визита). Значения меньше 30 задавать бессмысленно: Webasyst продлевает cookie до 30 дней самостоятельно."
+
+msgid "hint.auth_dependency.rememberme.on"
+msgstr "«Запомнить меня» включено для домена этой витрины — настройки ниже работают."
+
+msgid "hint.auth_dependency.rememberme.off"
+msgstr "«Запомнить меня» выключено для домена этой витрины: Webasyst игнорирует cookie авторизации, и настройки ниже не сработают."
+
+msgid "hint.auth_dependency.rememberme.unknown"
+msgstr "«Запомнить меня» настраивается для каждого домена отдельно."
+
+msgid "hint.auth_dependency.rememberme.link"
+msgstr "Сайт → домен → Авторизация и регистрация"
+
+msgid "hint.auth_dependency.order_without_auth.on"
+msgstr "Магазин авторизует покупателей при оформлении заказа."
+
+msgid "hint.auth_dependency.order_without_auth.off"
+msgstr "Магазин создаёт новый профиль на каждый заказ и не авторизует покупателей — настройка «Сохранять авторизацию после оформления заказа» не сработает."
+
+msgid "hint.auth_dependency.order_without_auth.link"
+msgstr "Настройки оформления заказа"
 
 msgid "hint.tab.design"
 msgstr "Внешний вид элементов плагина на витрине."

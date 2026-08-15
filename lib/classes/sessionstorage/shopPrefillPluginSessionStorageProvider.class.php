@@ -6,6 +6,13 @@ class shopPrefillPluginSessionStorageProvider
 
     private const SNAPSHOT_KEY = 'shop/prefill_snapshot';
 
+    /**
+     * Метка «этот заказ авторизует покупателя, а выбора у него не было».
+     * Ставится при создании заказа и потребляется на следующей загрузке страницы:
+     * по cookie этот случай неотличим от явного отказа от «Запомнить меня».
+     */
+    private const PENDING_AUTH_KEY = 'shop/prefill_pending_auth';
+
     private array $storefront_settings;
     private waSessionStorage $storage;
     private shopPrefillPluginUserProvider $user_provider;
@@ -106,6 +113,33 @@ class shopPrefillPluginSessionStorageProvider
     public function clearSnapshot(): void
     {
         $this->getStorage()->remove(self::SNAPSHOT_KEY);
+    }
+
+    /**
+     * Помечает, что текущий заказ авторизует покупателя без его выбора.
+     */
+    public function setPendingAuth(): void
+    {
+        try {
+            $this->getStorage()->set(self::PENDING_AUTH_KEY, true);
+        } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed setting pending auth flag', [
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Считывает метку и сразу гасит её — она одноразовая.
+     */
+    public function consumePendingAuth(): bool
+    {
+        $pending = (bool) $this->getStorage()->get(self::PENDING_AUTH_KEY);
+        if ($pending) {
+            $this->getStorage()->remove(self::PENDING_AUTH_KEY);
+        }
+
+        return $pending;
     }
 
     /**
