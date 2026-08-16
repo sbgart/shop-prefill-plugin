@@ -4,17 +4,12 @@
  * AJAX: читает оба лог-файла плагина, объединяет и сортирует по времени.
  * Доступен по ?module=prefillPluginSettingsReadLogs
  */
-class shopPrefillPluginSettingsReadLogsController extends waJsonController
+class shopPrefillPluginSettingsReadLogsController extends shopPrefillPluginSettingsBaseController
 {
     private const PAGE_SIZE = 150;
 
-    public function execute(): void
+    protected function handle(): void
     {
-        if (!wa()->getUser()->isAdmin('shop')) {
-            $this->errors = 'Forbidden';
-            return;
-        }
-
         waLocale::loadByDomain(['shop', 'prefill']);
         waSystem::pushActivePlugin('prefill', 'shop');
 

@@ -15,6 +15,8 @@ class shopPrefillPluginCheckoutHooks
     private array $storefront_settings;
     private waRequest $request;
     private waResponse $response;
+    private string $plugin_static_url;
+    private string $plugin_version;
 
     public function __construct(
         shopPrefillPluginZenMode $zen_mode,
@@ -25,7 +27,9 @@ class shopPrefillPluginCheckoutHooks
         bool $is_debug_panel,
         array $storefront_settings,
         waRequest $request,
-        waResponse $response
+        waResponse $response,
+        string $plugin_static_url,
+        string $plugin_version
     ) {
         $this->zen_mode = $zen_mode;
         $this->user_provider = $user_provider;
@@ -36,6 +40,8 @@ class shopPrefillPluginCheckoutHooks
         $this->storefront_settings = $storefront_settings;
         $this->request = $request;
         $this->response = $response;
+        $this->plugin_static_url = $plugin_static_url;
+        $this->plugin_version = $plugin_version;
     }
 
     /**
@@ -215,8 +221,11 @@ class shopPrefillPluginCheckoutHooks
             return '';
         }
 
-        $plugin_url = wa()->getAppStaticUrl('shop') . 'plugins/prefill/';
-        return '<link rel="stylesheet" href="' . $plugin_url . 'css/zenmode.css">';
+        return '<link rel="stylesheet" href="'
+            . $this->plugin_static_url
+            . 'css/zenmode.css?v'
+            . rawurlencode($this->plugin_version)
+            . '">';
     }
 
     /**
@@ -326,4 +335,3 @@ class shopPrefillPluginCheckoutHooks
     }
 
 }
-

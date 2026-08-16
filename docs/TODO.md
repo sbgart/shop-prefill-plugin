@@ -8,20 +8,24 @@
 
 - [x] [Фатал при создании заказа вне фронтенда (storefront = null)](codereview/issue-49-fatal-storefront-null-backend-order-create.md)
 - [x] [TypeError в orderActionCreate при пустой checkout-сессии](codereview/issue-50-type-error-null-checkout-params.md)
-- [ ] [Плагин молча выдаёт cookie авторизации auth_token на 90 дней](codereview/issue-51-remember-me-auth-token-forced.md)
+- [x] [Плагин молча выдаёт cookie авторизации auth_token на 90 дней](codereview/done/issue-51-remember-me-auth-token-forced.md)
 
 ### 🟠 Важное до продажи
 
-- [ ] [Публичный эндпоинт consent: флуд лога и отсутствие CSRF](codereview/issue-52-consent-endpoint-log-flood-csrf.md)
-- [ ] [Предзаполнение пишет пустые значения в сессию каждому посетителю](codereview/issue-53-empty-prefill-writes-session.md)
-- [ ] [Часть бэкенд-эндпоинтов без проверки прав](codereview/issue-54-backend-actions-no-rights-check.md)
+- [x] [Публичный эндпоинт consent: флуд лога и отсутствие CSRF](codereview/issue-52-consent-endpoint-log-flood-csrf.md)
+- [x] [Предзаполнение пишет пустые значения в сессию каждому посетителю](codereview/issue-53-empty-prefill-writes-session.md)
+- [x] [Часть бэкенд-эндпоинтов без проверки прав](codereview/done/issue-54-backend-actions-no-rights-check.md)
 - [ ] [Для гостя apply-delivery игнорирует выбранный заказ](codereview/issue-55-guest-apply-delivery-ignores-order-id.md)
 - [ ] [Данные покупателя выводятся в шаблонах без экранирования](codereview/issue-56-zen-summary-no-escaping.md)
 - [x] [CSS витрины: настройки от одной витрины, код файла от другой — правки глобального CSS не доезжают](codereview/issue-58-storefront-css-settings-code-mismatch.md)
+- [ ] [Ключ html считается данными: предзаполнение и snapshot-восстановление молча отключаются](codereview/issue-59-html-key-marks-section-filled.md)
+- [x] [Дубликат класса в lib/classes/fillparams: мина в автозагрузке, уезжает в релиз](codereview/done/issue-61-duplicate-class-file-autoload.md)
 
 ### 🟢 Мелочи
 
 - [ ] [Сборник мелких находок ревью (null-витрина, secure-cookies, мусор в wa-data, индексы, ротация логов)](codereview/issue-57-minor-robustness-findings.md)
+- [ ] [Shipping-билдер пишет в чужую секцию, восстановление details из снапшота её затирает](codereview/issue-60-cross-section-write-details-custom.md)
+- [ ] [Мёртвый публичный эндпоинт fillCheckoutParams без проверки доступа](codereview/issue-62-dead-unguarded-fill-checkout-endpoint.md)
 
 ### Bags
 
@@ -46,6 +50,12 @@
 - [ ] Проверяем все переводы.
 - [ ] Тесты на старых версиях Вебасист, надо найти тот который указан в конфиге - первый с новым дизайном.
 - [ ] Update Webasyst to latest version and check that plugin is working
+
+### Хвосты по issue-51 (remember me)
+
+- [ ] Путь A: вход через штатную форму логина — с галочкой «Запомнить меня» и без неё (тесты 10–11 из [issue-51](codereview/done/issue-51-remember-me-auth-token-forced.md)); нужен контакт с известным паролем
+- [ ] Записать в CHANGELOG ограничения: кастомный `expires` — best-effort (ядро сбрасывает токен на 30 дней в `waAuth::updateAuth()`), фича зависит от тумблера `rememberme` домена
+- [ ] Убрать тестовый мусор с локалки: заказы #10086, #10087; контакты 36 и 37 (у 36 намеренно испорчен хеш пароля)
 
 ## Backlog
 

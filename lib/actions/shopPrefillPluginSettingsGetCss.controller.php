@@ -1,12 +1,12 @@
 <?php
 
-class shopPrefillPluginSettingsGetCssController extends waJsonController
+class shopPrefillPluginSettingsGetCssController extends shopPrefillPluginSettingsBaseController
 {
     /**
      * @throws waException
      * @throws waDbException
      */
-    public function execute()
+    protected function handle()
     {
         waLocale::loadByDomain(['shop', 'prefill']);
         waSystem::pushActivePlugin('prefill', 'shop');

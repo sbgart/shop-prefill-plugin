@@ -5,12 +5,12 @@
  * Вызывается через ?module=prefillPluginSettingsTemplateEditor.
  * Возвращает HTML (waViewAction), который JS вставляет в $.waDialog.
  */
-class shopPrefillPluginSettingsTemplateEditorAction extends waViewAction
+class shopPrefillPluginSettingsTemplateEditorAction extends shopPrefillPluginSettingsBaseAction
 {
     /**
      * @throws waException
      */
-    public function execute()
+    protected function handle()
     {
         $group = waRequest::post('group', '', waRequest::TYPE_STRING_TRIM);
 

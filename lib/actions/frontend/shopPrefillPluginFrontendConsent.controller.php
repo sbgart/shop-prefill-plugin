@@ -11,12 +11,23 @@
  */
 class shopPrefillPluginFrontendConsentController extends waJsonController
 {
+    /** Допустимые действия. Всё остальное отсекается до того, как попадёт в лог */
+    private const ACTIONS = ['grant', 'revoke', 'clear', 'clear_form'];
+
     /**
      * @throws waException
      */
     public function execute()
     {
         $action = waRequest::post('action', 'grant', waRequest::TYPE_STRING);
+
+        if (!in_array($action, self::ACTIONS, true)) {
+            // Само значение в лог не пишем: эндпоинт публичный, строку задаёт клиент.
+            // Уровень debug (по умолчанию выключен) — иначе любой посетитель наполняет лог в цикле
+            shopPrefillPluginLog::debug('Unknown action received in consent controller');
+            $this->errors[] = _wp('error.unknown_action');
+            return;
+        }
 
         $plugin = shopPrefillPlugin::getInstance();
 
@@ -47,12 +58,9 @@ class shopPrefillPluginFrontendConsentController extends waJsonController
                     shopPrefillPluginLog::info('User cleared guest hash history');
                     $this->response = ['status' => 'ok', 'message' => _wp('message.history_cleared')];
                     break;
-
-                default:
-                    shopPrefillPluginLog::warning('Unknown action received in consent controller', ['action' => $action]);
-                    $this->errors[] = _wp('error.unknown_action');
             }
         } catch (Exception $e) {
+            // $action здесь заведомо из белого списка — писать его в лог безопасно
             shopPrefillPluginLog::error('Error processing consent action', [
                 'action' => $action,
                 'message' => $e->getMessage()

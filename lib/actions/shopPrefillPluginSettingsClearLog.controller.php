@@ -1,24 +1,25 @@
 <?php
 
 /**
- * AJAX: очищает оба лог-файла плагина.
+ * AJAX: очищает оба лог-файла плагина вместе с их ротированными поколениями.
  * Доступен по ?module=prefillPluginSettingsClearLog
  */
-class shopPrefillPluginSettingsClearLogController extends waJsonController
+class shopPrefillPluginSettingsClearLogController extends shopPrefillPluginSettingsBaseController
 {
-    public function execute(): void
+    protected function handle(): void
     {
-        if (!wa()->getUser()->isAdmin('shop')) {
-            $this->errors = 'Forbidden';
-            return;
-        }
-
         $log_dir = wa()->getConfig()->getPath('log') . '/';
 
         foreach ([shopPrefillPluginLog::LOG_FILE, shopPrefillPluginLog::ERROR_LOG_FILE] as $file) {
             $path = $log_dir . $file;
             if (file_exists($path)) {
                 file_put_contents($path, '');
+            }
+
+            // Ротированное поколение иначе всплывёт в просмотрщике сразу после очистки
+            $rotated = $path . shopPrefillPluginLog::ROTATED_SUFFIX;
+            if (file_exists($rotated)) {
+                @unlink($rotated);
             }
         }
 

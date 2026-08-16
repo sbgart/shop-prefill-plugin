@@ -4,9 +4,9 @@
  * AJAX-controller: рендерит превью Smarty-шаблона для Zen Mode (шаблон-строка).
  * Вызывается из модального редактора шаблонов через ?module=prefillPluginSettingsTemplatePreview.
  */
-class shopPrefillPluginSettingsTemplatePreviewController extends waJsonController
+class shopPrefillPluginSettingsTemplatePreviewController extends shopPrefillPluginSettingsBaseController
 {
-    public function execute()
+    protected function handle()
     {
         try {
             $group = waRequest::post('group', '', waRequest::TYPE_STRING_TRIM);

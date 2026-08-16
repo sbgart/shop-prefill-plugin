@@ -1,13 +1,13 @@
 <?php
 /** @noinspection ALL */
 
-class shopPrefillPluginSettingsAction extends waViewAction
+class shopPrefillPluginSettingsAction extends shopPrefillPluginSettingsBaseAction
 {
     /**
      * @throws waException
      * @throws waDbException
      */
-    public function execute()
+    protected function handle()
     {
         waLocale::loadByDomain(['shop', 'prefill']);
         waSystem::pushActivePlugin('prefill', 'shop');

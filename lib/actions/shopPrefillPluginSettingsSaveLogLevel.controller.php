@@ -4,15 +4,10 @@
  * AJAX: сохраняет уровень логирования в глобальных настройках плагина.
  * Доступен по ?module=prefillPluginSettingsSaveLogLevel
  */
-class shopPrefillPluginSettingsSaveLogLevelController extends waJsonController
+class shopPrefillPluginSettingsSaveLogLevelController extends shopPrefillPluginSettingsBaseController
 {
-    public function execute(): void
+    protected function handle(): void
     {
-        if (!wa()->getUser()->isAdmin('shop')) {
-            $this->errors = 'Forbidden';
-            return;
-        }
-
         $level = waRequest::post('level', 'warning');
         $valid = ['off', 'error', 'warning', 'info', 'debug'];
 

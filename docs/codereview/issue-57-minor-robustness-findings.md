@@ -1,6 +1,6 @@
 # Issue 57 — Мелкие находки ревью (надёжность и гигиена)
 
-**Статус:** ⬜ Открыта
+**Статус:** 🟡 Частично закрыта
 **Приоритет:** 🟢 Низкий
 **Сложность фикса:** 🔧 Тривиальные
 
@@ -32,9 +32,11 @@
 
 `shopPrefillPluginLog::writeLog()` пишет в `wa-log/prefill.plugin*.log` через `file_put_contents(..., FILE_APPEND)` без ограничения размера; читается только последний 1 МБ (`LogReader::MAX_BYTES`), остальное копится на диске вечно. См. также [issue-52](issue-52-consent-endpoint-log-flood-csrf.md).
 
-## 6. `zenmode.css` подключается без cache-busting
+## 6. `zenmode.css` подключается без cache-busting — ✅ закрыто
 
 `CheckoutHooks::renderZenModeStylesheet()` отдаёт `<link href=".../css/zenmode.css">` без `?v=`. После обновления плагина у покупателей останется старый CSS из кеша браузера. Добавить версию плагина в URL.
+
+Исправлено: версия плагина передаётся в `CheckoutHooks` через конструктор и добавляется к URL как `?v=<версия>`. Прямого обращения к `shopPrefillPlugin::getInstance()` из обработчика нет.
 
 ## 7. `.DS_Store` в репозитории
 

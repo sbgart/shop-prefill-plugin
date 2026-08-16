@@ -412,7 +412,9 @@ class shopPrefillPlugin extends shopPlugin
             $this->isDebugPanelEnabled(),
             $this->getEffectiveStorefrontSettings(),
             wa()->getRequest(),
-            wa()->getResponse()
+            wa()->getResponse(),
+            $this->getPluginStaticUrl(true),
+            $this->getVersion()
         );
     }
 

@@ -228,6 +228,10 @@ class shopPrefillPluginSessionStorageProvider
             $this->prepareConfirmSectionParams($params, $final_params, $snapshot_section);
         }
 
+        // Секции могли собраться из одних null (гость без заказов) — такие листья не считаются данными
+        // и не должны провоцировать запись в сессию. См. docs/codereview/issue-53-empty-prefill-writes-session.md
+        $final_params = shopPrefillPluginHelper::stripEmptyLeaves($final_params);
+
         if (!empty($final_params)) {
             $merged = shopPrefillPluginHelper::deepMergeArrays($checkout_params, $final_params);
             $this->setCheckoutParams($merged);

@@ -1,13 +1,13 @@
 <?php
 /** @noinspection PhpPossiblePolymorphicInvocationInspection */
 
-class shopPrefillPluginSettingsStorefrontAction extends waViewAction
+class shopPrefillPluginSettingsStorefrontAction extends shopPrefillPluginSettingsBaseAction
 {
     /**
      * @throws waException
      * @throws waDbException
      */
-    public function execute()
+    protected function handle()
     {
         $storefront_code = waRequest::post('code');
 

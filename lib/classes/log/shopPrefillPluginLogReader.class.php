@@ -6,7 +6,7 @@ class shopPrefillPluginLogReader
     private const MAX_BYTES = 1048576; // 1 MB
 
     /**
-     * Читает оба лог-файла, объединяет и сортирует по времени.
+     * Читает оба лог-файла (вместе с ротированными поколениями), объединяет и сортирует по времени.
      * Лимит по числу записей не применяется — естественная граница задана MAX_BYTES (1MB) на файл.
      * Срезать записи нельзя: error-лог обычно содержит более старые записи,
      * чем main-лог (warning/error реже debug/info), и при срезе они вырезаются первыми.
@@ -34,11 +34,7 @@ class shopPrefillPluginLogReader
     {
         $log_path = wa()->getConfig()->getPath('log') . '/' . $file_key;
 
-        if (!file_exists($log_path)) {
-            return [];
-        }
-
-        $content = self::readTail($log_path);
+        $content = self::readTailWithRotated($log_path);
 
         if ($content === '') {
             return [];
@@ -47,22 +43,53 @@ class shopPrefillPluginLogReader
         return self::parseEntries($content, $max_entries);
     }
 
-    private static function readTail(string $path): string
+    /**
+     * Читает хвост текущего файла и, если бюджет MAX_BYTES не выбран, добирает
+     * недостающее из ротированного поколения.
+     *
+     * Сразу после ротации текущий файл почти пуст: без этого просмотрщик показал бы
+     * пару записей вместо привычного объёма, и история выглядела бы пропавшей.
+     */
+    private static function readTailWithRotated(string $log_path): string
     {
+        $content = self::readTail($log_path, self::MAX_BYTES);
+
+        $remaining = self::MAX_BYTES - strlen($content);
+        if ($remaining <= 0) {
+            return $content;
+        }
+
+        // Ротированный файл старше текущего — его записи идут первыми
+        $rotated = self::readTail($log_path . shopPrefillPluginLog::ROTATED_SUFFIX, $remaining);
+
+        if ($rotated === '') {
+            return $content;
+        }
+
+        return $content === '' ? $rotated : $rotated . "\n" . $content;
+    }
+
+    private static function readTail(string $path, int $max_bytes): string
+    {
+        if (!is_file($path)) {
+            return '';
+        }
+
+        clearstatcache(true, $path);
         $size = filesize($path);
 
         if ($size === 0) {
             return '';
         }
 
-        if ($size <= self::MAX_BYTES) {
+        if ($size <= $max_bytes) {
             return file_get_contents($path);
         }
 
-        // Читаем только последний мегабайт и отбрасываем неполную первую запись
+        // Читаем только последние $max_bytes и отбрасываем неполную первую запись
         $fh = fopen($path, 'rb');
-        fseek($fh, -self::MAX_BYTES, SEEK_END);
-        $content = fread($fh, self::MAX_BYTES);
+        fseek($fh, -$max_bytes, SEEK_END);
+        $content = fread($fh, $max_bytes);
         fclose($fh);
 
         // Пропускаем первую, потенциально обрезанную запись
