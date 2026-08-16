@@ -40,7 +40,7 @@ The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as
 | Group | Purpose |
 |-------|---------|
 | `hooks/` | `FrontendHooks`, `CheckoutHooks`, `OrderHooks` — delegate plugin hook handling |
-| `fillparams/` | `FillParamsProvider` — fetches prefill data from DB; `FillParams` — data object; `FillParamsStorage` — writes to PHP session (`shop/checkout`); `GuestHashStorage` — manages `prefill_guest_hash` HTTP-only cookie + DB linkage |
+| `fillparams/` | `FillParamsProvider` — fetches prefill data from DB; `FillParams` — data object; `GuestHashStorage` — manages `prefill_guest_hash` HTTP-only cookie + DB linkage |
 | `sessionstorage/` | `SessionStorageProvider` — reads/writes checkout params in Webasyst session |
 | `storefronts/` | `StorefrontProvider`, `Storefront`, `StorefrontCollection` — per-storefront settings |
 | `settings/providers/` | `SettingProvider`, `StorefrontSettingProvider` — read/write plugin settings from `shop_prefill_settings` table |
