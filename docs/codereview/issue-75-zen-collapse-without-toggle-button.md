@@ -1,7 +1,7 @@
 # Issue 75 — Zen Mode скрывает секции CSS-ом, даже когда кнопка «Изменить» не выведена: чекаут без выхода
 
-**Статус:** ⬜ Открыта
-**Приоритет:** 🔴 Высокий (магазин теряет заказы, покупатель не может оформить)
+**Статус:** ✅ Исправлено
+**Приоритет:** 🟠 Средний (см. уточнение в конце документа — реальный блокер только у кастомных тем, потерявших `{foreach $event_hook.*}`)
 **Сложность фикса:** 🔧 Небольшой
 **Файлы:** `lib/classes/zenmode/shopPrefillPluginZenMode.class.php` (`getGroupsToCollapse`, `generateAllStyles`), `lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php` (`handleCheckoutRenderShipping`, `handleCheckoutRenderDetails`)
 
@@ -70,9 +70,32 @@ public function checkoutRenderShipping(&$params)
 
 Существующий костыль `ZenModeToggle.forceDetailSectionVisible()` (снимает `display:none` с `#wa-step-details-section`) решает соседнюю задачу и здесь не помогает: секцию он покажет, а кнопку не вернёт.
 
-## Рекомендация
+## Решение
 
-1. Связать две части: `buildCollapseBlock()` помечает группу как «блок реально отрисован» (статическая метка — экземпляр плагина создаётся заново на каждый хук, см. [issue-73](issue-73-stale-plugin-singleton.md)), а `generateAllStyles()` в confirm-хуке стилизует **только помеченные** группы. Порядок шагов гарантирован: `confirm` идёт последним в `shopCheckoutConfig::getCheckoutSteps()`.
-2. Дополнительно реализовать обещанный фолбэк: если блок delivery не вывелся в `details`, вывести его в `shipping`.
-3. Подстраховаться на клиенте: если на странице есть `#prefill-zen-styles`, но нет ни одного `.js-prefill-zen-toggle` для группы — снимать стиль. Дешёвая защита от кастомных тем.
-4. Тест: в настройках чекаута выключить доставку (`shipping.used = false`), открыть `/order/` при включённом Zen — секции должны остаться рабочими.
+Вместо того чтобы связывать два независимых расчёта флагом (issue-73 уже показал, чем плохи статические метки на пере-создаваемом на каждый хук инстансе), CSS вообще перестал считаться отдельно. `generateGroupStyles(string $group)` вызывается изнутри `renderCollapseBlock()` и попадает в возвращаемую строку **только вместе с кнопкой «Изменить»**, в той же ветке `if ($is_collapsed)`:
+
+```php
+// shopPrefillPluginZenMode::renderCollapseBlock()
+$html = $this->view->fetch('file:' . $template_path);   // блок с кнопкой «Изменить»
+return $is_collapsed ? ($this->generateGroupStyles($group) . $html) : $html;
+```
+
+Дальше решает ядро: печатает хук секции — печатается и CSS вместе с кнопкой; выбрасывает (`{if empty($details.disabled)}`, обрезанный `{foreach}` в теме) — выбрасывается и CSS. Ветка «CSS есть, кнопки нет» стала физически невозможна, а не просто маловероятна.
+
+Побочный эффект: раньше `shouldCollapseGroup()` для одной и той же группы считался дважды на разных `$state` — один раз в `buildCollapseBlock()` (свой хук секции), второй раз в confirm-хуке (`getGroupsToCollapse()`). На AJAX-обновлении секции могли разойтись. Теперь расчёт один, решение принимается один раз.
+
+Что изменилось:
+
+- `getGroupsToCollapse()` и `generateAllStyles(array $groups)` — удалены.
+- `generateGroupStyles(string $group)` (приватный, в `shopPrefillPluginZenMode`) генерирует CSS одной группы с уникальным `id="prefill-zen-styles-{group}"` (был один общий `id="prefill-zen-styles"` на всех — если бы когда-то понадобилось трогать конкретный тег через JS, коллизия id была бы гарантирована при заполненных ≥2 группах).
+- `handleCheckoutRenderConfirm()` больше не генерирует CSS — вызов `renderZenModeConfirmStyles()` убран.
+- `<link rel="stylesheet" href=".../zenmode.css">` перенесён из `handleCheckoutRenderAuth()` (единственного места, где он раньше выводился) в `buildZenModeGroupBlock()` — теперь тег едет с каждым фактически выведенным блоком группы (auth/details/payment), а не только с auth. Раньше при `hide_auth_header`/выключенной группе `customer`, но включённой `delivery`, стили Zen Mode всё равно зависели от того, отрисовалась ли секция auth. Побочно решает и рекомендацию №3 из первой версии документа (JS-подстраховка от «стиль без кнопки») — сценарий, для которого она была нужна, больше не существует.
+
+## Проверено при ревью подхода
+
+- **Фолбэк «вывести блок delivery в `shipping`, если не вывелся в `details`»** (была рекомендация №2) сценарий `shipping.used = false` не решает: тем же условием `empty($config['shipping']['used'])` дизейблятся все три шага — region, shipping и details (`shopCheckoutRegionStep`, `shopCheckoutShippingStep`, `shopCheckoutDetailsStep`), и вывод хука в `shipping.html` тоже завёрнут в `{if empty($shipping.disabled)}`. Перекладывать блок было некуда. С текущим решением фолбэк не нужен как багфикс — CSS просто не появится, если ни одна секция группы не отрисовалась.
+- **Уточнение приоритета.** При `shipping.used = false` ядро вешает `display:none` на все три секции группы `delivery` целиком (весь `<section>`, не только форму) — покупатель их не видит, кроме одной: `ZenModeToggle.forceDetailSectionVisible()` безусловно снимает inline-стиль с `#wa-step-details-section` на каждом `wa_order_form_ready` (`js/modules/OrderFormManager.js`). То есть пустую секцию без кнопки показывал сам плагин, но заказ оформлялся — блокера не было. Реальный блокер (поля скрыты, развернуть нечем, заказ невозможен) — только у кастомной темы, потерявшей `{foreach $event_hook.details}` при кастомизации `order.details.html`.
+
+## Тест
+
+В настройках чекаута выключить доставку (`shipping.used = false`), открыть `/order/` при включённом Zen — секции должны остаться рабочими и не содержать «сирот»-CSS. Плюс: включить Zen для всех трёх групп на обычном магазине (доставка используется), пройти цикл разворачивания/сворачивания каждой группы, убедиться что на странице ровно столько `<style id="prefill-zen-styles-*">`, сколько свёрнутых групп, и что удаление кнопки (эмуляция обрезанной темы) гарантированно убирает и CSS.

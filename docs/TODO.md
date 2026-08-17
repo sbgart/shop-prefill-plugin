@@ -1,6 +1,6 @@
 # TODO — Prefill Plugin
 
-**К релизу v1.0 открыто 24 задачи ревью:** 🔴 2 · 🟠 13 · 🟢 9. Плюс 1 баг, 6 тестов и 3 хвоста по issue-51.
+**К релизу v1.0 открыто 23 задачи ревью:** 🔴 1 · 🟠 13 · 🟢 9. Плюс 1 баг, 6 тестов и 3 хвоста по issue-51.
 
 Приоритеты: 🔴 блокер релиза · 🟠 важно до продажи · 🟢 мелочь и гигиена.
 Номера issue: 49–62 — ревью 09.08.2026, 63–80 — ревью 16.08.2026. Статус и дата каждой — в её файле.
@@ -12,7 +12,6 @@
 
 ### ⚡ Чинить первыми
 
-- [ ] 🔴 [Zen Mode скрывает секции CSS-ом, даже когда кнопка «Изменить» не выведена — чекаут без выхода](codereview/issue-75-zen-collapse-without-toggle-button.md)
 - [ ] 🔴 [Поиск заказов гостя сканирует shop_order_params на каждой странице витрины](codereview/issue-63-guest-hash-lookup-full-scan.md)
 
 ### Предзаполнение, сессия, снапшот
@@ -115,6 +114,7 @@
 - [x] [Часть бэкенд-эндпоинтов без проверки прав](codereview/done/issue-54-backend-actions-no-rights-check.md)
 - [x] [CSS витрины: настройки от одной витрины, код файла от другой](codereview/issue-58-storefront-css-settings-code-mismatch.md)
 - [x] [Дубликат класса в lib/classes/fillparams: мина в автозагрузке](codereview/done/issue-61-duplicate-class-file-autoload.md)
+- [x] [Zen Mode скрывает секции CSS-ом, даже когда кнопка «Изменить» не выведена — чекаут без выхода](codereview/issue-75-zen-collapse-without-toggle-button.md)
 
 ### Фичи
 

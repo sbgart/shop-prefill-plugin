@@ -89,8 +89,7 @@ class shopPrefillPluginCheckoutHooks
         }
 
         $state = new shopPrefillCheckoutState($params);
-        return $this->renderZenModeStylesheet()
-            . $this->buildZenModeGroupBlock('customer', $state, 'checkoutRenderAuth')
+        return $this->buildZenModeGroupBlock('customer', $state, 'checkoutRenderAuth')
             . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderAuth', 'AUTH SECTION');
     }
 
@@ -166,7 +165,9 @@ class shopPrefillPluginCheckoutHooks
 
     /**
      * Хук срабатывает при рендере секции подтверждения на странице оформления заказа.
-     * Генерирует CSS для всех групп Zen Mode и показывает галочку согласия для гостей.
+     * Показывает галочку согласия для гостей. CSS сворачивания групп сюда больше
+     * не собирается — каждая группа несёт свой CSS вместе с кнопкой «Изменить»,
+     * см. buildZenModeGroupBlock() и shopPrefillPluginZenMode::renderCollapseBlock().
      *
      * @param array $params Параметры хука
      * @return string HTML для вставки в секцию подтверждения
@@ -179,7 +180,6 @@ class shopPrefillPluginCheckoutHooks
 
         $state = new shopPrefillCheckoutState($params);
         return $this->renderDeliveryUnavailableScript($state)
-            . $this->renderZenModeConfirmStyles($state)
             . $this->renderConsentCheckbox()
             . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderConfirm', 'CONFIRM SECTION');
     }
@@ -229,7 +229,10 @@ class shopPrefillPluginCheckoutHooks
     }
 
     /**
-     * Строит блок Zen Mode для группы: синхронизация cookie + рендер.
+     * Строит блок Zen Mode для группы: подключение zenmode.css + синхронизация cookie + рендер.
+     *
+     * Стиль подключается здесь же, а не отдельным хуком на auth — так он привязан к тому,
+     * выводится ли вообще хоть один блок группы в секции, а не к глобальному isActive().
      *
      * @param string $group Имя группы (customer, delivery, payment)
      * @param array $params Параметры хука
@@ -242,29 +245,9 @@ class shopPrefillPluginCheckoutHooks
             if (!$this->zen_mode->isGroupEnabled($group)) {
                 return '';
             }
-            return $this->zen_mode->buildCollapseBlock($group, $state);
+            return $this->renderZenModeStylesheet() . $this->zen_mode->buildCollapseBlock($group, $state);
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Zen Mode error in ' . $log_context, [
-                'message' => $e->getMessage()
-            ]);
-            return '';
-        }
-    }
-
-    /**
-     * Генерирует CSS стили для свернутых групп Zen Mode.
-     * Вызывается в последнем хуке (Confirm) для генерации всех стилей сразу.
-     *
-     * @param array $params Параметры хука
-     * @return string HTML с <style> тегом или пустая строка
-     */
-    private function renderZenModeConfirmStyles(shopPrefillCheckoutState $state): string
-    {
-        try {
-            $groups_to_collapse = $this->zen_mode->getGroupsToCollapse($state);
-            return $this->zen_mode->generateAllStyles($groups_to_collapse);
-        } catch (Exception $e) {
-            shopPrefillPluginLog::error('Zen Mode styling error in checkoutRenderConfirm', [
                 'message' => $e->getMessage()
             ]);
             return '';

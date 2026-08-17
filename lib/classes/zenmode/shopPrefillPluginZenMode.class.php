@@ -296,59 +296,28 @@ class shopPrefillPluginZenMode
     // ==================== CSS GENERATION ====================
 
     /**
-     * Возвращает список групп, которые нужно визуально свернуть (скрыть содержимое).
-     * Учитывает настройки, cookie и ошибки в данных чекаута.
+     * Генерирует CSS, скрывающий содержимое секций группы (кроме .wa-plugin-hook).
      *
-     * @param array $params Данные чекаута для проверки ошибок в группах
-     * @return string[] Имена групп (customer, delivery, payment)
-     */
-    public function getGroupsToCollapse(shopPrefillCheckoutState $state): array
-    {
-        if (! $this->isActive()) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($this->getGroups() as $group) {
-            if ($this->shouldCollapseGroup($group, $state)) {
-                $result[] = $group;
-            }
-        }
-        return $result;
-    }
-
-    /**
-     * Генерирует CSS для переданных групп: скрывает содержимое секций (кроме .wa-plugin-hook).
+     * Вызывается только из renderCollapseBlock(), когда группа реально свёрнута —
+     * так стиль не может уйти в разметку без кнопки «Изменить», которая его снимает
+     * (см. issue-75: раньше CSS считался отдельно в confirm-хуке и не знал,
+     * вывелась ли кнопка в своей секции).
      *
-     * @param string[] $groups Имена групп (customer, delivery, payment)
+     * @param string $group Имя группы (customer, delivery, payment)
      * @return string HTML с тегом <style> или пустая строка
      */
-    public function generateAllStyles(array $groups = []): string
+    private function generateGroupStyles(string $group): string
     {
-        if (empty($groups)) {
+        if (! isset(self::GROUP_SECTIONS[$group])) {
             return '';
         }
 
-        $styles = [];
-        foreach ($groups as $group) {
-            if (! isset(self::GROUP_SECTIONS[$group])) {
-                continue;
-            }
-            $css = [];
-            foreach (self::GROUP_SECTIONS[$group] as $section) {
-                $css[] = ".wa-step-{$section}-section .wa-section-body form > *:not(.wa-plugin-hook) { display: none !important; }";
-            }
-            if ($css !== []) {
-                $styles[] = "/* === GROUP: {$group} === */";
-                $styles[] = implode("\n", $css);
-            }
+        $css = [];
+        foreach (self::GROUP_SECTIONS[$group] as $section) {
+            $css[] = ".wa-step-{$section}-section .wa-section-body form > *:not(.wa-plugin-hook) { display: none !important; }";
         }
 
-        if (empty($styles)) {
-            return '';
-        }
-
-        return '<style id="prefill-zen-styles">' . "\n" . implode("\n", $styles) . "\n" . '</style>';
+        return '<style id="prefill-zen-styles-' . $group . '">' . "\n" . implode("\n", $css) . "\n" . '</style>';
     }
 
     // ==================== COLLAPSE BLOCK ====================
@@ -439,6 +408,11 @@ class shopPrefillPluginZenMode
     /**
      * Рендерит блок управления группой (только вывод HTML, без изменения cookie).
      *
+     * Скрывающий CSS группы выводится здесь же, вместе с кнопкой «Изменить» (только
+     * когда $is_collapsed) — так CSS физически не может попасть в разметку без кнопки,
+     * которая его снимает. Раньше CSS для всех групп собирался отдельно в confirm-хуке
+     * по независимому расчёту и не знал, вывелся ли блок группы в своей секции (issue-75).
+     *
      * @param string $group Имя группы
      * @param shopPrefillCheckoutState $state Данные чекаута
      * @param bool $is_collapsed Свёрнута ли группа
@@ -482,7 +456,9 @@ class shopPrefillPluginZenMode
         ]);
 
         $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/CollapseBlock.html';
-        return $this->view->fetch('file:' . $template_path);
+        $html = $this->view->fetch('file:' . $template_path);
+
+        return $is_collapsed ? ($this->generateGroupStyles($group) . $html) : $html;
     }
 
 
