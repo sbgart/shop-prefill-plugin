@@ -1,41 +1,42 @@
-# Issue 55 — Для гостя `getFillParams($id)` игнорирует переданный ID заказа
+# Issue 55 — Гостю был доступен серверный путь выбора заказа из истории
 
-**Статус:** ⬜ Открыта
-**Приоритет:** 🟡 Средний (функциональная некорректность)
-**Сложность фикса:** 🔧 Небольшой
-**Файлы:** `lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php` (`getFillParams`, `getFillParamsForGuest`), `lib/actions/frontend/shopPrefillPluginFrontendApplyDelivery.controller.php`, `...FillCheckoutParams`
+**Статус:** ✅ Закрыта 18.08.2026 — гостевая история исключена из функции «Мои варианты»
+**Приоритет:** 🟡 Средний (приватность на общем браузере)
+**Решение:** 🔧 Гостевое автопредзаполнение сохранено как opt-in, выбор истории разрешён только авторизованным
+**Файлы:** `lib/config/storefront.settings.php`, `lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php`, `lib/actions/frontend/shopPrefillPluginFrontendParamsChoice.action.php`, `...FrontendApplyDelivery.controller.php`
 
-## Проблема
+## Принятый контракт
 
-```php
-public function getFillParams(?int $fill_params_id = null): shopPrefillPluginFillParams
-{
-    if ($this->user_provider->isAuth()) {
-        return $this->getFillParamsForAuthorized($fill_params_id);
-    }
-    return $this->getFillParamsForGuest();   // ← $fill_params_id потерян
-}
-```
+Это две разные функции, которые нельзя смешивать:
 
-Для авторизованного проверка владения заказом сделана корректно (`getContactIdFromOrder` сравнивается с `contact_id`) — **IDOR отсутствует**, это хорошо. Но для гостя выбранный `order_id` просто отбрасывается, и применяется последний заказ по гостевому хешу.
+1. **Гостевое автопредзаполнение** может сохранить связь с заказом и при следующем визите автоматически взять только последний заказ. Функция явно включается администратором и по умолчанию выключена.
+2. **«Мои варианты»** показывает историю адресов и сценариев доставки. Она доступна только авторизованному пользователю, потому что гостевая cookie не подтверждает личность человека за браузером.
 
-Контроллеры `prefill/apply-delivery` и `prefill/fill-checkout-params` при этом отвечают `status: ok` — то есть тихо применяют **не тот** вариант, который выбрал пользователь.
+Изначальная рекомендация научить `getFillParamsForGuest($order_id)` выбирать любой связанный заказ отклонена: на общем устройстве она позволила бы следующему посетителю просмотреть адреса прежнего гостя.
 
-Сейчас частично маскируется UI: `ParamsChoiceManager.renderLink()` рисует кнопку «Мои варианты» только при `isAuth === true`, поэтому гость до диалога обычно не доходит. Но эндпоинт публичный, а коллекция вариантов для гостей (`getFillParamsCollection`) строится полноценно — то есть функциональность наполовину реализована.
+## Что исправлено
 
-## Рекомендация
+- дефолт `prefill.guest.enabled` изменён на `false`;
+- `ParamsChoiceAction` отклоняет гостя и выключенную функцию стандартным `waRightsException`;
+- `ApplyDeliveryController` возвращает гостю `403` и не меняет checkout-сессию;
+- `getFillParamsCollection()` возвращает гостю пустую коллекцию даже при внутреннем вызове;
+- существующий UI-барьер `ParamsChoiceManager::renderLink()` остаётся первым уровнем: ссылка гостю не выводится;
+- автоматический `getFillParams()` для гостя по-прежнему берёт только последний связанный заказ, если администратор включил гостевое предзаполнение.
 
-Либо реализовать выбор для гостя честно:
+Мёртвый публичный `fill-checkout-params` не относится к диалогу и удаляется отдельно по [issue-62](issue-62-dead-unguarded-fill-checkout-endpoint.md).
 
-```php
-private function getFillParamsForGuest(?int $order_id = null): shopPrefillPluginFillParams
-{
-    $guest_hash = $this->guest_hash_storage->getOrCreateGuestHash();
-    if ($order_id && in_array($order_id, $this->order_provider->getAllOrderIdsByGuestHash($guest_hash), true)) {
-        // заказ принадлежит этому гостевому хешу — используем его
-    }
-    ...
-}
-```
+## Приёмка
 
-либо явно возвращать ошибку («выбор варианта доступен только авторизованным»), чтобы поведение не расходилось с ответом `ok`. Заодно решить, показывать ли кнопку «Мои варианты» гостям — сейчас коллекция для них считается, но не используется.
+1. На новой установке гостевое предзаполнение выключено.
+2. Гость не видит ссылку «Мои варианты».
+3. Прямой запрос гостя к `prefill/params-choice` получает отказ.
+4. `POST prefill/apply-delivery` от гостя получает `403` и не применяет заказ.
+5. Авторизованный пользователь при включённой функции продолжает получать диалог и выбирать только свои заказы.
+
+## Проверено в Chrome 18.08.2026
+
+- авторизованный пользователь видит ссылку и пять вариантов доставки;
+- выбор другого заказа проходит через `apply-delivery`, перезагружает checkout и помечает выбранную карточку активной;
+- после выхода гостю не выводятся ни ссылка, ни карточки; в консоли Prefill сообщает штатный `renderLink aborted` без ошибок плагина;
+- прямой переход гостя к `prefill/params-choice` получает страницу `Access denied` с кодом 403;
+- прямой вызов гостем `prefill/apply-delivery` возвращает `{"status":"fail","errors":"Access denied"}`; проверка авторизации выполняется до чтения `order_id`, поэтому метод запроса не открывает гостевой путь.

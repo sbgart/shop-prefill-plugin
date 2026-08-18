@@ -18,6 +18,7 @@ class shopPrefillPluginFrontendClearStorageController extends waJsonController
         try {
             // Очищаем хранилище checkout (сессия)
             wa()->getStorage()->remove('shop/checkout');
+            shopPrefillPlugin::getInstance()->getSessionStorageProvider()->clearSourceMarker();
 
             $this->response = [
                 'status' => 'ok',

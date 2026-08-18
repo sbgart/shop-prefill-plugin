@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Webasyst Shop-Script plugin** (`shop/plugins/prefill`) that prefills checkout form fields based on the user's previous orders. It supports both authenticated users (by `contact_id`) and guests (via `prefill_guest_hash` cookie linked to `shop_order_params` DB records).
+This is a **Webasyst Shop-Script plugin** (`shop/plugins/prefill`) that prefills checkout form fields based on the user's previous orders. It supports both authenticated users (by `contact_id` via `shop_customer.last_order_id`) and guests (via a random `prefill_guest_token` cookie whose derived lookup id is stored in the indexed `shop_order_params.name` column).
 
 - **Plugin ID:** `prefill`
 - **App:** `shop` (Shop-Script)
@@ -30,7 +30,7 @@ For locale compilation and cache clearing — use `/compile-plugin-mo`.
 The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as a service locator — it lazily instantiates all providers and hooks via getter methods. It registers Webasyst hooks in `lib/config/plugin.php`.
 
 **Active hooks:**
-- `frontend_head` — runs on every shop page; manages cookies and prefills checkout params into PHP session
+- `frontend_head` — runs on every shop page; manages cookies, assets and debug. **Does NOT prefill** — writing the session from the layout cannot affect the current page, and prefilled sections are not read outside checkout (see `docs/codereview/issue-63-*.md`)
 - `checkout_before_auth` — fires on every AJAX calculate/create call during checkout
 - `checkout_render_*` — multiple hooks injecting HTML into checkout sections (auth, region, shipping, details, payment, confirm)
 - `order_action.create` — saves `shipping_type` to order params after order creation
@@ -40,7 +40,7 @@ The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as
 | Group | Purpose |
 |-------|---------|
 | `hooks/` | `FrontendHooks`, `CheckoutHooks`, `OrderHooks` — delegate plugin hook handling |
-| `fillparams/` | `FillParamsProvider` — fetches prefill data from DB; `FillParams` — data object; `GuestHashStorage` — manages `prefill_guest_hash` HTTP-only cookie + DB linkage |
+| `fillparams/` | `FillParamsProvider` — fetches prefill data from DB, memoizes statically, computes the source key; `FillParams` — data object; `GuestTokenStorage` — manages the `prefill_guest_token` HTTP-only cookie, derives the lookup id and links orders |
 | `sessionstorage/` | `SessionStorageProvider` — reads/writes checkout params in Webasyst session |
 | `storefronts/` | `StorefrontProvider`, `Storefront`, `StorefrontCollection` — per-storefront settings |
 | `settings/providers/` | `SettingProvider`, `StorefrontSettingProvider` — read/write plugin settings from `shop_prefill_settings` table |
@@ -48,7 +48,7 @@ The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as
 | `view/` | `AssetsManager` — generates CSS variables file and JS initializer file dynamically into `wa-data/` |
 | `consent/` | `ConsentStorage` — manages `prefill_consent` HTTP-only cookie for guests |
 
-**Settings storage:** `shop_prefill_settings` table (one row per `storefront_code` + `name`). Defaults defined in `lib/config/storefront.settings.php` (per-storefront) and `lib/config/settings.php` (global).
+**Settings storage:** `shop_prefill_settings` table (one row per logical key: `storefront_code` + `name` + `groups`, where `groups` stores the leaf's path in the settings tree). Defaults defined in `lib/config/storefront.settings.php` (per-storefront) and `lib/config/settings.php` (global).
 
 ### Frontend JavaScript
 
@@ -76,17 +76,33 @@ Located in `lib/actions/frontend/`:
 
 ### Data Flow
 
-1. `frontendHead` hook fires → `FillParamsProvider::getFillParams()` queries last order from DB (by `contact_id` for auth users, by `prefill_guest_hash` cookie for guests)
-2. If `prefill.on_entry = true`, data is written into PHP session (`shop/checkout`) via `SessionStorageProvider::preFillCheckoutParams()`
-3. `checkout_before_auth` hook fires on each AJAX call — reruns prefill logic
-4. `AssetsManager` generates a unique JS initializer file passing params (including translated messages) to `PrefillFrontendController`
-5. JS modules manipulate the checkout DOM to show Zen Mode collapsed sections and delivery variant cards
+Prefill runs **only on the checkout path** — `checkout_before_auth`, which fires on every
+`calculate`/`create` and on the `/order/` form render via `formVars()` → `processAll()`.
+
+1. `CheckoutHooks` computes the source key (no DB) and passes a **lazy loader** into
+   `SessionStorageProvider::preFillCheckoutParamsFromSource()`
+2. That method: collects prefillable sections → fills what it can from `shop/prefill_snapshot`
+   → only if gaps remain **and** the session marker `shop/prefill_source` does not match,
+   calls the loader → writes `shop/checkout`, snapshot and the marker
+3. `AssetsManager` generates a unique JS initializer file passing params to `PrefillFrontendController`
+4. JS modules manipulate the checkout DOM for Zen Mode and delivery variant cards
+
+Two rules the marker must obey (breaking either causes silent regressions):
+
+- it gates **only** the loader call, never the snapshot restore — snapshot works every request
+- it is **not written** for a guest without a cookie, otherwise every anonymous visitor and bot
+  gets a PHP session and `Set-Cookie: PHPSESSID`
 
 ### Guest Data Flow
 
-- First visit: `prefill_guest_hash` cookie (SHA256, HTTP-only, 1 year) is created
-- On order create: if `guest/consent_required = true` and consent cookie set, hash is saved to `shop_order_params` table
-- Next visit: hash read from cookie → last order found by hash in DB → prefill applied
+- Browsing the catalog creates **nothing** — no cookie, no queries
+- On order create: if consent is not required OR granted, a random token
+  `bin2hex(random_bytes(32))` is issued into the `prefill_guest_token` cookie, and the order
+  gets a param `name = 'prefill_guest_' . substr(sha256(token), 0, 48)`, `value = '1'`
+- Next visit: token → lookup id → `WHERE name = ?` on the **existing index** of
+  `shop_order_params` → last order → prefill
+- The raw token never reaches the DB, so leaking order params cannot restore someone's cookie
+- Revoke/clear delete the DB links **before** clearing the cookie — afterwards they are unreachable
 
 ## Localization
 

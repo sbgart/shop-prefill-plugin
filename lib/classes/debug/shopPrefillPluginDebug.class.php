@@ -255,7 +255,7 @@ class shopPrefillPluginDebug
             'user_authorized' => false,
             'user_id' => null,
             'contact_id' => null,
-            'guest_hash' => null,
+            'guest_lookup' => null,
             'orders_count' => 0,
             'source' => 'empty',
             'source_order_id' => null,
@@ -264,7 +264,7 @@ class shopPrefillPluginDebug
         try {
             // Проверяем авторизацию
             $user_provider = $plugin->getUserProvider();
-            $guest_hash_storage = $plugin->getGuestHashStorage();
+            $guest_token_storage = $plugin->getGuestTokenStorage();
 
             $fill_params_meta['user_authorized'] = $user_provider->isAuth();
 
@@ -278,14 +278,16 @@ class shopPrefillPluginDebug
                 $orders_ids = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
                 $fill_params_meta['orders_count'] = count($orders_ids ?: []);
             } else {
-                // Гость: показываем укороченный хеш
-                $guest_hash = $guest_hash_storage->getGuestHash();
-                $fill_params_meta['guest_hash'] = $guest_hash ? substr($guest_hash, 0, 16) . '...' : null;
+                // Гость: показываем префикс производного lookup id, а не сам токен из куки
+                $param_name = $guest_token_storage->getParamName();
+                $fill_params_meta['guest_lookup'] = $param_name === null
+                    ? null
+                    : substr($param_name, 0, 22) . '...';
 
-                // Получаем количество заказов гостя
-                if ($guest_hash) {
+                // Пустая кука — штатное состояние посетителя без заказов, а не ошибка
+                if ($param_name !== null) {
                     $order_provider = $plugin->getOrderProvider();
-                    $orders_ids = $order_provider->getAllOrderIdsByGuestHash($guest_hash);
+                    $orders_ids = $order_provider->getOrderIdsByGuestParam($param_name);
                     $fill_params_meta['orders_count'] = count($orders_ids);
                 }
             }

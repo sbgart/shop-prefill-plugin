@@ -9,9 +9,18 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
     public function execute()
     {
         $instance = shopPrefillPlugin::getInstance();
+        $settings = $instance->getEffectiveStorefrontSettings();
 
-        if (!$instance->getEffectiveStorefrontSettings()['active']) {
+        if (!$settings['active']) {
             return;
+        }
+
+        // История адресов доступна только после авторизации: гостевая cookie нужна
+        // для автопредзаполнения последнего заказа, но не является учётной записью.
+        if (!$instance->getUserProvider()->isAuth()
+            || empty($settings['prefill']['my_delivery_variants'])
+        ) {
+            throw new waRightsException('Access denied');
         }
 
         $fill_params_collection = $instance->getFillParamsProvider()->getFillParamsCollection();

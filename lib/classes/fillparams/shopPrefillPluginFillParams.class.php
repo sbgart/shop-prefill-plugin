@@ -458,11 +458,11 @@ class shopPrefillPluginFillParams
 
     public function setShippingVariantId(string $variant_id): void
     {
-        $parts = explode('.', $variant_id);
+        $parts = explode('.', $variant_id, 2);
 
         if (count($parts) === 2) {
             if ($parts[0] !== '' && $parts[1] !== '') {
-                $this->setShippingId($parts[0]);
+                $this->setShippingId((int) $parts[0]);
                 $this->setShippingRateId($parts[1]);
             }
         }

@@ -33,7 +33,7 @@ class shopPrefillPlugin extends shopPlugin
 
     private ?shopPrefillPluginFillParamsProvider $fill_params_provider = null;
 
-    private ?shopPrefillPluginGuestHashStorage $guest_hash_storage = null;
+    private ?shopPrefillPluginGuestTokenStorage $guest_token_storage = null;
     private ?shopPrefillPluginConsentStorage   $consent_storage    = null;
 
     private ?shopPrefillPluginZenMode $zen_mode = null;
@@ -253,7 +253,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getOrderProvider(),
             $this->getUserProvider(),
             $this->getContactProvider(),
-            $this->getGuestHashStorage(),
+            $this->getGuestTokenStorage(),
             $this->getLocationProvider()
         );
     }
@@ -261,9 +261,9 @@ class shopPrefillPlugin extends shopPlugin
     /**
      * @throws waException
      */
-    public function getGuestHashStorage(): shopPrefillPluginGuestHashStorage
+    public function getGuestTokenStorage(): shopPrefillPluginGuestTokenStorage
     {
-        return $this->guest_hash_storage ??= new shopPrefillPluginGuestHashStorage(
+        return $this->guest_token_storage ??= new shopPrefillPluginGuestTokenStorage(
             $this->getUserProvider(),
             $this->getOrderParamsModel(),
             wa()->getResponse()
@@ -308,7 +308,7 @@ class shopPrefillPlugin extends shopPlugin
         return $this->order_hooks ??= new shopPrefillPluginOrderHooks(
             $this->getSessionStorageProvider(),
             $this->getOrderProvider(),
-            $this->getGuestHashStorage(),
+            $this->getGuestTokenStorage(),
             $this->getZenMode(),
             $this->getUserProvider(),
             $this->getConsentStorage(),
@@ -326,9 +326,8 @@ class shopPrefillPlugin extends shopPlugin
     {
         return $this->frontend_hooks ??= new shopPrefillPluginFrontendHooks(
             $this->getSessionStorageProvider(),
-            $this->getFillParamsProvider(),
             $this->getUserProvider(),
-            $this->getGuestHashStorage(),
+            $this->getGuestTokenStorage(),
             $this->getConsentStorage(),
             $this->getAssetsManager(),
             $this->isDebug(),

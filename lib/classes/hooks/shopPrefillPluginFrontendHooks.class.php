@@ -7,9 +7,8 @@
 class shopPrefillPluginFrontendHooks
 {
     private shopPrefillPluginSessionStorageProvider $session_storage;
-    private shopPrefillPluginFillParamsProvider     $fill_params_provider;
     private shopPrefillPluginUserProvider           $user_provider;
-    private shopPrefillPluginGuestHashStorage       $guest_hash_storage;
+    private shopPrefillPluginGuestTokenStorage      $guest_token_storage;
     private shopPrefillPluginConsentStorage         $consent_storage;
     private shopPrefillPluginAssetsManager          $assets_manager;
     private bool                                    $is_debug;
@@ -23,9 +22,8 @@ class shopPrefillPluginFrontendHooks
 
     public function __construct(
         shopPrefillPluginSessionStorageProvider $session_storage,
-        shopPrefillPluginFillParamsProvider $fill_params_provider,
         shopPrefillPluginUserProvider $user_provider,
-        shopPrefillPluginGuestHashStorage $guest_hash_storage,
+        shopPrefillPluginGuestTokenStorage $guest_token_storage,
         shopPrefillPluginConsentStorage $consent_storage,
         shopPrefillPluginAssetsManager $assets_manager,
         bool $is_debug,
@@ -36,9 +34,8 @@ class shopPrefillPluginFrontendHooks
         string $storefront_css_url = ''
     ) {
         $this->session_storage      = $session_storage;
-        $this->fill_params_provider = $fill_params_provider;
         $this->user_provider        = $user_provider;
-        $this->guest_hash_storage   = $guest_hash_storage;
+        $this->guest_token_storage  = $guest_token_storage;
         $this->consent_storage      = $consent_storage;
         $this->assets_manager       = $assets_manager;
         $this->is_debug             = $is_debug;
@@ -53,7 +50,14 @@ class shopPrefillPluginFrontendHooks
 
     /**
      * Хук срабатывает на всех страницах магазина.
-     * Предзаполняет параметры при входе на сайт, управляет cookies.
+     *
+     * Предзаполнением НЕ занимается: запись сессии отсюда всё равно не может повлиять
+     * на текущую страницу (хук вызывается из лэйаута, после сборки $content), а вне
+     * чекаута предзаполненные секции никто не читает. Источник предзаполнения теперь
+     * читается только на чекаут-пути — см. docs/codereview/issue-63-*.md и
+     * docs/todo/on-entry-early-prefill.md.
+     *
+     * Здесь остаются куки, remember-me, ассеты и debug-панель.
      *
      * @param array|null $params Параметры хука
      * @return string HTML для вставки в <head>
@@ -83,25 +87,8 @@ class shopPrefillPluginFrontendHooks
             return $head_html;
         }
 
-        // Получаем параметры для заполнения
-        $fill_params = $this->fill_params_provider->getFillParams();
-
-        // DEBUG: Состояние ПЕРЕД предзаполнением
-        $this->logDebugBeforePrefill('frontendHead', $fill_params);
-
         // Управление гостевыми cookies
         $this->handleGuestCookies();
-
-        // Предзаполнение при входе на сайт
-        if ($this->storefront_settings['prefill']['on_entry']) {
-            shopPrefillPluginLog::debug('Prefill on_entry triggered in frontendHead', [
-                'is_guest' => !$this->user_provider->isAuth(),
-            ]);
-            $this->session_storage->preFillCheckoutParams($fill_params);
-        }
-
-        // DEBUG: Состояние ПОСЛЕ предзаполнения
-        $this->logDebugAfterPrefill('frontendHead');
 
         // Инициализация стилей и скриптов
         $this->initializeFrontendAssets();
@@ -123,75 +110,6 @@ class shopPrefillPluginFrontendHooks
         if ($this->is_debug_panel) {
             shopPrefillPluginDebug::registerHookCall($hook_name);
         }
-    }
-
-    /**
-     * Логирует состояние ПЕРЕД предзаполнением
-     *
-     * @param string $hook_name Имя хука для метки
-     * @param shopPrefillPluginFillParams|null $fill_params Параметры для заполнения
-     * @throws waException
-     */
-    private function logDebugBeforePrefill(string $hook_name, ?shopPrefillPluginFillParams $fill_params): void
-    {
-        if (! $this->is_debug_panel) {
-            return;
-        }
-
-        $checkout_params_before = $this->session_storage->getCheckoutParams();
-
-        // Получаем статус секций для отображения в дебаге
-        $section_checker         = $this->session_storage->getSectionChecker();
-        $sections_prefill_status = [];
-        $sections_filled_status  = [];
-
-        foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
-            // Собираем детальную информацию для UX цепочки
-            $sections_prefill_status[$section_id] = [
-                'enabled'  => $section_checker->isGroupEnabledForSection($section_id),
-                'filled'   => $section_checker->isSectionFilled($section_id, $checkout_params_before),
-                'has_data' => $fill_params ? $fill_params->hasDataForSection($section_id) : false,
-                'result'   => $section_checker->canPrefillSection($section_id, $checkout_params_before),
-            ];
-            $sections_filled_status[$section_id]  = $sections_prefill_status[$section_id]['filled'];
-        }
-
-        shopPrefillPluginDebug::addDebugEntry(
-            $checkout_params_before,
-            "BEFORE PREFILL ($hook_name)",
-            [
-                'sections_prefill_status' => $sections_prefill_status,
-                'sections_filled_status'  => $sections_filled_status,
-            ]
-        );
-    }
-
-    /**
-     * Логирует состояние ПОСЛЕ предзаполнения
-     *
-     * @param string $hook_name Имя хука для метки
-     * @throws waException
-     */
-    private function logDebugAfterPrefill(string $hook_name): void
-    {
-        if (! $this->is_debug_panel) {
-            return;
-        }
-
-        $checkout_params_after = $this->session_storage->getCheckoutParams();
-
-        // Получаем статус заполненности секций после предзаполнения
-        $section_checker        = $this->session_storage->getSectionChecker();
-        $sections_filled_status = [];
-        foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
-            $sections_filled_status[$section_id] = $section_checker->isSectionFilled($section_id, $checkout_params_after);
-        }
-
-        shopPrefillPluginDebug::addDebugEntry(
-            $checkout_params_after,
-            "AFTER PREFILL ($hook_name)",
-            ['sections_filled_status' => $sections_filled_status]
-        );
     }
 
     /**
@@ -261,8 +179,10 @@ class shopPrefillPluginFrontendHooks
             return;
         }
 
-        // Продлеваем cookie хеша гостя при каждом визите
-        $this->guest_hash_storage->getOrCreateGuestHash();
+        // Продлеваем куку гостя, если она есть. Новую здесь НЕ создаём:
+        // токен выдаётся только при первом завершённом заказе, поэтому посетитель
+        // без истории не получает идентификатор за просмотр каталога.
+        $this->guest_token_storage->extendToken();
 
         // Продлеваем cookie согласия (если оно было дано)
         // Вызов hasConsent() автоматически продлевает cookie

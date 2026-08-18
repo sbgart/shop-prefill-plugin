@@ -55,12 +55,6 @@
                     hint_after="{if $storefront_code === '*'}[`hint.active_default`]{else}[`hint.active`]{/if}"
                     on_change="prefillUpdateStorefrontStatus"}
 
-                    {include file='../../components/Field.html'
-                    name="{$name_prefix}[prefill][on_entry]"
-                    type='Switcher'
-                    label='[`setting.prefill.on_entry`]'
-                    value=$settings['prefill']['on_entry']
-                    hint_after='[`hint.prefill.on_entry`]'}
                 </div>
             </div>
         </div>

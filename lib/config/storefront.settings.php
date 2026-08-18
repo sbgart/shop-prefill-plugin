@@ -5,7 +5,6 @@ return [
     'prefill'     => [
         'my_delivery_variants'                => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         'my_delivery_variants_button_classes' => ['value' => ''],
-        'on_entry'                            => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         // Плавающая панель отладки и связанный UI (при глобальном debug Webasyst)
         'debug_panel'                         => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
         // Группы секций чекаута: customer=auth, delivery=region+shipping+details, payment, confirm
@@ -29,7 +28,7 @@ return [
             'expires'  => ['value' => 0, 'filter' => FILTER_VALIDATE_INT],
         ],
         'guest'                               => [
-            'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN], // Разрешить предзаполнение для гостей
+            'enabled'          => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN], // Opt-in: гостевое предзаполнение хранит данные между визитами
             'consent_required' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN], // Требовать согласие гостя
         ],
     ],
@@ -75,4 +74,3 @@ return [
     'update_time' => ['value' => 0, 'filter' => FILTER_VALIDATE_INT],
     'updated_by'  => ['value' => 0, 'filter' => FILTER_VALIDATE_INT],
 ];
-

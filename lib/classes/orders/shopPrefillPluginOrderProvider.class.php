@@ -2,10 +2,22 @@
 
 class shopPrefillPluginOrderProvider
 {
+    /** Лимит истории для авторизованной коллекции и служебной диагностики */
+    private const HISTORY_LIMIT = 50;
+
     private shopOrderModel       $order_model;
     private shopOrderParamsModel $order_params_model;
 
-    private ?array $last_user_order = null;
+    /**
+     * Кэш строк shop_order на время запроса.
+     *
+     * Статический намеренно: waEvent пересоздаёт объект плагина на каждый хук
+     * (см. issue-73), поэтому поле экземпляра не пережило бы даже одну загрузку /order/,
+     * где срабатывают и frontend_head, и checkout_before_auth.
+     *
+     * @var array<int, array|null>
+     */
+    private static array $order_rows = [];
 
     public function __construct(shopOrderModel $order_model, shopOrderParamsModel $order_params_model)
     {
@@ -24,27 +36,70 @@ class shopPrefillPluginOrderProvider
         return empty($order_params) ? null : $order_params;
     }
 
+    /**
+     * Одна строка заказа с полями, которые нужны предзаполнению.
+     *
+     * Раньше comment и contact_id читались двумя отдельными запросами к одной и той же строке.
+     *
+     * @return array{id:int, contact_id:?int, comment:?string}|null
+     */
+    private function getOrderRow(int $order_id): ?array
+    {
+        if ($order_id <= 0) {
+            return null;
+        }
+
+        if (array_key_exists($order_id, self::$order_rows)) {
+            return self::$order_rows[$order_id];
+        }
+
+        $row = $this->order_model->select('id, contact_id, comment')
+            ->where('id=?', $order_id)
+            ->fetchAssoc();
+
+        return self::$order_rows[$order_id] = ($row ?: null);
+    }
+
+    /**
+     * ID последнего заказа покупателя.
+     *
+     * Источник — строка shop_customer по первичному ключу: ядро поддерживает её в
+     * shopCustomerModel::updateFromNewOrder(). Это снимает сортировку по всем заказам контакта.
+     *
+     * Пустота проверяется по last_order_id, а НЕ по number_of_orders: строка shop_customer
+     * создаётся и без заказов (createFromContact()), а last_order_id — nullable.
+     */
     public function getLastOrderIdByContactId(int $contact_id): ?int
     {
         if ($contact_id <= 0) {
             return null;
         }
-        $last_order_id = $this->order_model->select("id")
-            ->where('contact_id=?', $contact_id)
-            ->order('id DESC')->fetchField();
 
-        return $last_order_id !== false ? $last_order_id : null;
+        $last_order_id = $this->order_model->query(
+            "SELECT last_order_id FROM shop_customer WHERE contact_id = i:contact_id LIMIT 1",
+            ['contact_id' => $contact_id]
+        )->fetchField('last_order_id');
+
+        return $last_order_id ? (int) $last_order_id : null;
     }
 
-    public function getUserOrdersId(int $contact_id): ?array
+    /**
+     * ID заказов покупателя, от новых к старым.
+     *
+     * @param int $contact_id
+     * @param int $limit Лимит применяется в БД, до гидратации (issue-68)
+     */
+    public function getUserOrdersId(int $contact_id, int $limit = self::HISTORY_LIMIT): array
     {
         if ($contact_id <= 0) {
-            return null;
+            return [];
         }
 
         $orders_id = $this->order_model->select("id")
             ->where('contact_id=?', $contact_id)
-            ->order('id DESC')->fetchAll();
+            ->order('id DESC')
+            ->limit($limit)
+            ->fetchAll();
 
         return array_column($orders_id, 'id');
     }
@@ -75,13 +130,9 @@ class shopPrefillPluginOrderProvider
 
     public function getOrderComment(int $order_id): ?string
     {
-        if ($order_id <= 0) {
-            return null;
-        }
+        $row = $this->getOrderRow($order_id);
 
-        $comment = $this->order_model->select('comment')->where('id=?', $order_id)->fetchField('comment');
-
-        return $comment !== false ? $comment : '';
+        return $row === null ? null : (string) ($row['comment'] ?? '');
     }
 
     /**
@@ -92,39 +143,32 @@ class shopPrefillPluginOrderProvider
      */
     public function getContactIdFromOrder(int $order_id): ?int
     {
-        if ($order_id <= 0) {
-            return null;
-        }
+        $row = $this->getOrderRow($order_id);
 
-        $contact_id = $this->order_model->select('contact_id')
-            ->where('id=?', $order_id)
-            ->fetchField('contact_id');
-
-        return $contact_id ? (int) $contact_id : null;
+        return empty($row['contact_id']) ? null : (int) $row['contact_id'];
     }
 
     /**
-     * Находит ID последнего заказа по хешу гостя
+     * ID последнего заказа гостя по имени параметра.
      *
-     * @param string $hash Хеш гостя
-     * @return int|null ID последнего заказа или null если не найден
+     * Точное равенство по существующему индексу `name`: в сортировку попадают
+     * только заказы этого гостя, а не вся гостевая история магазина.
+     *
+     * @param string $param_name Имя вида prefill_guest_<48 hex>, см. GuestTokenStorage
      */
-    public function getLastOrderIdByGuestHash(string $hash): ?int
+    public function getLastOrderIdByGuestParam(string $param_name): ?int
     {
-        if (empty($hash)) {
+        if ($param_name === '') {
             return null;
         }
 
         $result = $this->order_params_model
             ->query(
                 "SELECT order_id FROM shop_order_params
-                 WHERE name = s:name AND value = s:hash
+                 WHERE name = s:name
                  ORDER BY order_id DESC
                  LIMIT 1",
-                [
-                    'name' => shopPrefillPluginGuestHashStorage::getGuestHashParamName(),
-                    'hash' => $hash,
-                ]
+                ['name' => $param_name]
             )
             ->fetchField('order_id');
 
@@ -132,30 +176,27 @@ class shopPrefillPluginOrderProvider
     }
 
     /**
-     * Возвращает все ID заказов гостя по хешу
+     * ID заказов гостя, от новых к старым. Лимит применяется в БД (issue-68).
      *
-     * @param string $hash Хеш гостя
-     * @return array Массив ID заказов (от новых к старым)
+     * @param string $param_name Имя вида prefill_guest_<48 hex>
+     * @param int    $limit
      */
-    public function getAllOrderIdsByGuestHash(string $hash): array
+    public function getOrderIdsByGuestParam(string $param_name, int $limit = self::HISTORY_LIMIT): array
     {
-        if (empty($hash)) {
+        if ($param_name === '') {
             return [];
         }
 
         $results = $this->order_params_model
             ->query(
                 "SELECT order_id FROM shop_order_params
-                 WHERE name = s:name AND value = s:hash
-                 ORDER BY order_id DESC",
-                [
-                    'name' => shopPrefillPluginGuestHashStorage::getGuestHashParamName(),
-                    'hash' => $hash,
-                ]
+                 WHERE name = s:name
+                 ORDER BY order_id DESC
+                 LIMIT i:limit",
+                ['name' => $param_name, 'limit' => $limit]
             )
             ->fetchAll('order_id');
 
         return array_keys($results);
     }
-
 }

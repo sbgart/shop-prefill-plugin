@@ -7,7 +7,7 @@ class shopPrefillPluginOrderHooks
 {
     private shopPrefillPluginSessionStorageProvider $session_storage;
     private shopPrefillPluginOrderProvider $order_provider;
-    private shopPrefillPluginGuestHashStorage $guest_hash_storage;
+    private shopPrefillPluginGuestTokenStorage $guest_token_storage;
     private shopPrefillPluginZenMode $zen_mode;
     private shopPrefillPluginUserProvider $user_provider;
     private shopPrefillPluginConsentStorage $consent_storage;
@@ -17,7 +17,7 @@ class shopPrefillPluginOrderHooks
     public function __construct(
         shopPrefillPluginSessionStorageProvider $session_storage,
         shopPrefillPluginOrderProvider $order_provider,
-        shopPrefillPluginGuestHashStorage $guest_hash_storage,
+        shopPrefillPluginGuestTokenStorage $guest_token_storage,
         shopPrefillPluginZenMode $zen_mode,
         shopPrefillPluginUserProvider $user_provider,
         shopPrefillPluginConsentStorage $consent_storage,
@@ -26,7 +26,7 @@ class shopPrefillPluginOrderHooks
     ) {
         $this->session_storage = $session_storage;
         $this->order_provider = $order_provider;
-        $this->guest_hash_storage = $guest_hash_storage;
+        $this->guest_token_storage = $guest_token_storage;
         $this->zen_mode = $zen_mode;
         $this->user_provider = $user_provider;
         $this->consent_storage = $consent_storage;
@@ -59,8 +59,11 @@ class shopPrefillPluginOrderHooks
         // Сохраняем shipping_type_id (для предзаполнения следующего заказа)
         $this->saveShippingType($order_id, $checkout_params);
 
-        // Для неавторизованных: сохраняем хеш гостя
-        $this->saveGuestHash($order_id);
+        // Для неавторизованных: выдаём токен и привязываем к нему заказ
+        $this->saveGuestLink($order_id);
+
+        // Источник изменился — следующий цикл предзаполнения обязан перечитать его
+        $this->session_storage->clearSourceMarker();
 
         // Помечаем заказ, который авторизует покупателя без его выбора
         $this->markPendingAuth();
@@ -146,31 +149,33 @@ class shopPrefillPluginOrderHooks
     }
 
     /**
-     * Сохраняет хеш гостя для неавторизованных пользователей
-     * Логика: если согласие не требуется ИЛИ оно получено - сохраняем хеш
+     * Связывает заказ с гостем.
+     *
+     * Единственная точка, где выдаётся гостевая кука: до первого завершённого заказа
+     * посетитель идентификатора не получает, и его отсутствие означает «истории нет».
+     * Логика согласия не меняется: не требуется ИЛИ получено.
      *
      * @param int $order_id ID заказа
      * @throws waException
      * @throws waDbException
      */
-    private function saveGuestHash(int $order_id): void
+    private function saveGuestLink(int $order_id): void
     {
         if ($this->user_provider->isAuth()) {
             return;
         }
 
         if (!$this->storefront_settings['prefill']['guest']['enabled']) {
-            shopPrefillPluginLog::debug('Skipping saveGuestHash: guest prefill is disabled');
+            shopPrefillPluginLog::debug('Skipping saveGuestLink: guest prefill is disabled');
             return;
         }
 
         $consent_required = $this->storefront_settings['prefill']['guest']['consent_required'];
         $has_consent = $this->consent_storage->hasConsent();
 
-        // Сохраняем хеш если: согласие не требуется ИЛИ оно получено
         if (!$consent_required || $has_consent) {
-            $guest_hash = $this->guest_hash_storage->getOrCreateGuestHash();
-            $this->guest_hash_storage->saveGuestHashToOrder($order_id, $guest_hash);
+            $token = $this->guest_token_storage->getOrCreateToken();
+            $this->guest_token_storage->linkOrder($order_id, $token);
         }
     }
 

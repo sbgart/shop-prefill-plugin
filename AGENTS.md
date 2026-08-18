@@ -48,7 +48,7 @@ The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as
 | `view/` | `AssetsManager` — generates CSS variables file and JS initializer file dynamically into `wa-data/` |
 | `consent/` | `ConsentStorage` — manages `prefill_consent` HTTP-only cookie for guests |
 
-**Settings storage:** `shop_prefill_settings` table (one row per `storefront_code` + `name`). Defaults defined in `lib/config/storefront.settings.php` (per-storefront) and `lib/config/settings.php` (global).
+**Settings storage:** `shop_prefill_settings` table (one row per logical key: `storefront_code` + `name` + `groups`, where `groups` stores the leaf's path in the settings tree). Defaults defined in `lib/config/storefront.settings.php` (per-storefront) and `lib/config/settings.php` (global).
 
 ### Frontend JavaScript
 

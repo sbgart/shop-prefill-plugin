@@ -273,17 +273,11 @@ msgstr "Checkout sections"
 msgid "hint.group.sections"
 msgstr "Choose which checkout sections to prefill."
 
-msgid "setting.prefill.on_entry"
-msgstr "Prefill on storefront entry"
-
-msgid "hint.prefill.on_entry"
-msgstr "When enabled, prefill runs on every storefront page visit. When disabled, it runs on cart open. Useful when cart price depends on the shipping method."
-
 msgid "setting.prefill.guest.enabled"
 msgstr "Prefill for guests"
 
 msgid "hint.prefill.guest.enabled"
-msgstr "When disabled, guests are excluded from prefill: no hash cookie is created, no data is saved to the order, and nothing is used on the next visit."
+msgstr "Disabled by default. When enabled, the guest's latest order may be used for automatic prefill on the next visit. Address history and My Delivery Options remain unavailable to guests."
 
 msgid "setting.prefill.guest.consent_required"
 msgstr "Require guest consent for data storage"

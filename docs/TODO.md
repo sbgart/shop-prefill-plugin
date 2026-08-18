@@ -1,6 +1,6 @@
 # TODO — Prefill Plugin
 
-**К релизу v1.0 открыто 23 задачи ревью:** 🔴 1 · 🟠 13 · 🟢 9. Плюс 1 баг, 6 тестов и 3 хвоста по issue-51.
+**К релизу v1.0 открыта 21 задача ревью:** 🔴 1 · 🟠 11 · 🟢 9. Плюс 1 баг, 6 тестов и 3 хвоста по issue-51.
 
 Приоритеты: 🔴 блокер релиза · 🟠 важно до продажи · 🟢 мелочь и гигиена.
 Номера issue: 49–62 — ревью 09.08.2026, 63–80 — ревью 16.08.2026. Статус и дата каждой — в её файле.
@@ -12,7 +12,7 @@
 
 ### ⚡ Чинить первыми
 
-- [ ] 🔴 [Поиск заказов гостя сканирует shop_order_params на каждой странице витрины](codereview/issue-63-guest-hash-lookup-full-scan.md)
+- [ ] 🔴 [Поиск источника предзаполнения выполняется на каждом запросе](codereview/issue-63-guest-hash-lookup-full-scan.md)
 
 ### Предзаполнение, сессия, снапшот
 
@@ -25,8 +25,6 @@
 
 ### Диалог «Мои варианты» и данные заказов
 
-- [ ] 🟠 [Для гостя apply-delivery игнорирует выбранный заказ](codereview/issue-55-guest-apply-delivery-ignores-order-id.md)
-- [ ] 🟠 [setShippingVariantId теряет вариант, если в rate_id есть точка (СДЭК, ПВЗ, постаматы)](codereview/issue-66-shipping-variant-id-dot-split.md)
 - [ ] 🟠 [isSameDeliveryOption: null у кандидата совпадает с чем угодно, варианты схлопываются](codereview/issue-67-same-delivery-option-null-match.md)
 - [ ] 🟠 [Все заказы покупателя гидратируются, чтобы показать пять карточек (N+1, нет лимита)](codereview/issue-68-params-choice-collection-n-plus-1.md)
 
@@ -54,7 +52,6 @@
 
 ### Код-гигиена
 
-- [ ] 🟢 [Мёртвый код в релизном архиве; контактные поля FillParams никогда не заполняются](codereview/issue-71-dead-code-in-release-archive.md)
 - [ ] 🟢 [getInstance() отдаёт объект от первого хука; per-instance кэши значат не то, что в комментариях](codereview/issue-73-stale-plugin-singleton.md)
 - [ ] 🟢 [Сборник мелких находок второго прохода (загрязнение waView, типы в post, notice, логи, SameSite)](codereview/issue-74-minor-findings-pass-2.md)
 - [ ] 🟢 [Сборник мелких находок третьего прохода (jQuery без guard, ложный диалог, мусор в настройках, локали, ace)](codereview/issue-80-frontend-minor-findings.md)
@@ -69,7 +66,9 @@
 
 ## 🧪 Тесты перед релизом
 
-- [ ] Подтвердить в браузере блокеры и функциональные баги ревью: issue-75 (доставка выключена в настройках чекаута), issue-66 (заказ через ПВЗ → подсветка карточки), issue-65 (правка поля → сразу «Оформить заказ»)
+- [ ] [Прогнать браузерный runbook по issue-63](plans/issue-63-browser-test-runbook.md) — Фаза 0 (baseline) исполняется до реализации
+
+- [ ] Подтвердить в браузере блокеры и функциональные баги ревью: issue-75 (доставка выключена в настройках чекаута), issue-65 (правка поля → сразу «Оформить заказ»)
 - [ ] Проверить что работает функционал вставки картинок в шаблоны свернутого блока.
 - [ ] Проверяем функционал поочередно.
 - [ ] Проверяем все переводы.
@@ -91,6 +90,7 @@
 - [ ] [CSS-классы для баннеров в кастомных шаблонах](todo/zen-mode-template-banners.md)
 - [ ] [Выбор места доставки в любом месте сайта](todo/delivery-point-anywhere.md)
 - [ ] [Опция «Оплата после получения»](todo/payment-after-receive.md)
+- [ ] [Раннее предзаполнение на страницах витрины (on_entry)](todo/on-entry-early-prefill.md) — вырезано из v1.0 в issue-63, возвращать только по запросу
 - [ ] Не совсем нравится что есть кнопка свернуть когда еще ничего не заполнено - может вообще отказаться от этой кнопки? или не выводить ее при отсутствии данных.
 - [ ] При выборе адреса из вариантов не меняется адрес в плагине cityselect.
 - [ ] «Оставить у двери» и «Позвонить перед доставкой» — передавать в плагин доставки.
@@ -112,6 +112,8 @@
 - [x] [Публичный эндпоинт consent: флуд лога](codereview/issue-52-consent-endpoint-log-flood-csrf.md) — **только лог и ротация**; CSRF не сделан, вынесен в [issue-79](codereview/issue-79-issue-52-csrf-half-done.md)
 - [x] [Предзаполнение пишет пустые значения в сессию каждому посетителю](codereview/issue-53-empty-prefill-writes-session.md)
 - [x] [Часть бэкенд-эндпоинтов без проверки прав](codereview/done/issue-54-backend-actions-no-rights-check.md)
+- [x] [Гостю был доступен серверный путь выбора заказа из истории](codereview/issue-55-guest-apply-delivery-ignores-order-id.md)
+- [x] [setShippingVariantId сохраняет rate_id с точками целиком](codereview/issue-66-shipping-variant-id-dot-split.md)
 - [x] [CSS витрины: настройки от одной витрины, код файла от другой](codereview/issue-58-storefront-css-settings-code-mismatch.md)
 - [x] [Дубликат класса в lib/classes/fillparams: мина в автозагрузке](codereview/done/issue-61-duplicate-class-file-autoload.md)
 - [x] [Zen Mode скрывает секции CSS-ом, даже когда кнопка «Изменить» не выведена — чекаут без выхода](codereview/issue-75-zen-collapse-without-toggle-button.md)

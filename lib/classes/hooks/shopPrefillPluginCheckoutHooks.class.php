@@ -61,8 +61,15 @@ class shopPrefillPluginCheckoutHooks
             return;
         }
 
-        $fill_params = $this->fill_params_provider->getFillParams();
-        $filled_order = $this->session_storage->preFillCheckoutParams($fill_params);
+        // Источник читается лениво: сначала снапшот и список пустых секций, и только
+        // если пробелы остались — обращение к БД, не чаще раза на источник за сессию.
+        $provider     = $this->fill_params_provider;
+        $filled_order = $this->session_storage->preFillCheckoutParamsFromSource(
+            $provider->getSourceKey(),
+            static function () use ($provider) {
+                return $provider->getFillParams();
+            }
+        );
 
         if (!empty($filled_order)) {
             $state = new shopPrefillCheckoutState($params);

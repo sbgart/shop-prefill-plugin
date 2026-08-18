@@ -7,6 +7,15 @@ class shopPrefillPluginSessionStorageProvider
     private const SNAPSHOT_KEY = 'shop/prefill_snapshot';
 
     /**
+     * Отпечаток источника, из которого уже предзаполняли в этой Webasyst-сессии.
+     *
+     * Нужен, чтобы не перечитывать один и тот же заказ на каждом checkout calculate.
+     * Хранит только строку ключа: ни order_id, ни персональных данных, ни своего TTL —
+     * маркер живёт ровно столько, сколько сессия.
+     */
+    private const SOURCE_KEY = 'shop/prefill_source';
+
+    /**
      * Метка «этот заказ авторизует покупателя, а выбора у него не было».
      * Ставится при создании заказа и потребляется на следующей загрузке страницы:
      * по cookie этот случай неотличим от явного отказа от «Запомнить меня».
@@ -173,16 +182,58 @@ class shopPrefillPluginSessionStorageProvider
         return $section_data;
     }
 
+    /** Порядок секций фиксирован: каждая проверяется независимо */
+    private const SECTIONS = ['auth', 'region', 'shipping', 'details', 'payment', 'confirm'];
+
     /**
-     * Заполняет параметры checkout с проверкой через SectionChecker.
-     * Использует snapshot как промежуточный источник — приоритетнее fill_params,
-     * но уступает текущим данным в checkout.
+     * Предзаполнение по явно переданным данным.
      *
-     * @param shopPrefillPluginFillParams $params Параметры для предзаполнения
+     * Путь явных действий покупателя (выбор варианта, force prefill, reset & refill):
+     * источник уже известен, маркер не спрашиваем и не ставим.
+     *
      * @throws waException
      * @throws waDbException
      */
     public function preFillCheckoutParams(shopPrefillPluginFillParams $params): array
+    {
+        return $this->applyPrefill(
+            null,
+            static function () use ($params) {
+                return $params;
+            },
+            false
+        );
+    }
+
+    /**
+     * Предзаполнение из источника, который читается лениво и не чаще раза за сессию.
+     *
+     * @param string|null $source_key Отпечаток источника; null = источника заведомо нет (гость без куки)
+     * @param callable    $loader     Вызывается только если после снапшота остались пустые секции
+     * @throws waException
+     * @throws waDbException
+     */
+    public function preFillCheckoutParamsFromSource(?string $source_key, callable $loader): array
+    {
+        return $this->applyPrefill($source_key, $loader, true);
+    }
+
+    /**
+     * Заполняет параметры checkout с проверкой через SectionChecker.
+     *
+     * Порядок принципиален:
+     *   1. посчитать доступные секции по сессии и настройкам;
+     *   2. закрыть что можно из snapshot — ВСЕГДА, это бесплатно и не зависит от маркера;
+     *   3. если пробелы остались — сверить маркер и только тогда идти в источник;
+     *   4. записать checkout, snapshot и маркер.
+     *
+     * Маркер намеренно гейтит только шаг 3. Ранний выход из всего метода обесточил бы
+     * восстановление из snapshot, которое обязано работать на каждом запросе (issue-53).
+     *
+     * @throws waException
+     * @throws waDbException
+     */
+    private function applyPrefill(?string $source_key, callable $loader, bool $use_marker): array
     {
         if ($this->prefilled) {
             shopPrefillPluginLog::debug('Skipped prefill because it was already prefilled in the current request');
@@ -190,42 +241,74 @@ class shopPrefillPluginSessionStorageProvider
         }
 
         $checkout_params = $this->getCheckoutParams();
+        $snapshot        = $this->getSnapshot();
+        $checker         = $this->getSectionChecker();
 
-        $snapshot = $this->getSnapshot();
+        // Шаг 1: что вообще разрешено заполнять
+        $available = [];
+        foreach (self::SECTIONS as $section_id) {
+            if ($checker->canPrefillSection($section_id, $checkout_params)) {
+                $available[] = $section_id;
+            }
+        }
 
+        // Источник не понадобится — в БД не идём и маркер не трогаем
+        if (empty($available)) {
+            $this->finishWithoutFill($checkout_params);
+            return [];
+        }
+
+        // Ленивая загрузка: вызывается не более одного раза и только при реальной нужде
+        $source        = null;
+        $source_loaded = false;
+        $load = static function () use (&$source, &$source_loaded, $loader) {
+            if (!$source_loaded) {
+                $source        = $loader();
+                $source_loaded = true;
+            }
+            return $source;
+        };
+
+        // Маркер спрашиваем один раз, до цикла
+        $source_allowed = true;
+        if ($use_marker) {
+            if ($source_key === null) {
+                // Гость без куки: источника нет по определению. Маркер НЕ пишем —
+                // запись в сессию подняла бы PHP-сессию и Set-Cookie: PHPSESSID
+                // каждому анониму и боту (issue-53).
+                $source_allowed = false;
+            } elseif ($this->getAppliedSource() === $source_key) {
+                shopPrefillPluginLog::debug('Source already applied in this session, skipping DB lookup');
+                $source_allowed = false;
+            }
+        }
+
+        $empty_params = new shopPrefillPluginFillParams();
         $final_params = [];
-        $checker = $this->getSectionChecker();
+        $used_source  = false;
 
-        // Каждая секция проверяется НЕЗАВИСИМО.
-        // Если секция пуста в checkout — пробуем сначала snapshot, потом fill_params.
-        if ($checker->canPrefillSection('auth', $checkout_params)) {
-            $snapshot_section = $this->getSnapshotSection('auth', $snapshot, $checker);
-            $this->prepareAuthSectionParams($params, $final_params, $snapshot_section);
+        foreach ($available as $section_id) {
+            $snapshot_section = $this->getSnapshotSection($section_id, $snapshot, $checker);
+
+            if ($snapshot_section !== null) {
+                // Шаг 2: снапшот закрывает секцию сам, источник для неё не нужен
+                $this->prepareSection($section_id, $empty_params, $final_params, $snapshot_section);
+                continue;
+            }
+
+            if (!$source_allowed) {
+                continue;
+            }
+
+            // Шаг 3: только здесь возможен поход в БД
+            $this->prepareSection($section_id, $load(), $final_params, null);
+            $used_source = true;
         }
 
-        if ($checker->canPrefillSection('region', $checkout_params)) {
-            $snapshot_section = $this->getSnapshotSection('region', $snapshot, $checker);
-            $this->prepareRegionSectionParams($params, $final_params, $snapshot_section);
-        }
-
-        if ($checker->canPrefillSection('shipping', $checkout_params)) {
-            $snapshot_section = $this->getSnapshotSection('shipping', $snapshot, $checker);
-            $this->prepareShippingSectionParams($params, $final_params, $snapshot_section);
-        }
-
-        if ($checker->canPrefillSection('details', $checkout_params)) {
-            $snapshot_section = $this->getSnapshotSection('details', $snapshot, $checker);
-            $this->prepareDetailsSectionParams($params, $final_params, $snapshot_section);
-        }
-
-        if ($checker->canPrefillSection('payment', $checkout_params)) {
-            $snapshot_section = $this->getSnapshotSection('payment', $snapshot, $checker);
-            $this->preparePaymentSectionParams($params, $final_params, $snapshot_section);
-        }
-
-        if ($checker->canPrefillSection('confirm', $checkout_params)) {
-            $snapshot_section = $this->getSnapshotSection('confirm', $snapshot, $checker);
-            $this->prepareConfirmSectionParams($params, $final_params, $snapshot_section);
+        // Шаг 4. Маркер ставится и при пустом результате: если у источника нет данных
+        // для этих секций, повторять тот же запрос на каждом calculate бессмысленно.
+        if ($use_marker && $source_key !== null && $used_source) {
+            $this->markSourceApplied($source_key);
         }
 
         // Секции могли собраться из одних null (гость без заказов) — такие листья не считаются данными
@@ -239,16 +322,87 @@ class shopPrefillPluginSessionStorageProvider
             shopPrefillPluginLog::info('Successfully prefilled checkout params', [
                 'sections' => array_keys($final_params['order'] ?? []),
             ]);
-        } else {
-            // Checkout уже полностью заполнен — обновляем snapshot актуальным состоянием
-            if (!empty($checkout_params)) {
-                $this->saveSnapshot($checkout_params);
-            }
-            shopPrefillPluginLog::debug('Prefill was evaluated but no params were filled (empty final_params)');
+            $this->prefilled = true;
+            return $final_params['order'] ?? [];
         }
 
+        $this->finishWithoutFill($checkout_params);
+        return [];
+    }
+
+    /**
+     * Ветка «нечего предзаполнять»: checkout уже полон — обновляем snapshot актуальным состоянием.
+     */
+    private function finishWithoutFill(array $checkout_params): void
+    {
+        if (!empty($checkout_params)) {
+            $this->saveSnapshot($checkout_params);
+        }
+        shopPrefillPluginLog::debug('Prefill was evaluated but no params were filled (empty final_params)');
         $this->prefilled = true;
-        return $final_params['order'] ?? [];
+    }
+
+    /**
+     * Диспетчер секций: один вход вместо шести ветвлений в вызывающем коде.
+     */
+    private function prepareSection(
+        string $section_id,
+        shopPrefillPluginFillParams $fill_params,
+        array &$final_params,
+        ?array $snapshot_section
+    ): void {
+        switch ($section_id) {
+            case 'auth':
+                $this->prepareAuthSectionParams($fill_params, $final_params, $snapshot_section);
+                break;
+            case 'region':
+                $this->prepareRegionSectionParams($fill_params, $final_params, $snapshot_section);
+                break;
+            case 'shipping':
+                $this->prepareShippingSectionParams($fill_params, $final_params, $snapshot_section);
+                break;
+            case 'details':
+                $this->prepareDetailsSectionParams($fill_params, $final_params, $snapshot_section);
+                break;
+            case 'payment':
+                $this->preparePaymentSectionParams($fill_params, $final_params, $snapshot_section);
+                break;
+            case 'confirm':
+                $this->prepareConfirmSectionParams($fill_params, $final_params, $snapshot_section);
+                break;
+        }
+    }
+
+    /**
+     * Отпечаток источника, уже применённого в этой сессии.
+     */
+    public function getAppliedSource(): ?string
+    {
+        $value = $this->getStorage()->get(self::SOURCE_KEY);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    private function markSourceApplied(string $source_key): void
+    {
+        try {
+            $this->getStorage()->set(self::SOURCE_KEY, $source_key);
+        } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed setting prefill source marker', [
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Сбрасывает маркер источника.
+     *
+     * Вызывается при оформлении заказа, reset/refill, force prefill, отзыве согласия
+     * и очистке истории — то есть везде, где источник изменился или его надо перечитать.
+     */
+    public function clearSourceMarker(): void
+    {
+        $this->getStorage()->remove(self::SOURCE_KEY);
     }
 
     /**
@@ -455,9 +609,10 @@ class shopPrefillPluginSessionStorageProvider
      */
     public function resetAndRefill(shopPrefillPluginFillParams $params): void
     {
-        // Шаг 1: Очищаем хранилище checkout и snapshot
+        // Шаг 1: Очищаем хранилище checkout, snapshot и маркер источника
         $this->getStorage()->remove('shop/checkout');
         $this->getStorage()->remove(self::SNAPSHOT_KEY);
+        $this->clearSourceMarker();
 
         // Шаг 2: Сбрасываем флаг prefilled (для текущего запроса)
         $this->prefilled = false;

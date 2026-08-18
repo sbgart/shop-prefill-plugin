@@ -12,6 +12,10 @@ class shopPrefillPluginFrontendForcePrefillController extends waJsonController
         try {
             $plugin = shopPrefillPlugin::getInstance();
 
+            // Явная команда: маркер и кэш сбрасываем, источник читаем заново
+            $plugin->getSessionStorageProvider()->clearSourceMarker();
+            shopPrefillPluginFillParamsProvider::clearMemo();
+
             // Получаем параметры для заполнения
             $fill_params = $plugin->getFillParamsProvider()->getFillParams();
 

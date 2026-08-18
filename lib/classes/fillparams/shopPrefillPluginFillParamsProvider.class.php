@@ -4,31 +4,42 @@
  * Провайдер параметров предзаполнения чекаута
  *
  * Отвечает за получение параметров предзаполнения из БД:
- * - Для авторизованных: по contact_id из последнего заказа
- * - Для гостей: по prefill_guest_hash из последнего заказа с этим хешем
+ * - Для авторизованных: по last_order_id из shop_customer
+ * - Для гостей: по производному имени параметра из токена в куке (см. GuestTokenStorage)
  */
 class shopPrefillPluginFillParamsProvider
 {
     private shopPrefillPluginOrderProvider    $order_provider;
     private shopPrefillPluginUserProvider     $user_provider;
     private shopPrefillPluginContactProvider  $contact_provider;
-    private shopPrefillPluginGuestHashStorage $guest_hash_storage;
+    private shopPrefillPluginGuestTokenStorage $guest_token_storage;
     private shopPrefillPluginLocationProvider $location_provider;
 
     /** @var shopPrefillPluginFillParamsCollection|null Коллекция параметров предзаполнения */
     private ?shopPrefillPluginFillParamsCollection $fill_params_collection = null;
 
+    /**
+     * Кэш результата getFillParams() на время запроса, по ключу источника.
+     *
+     * Статический намеренно: waEvent пересоздаёт объект плагина на каждый хук (issue-73),
+     * а на /order/ срабатывают и frontend_head, и checkout_before_auth — поле экземпляра
+     * не пережило бы одну загрузку страницы.
+     *
+     * @var array<string, shopPrefillPluginFillParams>
+     */
+    private static array $fill_params_memo = [];
+
     public function __construct(
         shopPrefillPluginOrderProvider $order_provider,
         shopPrefillPluginUserProvider $user_provider,
         shopPrefillPluginContactProvider $contact_provider,
-        shopPrefillPluginGuestHashStorage $guest_hash_storage,
+        shopPrefillPluginGuestTokenStorage $guest_token_storage,
         shopPrefillPluginLocationProvider $location_provider
     ) {
         $this->order_provider     = $order_provider;
         $this->user_provider      = $user_provider;
         $this->contact_provider   = $contact_provider;
-        $this->guest_hash_storage = $guest_hash_storage;
+        $this->guest_token_storage = $guest_token_storage;
         $this->location_provider  = $location_provider;
     }
 
@@ -44,13 +55,50 @@ class shopPrefillPluginFillParamsProvider
      */
     public function getFillParams(?int $fill_params_id = null): shopPrefillPluginFillParams
     {
-        // Авторизованные пользователи: данные из БД по contact_id
-        if ($this->user_provider->isAuth()) {
-            return $this->getFillParamsForAuthorized($fill_params_id);
+        $memo_key = ($this->getSourceKey() ?? 'none') . '|' . ($fill_params_id ?? '');
+        if (isset(self::$fill_params_memo[$memo_key])) {
+            return self::$fill_params_memo[$memo_key];
         }
 
-        // Неавторизованные: данные из БД по хешу гостя
-        return $this->getFillParamsForGuest();
+        // Авторизованные пользователи: данные из БД по contact_id
+        if ($this->user_provider->isAuth()) {
+            $fill_params = $this->getFillParamsForAuthorized($fill_params_id);
+        } else {
+            // Неавторизованные: данные из БД по токену гостя
+            $fill_params = $this->getFillParamsForGuest();
+        }
+
+        return self::$fill_params_memo[$memo_key] = $fill_params;
+    }
+
+    /**
+     * Отпечаток источника предзаполнения — без единого запроса к БД.
+     *
+     * Используется маркером в сессии, чтобы не перечитывать один и тот же источник
+     * на каждом checkout calculate. Вход, выход и смена гостевой куки меняют ключ сами.
+     *
+     * @return string|null null означает «источника заведомо нет» (гость без куки)
+     */
+    public function getSourceKey(): ?string
+    {
+        if ($this->user_provider->isAuth()) {
+            return 'user:' . $this->user_provider->getId();
+        }
+
+        $token = $this->guest_token_storage->getToken();
+        if ($token === null) {
+            return null;
+        }
+
+        return 'guest:' . $this->guest_token_storage->getLookupId($token);
+    }
+
+    /**
+     * Сбрасывает кэш результата — для явных действий, которые обязаны перечитать источник.
+     */
+    public static function clearMemo(): void
+    {
+        self::$fill_params_memo = [];
     }
 
     /**
@@ -109,12 +157,16 @@ class shopPrefillPluginFillParamsProvider
      */
     private function getFillParamsForGuest(): shopPrefillPluginFillParams
     {
-        // Создаем/получаем хеш гостя из куки (автопродлевается)
-        $guest_hash = $this->guest_hash_storage->getOrCreateGuestHash();
-        shopPrefillPluginLog::debug('Loading fill params for guest', ['hash_prefix' => substr($guest_hash, 0, 8)]);
+        // Нет валидной куки — гость ничего не заказывал: выходим без единого запроса.
+        // Куку выдаёт только оформление заказа, поэтому её отсутствие однозначно.
+        $param_name = $this->guest_token_storage->getParamName();
+        if ($param_name === null) {
+            shopPrefillPluginLog::debug('No guest token: skipping source lookup');
+            return new shopPrefillPluginFillParams();
+        }
 
-        // Ищем последний заказ с этим хешем через OrderProvider
-        $order_id = $this->order_provider->getLastOrderIdByGuestHash($guest_hash);
+        // Точное равенство по индексируемой колонке name
+        $order_id = $this->order_provider->getLastOrderIdByGuestParam($param_name);
         if (! $order_id) {
             shopPrefillPluginLog::debug('No previous orders found for guest');
             return new shopPrefillPluginFillParams();
@@ -125,13 +177,13 @@ class shopPrefillPluginFillParamsProvider
     }
 
     /**
-     * Получает коллекцию всех доступных параметров предзаполнения
+     * Получает коллекцию вариантов доставки авторизованного пользователя
      *
      * Формирует коллекцию на основе всех заказов пользователя,
      * удаляя дубликаты по параметрам доставки.
      *
-     * Для авторизованных: все заказы по contact_id
-     * Для гостей: все заказы по prefill_guest_hash
+     * Гостевая cookie используется только для автопредзаполнения последнего заказа.
+     * Она намеренно не даёт доступ к истории адресов на общем браузере.
      *
      * @return shopPrefillPluginFillParamsCollection Коллекция параметров предзаполнения
      */
@@ -143,13 +195,12 @@ class shopPrefillPluginFillParamsProvider
 
         $this->fill_params_collection = new shopPrefillPluginFillParamsCollection();
 
-        // Получаем список ID заказов в зависимости от типа пользователя
-        if ($this->user_provider->isAuth()) {
-            $orders_ids = $this->order_provider->getUserOrdersId($this->user_provider->getId());
-        } else {
-            $guest_hash = $this->guest_hash_storage->getOrCreateGuestHash();
-            $orders_ids = $this->order_provider->getAllOrderIdsByGuestHash($guest_hash);
+        // Defense in depth: даже внутренний вызов не должен строить гостевую историю.
+        if (!$this->user_provider->isAuth()) {
+            return $this->fill_params_collection;
         }
+
+        $orders_ids = $this->order_provider->getUserOrdersId($this->user_provider->getId());
 
         if (empty($orders_ids)) {
             return $this->fill_params_collection;

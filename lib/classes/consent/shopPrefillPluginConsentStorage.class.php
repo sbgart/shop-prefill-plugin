@@ -21,7 +21,7 @@ class shopPrefillPluginConsentStorage
     /**
      * TTL куки в секундах (1 год).
      *
-     * Важно держать синхронно с TTL гостевого хеша (prefill_guest_hash),
+     * Важно держать синхронно с TTL гостевого токена (prefill_guest_token),
      * чтобы у пары «идентификатор гостя» + «согласие» не было неожиданных рассинхронов.
      */
     private const COOKIE_TTL = 31536000;

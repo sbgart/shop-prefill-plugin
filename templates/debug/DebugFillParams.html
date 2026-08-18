@@ -7,7 +7,7 @@
     <div class="pd-section__body">
       <div class="pd-params-meta">
         <strong>ℹ️ Метаданные:</strong><br />
-        • Пользователь: {if $fill_params_meta.user_authorized}✅ Авторизован (ID: {$fill_params_meta.user_id}){else}❌ Гость{if $fill_params_meta.guest_hash} (hash: {$fill_params_meta.guest_hash|escape}){/if}{/if}<br />
+        • Пользователь: {if $fill_params_meta.user_authorized}✅ Авторизован (ID: {$fill_params_meta.user_id}){else}❌ Гость{if $fill_params_meta.guest_lookup} (lookup: {$fill_params_meta.guest_lookup|escape}){/if}{/if}<br />
         • Заказов: {$fill_params_meta.orders_count}<br />
         • Источник: {$fill_params_meta.source|escape}
       </div>

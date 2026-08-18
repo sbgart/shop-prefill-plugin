@@ -8,9 +8,20 @@ class shopPrefillPluginFrontendApplyDeliveryController extends waJsonController
     public function execute()
     {
         $instance = shopPrefillPlugin::getInstance();
+        $settings = $instance->getEffectiveStorefrontSettings();
 
-        if (!$instance->getEffectiveStorefrontSettings()['active']) {
+        if (!$settings['active']) {
             $this->errors = 'Plugin is inactive for this storefront';
+            return;
+        }
+
+        // order_id относится к истории «Мои варианты». Гостевая cookie разрешает
+        // только автопредзаполнение последнего заказа и не открывает всю историю.
+        if (!$instance->getUserProvider()->isAuth()
+            || empty($settings['prefill']['my_delivery_variants'])
+        ) {
+            wa()->getResponse()->setStatus(403);
+            $this->errors = 'Access denied';
             return;
         }
 
