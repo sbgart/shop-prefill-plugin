@@ -1,18 +1,14 @@
 # TODO — Prefill Plugin
 
-**К релизу v1.0 открыта 21 задача ревью:** 🔴 1 · 🟠 11 · 🟢 9. Плюс 1 баг, 6 тестов и 3 хвоста по issue-51.
+**К релизу v1.0 открыто 19 задач ревью:** 🔴 0 · 🟠 11 · 🟢 8. Плюс 1 баг, 5 тестов и 5 хвостов по issue-51.
 
 Приоритеты: 🔴 блокер релиза · 🟠 важно до продажи · 🟢 мелочь и гигиена.
-Номера issue: 49–62 — ревью 09.08.2026, 63–80 — ревью 16.08.2026. Статус и дата каждой — в её файле.
+Номера issue: 49–62 — ревью 09.08.2026, 63–80 — ревью 16.08.2026, 81 — прогон runbook 18.08.2026, 82 — найдена при браузерной проверке фикса issue-69, 18.08.2026. Статус и дата каждой — в её файле.
 Правила ведения файла — в самом низу.
 
 ---
 
 ## 🚀 v1.0 — до релиза
-
-### ⚡ Чинить первыми
-
-- [ ] 🔴 [Поиск источника предзаполнения выполняется на каждом запросе](codereview/issue-63-guest-hash-lookup-full-scan.md)
 
 ### Предзаполнение, сессия, снапшот
 
@@ -25,7 +21,6 @@
 
 ### Диалог «Мои варианты» и данные заказов
 
-- [ ] 🟠 [isSameDeliveryOption: null у кандидата совпадает с чем угодно, варианты схлопываются](codereview/issue-67-same-delivery-option-null-match.md)
 - [ ] 🟠 [Все заказы покупателя гидратируются, чтобы показать пять карточек (N+1, нет лимита)](codereview/issue-68-params-choice-collection-n-plus-1.md)
 
 ### Витрина: вывод, стили, совместимость
@@ -35,10 +30,7 @@
 - [ ] 🟠 [Плагин навязывает display:inline !important элементам шапки авторизации всегда](codereview/issue-77-auth-header-display-important-always.md)
 - [ ] 🟠 [Абсолютный путь /wa-apps/shop/img/... ломает иконки на установках в подкаталоге](codereview/issue-70-hardcoded-absolute-sprite-path.md)
 - [ ] 🟠 [CSS и JS плагина подключаются на всех страницах витрины, а нужны только в корзине](codereview/issue-64-assets-loaded-on-every-page.md)
-
-### Локализация
-
-- [ ] 🟠 [Русский текст зашит в JS и в дефолтных настройках — виден покупателю на en-витрине](codereview/issue-69-hardcoded-russian-strings-frontend.md)
+- [ ] 🟠 [prefill.frontend(.min).js подключается без версии — браузер может годами отдавать старый JS из кэша](codereview/issue-82-frontend-js-no-cache-busting.md)
 
 ### Безопасность и приватность
 
@@ -55,6 +47,7 @@
 - [ ] 🟢 [getInstance() отдаёт объект от первого хука; per-instance кэши значат не то, что в комментариях](codereview/issue-73-stale-plugin-singleton.md)
 - [ ] 🟢 [Сборник мелких находок второго прохода (загрязнение waView, типы в post, notice, логи, SameSite)](codereview/issue-74-minor-findings-pass-2.md)
 - [ ] 🟢 [Сборник мелких находок третьего прохода (jQuery без guard, ложный диалог, мусор в настройках, локали, ace)](codereview/issue-80-frontend-minor-findings.md)
+- [ ] 🟠 [В эндпоинтах плагина уровень лога не инициализируется — debug/info теряются](codereview/issue-81-log-level-never-set-in-plugin-endpoints.md)
 
 ---
 
@@ -66,7 +59,7 @@
 
 ## 🧪 Тесты перед релизом
 
-- [ ] [Прогнать браузерный runbook по issue-63](plans/issue-63-browser-test-runbook.md) — Фаза 0 (baseline) исполняется до реализации
+- [x] [Прогнать браузерный runbook по issue-63](plans/issue-63-browser-test-runbook.md) — 18.08.2026 пройдены 2.9, 3.5, 4.3, 4.4, 4.6 и ранее 1.x/2.x/4.1/4.2. Не прогонялись 4.5 и 4.7
 
 - [ ] Подтвердить в браузере блокеры и функциональные баги ревью: issue-75 (доставка выключена в настройках чекаута), issue-65 (правка поля → сразу «Оформить заказ»)
 - [ ] Проверить что работает функционал вставки картинок в шаблоны свернутого блока.
@@ -80,6 +73,8 @@
 - [ ] Путь A: вход через штатную форму логина — с галочкой «Запомнить меня» и без неё (тесты 10–11 из [issue-51](codereview/done/issue-51-remember-me-auth-token-forced.md)); нужен контакт с известным паролем
 - [ ] Записать в CHANGELOG ограничения: кастомный `expires` — best-effort (ядро сбрасывает токен на 30 дней в `waAuth::updateAuth()`), фича зависит от тумблера `rememberme` домена
 - [ ] Убрать тестовый мусор с локалки: заказы #10086, #10087; контакты 36 и 37 (у 36 намеренно испорчен хеш пароля)
+- [ ] Убрать мусор прогона issue-63 (18.08.2026): заказы id 88, 89, 90; контакты 40, 41, 42 («Гость Прогон63»). Вместе с ними уйдут строки `prefill_guest_2e43…` в `shop_order_params`
+- [ ] Удалить 8 мёртвых строк `shop_order_params.name = 'prefill_guest_hash'` (заказы 32-47) — схема старая, кодом больше не читается
 
 ---
 
@@ -117,6 +112,9 @@
 - [x] [CSS витрины: настройки от одной витрины, код файла от другой](codereview/issue-58-storefront-css-settings-code-mismatch.md)
 - [x] [Дубликат класса в lib/classes/fillparams: мина в автозагрузке](codereview/done/issue-61-duplicate-class-file-autoload.md)
 - [x] [Zen Mode скрывает секции CSS-ом, даже когда кнопка «Изменить» не выведена — чекаут без выхода](codereview/issue-75-zen-collapse-without-toggle-button.md)
+- [x] [isSameDeliveryOption: null у кандидата совпадает с чем угодно, варианты схлопываются](codereview/issue-67-same-delivery-option-null-match.md)
+- [x] [Поиск источника предзаполнения выполняется на каждом запросе](codereview/issue-63-guest-hash-lookup-full-scan.md) — реализовано и **проверено в браузере** 18.08.2026
+- [x] [Русский текст зашит в JS и в дефолтных настройках — виден покупателю на en-витрине](codereview/done/issue-69-hardcoded-russian-strings-frontend.md) — реализовано и **проверено в браузере** 18.08.2026; при проверке найден отдельный баг [issue-82](codereview/issue-82-frontend-js-no-cache-busting.md)
 
 ### Фичи
 

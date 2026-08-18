@@ -168,6 +168,18 @@ msgstr "Выбрать другой способ"
 msgid "dialog.params_choice.empty"
 msgstr "У вас пока нет сохранённых вариантов доставки."
 
+msgid "dialog.params_choice.link"
+msgstr "Мои варианты"
+
+msgid "dialog.params_choice.link_tooltip"
+msgstr "Мои варианты доставки из прошлых заказов"
+
+msgid "dialog.content.loading"
+msgstr "Готовим контент..."
+
+msgid "dialog.content.error"
+msgstr "Ошибка получения контента, попробуйте позже."
+
 msgid "dialog.consent_revoke.title"
 msgstr "Очистить данные формы?"
 

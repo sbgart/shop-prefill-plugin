@@ -1,6 +1,6 @@
 # Issue 69 — Русский текст зашит в JS и в дефолтных настройках: на нерусской витрине он виден покупателю
 
-**Статус:** ⬜ Открыта
+**Статус:** ✅ Решена
 **Приоритет:** 🟠 Средний (блокер для продажи с заявленной локалью `en_US`)
 **Сложность фикса:** 🔧 Небольшой
 **Файлы:** `js/modules/ParamsChoiceManager.js`, `js/modules/DialogManager.js`, `js/modules/HttpClient.js`, `lib/classes/hooks/shopPrefillPluginFrontendHooks.class.php` (`initializeFrontendAssets`), `lib/config/storefront.settings.php`
@@ -51,3 +51,11 @@ throw new Error("Что-то пошло не так.");
 3. Для `Доставим` — либо убрать слово из дефолтного шаблона (оставить `{$delivery_est_delivery}`), либо завести отдельные дефолты на локаль. Первое проще и честнее: срок и так приходит готовой фразой от плагина доставки.
 4. Проверить остаток: `grep -rn "[А-Яа-я]" js/modules js/prefill.frontend.js` и то же по `lib/config/*.settings.php`. Debug-код (`prefill.debug.js`, `shopPrefillPluginDebug::renderErrorsDebugHtml`) — сознательное исключение, но это стоит зафиксировать в `docs/guides/LOCALIZATION.md`.
 5. После правки `.po` — `/compile-plugin-mo` и пересборка бандла `/build-plugin-frontend`.
+
+## Решение
+
+1. Добавлены ключи `dialog.params_choice.link` / `dialog.params_choice.link_tooltip` в `.po` обеих локалей; `shopPrefillPluginFrontendHooks::initializeFrontendAssets()` кладёт их в `messages` (`params_choice_link`, `params_choice_link_tooltip`). Фолбэк в `ParamsChoiceManager.js` заменён с русского текста на `""` — теперь это аварийный случай, а не единственная рабочая ветка.
+2. `DialogManager` получил конструктор `(messages)`; `loading`/`error` в `_renderContent()` берутся из новых ключей `dialog.content.loading` / `dialog.content.error` (`messages.dialog_content_loading` / `dialog_content_error`). `prefill.frontend.js` передаёт `params.messages` в `new DialogManager(...)`. Технические `throw new Error(...)` в `DialogManager.js` и `HttpClient.js` переведены на английский (они уходят в лог, покупатель их не видит).
+3. Из дефолтного шаблона `storefront.settings.php` (`zen.groups.delivery.summary_template`) убрано слово «Доставим» — остался только `{$delivery_est_delivery}`, который и так приходит готовой фразой от плагина доставки.
+4. Остаток проверен: `grep -rn "[А-Яа-я]" js/modules js/prefill.frontend.js` и по `lib/config/*.settings.php` — совпадения только в JSDoc-комментариях, customer-facing текста не осталось. Debug-исключение (`prefill.debug.js`, `shopPrefillPluginDebug`) задокументировано в `docs/guides/LOCALIZATION.md` (раздел «Осознанные исключения из локализации»).
+5. `.po` синхронизированы (`php wa.php locale`), `.mo` пересобраны через `msgfmt`, кэш локали и Smarty очищен, JS-бандл (`prefill.frontend.min.js`) пересобран через `terser` — новые строки подтверждены в `.mo` и в бандле.

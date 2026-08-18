@@ -10,6 +10,17 @@
 - 🇷🇺 Русский язык (`ru_RU`)
 - 🇬🇧 Английский язык (`en_US`)
 
+## Осознанные исключения из локализации
+
+Не весь текст плагина обязан идти через `.po`. Debug-инструментарий разработчика — исключение:
+
+- `js/prefill.debug.js` — плавающая debug-панель на витрине
+- `shopPrefillPluginDebug::renderErrorsDebugHtml()` (`lib/classes/debug/shopPrefillPluginDebug.class.php`) и весь класс `shopPrefillPluginDebug`
+
+Эти строки хардкожены на русском и **не переводятся сознательно**: панель видна только при одновременно включённом глобальном debug-режиме Webasyst (`waSystemConfig::isDebug()`) и настройке плагина `prefill.debug_panel` — покупатель её никогда не видит. Локализовывать код, который не доходит до покупателя, не нужно (см. `docs/codereview/done/issue-69-hardcoded-russian-strings-frontend.md`).
+
+Все остальные customer-facing строки — в JS-модулях (`js/modules/*.js`, `js/prefill.frontend.js`) и в PHP-конфигах дефолтов (`lib/config/*.settings.php`) — обязаны идти через `_wp()` / ключи `.po`, без исключений.
+
 ## Структура файлов локализации
 
 ```

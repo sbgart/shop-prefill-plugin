@@ -126,6 +126,18 @@ msgstr "Choose another method"
 msgid "dialog.params_choice.empty"
 msgstr "You have no saved delivery variants yet."
 
+msgid "dialog.params_choice.link"
+msgstr "My variants"
+
+msgid "dialog.params_choice.link_tooltip"
+msgstr "My delivery variants from previous orders"
+
+msgid "dialog.content.loading"
+msgstr "Loading content..."
+
+msgid "dialog.content.error"
+msgstr "Failed to load content, please try again later."
+
 msgid "dialog.consent_revoke.title"
 msgstr "Clear form data?"
 

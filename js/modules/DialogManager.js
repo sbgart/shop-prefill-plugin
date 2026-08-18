@@ -6,9 +6,16 @@
  * - Отображение диалогов с поддержкой Promise для контента
  * - Управление обработчиками закрытия
  * 
- * Зависимости: нет (работает только с DOM)
+ * Зависимости: messages (локализованные строки)
  */
 class DialogManager {
+    /**
+     * @param {Object} messages - Локализованные сообщения
+     */
+    constructor(messages = {}) {
+        this.messages = messages || {};
+    }
+
     /**
      * Получает или создаёт dialog элемент с указанным ID
      * 
@@ -51,7 +58,7 @@ class DialogManager {
         const dialog = this.getDialog(id);
 
         if (typeof dialog.showModal !== "function") {
-            throw new Error("Метод showDialog не поддерживается этим браузером.");
+            throw new Error("showDialog is not supported by this browser.");
         }
 
         dialog.showModal();
@@ -202,12 +209,14 @@ class DialogManager {
 
         // Проверяем, является ли content Promise
         if (content && typeof content.then === "function") {
-            contentDiv.innerHTML = '<div class="prefill-dialog__loading">Готовим контент...</div>';
+            const loadingText = this.messages.dialog_content_loading || "";
+            contentDiv.innerHTML = `<div class="prefill-dialog__loading">${loadingText}</div>`;
 
             try {
                 content = await content;
             } catch (error) {
-                content = '<div class="prefill-dialog__error">Ошибка получения контента, попробуйте позже.</div>';
+                const errorText = this.messages.dialog_content_error || "";
+                content = `<div class="prefill-dialog__error">${errorText}</div>`;
             }
         }
 

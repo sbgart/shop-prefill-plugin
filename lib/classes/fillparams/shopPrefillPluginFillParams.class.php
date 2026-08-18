@@ -484,18 +484,8 @@ class shopPrefillPluginFillParams
                 continue;
             }
 
-            $this_value  = $this->$property;
-            $other_value = $other->$property;
-
-            if (is_array($this_value)) {
-                if ($this_value != $other_value) {
-                    return false;
-                }
-            } else {
-                // Строгое (но без приведения типов) сравнение
-                if ($this_value !== null && $this_value != $other_value) {
-                    return false;
-                }
+            if (! $this->areDeliveryValuesEqual($this->$property, $other->$property)) {
+                return false;
             }
         }
 
@@ -505,6 +495,24 @@ class shopPrefillPluginFillParams
         }
 
         return true;
+    }
+
+    /**
+     * Симметрично сравнивает одно скалярное или массивное поле доставки.
+     *
+     * null и '' считаются одной и той же незаполненностью, но null никогда
+     * не совпадает с непустым значением или с массивом (иначе он снова
+     * становится wildcard'ом, как было до issue-67). Сравнение скаляров
+     * идёт через строковый (string) + строгий ===, чтобы не словить
+     * приведение типов PHP для числовых строк (например '01' == '1').
+     */
+    private function areDeliveryValuesEqual($left, $right): bool
+    {
+        if (is_array($left) || is_array($right)) {
+            return is_array($left) && is_array($right) && $left == $right;
+        }
+
+        return (string) ($left ?? '') === (string) ($right ?? '');
     }
 
     public function mergePaymentParams(shopPrefillPluginFillParams $other): void

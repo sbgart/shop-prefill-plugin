@@ -185,9 +185,9 @@ class ParamsChoiceManager {
             ].filter(Boolean).join(" ");
             
             paramsChoiceLink.className = classes;
-            paramsChoiceLink.textContent = this.messages.params_choice_link || "Мои варианты";
+            paramsChoiceLink.textContent = this.messages.params_choice_link || "";
             paramsChoiceLink.href = "javascript:void(0);";
-            paramsChoiceLink.setAttribute("data-title", this.messages.params_choice_link_tooltip || "Мои варианты доставки из прошлых заказов");
+            paramsChoiceLink.setAttribute("data-title", this.messages.params_choice_link_tooltip || "");
 
             paramsChoiceLink.onclick = async (event) => {
                 event.preventDefault();

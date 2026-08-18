@@ -10,7 +10,7 @@ return [
     'custom_settings' => true,
     'frontend' => true,
     'handlers' => [
-        'frontend_head' => 'frontendHead', //Предзаполняем форму при входе на сайт
+        'frontend_head' => 'frontendHead', // Куки, ассеты, отладка. НЕ предзаполняет: см. docs/codereview/issue-63-*
         'checkout_before_auth' => 'checkoutBeforeAuth', // Предзаполняем при каждом AJAX-обновлении формы
         'checkout_render_auth' => 'checkoutRenderAuth', //Добавляем контент в секцию авторизации
         'checkout_render_region' => 'checkoutRenderRegion', //Добавляем контент в секцию региона
@@ -18,6 +18,6 @@ return [
         'checkout_render_details' => 'checkoutRenderDetails', //Добавляем контент в секцию details (Zen Mode для delivery)
         'checkout_render_payment' => 'checkoutRenderPayment', //Добавляем контент в секцию оплаты (Zen Mode)
         'checkout_render_confirm' => 'checkoutRenderConfirm', //DEBUG: Показываем все delayed_errors
-        'order_action.create' => 'orderActionCreate', // Для сохранения shipping_type в параметры заказа
+        'order_action.create' => 'orderActionCreate', // shipping_type + гостевая ссылка prefill_guest_<lookup_id> в параметрах заказа
     ],
 ];

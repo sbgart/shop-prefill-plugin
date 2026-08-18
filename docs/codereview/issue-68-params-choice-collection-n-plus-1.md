@@ -1,6 +1,6 @@
 # Issue 68 — Диалог «Мои варианты» поднимает все заказы покупателя, гидратирует все и выбрасывает всё кроме пяти
 
-**Статус:** ⬜ Открыта
+**Статус:** ⬜ Открыта; замерена на живой базе 18.08.2026 (см. «Замер» ниже)
 **Приоритет:** 🟠 Средний (перф + память; страдают лучшие клиенты магазина)
 **Сложность фикса:** 🔨 Средний
 **Файлы:** `lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php` (`getFillParamsCollection`), `lib/actions/frontend/shopPrefillPluginFrontendParamsChoice.action.php`, `lib/classes/orders/shopPrefillPluginOrderProvider.class.php` (`getUserOrdersId`)
@@ -45,3 +45,23 @@
 3. Ограничить выборку заказов на уровне SQL: `getUserOrdersId()` → `LIMIT 50` (с запасом на дубли), `getAllOrderIdsByGuestHash()` — так же.
 4. Кэшировать контакт: в цикле `fillAuthDataFromOrder()` `contact_id` повторяется — достаточно статического кэша в `ContactProvider::getContact()`.
 5. Комментарий читается отдельным SELECT на заказ (`getOrderComment`) — при батче можно взять `id, comment, contact_id` одним запросом по массиву ID.
+
+
+## Замер на живой базе (18.08.2026)
+
+`general_log` за одно открытие диалога у контакта 1 (52 заказа, показывается 5 карточек):
+
+```
+SELECT id FROM shop_order WHERE (contact_id='1') ORDER BY id DESC LIMIT 50
+SELECT * FROM shop_order_params WHERE `order_id` IN ('85','84','83', … 50 штук)
+SELECT id, contact_id, comment FROM shop_order WHERE (id='58')
+… ещё 12 таких же, по одному на заказ …
+```
+
+Итого **15 запросов**, из них 13 — построчные чтения `shop_order` через `getOrderRow()`.
+`LIMIT 50` в первом запросе уже есть, так что «все заказы за всё время» — неточность
+исходной формулировки: потолок 50, но 13 отдельных PK-запросов вместо одного `IN ()`
+остаются, и до пяти карточек доживает меньше трети выбранного.
+
+Важно: на общую стоимость страницы это не влияет — путь срабатывает только по явному
+клику на «Мои варианты», не на каждом запросе. Контракт issue-63 не нарушен.
