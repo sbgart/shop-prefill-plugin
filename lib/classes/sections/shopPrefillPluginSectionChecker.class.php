@@ -5,6 +5,9 @@
  *
  * Использует положительную логику: группа включена = предзаполняем все её секции
  * Проверяет заполненность секции по ключевым полям через dot-notation
+ *
+ * Важно: у секции два разных признака «непустоты», и путать их нельзя —
+ * см. SECTION_OWNERSHIP_FIELDS и SECTION_DATA_FIELDS ниже.
  */
 class shopPrefillPluginSectionChecker
 {
@@ -23,16 +26,42 @@ class shopPrefillPluginSectionChecker
     ];
 
     /**
-     * Ключевые поля для проверки заполненности секции (dot-notation)
-     * Если хотя бы одно поле заполнено — секция считается предзаполненной
+     * Признак «секция принадлежит покупателю, писать в неё нельзя» (dot-notation).
+     *
+     * Отличается от SECTION_DATA_FIELDS ровно на служебный ключ `html`. Ядро кладёт его
+     * в POST, когда просит вернуть HTML секции, а calculateAction() пишет весь POST в
+     * сессию целиком — значит `html` появляется у секции сразу после первого рендера
+     * в браузере. Это и используется как грубый маркер «покупатель уже держал секцию
+     * в руках».
+     *
+     * `html` стоит ровно у четырёх секций со свободным вводом и отсутствует у двух, где
+     * покупатель выбирает из готовых вариантов. Убрать его нельзя: без него prefill на
+     * ближайшем calculate вернёт стёртые город, улицу и комментарий, и очистить поле
+     * станет невозможно. См. docs/codereview/issue-59-html-key-marks-section-filled.md
+     * и приоритет №1 в docs/concept/CONCEPT.md.
      */
-    private const SECTION_KEY_FIELDS = [
+    private const SECTION_OWNERSHIP_FIELDS = [
         'auth'     => ['data.email', 'data.phone', 'data.firstname', 'html'],
         'region'   => ['city', 'html'],
         'shipping' => ['type_id'],
         'details'  => ['shipping_address.street', 'html'],
         'payment'  => ['id'],
         'confirm'  => ['comment', 'html'],
+    ];
+
+    /**
+     * Признак «в секции есть реальные данные покупателя» (dot-notation).
+     *
+     * То же самое без `html`: флаг рендера — не данные. Отвечает на вопрос
+     * «есть ли что показывать / что восстанавливать», а не «можно ли сюда писать».
+     */
+    private const SECTION_DATA_FIELDS = [
+        'auth'     => ['data.email', 'data.phone', 'data.firstname'],
+        'region'   => ['city'],
+        'shipping' => ['type_id'],
+        'details'  => ['shipping_address.street'],
+        'payment'  => ['id'],
+        'confirm'  => ['comment'],
     ];
 
     public function __construct(array $enabled_groups)
@@ -72,9 +101,11 @@ class shopPrefillPluginSectionChecker
             return false;
         }
 
-        // 2. Секция уже содержит ключевые данные → не перезаписываем
-        if ($this->isSectionFilled($section_id, $checkout_params)) {
-            shopPrefillPluginLog::debug("Section '{$section_id}' skipped: already filled");
+        // 2. Секция принадлежит покупателю → не перезаписываем.
+        // Намеренно ownership, а не data: секция со стёртым вручную полем данных не
+        // содержит, но писать в неё всё равно нельзя — иначе поле не очистить.
+        if ($this->isSectionOwnedByCustomer($section_id, $checkout_params)) {
+            shopPrefillPluginLog::debug("Section '{$section_id}' skipped: belongs to customer");
             return false;
         }
 
@@ -83,26 +114,52 @@ class shopPrefillPluginSectionChecker
     }
 
     /**
-     * Проверяет заполненность секции по ключевым полям
+     * Секция принадлежит покупателю: он её уже видел и мог править.
+     * Предзаполнять такую секцию нельзя, даже если данных в ней сейчас нет.
      *
      * @param string $section_id ID секции
      * @param array $checkout_params Параметры checkout
-     * @return bool true если секция уже содержит данные
+     * @return bool
+     */
+    public function isSectionOwnedByCustomer(string $section_id, array $checkout_params): bool
+    {
+        return $this->matchesAnyField(
+            self::SECTION_OWNERSHIP_FIELDS[$section_id] ?? [],
+            $checkout_params['order'][$section_id] ?? []
+        );
+    }
+
+    /**
+     * В секции есть реальные данные покупателя.
+     * Служебный ключ `html` за данные не считается.
+     *
+     * @param string $section_id ID секции
+     * @param array $checkout_params Параметры checkout
+     * @return bool
      */
     public function isSectionFilled(string $section_id, array $checkout_params): bool
     {
-        $key_fields = self::SECTION_KEY_FIELDS[$section_id] ?? [];
+        return $this->matchesAnyField(
+            self::SECTION_DATA_FIELDS[$section_id] ?? [],
+            $checkout_params['order'][$section_id] ?? []
+        );
+    }
 
-        if (empty($key_fields)) {
+    /**
+     * Заполнено ли хотя бы одно поле из списка.
+     *
+     * @param array $field_paths Пути в dot-notation
+     * @param mixed $section_data Данные секции
+     * @return bool
+     */
+    private function matchesAnyField(array $field_paths, $section_data): bool
+    {
+        if (empty($field_paths) || !is_array($section_data)) {
             return false;
         }
 
-        $section_data = $checkout_params['order'][$section_id] ?? [];
-
-        // Если ЛЮБОЕ ключевое поле заполнено — секция "предзаполнена"
-        foreach ($key_fields as $field_path) {
-            $value = $this->getValueByPath($section_data, $field_path);
-            if ($this->isValueFilled($value)) {
+        foreach ($field_paths as $field_path) {
+            if ($this->isValueFilled($this->getValueByPath($section_data, $field_path))) {
                 return true;
             }
         }

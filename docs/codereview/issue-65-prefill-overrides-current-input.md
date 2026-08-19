@@ -1,9 +1,11 @@
 # Issue 65 — `applyPrefillInput()` льёт предзаполнение **поверх** данных текущего запроса
 
 **Статус:** ⬜ Открыта
-**Приоритет:** 🟠 Средний сейчас, 🔴 после фикса [issue-59](issue-59-html-key-marks-section-filled.md)
+**Приоритет:** 🟠 Средний
 **Сложность фикса:** ⚡ Минутный (поменять порядок аргументов), но нужен тест
 **Файлы:** `lib/classes/checkout/shopPrefillCheckoutState.class.php` (`applyPrefillInput`), `lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php` (`handleCheckoutBeforeAuth`)
+
+> **Уточнение 19.08.2026.** Эскалация до 🔴 «после фикса issue-59» больше не грозит: issue-59 закрыли разделением константы, а не удалением `html`. Страховка №2 ниже сохранена в неизменном виде и закреплена тестом `tests/SectionCheckerOwnershipVsDataTest.php` (блок 8 — дословная сверка `SECTION_OWNERSHIP_FIELDS`). Пункт 2 рекомендации («делать вместе с issue-59») неактуален — чинится самостоятельно.
 
 ## Проблема
 

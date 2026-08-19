@@ -128,7 +128,8 @@ Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`. Must be `.tar.gz`
 
 ## Important Notes
 
-- **No test suite** exists for this plugin — test manually in browser against a running Webasyst instance
+- **Read [docs/concept/RULES.md](docs/concept/RULES.md) before touching checkout logic** — plugin invariants in one short file; checks that defend them are in [docs/TESTS.md](docs/TESTS.md)
+- **Tests:** plain PHP scripts in `tests/`, no framework — `for t in tests/*Test.php; do php "$t"; done`. They cover pure logic only; everything touching the checkout render is verified manually in the browser
 - CSS variables and JS initializer are generated dynamically into `wa-data/public/shop/plugins/prefill/` (cached by hash, not versioned)
 - `shopPrefillPlugin::$instance` is a static singleton — use `shopPrefillPlugin::getInstance()` to access it
 - **Effective storefront** — the single place where the fallback to the global `'*'` storefront lives. `getEffectiveStorefront()` returns the current storefront, or the global one when there is no current storefront (backend/API/CLI) or it is inactive (`active = false` is the default). Always take both settings and storefront code from that one object — taking the code elsewhere produced a per-storefront CSS file with global content that never refreshed

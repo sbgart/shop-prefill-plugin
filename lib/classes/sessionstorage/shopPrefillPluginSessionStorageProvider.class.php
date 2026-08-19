@@ -153,7 +153,10 @@ class shopPrefillPluginSessionStorageProvider
 
     /**
      * Извлекает секцию из snapshot только если она содержит данные.
-     * Использует isSectionFilled чтобы не подставлять пустые секции из snapshot.
+     *
+     * Намеренно isSectionFilled (список DATA), а не isSectionOwnedByCustomer: вопрос здесь
+     * «есть ли в снапшоте что восстанавливать», и служебный ключ `html` за данные не считается.
+     * До разделения константы снапшот с одним лишь `html` выглядел наполненным.
      *
      * @param string $section_id ID секции
      * @param array|null $snapshot Снимок сессии

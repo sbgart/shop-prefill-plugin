@@ -1,6 +1,6 @@
 # TODO — Prefill Plugin
 
-**К релизу v1.0 открыто 19 задач ревью:** 🔴 0 · 🟠 11 · 🟢 8. Плюс 1 баг, 5 тестов и 5 хвостов по issue-51.
+**К релизу v1.0 открыто 18 задач ревью:** 🔴 0 · 🟠 10 · 🟢 8. Плюс 2 бага, 5 тестов и 5 хвостов по issue-51.
 
 Приоритеты: 🔴 блокер релиза · 🟠 важно до продажи · 🟢 мелочь и гигиена.
 Номера issue: 49–62 — ревью 09.08.2026, 63–80 — ревью 16.08.2026, 81 — прогон runbook 18.08.2026, 82 — найдена при браузерной проверке фикса issue-69, 18.08.2026. Статус и дата каждой — в её файле.
@@ -12,9 +12,8 @@
 
 ### Предзаполнение, сессия, снапшот
 
-> Один клубок: 59 и 65 чинить вместе — фикс 59 без 65 даёт регресс на `/order/create/`.
+> Про связку 59 ↔ 65: регресс грозил **исходному** плану issue-59 («убрать `html`»). Константу вместо этого разделили 19.08.2026, страховка issue-65 сохранена и закреплена тестом `SectionCheckerOwnershipVsDataTest` (блок 8). issue-65 чинится самостоятельно и на 🔴 больше не эскалирует.
 
-- [ ] 🟠 [Ключ html считается данными: предзаполнение и snapshot-восстановление молча отключаются](codereview/issue-59-html-key-marks-section-filled.md)
 - [ ] 🟠 [applyPrefillInput льёт предзаполнение поверх данных текущего запроса](codereview/issue-65-prefill-overrides-current-input.md)
 - [ ] 🟢 [Shipping-билдер пишет в чужую секцию, восстановление details из снапшота её затирает](codereview/issue-60-cross-section-write-details-custom.md)
 - [ ] 🟢 [Снапшот затирается текущим состоянием в ветке «нечего предзаполнять»](codereview/issue-72-snapshot-overwritten-by-empty-branch.md)
@@ -53,11 +52,14 @@
 
 ## 🐞 Баги
 
+- [ ] 🟠 [Zen сворачивает группы, которые ядро не обработало из-за ошибки на шаге выше](bugs/zen-collapse-on-upstream-checkout-error.md) — подтверждён в браузере 19.08.2026
 - [ ] [session_is_alive не прокидывается в AJAX-рендере чекаута — риск перезаписи localStorage](bugs/session-is-alive-storage-overwrite.md)
 
 ---
 
 ## 🧪 Тесты перед релизом
+
+> Инварианты плагина — [concept/RULES.md](concept/RULES.md), проверки к ним — [TESTS.md](TESTS.md).
 
 - [x] [Прогнать браузерный runbook по issue-63](plans/issue-63-browser-test-runbook.md) — 18.08.2026 пройдены 2.9, 3.5, 4.3, 4.4, 4.6 и ранее 1.x/2.x/4.1/4.2. Не прогонялись 4.5 и 4.7
 
@@ -101,6 +103,7 @@
 
 ### Issue ревью, закрытые в v1.0
 
+- [x] [Одна константа на два вопроса: `html` как признак данных](codereview/issue-59-html-key-marks-section-filled.md) — разделена на ownership/data 19.08.2026; автотест 117 проверок + браузерный блок пройдены
 - [x] [Фатал при создании заказа вне фронтенда (storefront = null)](codereview/issue-49-fatal-storefront-null-backend-order-create.md)
 - [x] [TypeError в orderActionCreate при пустой checkout-сессии](codereview/issue-50-type-error-null-checkout-params.md)
 - [x] [Плагин молча выдаёт cookie авторизации auth_token на 90 дней](codereview/done/issue-51-remember-me-auth-token-forced.md)
