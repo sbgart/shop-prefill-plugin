@@ -1,6 +1,6 @@
 # Issue 82 — `prefill.frontend(.min).js` подключается без версии, браузер может годами отдавать старый JS из кэша
 
-**Статус:** ⬜ Открыта, найдена 18.08.2026 при браузерной проверке фикса [issue-69](done/issue-69-hardcoded-russian-strings-frontend.md)
+**Статус:** ✅ Решена (19.08.2026). Найдена 18.08.2026 при браузерной проверке фикса [issue-69](issue-69-hardcoded-russian-strings-frontend.md)
 
 **Приоритет:** 🟠 Средний (тихая деградация после каждого релиза, не блокер)
 
@@ -74,3 +74,46 @@ $add_js('js/prefill.frontend.min.js');
 
 После фикса проверить тем же снипетом, что у `prefill.frontend(.min).js` появился `?v=...` суффикс,
 меняющийся при бампе версии плагина (`/release-start`).
+
+## Что сделано
+
+Убран трейлинг-`?` в обоих вызовах `shopPrefillPluginAssetsManager::init()` — путь передаётся так же,
+как у модулей:
+
+```php
+$add_js('js/prefill.frontend.js');       // строка 58, debug
+$add_js('js/prefill.frontend.min.js');   // строка 62, prod
+```
+
+Механика в ядре (`waPlugin::addJs()`, `wa-system/plugin/waPlugin.class.php:326`): версия
+приклеивается **только если в URL ещё нет `?`** — `if (false === strpos($url, '?')) $url .= '?'.$this->getVersion();`
+плюс `.time()` при `debug = true`. Трейлинг-`?` делал условие ложным, и файл уходил вообще без версии.
+`waPlugin::addCss()` устроен идентично, поэтому CSS-пути (`css/frontend(.min).css`) версионировались
+корректно и правки не потребовали.
+
+Отдельный случай — per-storefront CSS из `wa-data`: он идёт мимо `addCss()` плагина, поэтому у него
+свой явный cache-buster `?{update_time}` в `shopPrefillPluginCssManager::getPublicUrl()`. Генерируемые
+`variables_{md5}.css` и `{md5}.js` в busting не нуждаются — имя файла и есть хеш содержимого.
+
+## Проверка
+
+Витрина `/order/`, гостевая сессия (curl с пустой банкой кук) + вкладка браузера.
+
+**debug = true** (модули отдельными файлами):
+
+```
+js/modules/HttpClient.js?1.0.0.1787152959
+...
+js/prefill.frontend.js?1.0.0.1787152959   ← было `?` без версии
+```
+
+**debug = false** (временно переключён в `wa-config/config.php`, затем возвращён):
+
+```
+css/frontend.min.css?1.0.0
+js/prefill.frontend.min.js?1.0.0          ← было `?` без версии
+```
+
+Контроллер поднимается штатно: `window.prefill` — объект `PrefillFrontendController`,
+`dialogManager.messages` содержит 15 ключей (то самое место, где issue-69 казался несработавшим).
+Ошибок в консоли от плагина нет.

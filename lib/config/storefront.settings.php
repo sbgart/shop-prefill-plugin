@@ -4,6 +4,9 @@ return [
     'active'      => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
     'prefill'     => [
         'my_delivery_variants'                => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+        // Сколько вариантов доставки показывать в диалоге. Диапазон и фоллбэк —
+        // shopPrefillPluginFillParamsCollection::normalizeLimit()
+        'my_delivery_variants_limit'          => ['value' => 5, 'filter' => FILTER_VALIDATE_INT],
         'my_delivery_variants_button_classes' => ['value' => ''],
         // Плавающая панель отладки и связанный UI (при глобальном debug Webasyst)
         'debug_panel'                         => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
@@ -45,6 +48,9 @@ return [
         // 'small' | 'medium' | 'large' — размер иконок (2.5rem×1.5rem, 3.5rem×2rem, 4.5rem×2.5rem)
         'icon_size'             => ['value' => 'medium'],
         'toggle_button_classes' => ['value' => ''],
+        // summary_template: `|escape` в шаблонах не нужен — значения приходят экранированными
+        // из shopPrefillPluginZenData::extractSummaryData() (правило Z7). Второй проход дал бы
+        // `&amp;lt;` вместо `<`. Поля, которые остаются HTML, помечены `is_html` в getAvailableFields().
         'groups'                => [
             'customer' => [
                 'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],

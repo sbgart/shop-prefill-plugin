@@ -5,7 +5,6 @@
 // Без него waRouting матчит якорно (waRouting.class.php:454), и обращение со слэшем
 // возвращает 404, хотя без слэша тот же адрес работает.
 return [
-    'prefill/fill-checkout-params/?' => 'frontend/FillCheckoutParams',
     'prefill/params-choice/?'        => 'frontend/ParamsChoice',
     'prefill/logs/?'                 => 'frontend/Logs',
     'prefill/clear-storage/?'        => 'frontend/ClearStorage',

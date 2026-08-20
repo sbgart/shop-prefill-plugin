@@ -55,11 +55,11 @@ class shopPrefillPluginAssetsManager
             $add_js('js/modules/ParamsChoiceManager.js'); // зависит от HttpClient, DialogManager, Logger
             $add_js('js/modules/OrderFormManager.js'); // зависит от ParamsChoiceManager, Logger
             $add_js('js/modules/ZenModeToggle.js'); // управление Zen Mode (без зависимостей)
-            $add_js('js/prefill.frontend.js?');
+            $add_js('js/prefill.frontend.js');
         } else {
             // Prod: один самодостаточный минифицированный бандл (модули уже внутри).
             // Собирается скиллом build-plugin-frontend из js/bundle.config.json.
-            $add_js('js/prefill.frontend.min.js?');
+            $add_js('js/prefill.frontend.min.js');
         }
 
         // Генерируем и подключаем CSS переменные

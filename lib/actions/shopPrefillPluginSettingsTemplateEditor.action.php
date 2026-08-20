@@ -57,12 +57,20 @@ class shopPrefillPluginSettingsTemplateEditorAction extends shopPrefillPluginSet
         // Индексируем все поля по group-значению
         $fields_by_group = [];
         foreach (shopPrefillPluginZenData::getAvailableFields() as $key => $field) {
+            // Обычные поля приходят в шаблон экранированными, HTML-поля — нет. Разницу нужно
+            // видеть прямо в подсказке: от неё зависит, что магазин впишет в свой шаблон.
+            $description = $field['description'];
+            if (!empty($field['is_html'])) {
+                $description .= ' ' . _wp('zen.custom_template.html_field_note');
+            }
+
             $row = [
                 'snippet'       => '{$' . $key . '}',
                 'name'          => $field['name'],
-                'description'   => $field['description'],
+                'description'   => $description,
                 'example'       => $field['example'],
                 'is_array'      => !empty($field['is_array']),
+                'is_html'       => !empty($field['is_html']),
             ];
             if (!empty($field['snippet_loop'])) {
                 $row['snippet_loop'] = $field['snippet_loop'];

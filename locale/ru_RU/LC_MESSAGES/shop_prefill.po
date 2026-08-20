@@ -252,6 +252,9 @@ msgstr "Задаёт общий размер блока иконки во все
 msgid "setting.prefill.my_delivery_variants"
 msgstr "Мои варианты доставки"
 
+msgid "setting.prefill.my_delivery_variants_limit"
+msgstr "Сколько вариантов показывать"
+
 msgid "setting.prefill.debug_panel"
 msgstr "Панель отладки на витрине"
 
@@ -278,6 +281,9 @@ msgstr "Если включено — общие настройки примен
 
 msgid "hint.prefill.my_delivery_variants"
 msgstr "Показывает покупателю выбор из вариантов доставки на основе истории его заказов."
+
+msgid "hint.prefill.my_delivery_variants_limit"
+msgstr "Максимум карточек в диалоге, от 1 до 10. Показываются самые свежие по времени заказа; одинаковые варианты объединяются, поэтому история просматривается вглубь, пока не наберётся нужное количество разных."
 
 msgid "hint.prefill.debug_panel"
 msgstr "Показывает плавающую панель и расширенные подсказки на витрине только при включённом режиме отладки Webasyst и этой настройке."
@@ -632,6 +638,9 @@ msgstr "Адрес"
 
 msgid "zen.custom_template.vars.customer"
 msgstr "Покупатель"
+
+msgid "zen.custom_template.html_field_note"
+msgstr "Содержит HTML и выводится без экранирования."
 
 msgid "zen.custom_template.vars.payment"
 msgstr "Оплата"
@@ -1073,3 +1082,30 @@ msgstr "Загрузка..."
 
 msgid "log.load_error"
 msgstr "Ошибка загрузки"
+
+msgid "dialog.save_scope.title"
+msgstr "Сохранение настроек"
+
+msgid "dialog.save_scope.intro"
+msgstr "Во время работы вы открывали несколько витрин. Настройки каких витрин сохранить?"
+
+msgid "dialog.save_scope.current"
+msgstr "Только текущую витрину"
+
+msgid "dialog.save_scope.all"
+msgstr "Все открытые витрины (%d)"
+
+msgid "dialog.save_scope.hint"
+msgstr "Несохранённые витрины останутся открытыми — их можно сохранить позже, переключившись на них."
+
+msgid "dialog.save_scope.more"
+msgstr "и ещё %d"
+
+msgid "dialog.save_scope.confirm"
+msgstr "Сохранить"
+
+msgid "dialog.save_scope.cancel"
+msgstr "отмена"
+
+msgid "dialog.save_scope.or"
+msgstr "или"

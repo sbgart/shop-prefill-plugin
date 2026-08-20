@@ -40,8 +40,8 @@
         header.appendChild(el('span', 'appark-contacts-dialog__title', cfg.dialogTitle));
         var closeBtn = document.createElement('button');
         closeBtn.type = 'button';
-        closeBtn.className = 'appark-contacts-dialog__close js-dialog-close';
-        closeBtn.innerHTML = '&times;';
+        closeBtn.className = 'appark-contacts-dialog__close js-close-dialog';
+        closeBtn.appendChild(el('i', 'fas fa-times'));
         header.appendChild(closeBtn);
 
         var content = el('div', 'appark-contacts-dialog');

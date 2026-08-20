@@ -327,7 +327,49 @@ var PrefillSettings = (function () {
                             });
                         }
                         if (typeof $.fn.waDropdown === 'function') {
-                            $wrapper.find('.js-prefill-var-dropdown').waDropdown({ hover: false });
+                            var $varDropdowns = $wrapper.find('.js-prefill-var-dropdown');
+
+                            // .dropdown-body позиционируется absolute внутри .dropdown, а сайдбар —
+                            // overflow:auto (иначе список переменных не влезает по высоте), поэтому
+                            // раскрытое меню обрезается краем скролла. waDropdown (wa-content/js/jquery-wa/wa.js)
+                            // уже считает высоту от края окна (topOffset/bottomOffset), но не знает про
+                            // обрезающий overflow сайдбара — тот же приём, что и для тултипов выше:
+                            // position:fixed выводит блок из-под обрезки (ни один предок не задаёт
+                            // transform/filter/will-change — новый containing block для fixed не возникает),
+                            // координаты — из getBoundingClientRect, он уже в системе координат viewport.
+                            // width/min-width переопределяем явно: у fixed-элемента "min-width:100%" из
+                            // core CSS считается от viewport, а не от кнопки, иначе меню растянется на экран.
+                            $varDropdowns.waDropdown({
+                                hover: false,
+                                open: function (dropdown) {
+                                    var rect = dropdown.$button[0].getBoundingClientRect();
+                                    var css = {
+                                        position: 'fixed',
+                                        left: rect.left + 'px',
+                                        width: '200px',
+                                        minWidth: rect.width + 'px'
+                                    };
+                                    if (dropdown.$menu.hasClass('bottom')) {
+                                        css.top = 'auto';
+                                        css.bottom = (window.innerHeight - rect.top) + 'px';
+                                    } else {
+                                        css.top = rect.bottom + 'px';
+                                        css.bottom = 'auto';
+                                    }
+                                    dropdown.$menu.css(css);
+                                }
+                            });
+
+                            // При скролле сайдбара кнопка сдвигается, а зафиксированный дропдаун — нет:
+                            // закрываем, чтобы меню не "отрывалось" от кнопки.
+                            $wrapper.find('.prefill-ct-sidebar-scroll').on('scroll', function () {
+                                $varDropdowns.filter('.is-opened').each(function () {
+                                    var instance = $(this).data('dropdown');
+                                    if (instance) {
+                                        instance.hide();
+                                    }
+                                });
+                            });
                         }
 
                         prefillZenTemplateAceInit($wrapper);

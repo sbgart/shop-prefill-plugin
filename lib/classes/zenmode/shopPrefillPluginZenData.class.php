@@ -36,6 +36,9 @@ class shopPrefillPluginZenData
         return $config['zen']['groups'][$group]['summary_template']['value'] ?? '';
     }
 
+    /** @var shopPrefillPluginZenSummaryEscaper|null Общий для статических и обычных методов */
+    private static ?shopPrefillPluginZenSummaryEscaper $escaper = null;
+
     private waView $view;
     private string $currency;
 
@@ -62,6 +65,7 @@ class shopPrefillPluginZenData
      *     example: string,
      *     group: string,
      *     is_array?: bool,
+     *     is_html?: bool,
      *     snippet_loop?: string,
      *     example_code?: string
      * }>
@@ -109,7 +113,7 @@ class shopPrefillPluginZenData
                 'example' => _wp('zen.custom_template.example_value.contact_custom'),
                 'is_array' => true,
                 'example_code' => '{$contact_custom.birthday}',
-                'snippet_loop' => '{foreach $contact_custom as $k => $v}{$k|escape}: {$v|escape}{if !$v@last} &bull; {/if}{/foreach}',
+                'snippet_loop' => '{foreach $contact_custom as $k => $v}{$k}: {$v}{if !$v@last} &bull; {/if}{/foreach}',
             ],
             'service_agreement' => [
                 'group' => 'contact',
@@ -122,6 +126,8 @@ class shopPrefillPluginZenData
                 'name' => _wp('Service agreement hint'),
                 'description' => _wp('Text of the consent hint (data[customer][service_agreement_hint]) from checkout config.'),
                 'example' => _wp('zen.custom_template.example_value.service_agreement_hint'),
+                // Контент администратора: ядро выводит его сырым (order/form/auth.html), обычно со ссылкой на оферту
+                'is_html' => true,
             ],
 
             // === ДОСТАВКА ===
@@ -136,6 +142,8 @@ class shopPrefillPluginZenData
                 'name' => _wp('Shipping cost'),
                 'description' => _wp('Formatted shipping cost (HTML)'),
                 'example' => _wp('zen.custom_template.example_value.shipping_rate'),
+                // HTML собирает formatPrice() — внутри уже экранировано
+                'is_html' => true,
             ],
             'delivery_method_name' => [
                 'group' => 'delivery',
@@ -178,12 +186,16 @@ class shopPrefillPluginZenData
                 'name' => _wp('Description'),
                 'description' => _wp('Description of the delivery method'),
                 'example' => _wp('zen.custom_template.example_value.delivery_description'),
+                // Контент администратора/плагина доставки: ядро выводит его сырым (order/form/details.html)
+                'is_html' => true,
             ],
             'delivery_schedule' => [
                 'group' => 'delivery',
                 'name' => _wp('Business hours'),
                 'description' => _wp('Pickup point business hours (HTML structure)'),
                 'example' => _wp('zen.custom_template.example_value.schedule_fragment'),
+                // HTML собирает renderPickupScheduleDays() — внутри уже экранировано
+                'is_html' => true,
             ],
             'delivery_pickup_address' => [
                 'group' => 'delivery',
@@ -210,13 +222,15 @@ class shopPrefillPluginZenData
                 'example' => _wp('zen.custom_template.example_value.delivery_photos'),
                 'is_array' => true,
                 'example_code' => '{foreach $delivery_photos as $photo}{$photo.thumb_uri|default:$photo.uri}{/foreach}',
-                'snippet_loop' => '{foreach $delivery_photos as $photo}<img src="{if !empty($photo.thumb_uri)}{$photo.thumb_uri|escape}{else}{$photo.uri|escape}{/if}" alt="" />{/foreach}',
+                'snippet_loop' => '{foreach $delivery_photos as $photo}<img src="{if !empty($photo.thumb_uri)}{$photo.thumb_uri}{else}{$photo.uri}{/if}" alt="" />{/foreach}',
             ],
             'delivery_photos_html' => [
                 'group' => 'delivery',
                 'name' => _wp('Photo gallery'),
                 'description' => _wp('Native photo gallery with lightbox and horizontal scroll (HTML). Works automatically inside the delivery step.'),
                 'example' => _wp('zen.custom_template.example_value.delivery_photos_html'),
+                // HTML собирает buildPhotosHtml() — внутри уже экранировано
+                'is_html' => true,
             ],
             'shipping_custom' => [
                 'group' => 'delivery',
@@ -225,7 +239,7 @@ class shopPrefillPluginZenData
                 'example' => _wp('zen.custom_template.example_value.shipping_custom'),
                 'is_array' => true,
                 'example_code' => '{$shipping_custom.time_interval}',
-                'snippet_loop' => '{foreach $shipping_custom as $k => $v}{$k|escape}: {$v|escape}{if !$v@last} &bull; {/if}{/foreach}',
+                'snippet_loop' => '{foreach $shipping_custom as $k => $v}{$k}: {$v}{if !$v@last} &bull; {/if}{/foreach}',
             ],
 
             // === АДРЕС ===
@@ -272,7 +286,7 @@ class shopPrefillPluginZenData
                 'example' => _wp('zen.custom_template.example_value.address_custom'),
                 'is_array' => true,
                 'example_code' => '{$address_custom.metro}',
-                'snippet_loop' => '{foreach $address_custom as $k => $v}{$k|escape}: {$v|escape}{if !$v@last} &bull; {/if}{/foreach}',
+                'snippet_loop' => '{foreach $address_custom as $k => $v}{$k}: {$v}{if !$v@last} &bull; {/if}{/foreach}',
             ],
 
             // === ОПЛАТА ===
@@ -293,6 +307,8 @@ class shopPrefillPluginZenData
                 'name' => _wp('Payment description'),
                 'description' => _wp('Payment method description'),
                 'example' => _wp('zen.custom_template.example_value.payment_description'),
+                // Контент администратора: ядро выводит его сырым (order/form/payment.html)
+                'is_html' => true,
             ],
             'payment_custom' => [
                 'group' => 'payment',
@@ -301,9 +317,36 @@ class shopPrefillPluginZenData
                 'example' => _wp('zen.custom_template.example_value.payment_custom'),
                 'is_array' => true,
                 'example_code' => '{$payment_custom.inn}',
-                'snippet_loop' => '{foreach $payment_custom as $k => $v}{$k|escape}: {$v|escape}{if !$v@last} &bull; {/if}{/foreach}',
+                'snippet_loop' => '{foreach $payment_custom as $k => $v}{$k}: {$v}{if !$v@last} &bull; {/if}{/foreach}',
             ],
         ];
+    }
+
+    /**
+     * Поля, которые по контракту содержат HTML и потому не экранируются.
+     * Источник правды тот же — getAvailableFields(), флаг 'is_html'.
+     *
+     * @return string[]
+     */
+    public static function getHtmlFields(): array
+    {
+        $html_fields = [];
+        foreach (self::getAvailableFields() as $key => $field) {
+            if (!empty($field['is_html'])) {
+                $html_fields[] = $key;
+            }
+        }
+
+        return $html_fields;
+    }
+
+    private static function getEscaper(): shopPrefillPluginZenSummaryEscaper
+    {
+        if (self::$escaper === null) {
+            self::$escaper = new shopPrefillPluginZenSummaryEscaper(self::getHtmlFields());
+        }
+
+        return self::$escaper;
     }
 
     /**
@@ -329,6 +372,10 @@ class shopPrefillPluginZenData
 
         $allowed_groups = self::TEMPLATE_EDITOR_FIELD_GROUPS[$group] ?? [];
 
+        // Имена полей, у которых нет example — вместо значения показываем плейсхолдер.
+        // Собираем отдельно, чтобы наша собственная разметка не попала под экранирование ниже.
+        $placeholders = [];
+
         foreach ($fields as $key => $field) {
             if (empty($field['group']) || !in_array($field['group'], $allowed_groups, true)) {
                 continue;
@@ -344,7 +391,14 @@ class shopPrefillPluginZenData
                 continue;
             }
 
-            $name = isset($field['name']) ? (string)$field['name'] : $key;
+            $placeholders[$key] = isset($field['name']) ? (string)$field['name'] : $key;
+        }
+
+        // Превью обязано совпадать с витриной, а там значения приходят экранированными
+        // из extractSummaryData(). Наши обёртки добавляются уже после.
+        $data = self::getEscaper()->escape($data);
+
+        foreach ($placeholders as $key => $name) {
             $safe_name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
             $data[$key] = '<span class="prefill-ct-placeholder">[ ' . $safe_name . ' ]</span>';
         }
@@ -413,7 +467,9 @@ class shopPrefillPluginZenData
         $this->extractDeliveryData($state, $data);
         $this->extractPaymentData($state, $data);
 
-        return $data;
+        // Единственная точка, через которую данные покупателя попадают в шаблон сводки —
+        // здесь же и экранируем, потому что сам шаблон пишет магазин (правило Z7).
+        return self::getEscaper()->escape($data);
     }
 
     private function extractContactData(shopPrefillCheckoutState $state, array &$data): void

@@ -11,6 +11,21 @@
 class shopPrefillPluginContactProvider
 {
     /**
+     * Кэш контактов на время запроса.
+     *
+     * Статический намеренно: waEvent пересоздаёт объект плагина на каждый хук (issue-73).
+     * Гидратация коллекции вариантов запрашивает один и тот же contact_id по разу на карточку,
+     * а waContact грузит поля лениво — без кэша это давало по пять запросов к wa_contact_data
+     * на каждое поле формы (issue-68).
+     *
+     * @var array<int, waContact|null>
+     */
+    private static array $contacts = [];
+
+    /** @var array<string, array> Кэш auth-полей контакта на время запроса, ключ — contact_id + набор полей */
+    private static array $auth_data = [];
+
+    /**
      * Получает контакт по ID
      *
      * @param int $contact_id ID контакта
@@ -22,6 +37,15 @@ class shopPrefillPluginContactProvider
             return null;
         }
 
+        if (array_key_exists($contact_id, self::$contacts)) {
+            return self::$contacts[$contact_id];
+        }
+
+        return self::$contacts[$contact_id] = $this->loadContact($contact_id);
+    }
+
+    private function loadContact(int $contact_id): ?waContact
+    {
         try {
             $contact = new waContact($contact_id);
             // Проверяем что контакт существует
@@ -58,6 +82,17 @@ class shopPrefillPluginContactProvider
      */
     public function getAuthData(waContact $contact, ?array $field_ids = null): array
     {
+        // Пустые поля контакта ядро не кэширует: waContactStorage::get() пишет кэш только при
+        // непустом результате, поэтому каждый повторный get('im'/'url'/…) снова идёт в БД.
+        // Гидратация коллекции спрашивает один и тот же контакт по разу на карточку — считаем один раз.
+        $cache_key = $contact->getId()
+            ? $contact->getId() . '|' . ($field_ids === null ? '*' : implode(',', $field_ids))
+            : null;
+
+        if ($cache_key !== null && isset(self::$auth_data[$cache_key])) {
+            return self::$auth_data[$cache_key];
+        }
+
         $auth_data = [];
 
         // Если не указаны конкретные поля, получаем стандартные
@@ -70,6 +105,10 @@ class shopPrefillPluginContactProvider
             if ($value !== null && $value !== '') {
                 $auth_data[$field_id] = $value;
             }
+        }
+
+        if ($cache_key !== null) {
+            self::$auth_data[$cache_key] = $auth_data;
         }
 
         return $auth_data;

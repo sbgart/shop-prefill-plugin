@@ -50,24 +50,40 @@ class shopPrefillPluginZenMode
     private shopPrefillPluginZenData $zen_data;
 
     /**
+     * @var shopPrefillPluginSessionStorageProvider Состояние заказа в сессии
+     */
+    private shopPrefillPluginSessionStorageProvider $session_storage;
+
+    /**
+     * @var shopPrefillPluginZenSummaryCache Последний удачный набор данных сводки
+     */
+    private shopPrefillPluginZenSummaryCache $summary_cache;
+
+    /**
      * @param array $zen_settings Настройки zen из storefront settings
      * @param waResponse $response Response для записи cookies
      * @param waView $view View объект для рендеринга
      * @param shopPrefillPluginZenData $zen_data Данные для шаблонов сводки
      * @param waRequest $request Request для чтения cookies
+     * @param shopPrefillPluginSessionStorageProvider $session_storage Состояние заказа
+     * @param shopPrefillPluginZenSummaryCache $summary_cache Кэш данных сводки
      */
     public function __construct(
         array $zen_settings,
         waResponse $response,
         waView $view,
         shopPrefillPluginZenData $zen_data,
-        waRequest $request
+        waRequest $request,
+        shopPrefillPluginSessionStorageProvider $session_storage,
+        shopPrefillPluginZenSummaryCache $summary_cache
     ) {
-        $this->settings = $zen_settings;
-        $this->response = $response;
-        $this->view     = $view;
-        $this->zen_data = $zen_data;
-        $this->request  = $request;
+        $this->settings        = $zen_settings;
+        $this->response        = $response;
+        $this->view            = $view;
+        $this->zen_data        = $zen_data;
+        $this->request         = $request;
+        $this->session_storage = $session_storage;
+        $this->summary_cache   = $summary_cache;
     }
 
     /**
@@ -117,15 +133,24 @@ class shopPrefillPluginZenMode
 
 
     /**
-     * Определяет, нужно ли сворачивать группу
+     * Определяет, нужно ли сворачивать группу.
      *
-     * Smart Collapse:
-     * 1. Дзен-режим включен для этой группы
-     * 2. Если expanded (пользователь развернул) → не сворачивать
-     * 3. Иначе: сворачиваем только если нет ошибок в группе
+     * Три условия, и каждое читает свой источник — путать их нельзя:
+     *   1. кука — покупатель сам открыл группу и работает в ней;
+     *   2. ошибки — только из $params, они существуют в рамках запроса;
+     *   3. минимум данных — только из сессии. $params описывает запрос, а не заказ:
+     *      он пуст для всех секций ниже упавшего шага и при fast_render на каждой
+     *      загрузке страницы. Спрашивать его «есть ли данные» бессмысленно.
+     *
+     * Любой разворот приводит к записи куки `expanded` в syncCollapseCookieState(),
+     * поэтому группа, однажды открытая, не схлопнется под руками у покупателя,
+     * который её как раз заполняет.
+     *
+     * См. docs/concept/RULES.md (R1–R3, Z1–Z5) и
+     * docs/bugs/zen-collapse-on-upstream-checkout-error.md
      *
      * @param string $group Имя группы
-     * @param array $params Данные чекаута для проверки ошибок
+     * @param shopPrefillCheckoutState $state Состояние текущего рендера
      * @return bool
      */
     public function shouldCollapseGroup(string $group, shopPrefillCheckoutState $state): bool
@@ -140,11 +165,42 @@ class shopPrefillPluginZenMode
             return false;
         }
 
-        // Пусто или иное: сворачиваем только если нет ошибок в группе
         if ($state->hasGroupErrors($group)) {
+            shopPrefillPluginLog::debug("Zen group '{$group}' expanded: validation errors");
             return false;
         }
+
+        if (! $this->isGroupMinimumFilled($group)) {
+            shopPrefillPluginLog::debug("Zen group '{$group}' expanded: nothing to summarize yet");
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * Заполнен ли минимум группы по данным сессии.
+     *
+     * Ошибку чтения сессии трактуем как «заполнено»: молча развернуть все группы
+     * из-за сбоя хранилища хуже, чем оставить дзен-режим работать как раньше.
+     *
+     * @param string $group Имя группы
+     * @return bool
+     */
+    private function isGroupMinimumFilled(string $group): bool
+    {
+        try {
+            return $this->session_storage->getSectionChecker()->isGroupMinimumFilled(
+                $group,
+                $this->session_storage->getCheckoutParams()
+            );
+        } catch (Exception $e) {
+            shopPrefillPluginLog::warning('Failed reading checkout params for zen group check', [
+                'group'   => $group,
+                'message' => $e->getMessage(),
+            ]);
+            return true;
+        }
     }
 
     /**
@@ -476,6 +532,19 @@ class shopPrefillPluginZenMode
         // Подготавливаем данные для подстановки через ZenData
         $data = $this->zen_data->extractSummaryData($group, $state);
 
+        // $params пуст при коротком замыкании конвейера и при fast_render, а названия
+        // тарифов и способов оплаты существуют только там. Удачный набор запоминаем,
+        // пустой — достаём из кэша, иначе сводка выйдет наполовину пустой.
+        if ($this->summary_cache->hasFreshData($group, $data)) {
+            $this->summary_cache->set($group, $data);
+        } else {
+            $cached = $this->summary_cache->get($group);
+            if (!empty($cached)) {
+                $data = array_merge($data, $cached);
+                shopPrefillPluginLog::debug("Zen summary for '{$group}' rendered from cache");
+            }
+        }
+
         // Если шаблон пустой — ничего не выводим
         if (empty($template)) {
             return '';
@@ -530,6 +599,16 @@ class shopPrefillPluginZenMode
 
 
 
+
+    /**
+     * Сбрасывает состояние дзен-режима после создания заказа: cookies групп и кэш сводки.
+     * Иначе следующий заказ откроется с чужими названиями в свёрнутых блоках.
+     */
+    public function resetState(): void
+    {
+        $this->clearCookies();
+        $this->summary_cache->clear();
+    }
 
     /**
      * Очищает cookies состояния всех групп Zen Mode

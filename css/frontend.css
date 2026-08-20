@@ -4,11 +4,18 @@
  * AssetsManager генерирует файл с переопределением --prefill-accent-color-light/-dark
  * для каждой витрины; --prefill-accent-color вычисляется из них через light-dark()
  * и остаётся единственной точкой использования акцента во всём остальном CSS.
+ *
+ * --prefill-accent-contrast — цвет текста поверх акцентной заливки. Переключается вместе
+ * со схемой: в светлой теме акцент тёмный и текст белый, в тёмной наоборот. Раньше цвет был
+ * прибит к белому прямо в правиле, и на белом акценте тёмной темы надпись пропадала (issue-85).
+ * Всё, что заливается акцентом, берёт текст только отсюда.
  */
 :root {
     --prefill-accent-color-light: #000000;
     --prefill-accent-color-dark: #ffffff;
     --prefill-accent-color: light-dark(var(--prefill-accent-color-light), var(--prefill-accent-color-dark));
+
+    --prefill-accent-contrast: light-dark(#ffffff, #000000);
 }
 
 /* Фолбэк для браузеров без поддержки light-dark() (Safari <17.5 и т.п.) —
@@ -16,6 +23,7 @@
 @supports not (color: light-dark(white, black)) {
     :root {
         --prefill-accent-color: var(--prefill-accent-color-light);
+        --prefill-accent-contrast: #ffffff;
     }
 }
 
@@ -190,7 +198,7 @@
 
 .prefill-dialog__confirm-btn {
     background-color: var(--prefill-accent-color, #000);
-    color: #fff;
+    color: var(--prefill-accent-contrast, #fff);
 }
 
 .prefill-dialog__confirm-btn:hover {

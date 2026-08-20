@@ -68,8 +68,8 @@ class shopPrefillPluginOrderHooks
         // Помечаем заказ, который авторизует покупателя без его выбора
         $this->markPendingAuth();
 
-        // Очищаем cookies Zen Mode
-        $this->zen_mode->clearCookies();
+        // Сбрасываем состояние Zen Mode: cookies групп и кэш данных сводки
+        $this->zen_mode->resetState();
 
         shopPrefillPluginLog::info('Order creation hook processed successfully', [
             'order_id' => $order_id

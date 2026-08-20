@@ -15,8 +15,17 @@ class shopPrefillPluginFillParamsProvider
     private shopPrefillPluginGuestTokenStorage $guest_token_storage;
     private shopPrefillPluginLocationProvider $location_provider;
 
+    /** Размер первой страницы истории заказов при сборе вариантов доставки */
+    private const HISTORY_PAGE_SIZE = 50;
+
+    /** Потолок размера страницы: дальше растить нечего — память дороже лишнего запроса */
+    private const HISTORY_PAGE_MAX = 400;
+
     /** @var shopPrefillPluginFillParamsCollection|null Коллекция параметров предзаполнения */
     private ?shopPrefillPluginFillParamsCollection $fill_params_collection = null;
+
+    /** @var int|null Лимит, с которым собрана закэшированная коллекция */
+    private ?int $fill_params_collection_limit = null;
 
     /**
      * Кэш результата getFillParams() на время запроса, по ключу источника.
@@ -179,85 +188,130 @@ class shopPrefillPluginFillParamsProvider
     /**
      * Получает коллекцию вариантов доставки авторизованного пользователя
      *
-     * Формирует коллекцию на основе всех заказов пользователя,
+     * Формирует коллекцию на основе истории заказов пользователя,
      * удаляя дубликаты по параметрам доставки.
      *
      * Гостевая cookie используется только для автопредзаполнения последнего заказа.
      * Она намеренно не даёт доступ к истории адресов на общем браузере.
      *
+     * @param int $limit Сколько различных вариантов набрать (настройка my_delivery_variants_limit)
      * @return shopPrefillPluginFillParamsCollection Коллекция параметров предзаполнения
      */
-    public function getFillParamsCollection(): shopPrefillPluginFillParamsCollection
-    {
-        if ($this->fill_params_collection) {
+    public function getFillParamsCollection(
+        int $limit = shopPrefillPluginFillParamsCollection::DEFAULT_LIMIT
+    ): shopPrefillPluginFillParamsCollection {
+        if ($this->fill_params_collection && $this->fill_params_collection_limit === $limit) {
             return $this->fill_params_collection;
         }
 
-        $this->fill_params_collection = new shopPrefillPluginFillParamsCollection();
+        $this->fill_params_collection       = new shopPrefillPluginFillParamsCollection();
+        $this->fill_params_collection_limit = $limit;
 
         // Defense in depth: даже внутренний вызов не должен строить гостевую историю.
         if (!$this->user_provider->isAuth()) {
             return $this->fill_params_collection;
         }
 
-        $orders_ids = $this->order_provider->getUserOrdersId($this->user_provider->getId());
-
-        if (empty($orders_ids)) {
+        $unique_orders_ids = $this->collectUniqueDeliveryOrderIds($this->user_provider->getId(), $limit);
+        if (empty($unique_orders_ids)) {
             return $this->fill_params_collection;
         }
 
-        // Один батчевый запрос вместо N
-        $orders_params = $this->order_provider->getOrdersParamsByIds($orders_ids);
+        // ASC (старые → новые) для консистентности коллекции: порядок показа задаёт экшен
+        sort($unique_orders_ids);
 
-        // ASC по order_id: при обходе в обратном порядке первым встречается самый свежий заказ.
-        ksort($orders_params);
+        // Полные параметры и строки заказов — только для отобранных вариантов, по одному запросу на всех
+        $orders_params = $this->order_provider->getOrdersParamsByIds($unique_orders_ids);
+        $this->order_provider->preloadOrderRows($unique_orders_ids);
 
-        $active_shipping_instances = shopPrefillPluginPluginsProvider::getShippingMethods();
-
-        // Дедупликация через isSameDeliveryOption: строим «лёгкий» FillParams без order_id,
-        // чтобы не делать запросы к shop_order/wa_contact до фильтрации дублей.
-        // Итерируем от новых к старым — первый встреченный сценарий считается актуальным.
-        $seen_delivery_options = [];
-        $unique_orders_params  = [];
-
-        foreach (array_reverse($orders_params, true) as $order_id => $order_params) {
-            // Пропускаем заказы без ключевых параметров доставки
-            if (empty($order_params['shipping_id']) || empty($order_params['shipping_type_id'])) {
+        foreach ($unique_orders_ids as $order_id) {
+            if (empty($orders_params[$order_id])) {
                 continue;
             }
 
-            // Пропускаем, если инстанс доставки был отключен или удален администратором
-            $shipping_instance_id = (int) $order_params['shipping_id'];
-            if (! isset($active_shipping_instances[$shipping_instance_id])) {
-                continue;
-            }
-
-            // Без order_id: только адрес + параметры доставки из order_params, без запросов к БД
-            $candidate = $this->getFillParamsByOrderParams($order_params);
-
-            $is_duplicate = false;
-            foreach ($seen_delivery_options as $seen) {
-                if ($candidate->isSameDeliveryOption($seen)) {
-                    $is_duplicate = true;
-                    break;
-                }
-            }
-
-            if (! $is_duplicate) {
-                $seen_delivery_options[]        = $candidate;
-                $unique_orders_params[$order_id] = $order_params;
-            }
-        }
-
-        // Восстанавливаем порядок ASC (старые → новые) для консистентности коллекции
-        ksort($unique_orders_params);
-
-        foreach ($unique_orders_params as $order_id => $order_params) {
-            $fill_params = $this->getFillParamsByOrderParams($order_params, $order_id);
-            $this->fill_params_collection->add($fill_params);
+            $this->fill_params_collection->add(
+                $this->getFillParamsByOrderParams($orders_params[$order_id], $order_id)
+            );
         }
 
         return $this->fill_params_collection;
+    }
+
+    /**
+     * ID заказов с различающимися вариантами доставки, от новых к старым.
+     *
+     * Лимит меряется в вариантах, а не в заказах: покупатель, полсотни раз подряд
+     * заказавший одним способом, иначе теряет свой редкий второй адрес — он просто
+     * не попадает в окно выборки (issue-68). Поэтому история добирается страницами,
+     * пока не наберётся $limit различных вариантов или заказы не кончатся.
+     *
+     * Страница растёт вдвое (50 → 100 → 200 → …): у покупателя с двумя-тремя адресами
+     * всё находится на первой, а редкий вариант из глубины истории стоит единиц запросов,
+     * а не сотни страниц по 50.
+     *
+     * @return int[] ID заказов, каждый со своим вариантом доставки
+     */
+    private function collectUniqueDeliveryOrderIds(int $contact_id, int $limit): array
+    {
+        $active_shipping_instances = shopPrefillPluginPluginsProvider::getShippingMethods();
+
+        $seen_delivery_options = [];
+        $unique_orders_ids     = [];
+
+        $page_size = self::HISTORY_PAGE_SIZE;
+        $offset    = 0;
+
+        while (count($unique_orders_ids) < $limit) {
+            $orders_ids = $this->order_provider->getUserOrdersId($contact_id, $page_size, $offset);
+            if (empty($orders_ids)) {
+                break;
+            }
+
+            // Только подпись варианта: полные параметры дочитываются потом, для выживших
+            $orders_params = $this->order_provider->getOrdersDeliveryParamsByIds($orders_ids);
+
+            // $orders_ids уже DESC — первый встреченный сценарий считается актуальным
+            foreach ($orders_ids as $order_id) {
+                if (count($unique_orders_ids) >= $limit) {
+                    break;
+                }
+
+                $order_params = $orders_params[$order_id] ?? [];
+
+                // Пропускаем заказы без ключевых параметров доставки
+                if (empty($order_params['shipping_id']) || empty($order_params['shipping_type_id'])) {
+                    continue;
+                }
+
+                // Пропускаем, если инстанс доставки был отключен или удален администратором
+                $shipping_instance_id = (int) $order_params['shipping_id'];
+                if (! isset($active_shipping_instances[$shipping_instance_id])) {
+                    continue;
+                }
+
+                // Без order_id: только адрес + параметры доставки из order_params, без запросов к БД
+                $candidate = $this->getFillParamsByOrderParams($order_params);
+
+                foreach ($seen_delivery_options as $seen) {
+                    if ($candidate->isSameDeliveryOption($seen)) {
+                        continue 2;
+                    }
+                }
+
+                $seen_delivery_options[] = $candidate;
+                $unique_orders_ids[]     = (int) $order_id;
+            }
+
+            // Страница пришла неполной — история заказов исчерпана
+            if (count($orders_ids) < $page_size) {
+                break;
+            }
+
+            $offset    += $page_size;
+            $page_size = min($page_size * 2, self::HISTORY_PAGE_MAX);
+        }
+
+        return $unique_orders_ids;
     }
 
     /**
@@ -463,6 +517,18 @@ class shopPrefillPluginFillParamsProvider
         if (isset($order_params['payment_id'])) {
             $fill_params->setPaymentId((int) $order_params['payment_id']);
         }
+        if (isset($order_params['payment_name'])) {
+            $fill_params->setPaymentName($order_params['payment_name']);
+        }
+        if (isset($order_params['payment_plugin'])) {
+            $fill_params->setPaymentPlugin($order_params['payment_plugin']);
+        }
+
+        // shipping_plugin в shop_order_params лежит, но НЕ заполняется намеренно:
+        // он входит в $shipping_params, по которым сравнивает isSameDeliveryOption(),
+        // а вторая сторона сравнения (getFillParamsByCheckoutParams) взять его неоткуда
+        // — в сессии чекаута только type_id и variant_id. Заполнение здесь сделало бы
+        // сравнение асимметричным и погасило бы is_current в выборе адреса.
 
         // Комментарий читаем напрямую из shop_order — единый источник истины.
         // Это позволяет подхватить правки, сделанные администратором в бэкенде.

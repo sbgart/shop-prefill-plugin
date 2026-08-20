@@ -11,6 +11,10 @@
     };
 </script>
 
+<!-- Webasyst UI: диалог выбора области сохранения (в лейауте настроек плагина не подключён) -->
+<link rel="stylesheet" href="{$wa_url}wa-content/js/dialog/dialog.css?v={$wa->version(true)}">
+<script src="{$wa_url}wa-content/js/dialog/dialog.js?v={$wa->version(true)}"></script>
+
 <!-- Plugin -->
 <link rel="stylesheet"
       href="{$plugin_url}css/{$plugin_id}.settings.css?v{$plugin_version}">
@@ -21,3 +25,4 @@
 <script src="{$plugin_url}js/appark.contacts.js?v{$plugin_version}"></script>
 <script src="{$plugin_url}js/{$plugin_id}.settings.js?v{$plugin_version}"></script>
 <script src="{$plugin_url}js/components/{$plugin_id}-storefront-select.js?v{$plugin_version}"></script>
+<script src="{$plugin_url}js/{$plugin_id}.save-scope.js?v{$plugin_version}"></script>

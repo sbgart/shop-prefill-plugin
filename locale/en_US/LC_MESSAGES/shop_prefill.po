@@ -210,6 +210,9 @@ msgstr "Fixed width and height of the icon block across all sections for consist
 msgid "setting.prefill.my_delivery_variants"
 msgstr "My delivery variants"
 
+msgid "setting.prefill.my_delivery_variants_limit"
+msgstr "Number of variants to show"
+
 msgid "setting.prefill.debug_panel"
 msgstr "Storefront debug panel"
 
@@ -236,6 +239,9 @@ msgstr "If enabled — general settings are applied to all storefronts that have
 
 msgid "hint.prefill.my_delivery_variants"
 msgstr "Shows the customer a choice of delivery options based on their order history."
+
+msgid "hint.prefill.my_delivery_variants_limit"
+msgstr "Maximum number of cards in the dialog, from 1 to 10. The most recent ones are shown; identical variants are merged, so the order history is scanned deeper until enough distinct variants are collected."
 
 msgid "hint.prefill.debug_panel"
 msgstr "Show the floating debug panel and extended checkout hints only when Webasyst debug mode is on. Off by default so a permanently enabled admin debug flag does not expose the panel to customers."
@@ -819,6 +825,9 @@ msgstr "Address"
 msgid "zen.custom_template.vars.customer"
 msgstr "Customer"
 
+msgid "zen.custom_template.html_field_note"
+msgstr "Contains HTML and is printed without escaping."
+
 msgid "zen.custom_template.vars.payment"
 msgstr "Payment"
 
@@ -1073,3 +1082,30 @@ msgstr "Failed to load CSS"
 
 msgid "hint.styles.css_is_custom"
 msgstr "Modified"
+
+msgid "dialog.save_scope.title"
+msgstr "Saving settings"
+
+msgid "dialog.save_scope.intro"
+msgstr "You have opened several storefronts. Which storefronts’ settings should be saved?"
+
+msgid "dialog.save_scope.current"
+msgstr "Current storefront only"
+
+msgid "dialog.save_scope.all"
+msgstr "All opened storefronts (%d)"
+
+msgid "dialog.save_scope.hint"
+msgstr "Storefronts you do not save stay open — you can switch to them and save later."
+
+msgid "dialog.save_scope.more"
+msgstr "and %d more"
+
+msgid "dialog.save_scope.confirm"
+msgstr "Save"
+
+msgid "dialog.save_scope.cancel"
+msgstr "cancel"
+
+msgid "dialog.save_scope.or"
+msgstr "or"

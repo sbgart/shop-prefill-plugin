@@ -30,7 +30,7 @@ For locale compilation and cache clearing — use `/compile-plugin-mo`.
 The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as a service locator — it lazily instantiates all providers and hooks via getter methods. It registers Webasyst hooks in `lib/config/plugin.php`.
 
 **Active hooks:**
-- `frontend_head` — runs on every shop page; manages cookies, assets and debug. **Does NOT prefill** — writing the session from the layout cannot affect the current page, and prefilled sections are not read outside checkout (see `docs/codereview/issue-63-*.md`)
+- `frontend_head` — runs on every shop page; manages cookies and debug, and attaches CSS/JS **only on the checkout page** (`CheckoutPageDetector`, see `docs/codereview/issue-64-*.md`). **Does NOT prefill** — writing the session from the layout cannot affect the current page, and prefilled sections are not read outside checkout (see `docs/codereview/issue-63-*.md`)
 - `checkout_before_auth` — fires on every AJAX calculate/create call during checkout
 - `checkout_render_*` — multiple hooks injecting HTML into checkout sections (auth, region, shipping, details, payment, confirm)
 - `order_action.create` — saves `shipping_type` to order params after order creation
@@ -46,6 +46,7 @@ The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as
 | `settings/providers/` | `SettingProvider`, `StorefrontSettingProvider` — read/write plugin settings from `shop_prefill_settings` table |
 | `zenmode/` | `ZenMode`, `ZenData` — collapsible checkout section logic |
 | `view/` | `AssetsManager` — generates CSS variables file and JS initializer file dynamically into `wa-data/` |
+| `checkout/` | `CheckoutState` — reads the hook `$params`; `CheckoutPageDetector` — answers whether this request renders the order form, so assets stay off the catalog |
 | `consent/` | `ConsentStorage` — manages `prefill_consent` HTTP-only cookie for guests |
 
 **Settings storage:** `shop_prefill_settings` table (one row per logical key: `storefront_code` + `name` + `groups`, where `groups` stores the leaf's path in the settings tree). Defaults defined in `lib/config/storefront.settings.php` (per-storefront) and `lib/config/settings.php` (global).
@@ -67,7 +68,6 @@ Main controller: `js/prefill.frontend.js` (minified: `prefill.frontend.min.js`) 
 ### Frontend AJAX Controllers
 
 Located in `lib/actions/frontend/`:
-- `FrontendFillCheckoutParams` — applies prefill params to session
 - `FrontendParamsChoice` — returns available delivery options for selection UI
 - `FrontendApplyDelivery` — applies selected delivery option
 - `FrontendTogglePrefill`, `FrontendToggleZen` — toggle modes

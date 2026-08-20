@@ -1,11 +1,28 @@
 # Issue 62 — Мёртвый публичный эндпоинт `fillCheckoutParams` без проверки доступа
 
-**Статус:** ⬜ Открыта
+**Статус:** ✅ Закрыта — контроллер удалён вместе с роутом
 **Приоритет:** 🟢 Низкий (уборка кода + сужение поверхности атаки)
 **Сложность фикса:** 🔧 Тривиальный (удалить файл)
-**Файл:** `lib/actions/frontend/shopPrefillPluginFrontendFillCheckoutParams.controller.php`
+**Файл:** ~~`lib/actions/frontend/shopPrefillPluginFrontendFillCheckoutParams.controller.php`~~ (удалён)
 
-## Проблема
+## Проверка при закрытии
+
+Формулировка «мёртвый» была неточной: контроллер не вызывался ни из `js/`, ни из `templates/`
+плагина, но был **живым публичным HTTP-эндпоинтом** — зарегистрирован в
+`lib/config/routing.php:8` (`'prefill/fill-checkout-params/?' => 'frontend/FillCheckoutParams'`),
+то есть был доступен по `POST /prefill/fill-checkout-params/` без всякой авторизации. Автор
+исходного ревью не заметил эту строку — грепа по `js/`, `templates/`, `lib/` не хватило, роут был
+единственным «упоминанием» и его пропустили. Проверка `wa-log/prefill.plugin.log` на предмет
+исторических вызовов эндпоинта показала 0 совпадений — активной эксплуатации не найдено.
+
+Итог: риск был даже выше, чем в исходном описании (не «мёртвый код», а действующая незащищённая
+поверхность атаки), но рекомендация та же — удалить. Выполнено:
+
+1. Удалён `lib/actions/frontend/shopPrefillPluginFrontendFillCheckoutParams.controller.php`.
+2. Удалена строка роута `prefill/fill-checkout-params/?` из `lib/config/routing.php`.
+3. Убрана строка `FrontendFillCheckoutParams` из списков AJAX-контроллеров в `CLAUDE.md` и `AGENTS.md`.
+
+## Проблема (исходная формулировка)
 
 Контроллер не вызывается ниоткуда: по `js/`, `templates/` и `lib/` нет ни одного упоминания `fillCheckoutParams` / `FillCheckoutParams` (кроме `CLAUDE.md` и документов ревью).
 

@@ -48,6 +48,8 @@ class shopPrefillPlugin extends shopPlugin
 
     private ?shopPrefillPluginCheckoutHooks $checkout_hooks = null;
 
+    private ?shopPrefillPluginCheckoutPageDetector $checkout_page_detector = null;
+
     public function __construct($info)
     {
         parent::__construct($info);
@@ -330,12 +332,13 @@ class shopPrefillPlugin extends shopPlugin
             $this->getGuestTokenStorage(),
             $this->getConsentStorage(),
             $this->getAssetsManager(),
+            $this->getCheckoutPageDetector(),
             $this->isDebug(),
             $this->isDebugPanelEnabled(),
             $this->getEffectiveStorefrontSettings(),
             fn($path) => $this->addCss($path),
             fn($path) => $this->addJs($path),
-            $this->resolveStorefrontCssUrl()
+            fn() => $this->resolveStorefrontCssUrl()
         );
     }
 
@@ -419,6 +422,30 @@ class shopPrefillPlugin extends shopPlugin
 
 
     /**
+     * Признак «текущий запрос рендерит форму заказа» — общий для checkout-хуков,
+     * которые его выставляют, и для frontend_head, который по нему решает,
+     * подключать ли CSS/JS плагина.
+     */
+    private function getCheckoutPageDetector(): shopPrefillPluginCheckoutPageDetector
+    {
+        return $this->checkout_page_detector ??= new shopPrefillPluginCheckoutPageDetector(
+            static fn() => [waRequest::param('module'), waRequest::param('action')]
+        );
+    }
+
+    /**
+     * Единая точка входа всех checkout-хуков: попутно отмечает, что запрос идёт
+     * по пути оформления заказа. frontend_head сработает позже — макет рендерится
+     * после шаблона экшена — и по этой отметке подключит ассеты.
+     */
+    private function enterCheckoutHooks(): shopPrefillPluginCheckoutHooks
+    {
+        $this->getCheckoutPageDetector()->markCheckoutHookFired();
+
+        return $this->getCheckoutHooks();
+    }
+
+    /**
      * @throws waException
      * @throws waDbException
      */
@@ -448,7 +475,9 @@ class shopPrefillPlugin extends shopPlugin
                 wa()->getResponse(),
                 $view,
                 new shopPrefillPluginZenData($view),
-                wa()->getRequest()
+                wa()->getRequest(),
+                $this->getSessionStorageProvider(),
+                new shopPrefillPluginZenSummaryCache(wa()->getStorage())
             );
         }
         return $this->zen_mode;
@@ -491,7 +520,7 @@ class shopPrefillPlugin extends shopPlugin
             return;
         }
 
-        $this->getCheckoutHooks()->handleCheckoutBeforeAuth($params);
+        $this->enterCheckoutHooks()->handleCheckoutBeforeAuth($params);
     }
 
     /**
@@ -508,7 +537,7 @@ class shopPrefillPlugin extends shopPlugin
             return '';
         }
 
-        return $this->getCheckoutHooks()->handleCheckoutRenderAuth($params);
+        return $this->enterCheckoutHooks()->handleCheckoutRenderAuth($params);
     }
 
 
@@ -525,7 +554,7 @@ class shopPrefillPlugin extends shopPlugin
             return '';
         }
 
-        return $this->getCheckoutHooks()->handleCheckoutRenderRegion($params);
+        return $this->enterCheckoutHooks()->handleCheckoutRenderRegion($params);
     }
 
     /**
@@ -542,7 +571,7 @@ class shopPrefillPlugin extends shopPlugin
             return '';
         }
 
-        return $this->getCheckoutHooks()->handleCheckoutRenderShipping($params);
+        return $this->enterCheckoutHooks()->handleCheckoutRenderShipping($params);
     }
 
     /**
@@ -558,7 +587,7 @@ class shopPrefillPlugin extends shopPlugin
             return '';
         }
 
-        return $this->getCheckoutHooks()->handleCheckoutRenderDetails($params);
+        return $this->enterCheckoutHooks()->handleCheckoutRenderDetails($params);
     }
 
     /**
@@ -574,7 +603,7 @@ class shopPrefillPlugin extends shopPlugin
             return '';
         }
 
-        return $this->getCheckoutHooks()->handleCheckoutRenderPayment($params);
+        return $this->enterCheckoutHooks()->handleCheckoutRenderPayment($params);
     }
 
     /**
@@ -590,7 +619,7 @@ class shopPrefillPlugin extends shopPlugin
             return '';
         }
 
-        return $this->getCheckoutHooks()->handleCheckoutRenderConfirm($params);
+        return $this->enterCheckoutHooks()->handleCheckoutRenderConfirm($params);
     }
 
 

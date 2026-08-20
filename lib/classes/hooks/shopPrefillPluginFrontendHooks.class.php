@@ -11,14 +11,16 @@ class shopPrefillPluginFrontendHooks
     private shopPrefillPluginGuestTokenStorage      $guest_token_storage;
     private shopPrefillPluginConsentStorage         $consent_storage;
     private shopPrefillPluginAssetsManager          $assets_manager;
+    private shopPrefillPluginCheckoutPageDetector   $page_detector;
     private bool                                    $is_debug;
     private bool                                    $is_debug_panel;
     private array                                   $storefront_settings;
-    private string                                  $storefront_css_url;
     /** @var callable */
     private $add_css_callback;
     /** @var callable */
     private $add_js_callback;
+    /** @var callable */
+    private $storefront_css_url_resolver;
 
     public function __construct(
         shopPrefillPluginSessionStorageProvider $session_storage,
@@ -26,24 +28,28 @@ class shopPrefillPluginFrontendHooks
         shopPrefillPluginGuestTokenStorage $guest_token_storage,
         shopPrefillPluginConsentStorage $consent_storage,
         shopPrefillPluginAssetsManager $assets_manager,
+        shopPrefillPluginCheckoutPageDetector $page_detector,
         bool $is_debug,
         bool $is_debug_panel,
         array $storefront_settings,
         callable $add_css_callback,
         callable $add_js_callback,
-        string $storefront_css_url = ''
+        callable $storefront_css_url_resolver
     ) {
         $this->session_storage      = $session_storage;
         $this->user_provider        = $user_provider;
         $this->guest_token_storage  = $guest_token_storage;
         $this->consent_storage      = $consent_storage;
         $this->assets_manager       = $assets_manager;
+        $this->page_detector        = $page_detector;
         $this->is_debug             = $is_debug;
         $this->is_debug_panel       = $is_debug_panel;
         $this->storefront_settings  = $storefront_settings;
         $this->add_css_callback     = $add_css_callback;
         $this->add_js_callback      = $add_js_callback;
-        $this->storefront_css_url   = $storefront_css_url;
+        // Резолвер, а не готовая строка: он лезет на диск за per-storefront CSS,
+        // а на каталоге ассеты не подключаются вовсе — платить за них там не за что.
+        $this->storefront_css_url_resolver = $storefront_css_url_resolver;
     }
 
 
@@ -57,7 +63,8 @@ class shopPrefillPluginFrontendHooks
      * читается только на чекаут-пути — см. docs/codereview/issue-63-*.md и
      * docs/todo/on-entry-early-prefill.md.
      *
-     * Здесь остаются куки, remember-me, ассеты и debug-панель.
+     * Здесь остаются куки, remember-me, debug-панель и ассеты. Ассеты — только на
+     * странице оформления заказа: см. issue-64 и initializeFrontendAssets().
      *
      * @param array|null $params Параметры хука
      * @return string HTML для вставки в <head>
@@ -76,21 +83,13 @@ class shopPrefillPluginFrontendHooks
             return '';
         }
 
-        // Авторизация не зависит от гостевых настроек, поэтому обрабатывается до раннего
-        // выхода ниже: иначе одноразовая метка pending auth зависла бы в сессии.
         $this->handleRememberMeCookie();
 
-        // Для гостей: пропускаем если функция отключена
-        $guest_enabled = $this->storefront_settings['prefill']['guest']['enabled'];
-        if (!$guest_enabled && !$this->user_provider->isAuth()) {
-            shopPrefillPluginLog::debug('Skipping frontendHead: guest prefill is disabled');
-            return $head_html;
-        }
-
-        // Управление гостевыми cookies
+        // Гостевые настройки проверяет сам метод — раннего выхода из хука по ним нет:
+        // Zen-режим работает и там, где гостевое предзаполнение выключено, а без ассетов
+        // свёрнутая группа осталась бы без кнопки «Изменить» (правило Z3).
         $this->handleGuestCookies();
 
-        // Инициализация стилей и скриптов
         $this->initializeFrontendAssets();
 
         if ($this->is_debug_panel) {
@@ -190,13 +189,21 @@ class shopPrefillPluginFrontendHooks
     }
 
     /**
-     * Инициализирует стили и скрипты на фронтенде
-     * Делегирует в AssetsManager
+     * Инициализирует стили и скрипты на фронтенде. Делегирует в AssetsManager.
+     *
+     * Подключает их только там, где рендерится форма заказа: вся разметка плагина живёт
+     * в ней, а на каталоге это были четыре лишних запроса и блокирующий CSS в <head>.
+     * → docs/codereview/issue-64-assets-loaded-on-every-page.md
      *
      * @throws waException
      */
     private function initializeFrontendAssets(): void
     {
+        if (! $this->page_detector->isCheckoutPage()) {
+            shopPrefillPluginLog::debug('Skipping frontend assets: not a checkout page');
+            return;
+        }
+
         $css_variables = [
             'prefill-accent-color-light' => $this->storefront_settings['styles']['accent_color'],
             'prefill-accent-color-dark'  => $this->storefront_settings['styles']['accent_color_dark'],
@@ -250,7 +257,7 @@ class shopPrefillPluginFrontendHooks
             $js_params,
             $this->add_css_callback,
             $this->add_js_callback,
-            $this->storefront_css_url
+            ($this->storefront_css_url_resolver)()
         );
     }
 

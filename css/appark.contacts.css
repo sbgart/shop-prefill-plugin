@@ -3,6 +3,15 @@
 .appark-contacts-dialog-wrapper .wa-dialog-body,
 .appark-contacts-dialog-wrapper .dialog-body {
     min-width: 400px;
+    /* .wa-dialog-body фон хардкодит #fff в core (wa-content/js/dialog/dialog.css) без переменных темы */
+    background: var(--background-color-blank);
+    color: var(--text-color);
+}
+
+/* Подложка тоже хардкодит rgba(0,0,0,0.23) в core — на тёмном фоне почти не затемняет.
+   var(--dialog-background-color) в тёмной теме — rgba(0,0,0,0.8), уже даёт видимый эффект. */
+.appark-contacts-dialog-wrapper.wa-dialog .wa-dialog-background {
+    background: var(--dialog-background-color, rgba(0, 0, 0, 0.23));
 }
 
 .appark-contacts-dialog__header {
@@ -25,10 +34,11 @@
     height: 32px;
     border: none;
     border-radius: 50%;
-    background: var(--background-color-input, #f1f3f6);
+    /* --background-color-input и --border-color-soft совпадают в тёмной теме (обе 0.1 белого) —
+       используем пару btn-light-gray, она специально размечена под разные normal/hover в обеих темах. */
+    background: var(--background-color-btn-light-gray, #f1f3f6);
     color: var(--text-color-hint-strong, #8492a6);
-    font-size: 20px;
-    line-height: 1;
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -37,7 +47,7 @@
 }
 
 .appark-contacts-dialog__close:hover {
-    background: var(--border-color-soft, #e5e9f2);
+    background: var(--background-color-btn-light-gray-hover, #e5e9f2);
     color: var(--text-color-strong, #2f3544);
 }
 

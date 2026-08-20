@@ -144,10 +144,12 @@ foreach ($ownership as $section => $fields) {
         "{$section}: списки различаются ровно на html");
 }
 
-echo "8. Страховка issue-65: список владения не изменился" . PHP_EOL;
-// issue-65 полагается на то, что `html` держит секции со свободным вводом «занятыми»,
-// иначе предзаполнение перезапишет данные текущего POST на /order/create/.
-// Список закреплён дословно: менять его — значит сначала чинить issue-65.
+echo "8. Список владения закреплён дословно" . PHP_EOL;
+// Пока список не расширен, «занятыми» секции свободного ввода держит один лишь `html`,
+// и предзаполнение вправе войти в секцию, где покупатель уже заполнил другое поле группы
+// (страна без города, подъезд без улицы). Расширение списка до всей секции — и есть фикс
+// issue-65; вместе с ним переписываются блок 7 (инвариант «различаются ровно на html»)
+// и этот блок.
 check([
     'auth'     => ['data.email', 'data.phone', 'data.firstname', 'html'],
     'region'   => ['city', 'html'],
@@ -165,7 +167,43 @@ foreach (array_merge($free_text, $choice) as $section => $spec) {
     }
 }
 
-echo "10. Выключенная группа перевешивает всё" . PHP_EOL;
+echo "10. Минимум группы для дзен-режима" . PHP_EOL;
+// delivery: только shipping.type_id. details и region в минимум не входят —
+// их данные не переживают короткое замыкание конвейера шагов.
+check(false, $checker->isGroupMinimumFilled('delivery', params('shipping', [])), 'delivery: пусто');
+check(false, $checker->isGroupMinimumFilled('delivery', params('shipping', ['html' => 'only'])), 'delivery: один html — не минимум');
+check(true,  $checker->isGroupMinimumFilled('delivery', params('shipping', ['type_id' => 'courier'])), 'delivery: есть type_id');
+
+// Ключевой сценарий: короткое замыкание съело улицу, но type_id уцелел → группа заполнена
+$short_circuited = ['order' => [
+    'shipping' => ['type_id' => 'todoor', 'variant_id' => '33.courier', 'html' => 'only'],
+    'details'  => ['html' => 'only'],
+]];
+check(true, $checker->isGroupMinimumFilled('delivery', $short_circuited),
+    'delivery: короткое замыкание съело улицу — минимум всё равно выполнен');
+check(false, $checker->isSectionFilled('details', $short_circuited),
+    'details при этом действительно пуст (потому и не в минимуме)');
+
+// Самовывоз без адресных полей — тот же расклад, отдельной логики не нужно
+check(true, $checker->isGroupMinimumFilled('delivery', ['order' => [
+    'shipping' => ['type_id' => 'pickup', 'variant_id' => '12.pickup.DES7'],
+    'details'  => ['html' => 'only'],
+]]), 'delivery: самовывоз без адресных полей');
+
+check(false, $checker->isGroupMinimumFilled('payment', params('payment', ['html' => '1'])), 'payment: пусто');
+check(true,  $checker->isGroupMinimumFilled('payment', params('payment', ['id' => '16'])), 'payment: есть id');
+
+check(false, $checker->isGroupMinimumFilled('customer', params('auth', ['html' => 1])), 'customer: пусто');
+check(true,  $checker->isGroupMinimumFilled('customer', params('auth', ['data' => ['phone' => '79001234567']])), 'customer: один телефон');
+check(true,  $checker->isGroupMinimumFilled('customer', params('auth', ['html' => 1, 'data' => ['email' => '', 'phone' => '79001234567']])),
+    'customer: email стёрт, телефон остался');
+check(false, $checker->isGroupMinimumFilled('customer', params('auth', ['html' => 1, 'data' => ['email' => '', 'phone' => '']])),
+    'customer: стёрли всё — разворачиваем');
+
+check(true, $checker->isGroupMinimumFilled('confirm', params('confirm', [])), 'confirm: не сворачивается, минимума нет');
+check(true, $checker->isGroupMinimumFilled('unknown', []), 'неизвестная группа не мешает');
+
+echo "11. Выключенная группа перевешивает всё" . PHP_EOL;
 $off = new shopPrefillPluginSectionChecker(
     ['customer' => false, 'delivery' => false, 'payment' => false, 'confirm' => false]
 );
@@ -173,13 +211,13 @@ foreach (array_merge(array_keys($free_text), array_keys($choice)) as $section) {
     check(false, $off->canPrefillSection($section, params($section, [])), "{$section}: группа выключена");
 }
 
-echo "11. Пустые значения не считаются данными (существующее поведение isValueFilled)" . PHP_EOL;
+echo "12. Пустые значения не считаются данными (существующее поведение isValueFilled)" . PHP_EOL;
 foreach (['', null, '0', 0] as $empty) {
     $p = params('region', ['city' => $empty]);
     check(false, $checker->isSectionFilled('region', $p), 'region: city=' . var_export($empty, true));
 }
 
-echo "12. Устойчивость к мусору" . PHP_EOL;
+echo "13. Устойчивость к мусору" . PHP_EOL;
 check(false, $checker->isSectionFilled('region', []), 'нет ключа order');
 check(false, $checker->isSectionOwnedByCustomer('region', []), 'нет ключа order (owned)');
 check(false, $checker->isSectionFilled('unknown', params('unknown', ['x' => 1])), 'неизвестная секция');

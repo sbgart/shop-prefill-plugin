@@ -41,6 +41,8 @@ class shopPrefillPluginSettingsStorefrontAction extends shopPrefillPluginSetting
             'shipping_methods'     => $shippingMethods,
             'payment_methods'      => $paymentMethods,
             'auth_dependencies'    => $this->getAuthDependencies($storefront),
+            // Потолок настройки «сколько вариантов показывать» — одно число на форму и на бэкенд
+            'variants_limit_max'   => shopPrefillPluginFillParamsCollection::MAX_LIMIT,
         ]);
     }
 

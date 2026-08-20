@@ -84,21 +84,29 @@ class shopPrefillPluginOrderProvider
     }
 
     /**
-     * ID заказов покупателя, от новых к старым.
+     * ID заказов покупателя, от новых к старым, страницей.
+     *
+     * Страница нужна коллекции вариантов: она добирает историю, пока не наберёт нужное
+     * число различных вариантов доставки (issue-68). Лимит применяется в БД, до гидратации.
      *
      * @param int $contact_id
-     * @param int $limit Лимит применяется в БД, до гидратации (issue-68)
+     * @param int $limit  Размер страницы
+     * @param int $offset Сколько заказов пропустить — уже просмотренные страницы
      */
-    public function getUserOrdersId(int $contact_id, int $limit = self::HISTORY_LIMIT): array
+    public function getUserOrdersId(int $contact_id, int $limit = self::HISTORY_LIMIT, int $offset = 0): array
     {
-        if ($contact_id <= 0) {
+        if ($contact_id <= 0 || $limit <= 0) {
             return [];
         }
 
-        $orders_id = $this->order_model->select("id")
-            ->where('contact_id=?', $contact_id)
-            ->order('id DESC')
-            ->limit($limit)
+        $orders_id = $this->order_model
+            ->query(
+                "SELECT id FROM shop_order
+                 WHERE contact_id = i:contact_id
+                 ORDER BY id DESC
+                 LIMIT i:offset, i:limit",
+                ['contact_id' => $contact_id, 'offset' => max(0, $offset), 'limit' => $limit]
+            )
             ->fetchAll();
 
         return array_column($orders_id, 'id');
@@ -117,6 +125,70 @@ class shopPrefillPluginOrderProvider
         }
 
         return $this->order_params_model->get($order_ids) ?: [];
+    }
+
+    /**
+     * Параметры, из которых складывается подпись варианта доставки — один запрос на страницу.
+     *
+     * Отличие от getOrdersParamsByIds(): тянет только префикс `shipping` (адрес доставки,
+     * инстанс, тариф, кастомные поля плагина доставки) — ровно то, что сравнивает
+     * FillParams::isSameDeliveryOption(). На живой базе это ~10 строк на заказ вместо ~28,
+     * поэтому глубокий добор истории не стоит лишнего трафика (issue-68).
+     *
+     * @param array $order_ids
+     * @return array [order_id => [name => value]]
+     */
+    public function getOrdersDeliveryParamsByIds(array $order_ids): array
+    {
+        $order_ids = array_filter(array_map('intval', $order_ids));
+        if (empty($order_ids)) {
+            return [];
+        }
+
+        $rows = $this->order_params_model
+            ->query(
+                "SELECT order_id, name, value FROM shop_order_params
+                 WHERE order_id IN (i:ids) AND name LIKE 'shipping%'",
+                ['ids' => $order_ids]
+            )
+            ->fetchAll();
+
+        $params = [];
+        foreach ($rows as $row) {
+            $params[(int) $row['order_id']][$row['name']] = $row['value'];
+        }
+
+        return $params;
+    }
+
+    /**
+     * Прогревает кэш строк shop_order одним запросом.
+     *
+     * Без него гидратация коллекции читает comment и contact_id по одному заказу за раз
+     * (issue-17): getOrderRow() кэширует результат, но не избавляет от N запросов.
+     *
+     * @param array $order_ids
+     */
+    public function preloadOrderRows(array $order_ids): void
+    {
+        $order_ids = array_filter(array_map('intval', $order_ids));
+
+        // Уже прочитанные заказы повторно не запрашиваем
+        $missing = array_values(array_diff($order_ids, array_keys(self::$order_rows)));
+        if (empty($missing)) {
+            return;
+        }
+
+        $rows = $this->order_model
+            ->query(
+                "SELECT id, contact_id, comment FROM shop_order WHERE id IN (i:ids)",
+                ['ids' => $missing]
+            )
+            ->fetchAll('id');
+
+        foreach ($missing as $order_id) {
+            self::$order_rows[$order_id] = $rows[$order_id] ?? null;
+        }
     }
 
     public function storeShippingTypeId(int $order_id, string $shipping_type_id): bool

@@ -1,6 +1,6 @@
 # Issue 17 — N+1 запросов: `getOrderComment` и `getContactIdFromOrder` внутри цикла
 
-**Статус:** ⬜ Открыта  
+**Статус:** ✅ Закрыта 19.08.2026 — `preloadOrderRows()` берёт `id, contact_id, comment` одним `IN ()` до цикла, контакт и его auth-поля кэшируются на запрос (см. [issue-68](issue-68-params-choice-collection-n-plus-1.md))  
 **Приоритет:** 🟠 Высокий  
 **Сложность фикса:** 🔧 Небольшой  
 **Файл:** `fillparams/shopPrefillPluginFillParamsProvider.class.php`, метод `getFillParamsByOrderParams`

@@ -50,6 +50,25 @@ class shopPrefillPluginSectionChecker
     ];
 
     /**
+     * Минимальный признак «группа заполнена» для дзен-режима: секции, без которых
+     * сворачивать группу нельзя.
+     *
+     * Список намеренно короткий — в него входят только те секции, чьи данные
+     * переживают короткое замыкание конвейера шагов (ошибка валидации выше по цепочке,
+     * fast_render). `shipping` и `payment` его переживают, потому что JS-контроллер
+     * checkout2 держит выбор у себя и отправляет его даже при пустом DOM. А `details`
+     * сериализуется из формы, которая после такого рендера пуста, — и адрес пропадает
+     * из сессии, хотя покупатель его не трогал. Поэтому `details` и `region` здесь нет.
+     *
+     * См. docs/bugs/zen-collapse-on-upstream-checkout-error.md, пункт 3.
+     */
+    private const GROUP_MINIMUM_SECTIONS = [
+        'customer' => ['auth'],
+        'delivery' => ['shipping'],
+        'payment'  => ['payment'],
+    ];
+
+    /**
      * Признак «в секции есть реальные данные покупателя» (dot-notation).
      *
      * То же самое без `html`: флаг рендера — не данные. Отвечает на вопрос
@@ -143,6 +162,30 @@ class shopPrefillPluginSectionChecker
             self::SECTION_DATA_FIELDS[$section_id] ?? [],
             $checkout_params['order'][$section_id] ?? []
         );
+    }
+
+    /**
+     * Заполнен ли минимум группы — то, без чего свёрнутый блок соврёт покупателю.
+     *
+     * @param string $group customer | delivery | payment
+     * @param array $checkout_params Параметры checkout из сессии
+     * @return bool true если группу можно сворачивать
+     */
+    public function isGroupMinimumFilled(string $group, array $checkout_params): bool
+    {
+        $sections = self::GROUP_MINIMUM_SECTIONS[$group] ?? null;
+        if ($sections === null) {
+            // Неизвестная группа: не наше дело её разворачивать
+            return true;
+        }
+
+        foreach ($sections as $section_id) {
+            if (!$this->isSectionFilled($section_id, $checkout_params)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -98,6 +98,15 @@
                     hint_after='[`hint.prefill.my_delivery_variants`]'}
 
                     {include file='../../components/Field.html'
+                    name="{$name_prefix}[prefill][my_delivery_variants_limit]"
+                    type='Number'
+                    label='[`setting.prefill.my_delivery_variants_limit`]'
+                    value=$settings['prefill']['my_delivery_variants_limit']
+                    min=1
+                    max=$variants_limit_max
+                    hint_after='[`hint.prefill.my_delivery_variants_limit`]'}
+
+                    {include file='../../components/Field.html'
                     name="{$name_prefix}[prefill][my_delivery_variants_button_classes]"
                     type='Text'
                     label='[`setting.prefill.my_delivery_variants_button_classes`]'

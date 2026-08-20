@@ -23,7 +23,12 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
             throw new waRightsException('Access denied');
         }
 
-        $fill_params_collection = $instance->getFillParamsProvider()->getFillParamsCollection();
+        // Сколько карточек показывать — решает владелец магазина (настройка витрины)
+        $limit = shopPrefillPluginFillParamsCollection::normalizeLimit(
+            $settings['prefill']['my_delivery_variants_limit'] ?? null
+        );
+
+        $fill_params_collection = $instance->getFillParamsProvider()->getFillParamsCollection($limit);
         $fill_params_array      = [];
         $items                  = $fill_params_collection->get();
 
@@ -32,8 +37,8 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
             return (int) $right->getId() <=> (int) $left->getId();
         });
 
-        // Ограничиваем до 5 самых свежих элементов
-        $items = array_slice($items, 0, 5);
+        // Страховка: коллекция уже собрана под лимит, но экшен не полагается на это
+        $items = array_slice($items, 0, $limit);
 
         // Определяем текущий сценарий доставки для подсветки активной карточки
         $checkout_params = $instance->getSessionStorageProvider()->getCheckoutParams();

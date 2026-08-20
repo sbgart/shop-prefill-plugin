@@ -1,13 +1,15 @@
 {strip}
 <div class="prefill-params__wrapper">
     {foreach $fill_params_array as $fill_params}
-    <div class="prefill-params__card{if $fill_params.is_current} is-active{/if}" data-order-id="{$fill_params.id}">
+    {* Значения приходят из прошлых заказов покупателя — экранируем здесь: в Webasyst
+       Smarty::$escape_html = false, а этот путь идёт мимо ZenData (правило Z7) *}
+    <div class="prefill-params__card{if $fill_params.is_current} is-active{/if}" data-order-id="{$fill_params.id|escape}">
         <header class="prefill-params__card-title">
-            {$fill_params.shipping_name}
+            {$fill_params.shipping_name|escape}
         </header>
         <div class="prefill-params__card-content">
-            {$fill_params.zip}, {$fill_params.country_name}, {$fill_params.region_name},
-            {$fill_params.city}, {$fill_params.street}
+            {$fill_params.zip|escape}, {$fill_params.country_name|escape}, {$fill_params.region_name|escape},
+            {$fill_params.city|escape}, {$fill_params.street|escape}
         </div>
     </div>
     {foreachelse}

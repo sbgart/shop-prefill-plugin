@@ -1,0 +1,47 @@
+{* Диалог выбора области сохранения (issue-78). Клонируется из <template> в js/prefill.save-scope.js *}
+<template id="prefill-save-scope-dialog-template">
+    <div class="wa-dialog prefill-save-scope-dialog">
+        <div class="wa-dialog-background"></div>
+        <div class="wa-dialog-body">
+            <header class="wa-dialog-header">
+                <h2>[`dialog.save_scope.title`]</h2>
+            </header>
+
+            <div class="wa-dialog-content">
+                <p>[`dialog.save_scope.intro`]</p>
+
+                <ul class="prefill-save-scope-options">
+                    <li>
+                        <label>
+                            <input type="radio" name="prefill-save-scope" value="current" checked>
+                            <span class="prefill-save-scope-option">[`dialog.save_scope.current`]</span>
+                        </label>
+                        <div class="prefill-save-scope-details" data-id="current-label"></div>
+                    </li>
+                    <li>
+                        <label>
+                            <input type="radio" name="prefill-save-scope" value="all">
+                            {* %d подставляется в JS: число открытых витрин известно только на клиенте *}
+                            <span class="prefill-save-scope-option" data-id="all-label">[`dialog.save_scope.all`]</span>
+                        </label>
+                        <div class="prefill-save-scope-details">
+                            <ul class="prefill-save-scope-list" data-id="storefront-list">
+                                {* Заготовки строк списка: JS клонирует их по числу витрин *}
+                                <li data-id="storefront-item"></li>
+                                <li class="hint" data-id="more-item">[`dialog.save_scope.more`]</li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+
+                <p class="hint">[`dialog.save_scope.hint`]</p>
+            </div>
+
+            <footer class="wa-dialog-footer">
+                <button type="button" class="button green js-prefill-save-scope-submit">[`dialog.save_scope.confirm`]</button>
+                <span class="text-between-buttons">[`dialog.save_scope.or`]</span>
+                <a href="javascript:void(0);" class="js-close-dialog">[`dialog.save_scope.cancel`]</a>
+            </footer>
+        </div>
+    </div>
+</template>

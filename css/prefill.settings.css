@@ -295,7 +295,7 @@
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--text-color-muted, #888);
+    color: var(--text-color-hint, #888);
     margin-bottom: 6px;
 }
 
@@ -303,7 +303,7 @@
     margin-top: 8px;
     margin-bottom: 4px;
     font-size: 11px;
-    color: var(--text-color-muted, #888);
+    color: var(--text-color-hint, #888);
 }
 
 .prefill-ct-chips {
@@ -366,7 +366,7 @@
 }
 
 .prefill-var-tooltip__desc {
-    color: var(--text-color-muted, #666);
+    color: var(--text-color-hint, #666);
     margin-bottom: 8px;
 }
 
@@ -375,7 +375,7 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: var(--text-color-muted, #888);
+    color: var(--text-color-hint, #888);
     margin-bottom: 4px;
 }
 
@@ -396,8 +396,31 @@
     white-space: pre-wrap;
 }
 
+/*
+ * Ширина + тёмная тема диалога редактора шаблона.
+ * Селектор дублируется под оба варианта разметки ($.waDialog может отрендерить
+ * как legacy .wa-dialog, так и UI2 .dialog) с той же специфичностью (2 класса),
+ * что и у переопределяемых правил в core (wa-content/js/dialog/dialog.css и wa-2.0.css) —
+ * иначе наше правило проигрывает каскаду при равном/более позднем порядке подключения.
+ * UI2 .dialog-body уже темизирован через var(--background-color-blank) в core, а вот
+ * legacy .wa-dialog-body фон и цвет закона хардкодит (#fff) — поэтому фон/цвет тоже
+ * переопределяем явно, это не ломает UI2-вариант (те же переменные).
+ */
+.wa-dialog .prefill-ct-dialog-body,
 .dialog .prefill-ct-dialog-body {
-    width: min(890px, 95vw);
+    width: min(1100px, 95vw);
+    max-width: 95vw;
+    background: var(--background-color-blank);
+    color: var(--text-color);
+}
+
+.wa-dialog.prefill-ct-dialog .wa-dialog-background {
+    background: var(--dialog-background-color, rgba(0, 0, 0, 0.23));
+}
+
+.wa-dialog.prefill-ct-dialog .wa-close-icon {
+    color: var(--text-color-hint);
+    opacity: 0.7;
 }
 
 /* ── Log viewer (Debug tab) ── */
@@ -509,7 +532,7 @@
     gap: 4px;
     margin-top: 2px;
     font-size: 10px;
-    color: var(--text-color-muted, #aaa);
+    color: var(--text-color-hint, #aaa);
 }
 
 .prefill-log-entry__meta-sep {
@@ -517,7 +540,7 @@
 }
 
 .prefill-log-entry__user {
-    color: var(--text-color-muted, #888);
+    color: var(--text-color-hint, #888);
     font-weight: 600;
 }
 
@@ -538,7 +561,7 @@
 .prefill-log-state {
     padding: 16px;
     text-align: center;
-    color: var(--text-color-muted, #aaa);
+    color: var(--text-color-hint, #aaa);
 }
 
 .prefill-log-state--error {
@@ -553,7 +576,7 @@
 }
 
 .prefill-log-load-more-row--loading {
-    color: var(--text-color-muted, #bbb);
+    color: var(--text-color-hint, #bbb);
     font-size: 14px;
 }
 
@@ -578,3 +601,44 @@
 .prefill-css-reset-link {
     margin-left: auto;
 }
+
+/* Диалог выбора области сохранения (issue-78) */
+.prefill-save-scope-dialog .wa-dialog-body {
+    max-width: 520px;
+}
+
+.prefill-save-scope-options {
+    margin: 16px 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.prefill-save-scope-options > li {
+    list-style: none;
+}
+
+.prefill-save-scope-options > li + li {
+    margin-top: 12px;
+}
+
+.prefill-save-scope-option {
+    font-weight: 500;
+}
+
+/* Отступ выравнивает пояснение по тексту радиокнопки */
+.prefill-save-scope-details {
+    margin: 4px 0 0 24px;
+    color: var(--text-color-hint, #888);
+    font-size: 13px;
+}
+
+.prefill-save-scope-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.prefill-save-scope-list li {
+    padding: 1px 0;
+}
+
