@@ -1,6 +1,6 @@
 # TODO — Prefill Plugin
 
-**К релизу v1.0 открыто 9 задач ревью:** 🔴 0 · 🟠 3 · 🟢 6. Плюс 2 бага и 5 тестов.
+**К релизу v1.0 открыто 8 задач ревью:** 🔴 0 · 🟠 3 · 🟢 5. Плюс 2 бага и 5 тестов.
 
 Приоритеты: 🔴 блокер релиза · 🟠 важно до продажи · 🟢 мелочь и гигиена.
 Номера issue: 49–62 — ревью 09.08.2026, 63–80 — ревью 16.08.2026, 81 — прогон runbook 18.08.2026, 82 — найдена при браузерной проверке фикса issue-69, 18.08.2026, 83 — найдена при разборе кэша сводки дзен-режима, 19.08.2026. Статус и дата каждой — в её файле.
@@ -20,10 +20,6 @@
 - [ ] 🟠 [Предзаполнение собирает несогласованный заказ из разных источников](codereview/issue-84-prefill-inconsistent-across-groups.md) — `type_id` без `variant_id`; вариант доставки из прошлого заказа под чужой адрес
 - [ ] 🟢 [Shipping-билдер пишет в чужую секцию, восстановление details из снапшота её затирает](codereview/issue-60-cross-section-write-details-custom.md)
 - [ ] 🟢 [Снапшот затирается текущим состоянием в ветке «нечего предзаполнять»](codereview/issue-72-snapshot-overwritten-by-empty-branch.md)
-
-### Настройки и админка
-
-- [ ] 🟢 [Сборник мелких находок ревью — осталось: custom_css в TEXT](codereview/issue-57-minor-robustness-findings.md) — null-витрина, ротация логов, .DS_Store в репо, secure-cookies и мусор в wa-data закрыты; уникальный индекс на shop_prefill_settings отклонён (YAGNI + MyISAM/лимит ключа), сверено 21.08.2026
 
 ### Код-гигиена
 
@@ -111,6 +107,7 @@
 - [x] [Кастомный CSS витрины замещает frontend.css целиком — обновления стилей плагина не доедут](codereview/issue-76-custom-css-replaces-plugin-stylesheet.md) — override-модель (frontend.css всегда + переопределения поверх), read-only справка с оригиналом в редакторе, 20.08.2026; **проверено в браузере**; попутно найден и исправлен смежный баг — `getPublicUrl()` отдавал URL с двойным ведущим `/`, из-за чего per-storefront CSS никогда не подключался на витрине
 - [x] [Плагин навязывает display:inline !important элементам шапки авторизации всегда](codereview/issue-77-auth-header-display-important-always.md) — правило перенесено из статического frontend.css в генерируемый variables_*.css, эмитится только при включённой hide_auth_header, `!important` сохранён, 20.08.2026; **проверено в браузере** on/off
 - [x] [Абсолютный путь /wa-apps/shop/img/... ломает иконки на установках в подкаталоге](codereview/issue-70-hardcoded-absolute-sprite-path.md) — путь собирается через `{$wa_url}`, заодно исправлена опечатка `?v` → `?v=`; 20.08.2026, **проверено в браузере**
+- [x] [Сборник мелких находок ревью (null-витрина, secure-cookies, мусор в wa-data, ротация логов, custom_css в TEXT)](codereview/issue-57-minor-robustness-findings.md) — 7 из 8 закрыты 21.08.2026; уникальный индекс на shop_prefill_settings отклонён (YAGNI + лимит ключа MyISAM/utf8mb3), обоснование в файле
 
 ### Хвосты issue-51 (remember me)
 
