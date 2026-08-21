@@ -6,9 +6,13 @@
  */
 class shopPrefillPluginAssetsManager
 {
+    /** Возраст сгенерированного файла (CSS-переменные, JS-инициализатор), после которого он считается мусором */
+    private const PRUNE_TTL_SECONDS = 30 * 24 * 60 * 60;
+
     private string $plugin_id;
     private bool $assets_initialized = false;
     private ?waResponse $response = null;
+    private ?shopPrefillPluginStaleFilePruner $pruner = null;
 
     public function __construct(string $plugin_id)
     {
@@ -95,6 +99,7 @@ class shopPrefillPluginAssetsManager
 
         if (!file_exists("{$css_public_dir}{$css_variables_filename}")) {
             file_put_contents("{$css_public_dir}{$css_variables_filename}", $css_variables_map);
+            $this->getPruner()->prune($css_public_dir, $css_variables_filename, self::PRUNE_TTL_SECONDS);
         }
 
         return $css_variables_filename;
@@ -127,6 +132,7 @@ JS;
 
         if (!file_exists("{$js_public_dir}{$js_file_name}")) {
             file_put_contents("{$js_public_dir}{$js_file_name}", $inline_script);
+            $this->getPruner()->prune($js_public_dir, $js_file_name, self::PRUNE_TTL_SECONDS);
         }
 
         return $js_file_name;
@@ -175,5 +181,13 @@ JS;
     private function getResponse(): waResponse
     {
         return $this->response ??= wa()->getResponse();
+    }
+
+    /**
+     * Получает экземпляр pruner'а (ленивая инициализация)
+     */
+    private function getPruner(): shopPrefillPluginStaleFilePruner
+    {
+        return $this->pruner ??= new shopPrefillPluginStaleFilePruner();
     }
 }

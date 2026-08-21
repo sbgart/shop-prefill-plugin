@@ -90,20 +90,16 @@ class shopPrefillPluginConsentStorage
     /**
      * Ставит cookie согласия с нужными атрибутами.
      *
-     * `secure=false` сейчас намеренно (см. отдельный issue про secure cookies).
      * `httponly=true` обязателен, чтобы JS не мог прочитать куку.
      */
     private function setConsentCookie(int $expires): void
     {
-        $this->response->setCookie(
-            self::CONSENT_COOKIE,
-            '1',
-            $expires,
-            null,
-            '',
-            false,
-            true
-        );
+        $this->response->setCookie(self::CONSENT_COOKIE, '1', [
+            'expires'  => $expires,
+            'secure'   => waRequest::isHttps(),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
     }
 
     /**
@@ -111,14 +107,11 @@ class shopPrefillPluginConsentStorage
      */
     private function deleteConsentCookie(): void
     {
-        $this->response->setCookie(
-            self::CONSENT_COOKIE,
-            '',
-            time() - 3600,
-            null,
-            '',
-            false,
-            true
-        );
+        $this->response->setCookie(self::CONSENT_COOKIE, '', [
+            'expires'  => time() - 3600,
+            'secure'   => waRequest::isHttps(),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
     }
 }

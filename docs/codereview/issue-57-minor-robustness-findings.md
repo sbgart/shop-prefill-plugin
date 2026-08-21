@@ -1,36 +1,73 @@
 # Issue 57 — Мелкие находки ревью (надёжность и гигиена)
 
-**Статус:** 🟡 Частично закрыта
+**Статус:** 🟡 Частично закрыта (6 из 8 закрыты, 1 отклонена, 1 открыта — сверено с кодом 21.08.2026)
 **Приоритет:** 🟢 Низкий
 **Сложность фикса:** 🔧 Тривиальные
 
 Сборник мелочей, найденных при ревью перед релизом v1.0. Каждый пункт независим.
 
-## 1. `getStorefront($code)` может вернуть `null` — ✅ закрыто в [issue-49](issue-49-fatal-storefront-null-backend-order-create.md)
+## 1. `getStorefront($code)` может вернуть `null` — ✅ закрыто
 
-`shopPrefillPluginStorefrontProvider::getStorefront()` ищет витрину в коллекции и возвращает `null`, если кода нет. Использования без проверки:
+`shopPrefillPluginStorefrontProvider::getStorefront()` ищет витрину в коллекции и возвращает `null`, если кода нет. Использования без проверки были в:
 
 - `shopPrefillPlugin::saveSettings()` → `->saveSettings($storefront_settings)` на `null`;
 - `SettingsGetCss` / `SettingsStorefront` → `->getSettings()` на `null` (код витрины приходит из запроса);
 - `resolveStorefrontCssUrl()` → `getCurrentStorefront()->getCode()`.
 
-Витрину могли удалить/переименовать между открытием формы и сохранением → фатал. Стоит валидировать код и возвращать понятную ошибку.
+Фатал из `order_action.create` закрыт в [issue-49](issue-49-fatal-storefront-null-backend-order-create.md). Остальные три места проверены заново 21.08.2026 — все тоже закрыты (видимо, попутно с issue-76/issue-78):
+`saveSettings()` пропускает неизвестную витрину с `shopPrefillPluginLog::warning()` (`lib/shopPrefill.plugin.php:662-670`); `SettingsGetCssController` и `SettingsStorefrontAction` возвращают `error.storefront_not_found` / 404 при `findStorefront() === null`; `resolveStorefrontCssUrl()` больше не дергает `getCurrentStorefront()` напрямую — берёт `getEffectiveStorefront()`, который по контракту (см. `CLAUDE.md`) никогда не возвращает `null`.
 
-## 2. Cookies без `secure`
+## 2. Cookies без `secure` — ✅ закрыто
 
-`prefill_guest_hash`, `prefill_consent` (в коде стоит TODO) и `auth_token` из [issue-51](issue-51-remember-me-auth-token-forced.md) ставятся с `secure = false`. На HTTPS-магазине — выставлять `waRequest::isHttps()`. `httponly` везде корректный.
+`prefill_guest_hash` (`shopPrefillPluginGuestTokenStorage`) и `auth_token` из [issue-51](issue-51-remember-me-auth-token-forced.md) (`shopPrefillPluginUserProvider`) ставятся с `'secure' => waRequest::isHttps()`.
 
-## 3. Сгенерированные файлы в `wa-data` не удаляются
+`prefill_consent` (`shopPrefillPluginConsentStorage::setConsentCookie()`/`deleteConsentCookie()`) исправлен 21.08.2026: оба метода переведены на array-style `setCookie()`, `secure` теперь `waRequest::isHttps()`, добавлен `samesite => Lax` (которого не было вообще). Комментарий-заглушку про «намеренно» убрали. `httponly` везде и был корректным.
 
-`shopPrefillPluginAssetsManager::generateCssVariablesFile()` / `generateJSInitializerFile()` пишут файл на каждый новый хеш параметров и никогда не чистят старые. На тестовой установке накопилось 15 CSS + 20 JS. Нужна чистка старых файлов при сохранении настроек (или единый файл с версией из `update_time`).
+## 3. Сгенерированные файлы в `wa-data` не удаляются — ✅ закрыто
 
-## 4. `shop_prefill_settings` без уникального индекса
+Было: `shopPrefillPluginAssetsManager::generateCssVariablesFile()` / `generateJSInitializerFile()` писали файл на каждый новый хеш параметров и никогда не чистили старые. На 21.08.2026 на локалке накопилось 17 CSS + 26 JS.
 
-В `lib/config/db.php` только `PRIMARY = id`. `shopPrefillPluginSettingsModel::set()` делает `getByField()` + `insert()/updateByField()` — при параллельных сохранениях возможны дубли строк `(storefront_code, name, groups)`, а `parse()` тихо возьмёт последнюю. Добавить уникальный ключ.
+Исправлено 21.08.2026: логика чистки вынесена в отдельный класс `shopPrefillPluginStaleFilePruner` (`lib/classes/view/shopPrefillPluginStaleFilePruner.class.php`) — не зависит от Webasyst-рантайма (только `glob`/`filemtime`/`unlink`), поэтому тестируется без bootstrap'а. `AssetsManager` получил `PRUNE_TTL_SECONDS = 30 дней` и вызывает `getPruner()->prune($dir, $filename, self::PRUNE_TTL_SECONDS)` внутри веток `if (!file_exists(...))` в обоих генераторах — то есть только в момент появления нового хеша, не на каждый рендер чекаута.
 
-## 5. Логи без ротации
+Покрыто тестом `tests/StaleFilePrunerTest.php` (6 случаев: TTL-удаление, граница TTL, защита `except_filename`, директории не трогаем, пустой/несуществующий каталог).
 
-`shopPrefillPluginLog::writeLog()` пишет в `wa-log/prefill.plugin*.log` через `file_put_contents(..., FILE_APPEND)` без ограничения размера; читается только последний 1 МБ (`LogReader::MAX_BYTES`), остальное копится на диске вечно. См. также [issue-52](issue-52-consent-endpoint-log-flood-csrf.md).
+Проверено в браузере на реальных накопленных файлах: перед тестом было 17 CSS-файлов (13 из них старше 30 дней). Через настройки плагина (Дизайн → акцентный цвет) изменил `#c93131` → `#c93132`, что заставило сгенерироваться новый хеш; после захода на `/order/` все 13 устаревших файлов исчезли, остался новый + 4 недавних — итог 5 файлов, без ошибок в консоли и PHP-логе. Настройку вернул на `#c93131` и снова зашёл на `/order/` — сайт переиспользовал уже существующий (недавний) файл под исходное значение, новых записей не потребовалось. Один тестовый файл-сирота (под `#c93132`) остался в каталоге — он сам уйдёт по TTL, специально его не удалял, чтобы не искажать демонстрацию автоматической очистки.
+
+## 4. `shop_prefill_settings` без уникального индекса — ⛔ не делаем
+
+Отклонено 21.08.2026 по итогам повторного разбора: риск ниже, чем стоимость и побочные эффекты миграции. Схема остаётся как есть (`PRIMARY = id`), `set()` не меняется.
+
+### Почему гонка не опасна
+
+Писателей в таблицу двое, и оба — админские:
+
+- `shopPrefillPlugin::saveSettings()` (`lib/shopPrefill.plugin.php:658`) — форма настроек в бэкенде;
+- `shopPrefillPluginFrontendToggleZenController` — дебажный тумблер за двойным гейтом `isDebug() && isAdmin('shop')`.
+
+Анонимных писателей нет. Два параллельных сохранения из одной админской сессии невозможны: `waSessionStorage` держит файловый лок сессии до конца запроса (`session_write_close()` только при закрытии). Гонка требует двух разных админов, жмущих «Сохранить» в одну и ту же секунду.
+
+Последствие дубля самозатухает: `parse()` берёт последнюю строку (= самую свежую по порядку вставки), а следующий `set()` вызывает `updateByField()` **без LIMIT** (`wa-system/database/waModel.class.php:438`) — обновятся все дубли сразу, значения сойдутся. На рабочей локалке 304 строки по 5 витринам, дублей — ноль.
+
+### Почему предложенное решение сделало бы хуже
+
+Изначальный план (составной UNIQUE с префиксом `groups(191)` через `lib/config/db.php`) не проходит по шести пунктам:
+
+1. **Префикс 191 физически не влезает.** Таблица создаётся как **MyISAM / utf8mb3** — в `lib/config/db.php` нет `:options`, а `waDbMysqliAdapter::createTable()` по умолчанию ставит `MyISAM` и `CHARSET=utf8` (`ifset($data, ':options', 'engine', 'MyISAM')`). Сверено с information_schema: `ENGINE=MyISAM`, `utf8mb3_general_ci`. Лимит ключа у MyISAM — 1000 байт, не 3072: `303 (storefront_code) + 152 (name) + 576 (groups(191)) ≈ 1031`. Потолок здесь ~180 символов, на utf8mb4-инсталляции — ~97. Обоснование «191×4 = 764 < 767» взято из мира InnoDB/utf8mb4 и к этой таблице неприменимо.
+2. **Правка `db.php` не доедет до установленных копий.** `waPlugin::install()` → `createSchema()` → `CREATE TABLE IF NOT EXISTS`; существующие таблицы не изменяются, а сам `install()` отрабатывает один раз при первом запуске. Индекс получили бы только чистые установки, остальным нужен скрипт `lib/updates/<версия>/<timestamp>.php` (такого каталога у плагина нет).
+3. **«Применить через переустановку плагина» — потеря данных.** `waPlugin::uninstall()` делает `DROP TABLE IF EXISTS` по каждой таблице из `db.php`: переустановка стёрла бы все настройки.
+4. **UNIQUE без правки `set()` превращает мягкий баг в жёсткий.** Сейчас гонка даёт лишнюю строку, которая схлопнётся сама. С уникальным ключом она даст `waDbException` посреди ~300 последовательных `set()` из одного сохранения формы, без транзакции (MyISAM их не поддерживает) и без отката → 500 и наполовину сохранённые настройки.
+5. **Разъехавшаяся схема.** Новые установки с индексом, старые без. Если потом перевести `set()` на `INSERT ... ON DUPLICATE KEY UPDATE`, то там, где ключа нет, ODKU выродится в обычный INSERT — каждое сохранение формы будет добавлять ~300 строк.
+6. **Префиксный индекс работает против себя.** Реальные значения `groups` различаются в хвосте: `["zen","groups","delivery","custom_templates",32]` против `...,33]` — расхождение на 46-м символе при длине 49. Попытка ужать префикс под лимит MyISAM (п. 1) прямо ведёт к ложным срабатываниям уникальности, блокирующим легитимное сохранение.
+
+Плюс индекс всё равно не закрывает настоящую проблему таблицы: строки отсюда **никогда не удаляются**. Мусор от переименованных настроек и удалённых витрин копится, а смена типа ключа со скаляра на массив ломает `parse()` (`$ptr[$group] = []` поверх строки). Дубли от гонки на этом фоне — наименьшая из бед.
+
+### Если задача когда-нибудь станет реальной
+
+Заводить отдельным issue, не «тривиальной правкой»: скрипт в `lib/updates/`, который дедуплицирует → переводит таблицу в `InnoDB` + `utf8mb4` (заодно транзакции и построчные локи для тех же ~300 записей) → добавляет `UNIQUE (storefront_code, name, groups(191))`, **и одновременно** перевод `set()` на `INSERT ... ON DUPLICATE KEY UPDATE` плюс `:options => ['engine' => 'InnoDB', 'charset' => 'utf8mb4']` в `db.php`, чтобы чистые установки не разъезжались с обновлёнными. Триггер для пересмотра — появление неадминского писателя в эту таблицу или первые реально найденные дубли.
+
+## 5. Логи без ротации — ✅ закрыто
+
+`shopPrefillPluginLog` теперь ротирует: `rotateIfNeeded()` проверяет размер при первой записи в файл за запрос (`$rotation_checked`, по одному разу на файл) и при превышении `MAX_FILE_SIZE` (5 МБ) переносит текущий файл в `*.log.1` (`ROTATED_SUFFIX`), храня одно поколение. `LogReader` читает хвост текущего файла в бюджете `MAX_BYTES` (1 МБ) и при необходимости добирает из ротированного. См. также [issue-52](issue-52-consent-endpoint-log-flood-csrf.md).
 
 ## 6. `zenmode.css` подключается без cache-busting — ✅ закрыто
 
@@ -38,10 +75,12 @@
 
 Исправлено: версия плагина передаётся в `CheckoutHooks` через конструктор и добавляется к URL как `?v=<версия>`. Прямого обращения к `shopPrefillPlugin::getInstance()` из обработчика нет.
 
-## 7. `.DS_Store` в репозитории
+## 7. `.DS_Store` в репозитории — ✅ закрыто
 
-`.DS_Store` лежит в `plugins/prefill/`, `docs/`, `lib/`, `templates/`, `locale/`. В архив они не попадают, но в git отслеживаются — почистить (`git rm --cached`), в `.gitignore` правило уже есть.
+Проверено 21.08.2026: `git ls-files` в собственном git-репозитории плагина (`plugins/prefill/.git`) не находит ни одного `.DS_Store` — в индексе их нет, история удаления тоже не нужна (в текущем репо их никогда не коммитили). Файлы `.DS_Store` физически всё ещё лежат на диске (`plugins/prefill/`, `docs/`, `lib/`, `templates/`, `locale/` — артефакты Finder), но правило в `.gitignore` их отсекает. Действий не требуется, пока кто-то не закоммитит их насильно (`git add -f`).
 
 ## 8. `custom_css` хранится в колонке `TEXT`
 
-Лимит 64 КБ. Текущий `frontend.css` — 11 КБ, запас есть, но при вставке большого CSS MySQL молча обрежет значение. Либо `MEDIUMTEXT`, либо валидация длины в UI.
+Актуально, без изменений. `lib/config/db.php`: `'value' => array('text')` в `shop_prefill_settings` — общая колонка под все настройки, включая `custom_css`. Лимит 64 КБ. После issue-76 (override-модель) `custom_css` хранит только переопределения поверх `frontend.css`, а не файл целиком — риск переполнения ниже, чем был, но колонка не менялась. Либо `MEDIUMTEXT`, либо валидация длины в UI.
+
+**План:** минимальная правка схемы — `'value' => array('text')` → `'value' => array('mediumtext')` в `lib/config/db.php` для `shop_prefill_settings`. 16 МБ с огромным запасом против реального размера CSS. Валидацию длины в UI добавлять не нужно (YAGNI) — `MEDIUMTEXT` снимает проблему полностью. Применяется скриптом `lib/updates/<версия>/<timestamp>.php` с `ALTER TABLE`: правка одного лишь `db.php` до установленных копий не доедет (`CREATE TABLE IF NOT EXISTS`, см. разбор в №4), а переустановка плагина дропает таблицу вместе с настройками.
