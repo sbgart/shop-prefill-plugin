@@ -209,9 +209,12 @@ class shopPrefillPluginFrontendHooks
             'prefill-accent-color-dark'  => $this->storefront_settings['styles']['accent_color_dark'],
         ];
 
-        // Добавляем переменную для скрытия элементов шапки авторизации в Дзен-режиме
+        // Правило скрытия шапки авторизации в Дзен-режиме дописываем в файл переменных
+        // только когда оно реально нужно (issue-77): в статическом frontend.css оно
+        // действовало бы всегда через var(..., inline) !important, ломая тему при выключенной функции.
+        $extra_css = '';
         if ($this->isAuthHeaderHidden()) {
-            $css_variables['prefill-auth-header-display'] = 'none';
+            $extra_css = $this->buildAuthHeaderHiddenRule();
         }
 
         // Добавляем переменные для размера иконок в Zen Mode (если активен и иконки отображаются)
@@ -257,7 +260,8 @@ class shopPrefillPluginFrontendHooks
             $js_params,
             $this->add_css_callback,
             $this->add_js_callback,
-            ($this->storefront_css_url_resolver)()
+            ($this->storefront_css_url_resolver)(),
+            $extra_css
         );
     }
 
@@ -276,6 +280,21 @@ class shopPrefillPluginFrontendHooks
             && ! empty($customer['enabled'])
             && ! empty($customer['hide_auth_header'])
             && $this->user_provider->isAuth();
+    }
+
+    /**
+     * CSS-правило, скрывающее имя пользователя и кнопку «Выход» в шапке секции авторизации.
+     * Эмитится в файл переменных только когда isAuthHeaderHidden() истинно (issue-77) —
+     * !important сохранён осознанно: без него правило может не перебить специфичность темы.
+     *
+     * @return string
+     */
+    private function buildAuthHeaderHiddenRule(): string
+    {
+        return ".wa-step-auth-section .wa-section-header .wa-contact-name,\n"
+            . ".wa-step-auth-section .wa-section-header .wa-logout-link {\n"
+            . "    display: none !important;\n"
+            . "}\n";
     }
 
     /**

@@ -1066,13 +1066,22 @@ msgid "button.edit_css"
 msgstr "Edit styles"
 
 msgid "button.reset_css"
-msgstr "Reset to original"
+msgstr "Clear"
 
 msgid "dialog.css_reset.confirm"
-msgstr "Reset CSS to original? All changes will be lost."
+msgstr "Clear CSS overrides? All changes will be lost."
+
+msgid "button.show_original_css"
+msgstr "Show original CSS"
+
+msgid "button.hide_original_css"
+msgstr "Hide original CSS"
+
+msgid "hint.styles.custom_css_original"
+msgstr "The plugin's full stylesheet. Read-only — copy the selectors you need into the field below and adjust them."
 
 msgid "hint.styles.custom_css"
-msgstr "Edit the plugin CSS styles for this storefront. Changes take effect after saving settings."
+msgstr "Only overrides go here — tweaks on top of the plugin's standard styles. The field is empty by default: fill in only what you need to change. Standard styles update automatically with the plugin, your overrides are kept."
 
 msgid "hint.styles.css_loading"
 msgstr "Loading..."

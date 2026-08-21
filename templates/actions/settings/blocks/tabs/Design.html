@@ -39,12 +39,23 @@
                         <i class="icon16 loading"></i>
                     </div>
 
+                    {* Оригинальный frontend.css — свёрнут по умолчанию, только для чтения, для копирования селекторов *}
+                    <div class="js-prefill-css-original-wrap custom-mb-8">
+                        <a href="#" class="js-prefill-css-original-toggle"
+                           data-msg-show="[`button.show_original_css`]"
+                           data-msg-hide="[`button.hide_original_css`]">[`button.show_original_css`]</a>
+                        <div class="js-prefill-css-original-panel custom-mt-8" style="display:none">
+                            <p class="hint custom-mb-4">[`hint.styles.custom_css_original`]</p>
+                            <div class="prefill-css-ace prefill-css-ace--readonly js-prefill-css-original-ace" aria-hidden="true"></div>
+                        </div>
+                    </div>
+
                     {* textarea для передачи значения через форму; значение синхронизируется ACE-редактором *}
                     <textarea name="{$name_prefix}[styles][custom_css]"
                               class="js-prefill-css-textarea"
                               style="display:none">{$settings['styles']['custom_css']|escape:'html'}</textarea>
 
-                    {* Контейнер ACE-редактора (mode: css) *}
+                    {* Контейнер ACE-редактора переопределений (mode: css) *}
                     <div class="prefill-css-ace js-prefill-css-ace" aria-hidden="true"></div>
 
                     <div class="flexbox middle custom-mt-8">

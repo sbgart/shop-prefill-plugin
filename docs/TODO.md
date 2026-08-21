@@ -1,6 +1,6 @@
 # TODO — Prefill Plugin
 
-**К релизу v1.0 открыто 16 задач ревью:** 🔴 0 · 🟠 10 · 🟢 6. Плюс 2 бага, 5 тестов и 5 хвостов по issue-51.
+**К релизу v1.0 открыто 10 задач ревью:** 🔴 0 · 🟠 4 · 🟢 6. Плюс 2 бага, 5 тестов и 5 хвостов по issue-51.
 
 Приоритеты: 🔴 блокер релиза · 🟠 важно до продажи · 🟢 мелочь и гигиена.
 Номера issue: 49–62 — ревью 09.08.2026, 63–80 — ревью 16.08.2026, 81 — прогон runbook 18.08.2026, 82 — найдена при браузерной проверке фикса issue-69, 18.08.2026, 83 — найдена при разборе кэша сводки дзен-режима, 19.08.2026. Статус и дата каждой — в её файле.
@@ -20,13 +20,6 @@
 - [ ] 🟠 [Предзаполнение собирает несогласованный заказ из разных источников](codereview/issue-84-prefill-inconsistent-across-groups.md) — `type_id` без `variant_id`; вариант доставки из прошлого заказа под чужой адрес
 - [ ] 🟢 [Shipping-билдер пишет в чужую секцию, восстановление details из снапшота её затирает](codereview/issue-60-cross-section-write-details-custom.md)
 - [ ] 🟢 [Снапшот затирается текущим состоянием в ветке «нечего предзаполнять»](codereview/issue-72-snapshot-overwritten-by-empty-branch.md)
-
-### Витрина: вывод, стили, совместимость
-
-
-- [ ] 🟠 [Кастомный CSS витрины замещает frontend.css целиком — обновления стилей плагина не доедут](codereview/issue-76-custom-css-replaces-plugin-stylesheet.md)
-- [ ] 🟠 [Плагин навязывает display:inline !important элементам шапки авторизации всегда](codereview/issue-77-auth-header-display-important-always.md)
-- [ ] 🟠 [Абсолютный путь /wa-apps/shop/img/... ломает иконки на установках в подкаталоге](codereview/issue-70-hardcoded-absolute-sprite-path.md)
 
 ### Безопасность и приватность
 
@@ -127,6 +120,9 @@
 - [x] [Поиск источника предзаполнения выполняется на каждом запросе](codereview/issue-63-guest-hash-lookup-full-scan.md) — реализовано и **проверено в браузере** 18.08.2026
 - [x] [Русский текст зашит в JS и в дефолтных настройках — виден покупателю на en-витрине](codereview/done/issue-69-hardcoded-russian-strings-frontend.md) — реализовано и **проверено в браузере** 18.08.2026; при проверке найден отдельный баг [issue-82](codereview/done/issue-82-frontend-js-no-cache-busting.md)
 - [x] [prefill.frontend(.min).js подключается без версии — браузер может годами отдавать старый JS из кэша](codereview/done/issue-82-frontend-js-no-cache-busting.md) — убран трейлинг-`?`, ядро снова клеит версию; **проверено в браузере** 19.08.2026 в debug и prod
+- [x] [Кастомный CSS витрины замещает frontend.css целиком — обновления стилей плагина не доедут](codereview/issue-76-custom-css-replaces-plugin-stylesheet.md) — override-модель (frontend.css всегда + переопределения поверх), read-only справка с оригиналом в редакторе, 20.08.2026; **проверено в браузере**; попутно найден и исправлен смежный баг — `getPublicUrl()` отдавал URL с двойным ведущим `/`, из-за чего per-storefront CSS никогда не подключался на витрине
+- [x] [Плагин навязывает display:inline !important элементам шапки авторизации всегда](codereview/issue-77-auth-header-display-important-always.md) — правило перенесено из статического frontend.css в генерируемый variables_*.css, эмитится только при включённой hide_auth_header, `!important` сохранён, 20.08.2026; **проверено в браузере** on/off
+- [x] [Абсолютный путь /wa-apps/shop/img/... ломает иконки на установках в подкаталоге](codereview/issue-70-hardcoded-absolute-sprite-path.md) — путь собирается через `{$wa_url}`, заодно исправлена опечатка `?v` → `?v=`; 20.08.2026, **проверено в браузере**
 
 ### Фичи
 

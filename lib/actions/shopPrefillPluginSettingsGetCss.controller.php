@@ -33,29 +33,23 @@ class shopPrefillPluginSettingsGetCssController extends shopPrefillPluginSetting
         $settings   = $storefront->getSettings();
         $custom_css = $settings['styles']['custom_css'] ?? '';
 
-        if ($custom_css !== '') {
-            if (!$css_manager->fileExists($storefront_code)) {
-                // Файл удалён (очистка wa-data) — восстанавливаем из БД
-                $css_manager->saveFile($storefront_code, $custom_css);
-                shopPrefillPluginLog::info('CSS file restored from DB on editor open', [
-                    'storefront_code' => $storefront_code,
-                ]);
-            } else {
-                shopPrefillPluginLog::debug('CSS editor opened: custom CSS loaded', [
-                    'storefront_code' => $storefront_code,
-                    'size'            => strlen($custom_css),
-                ]);
-            }
-            $current = $custom_css;
-        } else {
-            shopPrefillPluginLog::debug('CSS editor opened: no custom CSS, showing default', [
+        // custom_css теперь содержит только переопределения — редактор открывается с ним как есть,
+        // включая пустую строку (это нормальное стартовое состояние, а не "нет данных")
+        if ($custom_css !== '' && !$css_manager->fileExists($storefront_code)) {
+            // Файл удалён (очистка wa-data) — восстанавливаем из БД
+            $css_manager->saveFile($storefront_code, $custom_css);
+            shopPrefillPluginLog::info('CSS file restored from DB on editor open', [
                 'storefront_code' => $storefront_code,
             ]);
-            $current = $default;
+        } else {
+            shopPrefillPluginLog::debug('CSS editor opened', [
+                'storefront_code' => $storefront_code,
+                'size'            => strlen($custom_css),
+            ]);
         }
 
         $this->response = [
-            'current_css' => $current,
+            'current_css' => $custom_css,
             'default_css' => $default,
             'is_custom'   => $custom_css !== '',
         ];

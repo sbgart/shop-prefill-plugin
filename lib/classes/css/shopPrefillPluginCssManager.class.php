@@ -1,10 +1,11 @@
 <?php
 
 /**
- * Управляет per-storefront CSS-файлами.
+ * Управляет per-storefront CSS-файлами с переопределениями (override-модель, issue-76).
  *
- * Исходник: css/frontend.css в плагине (не трогается).
- * Рабочий файл: wa-data/public/shop/plugins/prefill/css/frontend_{code}.css
+ * Исходник-справочник: css/frontend.css в плагине (не трогается, подключается всегда).
+ * Рабочий файл: wa-data/public/shop/plugins/prefill/css/frontend_{code}.css —
+ * содержит ТОЛЬКО пользовательские переопределения, подключается вторым, поверх штатного.
  *
  * Cache busting — через ?{update_time} в URL, как это принято в Webasyst.
  * Источник истины — значение styles.custom_css в shop_prefill_settings.
@@ -113,16 +114,22 @@ class shopPrefillPluginCssManager
      * Возвращает публичный URL per-storefront файла с cache-buster.
      * $update_time — значение update_time из настроек витрины.
      *
+     * Результат передаётся напрямую в waResponse::addCss(), минуя plugin::addCss() —
+     * та сама добавляет $wa->getRootUrl() к путям без "://" и без ведущего "//".
+     * wa()->getDataUrl() уже возвращает путь с ведущим "/" — его нужно обрезать
+     * (как это делает AssetsManager::getPublicDataPath()), иначе получится
+     * "/" + "/wa-data/..." = "//wa-data/...", и браузер примет "wa-data" за хост.
+     *
      * @throws waException
      */
     public function getPublicUrl(string $storefront_code, int $update_time = 0): string
     {
         $safe_code = $this->sanitizeCode($storefront_code);
-        $url = wa()->getDataUrl(
+        $url = substr(wa()->getDataUrl(
             "plugins/{$this->plugin_id}/css/frontend_{$safe_code}.css",
             true,
             'shop'
-        );
+        ), 1);
 
         return $update_time > 0 ? "{$url}?{$update_time}" : $url;
     }

@@ -598,6 +598,12 @@
     border-radius: 4px;
 }
 
+.prefill-css-ace--readonly {
+    height: 250px;
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
 .prefill-css-reset-link {
     margin-left: auto;
 }

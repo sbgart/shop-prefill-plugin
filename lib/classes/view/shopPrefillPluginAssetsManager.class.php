@@ -23,7 +23,9 @@ class shopPrefillPluginAssetsManager
      * @param array $js_params Параметры для инициализации JS
      * @param callable $add_css Callback для добавления CSS (addCss из плагина)
      * @param callable $add_js Callback для добавления JS (addJs из плагина)
-     * @param string $storefront_css_url Публичный URL per-storefront CSS (пустой = грузить штатный frontend.css)
+     * @param string $storefront_css_url Публичный URL per-storefront CSS с переопределениями (пустой = переопределений нет)
+     * @param string $extra_css Произвольный CSS, дописываемый в файл переменных после блока :root (issue-77:
+     *                          условные правила ядра/темы не должны попадать в статический frontend.css)
      * @throws waException
      */
     public function init(
@@ -32,17 +34,18 @@ class shopPrefillPluginAssetsManager
         array $js_params,
         callable $add_css,
         callable $add_js,
-        string $storefront_css_url = ''
+        string $storefront_css_url = '',
+        string $extra_css = ''
     ): void {
         if ($this->assets_initialized) {
             return;
         }
 
-        // Per-storefront CSS заменяет штатный frontend.css; если файла нет — грузим штатный
+        // Штатный frontend.css подключается всегда; per-storefront файл — поверх него,
+        // только переопределения (issue-76: раньше он заменял штатный файл целиком)
+        $add_css('css/frontend.' . (!$is_debug ? 'min.' : '') . 'css');
         if ($storefront_css_url !== '') {
             $this->getResponse()->addCss($storefront_css_url);
-        } else {
-            $add_css('css/frontend.' . (!$is_debug ? 'min.' : '') . 'css');
         }
 
         if ($is_debug) {
@@ -63,8 +66,8 @@ class shopPrefillPluginAssetsManager
         }
 
         // Генерируем и подключаем CSS переменные
-        if (!empty($css_variables)) {
-            $css_variables_filename = $this->generateCssVariablesFile($css_variables);
+        if (!empty($css_variables) || $extra_css !== '') {
+            $css_variables_filename = $this->generateCssVariablesFile($css_variables, $extra_css);
             $this->getResponse()->addCss($this->getPublicDataPath('css') . $css_variables_filename);
         }
 
@@ -79,12 +82,13 @@ class shopPrefillPluginAssetsManager
      * Генерирует файл с CSS переменными
      *
      * @param array $css_variables Массив CSS переменных
+     * @param string $extra_css Произвольный CSS, дописывается после блока :root как есть
      * @return string Имя сгенерированного файла
      * @throws waException
      */
-    public function generateCssVariablesFile(array $css_variables): string
+    public function generateCssVariablesFile(array $css_variables, string $extra_css = ''): string
     {
-        $css_variables_map = $this->createCssVariablesString($css_variables);
+        $css_variables_map = $this->createCssVariablesString($css_variables) . $extra_css;
         $hash = md5($css_variables_map);
         $css_variables_filename = "variables_{$hash}.css";
         $css_public_dir = wa()->getDataPath("plugins/{$this->plugin_id}/css/", true, 'shop');

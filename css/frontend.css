@@ -324,19 +324,6 @@ body.prefill-dialog-open {
 
 
 /* =============================================================================
-   ВИДИМОСТЬ ШАПКИ СЕКЦИИ АВТОРИЗАЦИИ
-   Скрывает имя пользователя и кнопку «Выход» когда включена настройка
-   zen.groups.customer.hide_auth_header и группа customer свёрнута.
-   Переменная --prefill-auth-header-display задаётся в FrontendHooks.php.
-   ============================================================================= */
-
-.wa-step-auth-section .wa-section-header .wa-contact-name,
-.wa-step-auth-section .wa-section-header .wa-logout-link {
-    display: var(--prefill-auth-header-display, inline) !important;
-}
-
-
-/* =============================================================================
    МОБИЛЬНЫЕ УСТРОЙСТВА
    ============================================================================= */
 

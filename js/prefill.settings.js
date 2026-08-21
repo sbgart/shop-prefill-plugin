@@ -538,8 +538,30 @@ var PrefillSettings = (function () {
             e.preventDefault();
             if (!confirm($_('dialog.css_reset.confirm'))) { return; }
             var $panel = $(this).closest('.js-prefill-css-editor-panel');
-            prefillCssAceSetValue($panel, $panel.data('prefill-default-css') || '');
+            // Сброс — это очистка переопределений, а не подстановка оригинала (issue-76: override-модель)
+            prefillCssAceSetValue($panel, '');
             $panel.find('.js-prefill-css-status').text('');
+        });
+
+        self.$wrapper.on('click', '.js-prefill-css-original-toggle', function (e) {
+            e.preventDefault();
+            var $toggle = $(this);
+            var $panel  = $toggle.closest('.js-prefill-css-editor-panel');
+            var $original = $panel.find('.js-prefill-css-original-panel');
+            var msgShow = $toggle.data('msg-show') || '';
+            var msgHide = $toggle.data('msg-hide') || '';
+
+            var willOpen = $original.is(':hidden');
+            $original.toggle();
+            $toggle.text(willOpen ? msgHide : msgShow);
+
+            if (willOpen && !$original.data('prefill-css-original-ace-inited')) {
+                $original.data('prefill-css-original-ace-inited', true);
+                prefillCssReadonlyAceInit(
+                    $original.find('.js-prefill-css-original-ace'),
+                    $panel.data('prefill-default-css') || ''
+                );
+            }
         });
     };
 
@@ -1067,6 +1089,49 @@ function prefillCssAceInit($container, initialValue) {
 
     $container.data('prefillCssAce', editor);
     setTimeout(function () { editor.resize(); editor.focus(); }, 50);
+}
+
+/**
+ * Инициализирует read-only ACE-редактор (mode: css) для показа оригинального frontend.css.
+ * Отдельный инстанс от override-редактора — синхронизация с textarea не нужна.
+ *
+ * @param {jQuery} $mount Контейнер для монтирования (.js-prefill-css-original-ace)
+ * @param {string} value Содержимое оригинального файла
+ */
+function prefillCssReadonlyAceInit($mount, value) {
+    if (typeof ace === 'undefined' || !$mount.length) {
+        $mount.text(value == null ? '' : String(value));
+        return;
+    }
+
+    var editor = ace.edit($mount[0]);
+    ace.config.set('basePath', (window.wa_url || '') + 'wa-content/js/ace/');
+    editor.commands.removeCommand('find');
+    editor.setReadOnly(true);
+    editor.renderer.$cursorLayer.element.style.display = 'none';
+
+    function applyTheme() {
+        editor.setTheme(
+            document.documentElement.dataset.theme === 'dark'
+                ? 'ace/theme/monokai'
+                : 'ace/theme/eclipse'
+        );
+    }
+    applyTheme();
+    document.documentElement.addEventListener('wa-theme-change', applyTheme);
+
+    var session = editor.getSession();
+    session.setMode('ace/mode/css');
+    session.setUseWrapMode(true);
+    editor.setShowPrintMargin(false);
+    editor.renderer.setShowGutter(true);
+    editor.setHighlightActiveLine(false);
+
+    session.setValue(value == null ? '' : String(value));
+    editor.clearSelection();
+    editor.navigateFileStart();
+
+    setTimeout(function () { editor.resize(); }, 50);
 }
 
 /**
