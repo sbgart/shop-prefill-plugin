@@ -53,6 +53,7 @@ class shopPrefillPluginFrontendConsentController extends waJsonController
                 case 'clear_form':
                     wa()->getStorage()->remove('shop/checkout');
                     $plugin->getSessionStorageProvider()->clearSourceMarker();
+                    $plugin->getSessionStorageProvider()->clearPaymentEcho();
                     shopPrefillPluginLog::info('User cleared checkout form session');
                     $this->response = ['status' => 'ok', 'message' => _wp('message.form_data_cleared')];
                     break;

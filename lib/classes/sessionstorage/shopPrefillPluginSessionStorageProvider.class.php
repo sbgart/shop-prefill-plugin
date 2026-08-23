@@ -20,6 +20,19 @@ class shopPrefillPluginSessionStorageProvider
      */
     private const PENDING_AUTH_KEY = 'shop/prefill_pending_auth';
 
+    /**
+     * Последний подтверждённый способ оплаты (`id` + `custom`, без `html`).
+     *
+     * Ядро исключает `payment` из списка секций, отправляемых с реальными
+     * значениями, при смене типа и варианта доставки (`Shipping.prototype.update`,
+     * form.js:2003-2015) и при смене региона (`onRegionChange`, form.js:3600-3609) —
+     * секция приходит `html === 'only'`, без полей, хотя покупатель её не трогал.
+     * Кэш переживает эти два случая и самоинвалидируется в тот же момент, когда
+     * секция говорит сама за себя и результат пуст (P9, узкое исключение из B2a).
+     * См. docs/plans/payment-section-echo-cache.md.
+     */
+    private const PAYMENT_ECHO_KEY = 'shop/prefill_payment_echo';
+
     private array $storefront_settings;
     private waSessionStorage $storage;
     private shopPrefillPluginUserProvider $user_provider;
@@ -300,6 +313,101 @@ class shopPrefillPluginSessionStorageProvider
     public function clearSourceMarker(): void
     {
         $this->getStorage()->remove(self::SOURCE_KEY);
+    }
+
+    /**
+     * Читает эхо-кэш секции payment.
+     */
+    private function getPaymentEcho(): ?array
+    {
+        $value = $this->getStorage()->get(self::PAYMENT_ECHO_KEY);
+
+        return is_array($value) && !empty($value) ? $value : null;
+    }
+
+    private function savePaymentEcho(array $section): void
+    {
+        try {
+            $this->getStorage()->set(self::PAYMENT_ECHO_KEY, $section);
+        } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed setting payment echo cache', [
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Сбрасывает эхо-кэш секции payment.
+     *
+     * Вызывается при оформлении заказа и явной очистке формы — там же, где
+     * сбрасывается остальное состояние чекаута.
+     */
+    public function clearPaymentEcho(): void
+    {
+        $this->getStorage()->remove(self::PAYMENT_ECHO_KEY);
+    }
+
+    /**
+     * Восстанавливает способ оплаты, механически обнулённый ядром при смене
+     * типа/варианта доставки или региона, либо обновляет/чистит кэш по
+     * текущему, реально отправленному покупателем выбору.
+     *
+     * `html === 'only'` отличает «секцию сегодня не спрашивали» от «покупатель
+     * сам оставил её пустой» — см. isSectionMechanicallyClean() и план
+     * docs/plans/payment-section-echo-cache.md. Совместимость восстановленного
+     * `id` с текущей доставкой не проверяется: Этап 0 плана показал, что ядро
+     * само рендерит несовместимое эхо нейтрально и блокирует его на
+     * /order/create/, ровно как отсутствие выбора.
+     *
+     * @return array|null Восстановленный кусок order.payment для текущего рендера
+     */
+    public function syncPaymentEcho(): ?array
+    {
+        if (!$this->getSectionChecker()->isGroupEnabledForSection('payment')) {
+            return null;
+        }
+
+        $checkout_params = $this->getCheckoutParams();
+        $checker         = $this->getSectionChecker();
+        $id              = $checkout_params['order']['payment']['id'] ?? null;
+
+        if ($checker->isSectionMechanicallyClean('payment', $checkout_params)) {
+            if (!empty($id)) {
+                // По протоколу ядра html==='only' с непустым id не бывает одновременно
+                return null;
+            }
+
+            $echo = $this->getPaymentEcho();
+            if ($echo === null) {
+                return null;
+            }
+
+            $merged = shopPrefillPluginHelper::deepMergeArrays($checkout_params, [
+                'order' => ['payment' => $echo],
+            ]);
+            $this->setCheckoutParams($merged);
+
+            shopPrefillPluginLog::debug('Payment section restored from echo cache', [
+                'id' => $echo['id'] ?? null,
+            ]);
+
+            return $echo;
+        }
+
+        // Секция говорила сама за себя в этом запросе — это её настоящий выбор
+        if (!empty($id)) {
+            $section = ['id' => $id];
+            if (!empty($checkout_params['order']['payment']['custom'])) {
+                $section['custom'] = $checkout_params['order']['payment']['custom'];
+            }
+            $this->savePaymentEcho($section);
+            shopPrefillPluginLog::debug('Payment echo cache updated with confirmed choice', ['id' => $id]);
+        } elseif ($this->getPaymentEcho() !== null) {
+            $this->clearPaymentEcho();
+            shopPrefillPluginLog::debug('Payment echo cache cleared: customer left payment section empty');
+        }
+
+        return null;
     }
 
     /**

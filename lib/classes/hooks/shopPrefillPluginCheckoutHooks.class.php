@@ -48,9 +48,11 @@ class shopPrefillPluginCheckoutHooks
      * Хук вызывается перед обработкой шага auth в processAll().
      * Срабатывает при каждом AJAX-запросе calculate/create.
      *
-     * Выполняет две задачи:
+     * Выполняет три задачи:
      * 1. Записывает prefill-данные в сессию (для следующего use_session_input запроса)
      * 2. Применяет prefill-данные к $params['data']['input'] для ТЕКУЩЕГО processAll
+     * 3. Восстанавливает способ оплаты, механически обнулённый ядром при смене
+     *    доставки/региона — эхо-кэш секции payment (P9)
      *
      * @param array $params ['data' => &$data] где $data['input'] — текущий $input processAll
      */
@@ -79,6 +81,17 @@ class shopPrefillPluginCheckoutHooks
                     'sections' => array_keys($filled_order),
                 ]);
             }
+        }
+
+        // Эхо-кэш payment — отдельно от истории заказов, applyPrefillInput() сюда не
+        // подходит: его is_prefilled означал бы «предзаполнено из истории», а это
+        // восстановление другого рода (docs/plans/payment-section-echo-cache.md).
+        $payment_echo = $this->session_storage->syncPaymentEcho();
+        if ($payment_echo !== null && isset($params['data']['input'])) {
+            $params['data']['input']['payment'] = shopPrefillPluginHelper::deepMergeArrays(
+                $params['data']['input']['payment'] ?? [],
+                $payment_echo
+            );
         }
     }
 

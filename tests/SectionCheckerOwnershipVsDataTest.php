@@ -210,6 +210,20 @@ check(false, $checker->isSectionOwnedByCustomer('unknown', params('unknown', ['x
 check(false, $checker->isSectionFilled('region', params('region', 'строка вместо массива')), 'секция не массив');
 check(false, $checker->isSectionFilled('details', params('details', ['shipping_address' => 'не массив'])), 'вложенный путь упирается в скаляр');
 
+echo "13. isSectionMechanicallyClean: html==='only' — секция сегодня не отправляла полей" . PHP_EOL;
+// Механизм эхо-кэша payment (docs/plans/payment-section-echo-cache.md) общий для всех
+// шести секций, хотя сейчас используется только для payment.
+foreach (array_keys($sections) as $section) {
+    check(true, $checker->isSectionMechanicallyClean($section, params($section, ['html' => 'only'])),
+        "{$section}: html==='only' — механически пусто");
+    check(false, $checker->isSectionMechanicallyClean($section, params($section, ['html' => 1])),
+        "{$section}: html===1 — секция говорила сама за себя");
+    check(false, $checker->isSectionMechanicallyClean($section, params($section, [])),
+        "{$section}: html отсутствует — не 'only'");
+}
+check(false, $checker->isSectionMechanicallyClean('payment', []), 'нет ключа order');
+check(false, $checker->isSectionMechanicallyClean('unknown', params('unknown', [])), 'неизвестная секция, html нет');
+
 echo PHP_EOL;
 if ($failures === 0) {
     echo "OK: {$checks} проверок пройдено" . PHP_EOL;

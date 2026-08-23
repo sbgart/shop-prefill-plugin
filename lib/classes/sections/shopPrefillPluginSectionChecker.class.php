@@ -194,6 +194,21 @@ class shopPrefillPluginSectionChecker
     }
 
     /**
+     * Секция сегодня не отправляла собственных полей — виджет неактивен либо
+     * ядро его не спрашивало (Payment.prototype.getData, form.js:2637-2665).
+     * Пустота здесь ничего не говорит о намерении покупателя, в отличие от
+     * html === 1 или отсутствия html, где секция «говорила сама за себя».
+     *
+     * @param string $section_id ID секции
+     * @param array $checkout_params Параметры checkout
+     * @return bool
+     */
+    public function isSectionMechanicallyClean(string $section_id, array $checkout_params): bool
+    {
+        return ($checkout_params['order'][$section_id]['html'] ?? null) === 'only';
+    }
+
+    /**
      * Заполнено ли хотя бы одно поле из списка.
      *
      * @param array $field_paths Пути в dot-notation
