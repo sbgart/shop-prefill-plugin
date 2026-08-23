@@ -46,7 +46,7 @@ prefill/sections/confirm  — секция подтверждения (комм�
 |--------|---------------|----------|
 | auth | data.email, data.phone, data.firstname | Любое контактное данное |
 | region | city | Город |
-| shipping | type_id | Выбран способ доставки |
+| shipping | variant_id | Выбран вариант доставки |
 | details | shipping_address.street | Адрес улицы |
 | payment | id | Выбран способ оплаты |
 | confirm | comment | Комментарий к заказу |

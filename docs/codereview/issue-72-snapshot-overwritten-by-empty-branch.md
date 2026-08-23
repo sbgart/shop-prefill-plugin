@@ -1,9 +1,15 @@
 # Issue 72 — Снапшот затирается текущим состоянием в ветке «нечего предзаполнять»
 
-**Статус:** ⬜ Открыта
-**Приоритет:** 🟢 Низкий сам по себе, 🟠 в связке с [issue-59](issue-59-html-key-marks-section-filled.md)
-**Сложность фикса:** 🔧 Небольшой
-**Файл:** `lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php` (`preFillCheckoutParams`)
+**Статус:** ✅ Закрыта 23.08.2026 как неприменимая — снапшот снят целиком
+**Приоритет:** ~~🟢 Низкий сам по себе, 🟠 в связке с [issue-59](issue-59-html-key-marks-section-filled.md)~~
+**Сложность фикса:** —
+**Файл:** ~~`lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php` (`preFillCheckoutParams`)~~
+
+## Закрытие 23.08.2026
+
+Механизм снапшота, описанный ниже (`saveSnapshot()`, ветка `else` с перезаписью текущим состоянием), снят целиком 22.08.2026 планом [snapshot-removal-and-html-ownership.md](../plans/snapshot-removal-and-html-ownership.md) — по независимой причине (issue-65 показала, что сам сценарий восстановления недостижим в текущем ядре). В `SessionStorageProvider` не осталось ни `SNAPSHOT_KEY`, ни `saveSnapshot()`, ни ветки, описанной ниже — проверено `grep` по `lib/`. Проблема, которую описывает issue, физически не может произойти: нет кода, который она описывает.
+
+Текст ниже сохранён только для истории.
 
 ## Проблема
 

@@ -1,49 +1,40 @@
-# Issue 60 — Shipping-билдер пишет в чужую секцию, восстановление details из снапшота её затирает
+# Issue 60 — Shipping-билдер пишет кастомные поля доставки в чужую секцию details
 
-**Статус:** ⬜ Открыта
+**Статус:** 🟡 Частично снята — проблема №2 (снапшот) неприменима с 22.08.2026, проблема №1 остаётся открытой, сужена 23.08.2026
 **Приоритет:** 🟢 Низкий (узкий сценарий, но нарушен контракт секций)
 **Сложность фикса:** 🔧 Небольшой
-**Файл:** `lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php` (`prepareShippingSectionParams`, `prepareDetailsSectionParams`)
+**Файл:** `lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php` (`prepareShippingSectionParams`)
 
 ## Проблема
 
 `prepareShippingSectionParams()` пишет не только в свою секцию:
 
 ```php
-if ($fill_params->getShippingCustom()) {
+// после 23.08.2026 (план delivery-variant-identity.md) — гейт на вариант добавлен,
+// кросс-секционная запись осталась
+if ($fill_params->getShippingVariantId() !== null && $fill_params->getShippingCustom()) {
     foreach ($fill_params->getShippingCustom() as $param => $value) {
         $final_params['order']['details']['custom'][$param] = $value;   // ← секция details
     }
 }
 ```
 
-Из этого следуют две отдельные проблемы.
+### Обход проверки секции — остаётся открытым
 
-### 1. Обход проверки секции
+Запись в `details` происходит внутри блока, защищённого `canPrefillSection('shipping')`. Если `details` уже заполнена и чекер сказал «не трогать» (`canPrefillSection('details')` вернул `false`), кастомные поля доставки всё равно туда попадут — вторая проверка не спрашивается вовсе.
 
-Запись в `details` происходит внутри блока, защищённого `canPrefillSection('shipping')`. Если `details` уже заполнена и чекер сказал «не трогать», кастомные поля доставки всё равно туда попадут.
+23.08.2026 запись дополнительно ограничена условием «вариант доставки заполнен» (сделано при удалении `shipping_type_id`, план [delivery-variant-identity.md](../plans/delivery-variant-identity.md) — кастомные поля принадлежат варианту, не должны уезжать без него). Это сужает частоту срабатывания, но не устраняет обход проверки владения `details`.
 
-### 2. Затирание при восстановлении из снапшота
+### Затирание при восстановлении из снапшота — неприменимо с 22.08.2026
 
-Порядок вызовов в `preFillCheckoutParams()`: `shipping` (строка ~211), затем `details` (~216). А снапшот-ветка `prepareDetailsSectionParams()` делает **присваивание, а не merge**:
-
-```php
-if ($snapshot_section !== null) {
-    $final_params['order']['details'] = $snapshot_section;   // ← сносит details.custom
-    return;
-}
-```
-
-Условие достижимости: у секции `shipping` снапшота нет (иначе она уходит в свою снапшот-ветку с `return` и `details.custom` не пишет), а у `details` — есть. То есть в снапшоте нет `shipping.type_id`, но есть `shipping_address.street`. Пример: покупатель ввёл адрес, но способ доставки так и не выбрался (для его региона ничего не доступно).
-
-Достижимость заметно выше при нерешённой [issue-59](issue-59-html-key-marks-section-filled.md): там `details` признаётся наполненной по служебному ключу `html`.
+Исходная формулировка проблемы №2 описывала конфликт с снапшот-веткой `prepareDetailsSectionParams()`, которая делала присваивание вместо merge. Снапшот снят целиком ([план снятия снапшота](../plans/snapshot-removal-and-html-ownership.md)) — механизма восстановления, с которым мог конфликтовать этот кросс-секционный write, больше нет. Раздел сохранён только для истории: сценарий держался на паре условий, специфичных для снапшота, и переносить его не на что.
 
 ## Последствия
 
-Кастомные поля доставки (`getShippingCustom()`) не предзаполняются, хотя данные для них есть. Тихо, без ошибок в логе.
+Кастомные поля доставки (`getShippingCustom()`) могут уехать в `details` даже когда эта секция принадлежит покупателю — тихо, без ошибок в логе.
 
 ## Рекомендация
 
-1. В снапшот-ветках `prepare*SectionParams()` использовать `deepMergeArrays()` вместо присваивания — тогда порядок вызовов перестаёт быть значимым.
-2. Либо убрать кросс-секционную запись: переложить `details.custom` в `prepareDetailsSectionParams()`, где ей и место по смыслу, а `prepareShippingSectionParams()` оставить со своей секцией. Второй вариант чище — он же снимает проблему №1 (обход `canPrefillSection('details')`).
-3. Проверить остальные `prepare*` на такие же кросс-секционные записи: сейчас это единственный случай, но `prepareDetailsSectionParams()` дублирует `zip` в две секции осознанно — его трогать не нужно.
+Убрать кросс-секционную запись: переложить `details.custom` в `prepareDetailsSectionParams()`, где ей и место по смыслу, гейтить собственной проверкой `canPrefillSection('details')`. `prepareShippingSectionParams()` останется строго со своей секцией.
+
+Проверить остальные `prepare*` на такие же кросс-секционные записи: сейчас это единственный случай, но `prepareDetailsSectionParams()` дублирует `zip` в две секции осознанно — его трогать не нужно.

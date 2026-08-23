@@ -33,7 +33,7 @@ The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as
 - `frontend_head` — runs on every shop page; manages cookies and debug, and attaches CSS/JS **only on the checkout page** (`CheckoutPageDetector`, see `docs/codereview/issue-64-*.md`). Does NOT prefill — see `docs/codereview/issue-63-*.md`
 - `checkout_before_auth` — fires on every AJAX calculate/create call during checkout
 - `checkout_render_*` — multiple hooks injecting HTML into checkout sections (auth, region, shipping, details, payment, confirm)
-- `order_action.create` — saves `shipping_type` to order params after order creation
+- `order_action.create` — links the guest token to the order and resets the source marker / Zen state / payment echo. Writes no order params of its own — delivery identity is the core's own `shipping_id` + `shipping_rate_id` (see `docs/plans/delivery-variant-identity.md`)
 
 **Key class groups in `lib/classes/`:**
 

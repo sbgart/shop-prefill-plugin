@@ -929,7 +929,7 @@ const GROUP_SECTIONS = [
 | Группа | Секция минимума | Поля (`SECTION_DATA_FIELDS`) |
 | --- | --- | --- |
 | `customer` | `auth` | `data.email`, `data.phone`, `data.firstname` |
-| `delivery` | `shipping` | `type_id` |
+| `delivery` | `shipping` | `variant_id` |
 | `payment` | `payment` | `id` |
 
 Неизвестная группа → `isGroupMinimumFilled()` возвращает `true`: разворачивать чужую группу не наше дело.
