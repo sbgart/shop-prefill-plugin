@@ -16,12 +16,16 @@ class shopPrefillPluginLog
 
     private static ?string $configured_level = null;
 
+    /** Защита от рекурсии: чтение настроек само не должно логировать через debug()/info() */
+    private static bool $loading_level = false;
+
     /** Файлы, уже проверенные на ротацию в этом запросе */
     private static array $rotation_checked = [];
 
     /**
-     * Инициализируется из shopPrefillPlugin::getSettingProvider() после загрузки настроек.
-     * Не зависит от плагина — уровень передаётся снаружи.
+     * Явная установка уровня — вызывается из isActive() сразу после загрузки настроек
+     * и из контроллера сохранения настройки, чтобы новый уровень подействовал в том же запросе.
+     * Не единственный источник: getLevel() подтягивает уровень сам, если его ещё не выставили.
      */
     public static function setLevel(string $level): void
     {
@@ -61,10 +65,48 @@ class shopPrefillPluginLog
         self::writeLog($message, $context, self::ERROR_LOG_FILE, 'ERROR');
     }
 
+    /**
+     * До 22.08.2026 уровень выставлялся только как побочный эффект isActive(), а её
+     * зовут исключительно точки входа хуков (см. shopPrefill.plugin.php). Собственные
+     * роуты плагина (lib/config/routing.php → frontend/*) хуки не проходят и читают
+     * настройки напрямую — level оставался на дефолте 'warning', debug/info молчали
+     * (issue-81). Теперь getLevel() подтягивает настройку сама при первом обращении —
+     * чтобы это работало для любой, в том числе будущей, точки входа.
+     */
     private static function getLevel(): string
     {
-        // Дефолт 'warning' до момента инициализации из настроек плагина
+        if (self::$configured_level === null && !self::$loading_level) {
+            self::$loading_level = true;
+            try {
+                self::$configured_level = self::loadLevelFromSettings();
+            } finally {
+                self::$loading_level = false;
+            }
+        }
+
         return self::$configured_level ?? 'warning';
+    }
+
+    /**
+     * Читает уровень логирования напрямую из настроек плагина, в обход isActive().
+     *
+     * Осторожно с рекурсией: этот путь сам не должен логировать через debug()/info() —
+     * иначе getLevel() позовёт себя же, пока self::$configured_level ещё не установлен.
+     * Сейчас цепочка getSettingProvider()->getSettings() ничего не логирует; $loading_level
+     * — страховка на случай, если это перестанет быть так.
+     */
+    private static function loadLevelFromSettings(): string
+    {
+        try {
+            $settings = shopPrefillPlugin::getInstance()->getSettingProvider()->getSettings();
+        } catch (Throwable $e) {
+            return 'warning';
+        }
+
+        $level = $settings['logging']['level'] ?? 'warning';
+        $valid = ['off', 'error', 'warning', 'info', 'debug'];
+
+        return in_array($level, $valid, true) ? $level : 'warning';
     }
 
     private static function isLevelEnabled(string $level): bool
