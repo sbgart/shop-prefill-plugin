@@ -458,15 +458,25 @@ class shopPrefillPluginSessionStorageProvider
 
     /**
      * Подготавливает параметры shipping секции.
+     *
+     * Вариант — единственная идентичность выбора доставки; тип ядро выводит из него
+     * само (shopCheckoutShippingStep:226-234, :253) и вернёт в скрытое поле следующим
+     * рендером. `type_id` мы не пишем вовсе — половину пары писать нельзя: тип без
+     * варианта в сессии склеивается с чужим вариантом от прежнего выбора (issue-84 §1).
+     *
+     * `variant_id` пишется безусловно, `null` включительно — двум вызывающим нужно
+     * противоположное, и `null` даёт обоим: applyPrefill() пропускает его через
+     * stripEmptyLeaves() («нет варианта в источнике» = «не пишем ничего»),
+     * applyDeliveryAddress() сливает без строгого выброса пустот и явно затирает
+     * устаревший вариант на `null` — для явного выбора покупателя это правильно.
      */
     private function prepareShippingSectionParams(
         shopPrefillPluginFillParams $fill_params,
         array &$final_params
     ): void {
-        $final_params['order']['shipping']['type_id'] = $fill_params->getShippingTypeId();
         $final_params['order']['shipping']['variant_id'] = $fill_params->getShippingVariantId();
 
-        if ($fill_params->getShippingCustom()) {
+        if ($fill_params->getShippingVariantId() !== null && $fill_params->getShippingCustom()) {
             foreach ($fill_params->getShippingCustom() as $param => $value) {
                 $final_params['order']['details']['custom'][$param] = $value;
             }
@@ -543,9 +553,14 @@ class shopPrefillPluginSessionStorageProvider
 
         $merged = shopPrefillPluginHelper::deepMergeArrays($checkout_params, $final_params);
 
+        // Явный выбор варианта замещает секцию доставки целиком, а не дописывается в неё:
+        // ядро смотрит на type_id только при пустом variant_id (shopCheckoutShippingStep:
+        // 226-234), и чужой тип из прошлой вкладки покупателя не должен пережить этот выбор.
+        // html не трогаем — это маркер владения (S2), а не данные.
+        unset($merged['order']['shipping']['type_id']);
+
         if ($this->setCheckoutParams($merged)) {
             shopPrefillPluginLog::info('Delivery scenario applied via applyDeliveryAddress', [
-                'shipping_type_id' => $fill_params->getShippingTypeId(),
                 'shipping_variant_id' => $fill_params->getShippingVariantId(),
             ]);
         }
