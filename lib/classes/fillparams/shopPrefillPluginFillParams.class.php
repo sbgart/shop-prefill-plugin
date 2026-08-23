@@ -15,7 +15,6 @@ class shopPrefillPluginFillParams
     private ?string $street       = null;
 
     private ?int    $shipping_id             = null;
-    private ?string $shipping_type_id        = null;
     private ?string $shipping_rate_id        = null;
     private ?string $shipping_name           = null;
     private ?string $shipping_plugin         = null;
@@ -50,13 +49,19 @@ class shopPrefillPluginFillParams
     private array $shipping_params
         = [
             'shipping_id',
-            'shipping_type_id',
             'shipping_rate_id',
             'shipping_name',
             'shipping_plugin',
             'shipping_custom',
         ];
 
+    /**
+     * Есть ли у источника данные для секции — в отличие от SectionChecker (тот же вопрос
+     * про сессию), здесь про сам источник предзаполнения. Сейчас без вызовов — оставлен
+     * намеренно как примитив для issue-84 §2 (полнота источника по группе delivery).
+     * Перед первым боевым использованием сверить поля с тем, что реально пишут сеттеры —
+     * см. docs/codereview/issue-53-empty-prefill-writes-session.md, «Отвергнутые варианты».
+     */
     public function hasDataForSection(string $section_id): bool
     {
         switch ($section_id) {
@@ -65,7 +70,10 @@ class shopPrefillPluginFillParams
             case 'region':
                 return ! empty($this->city) || ! empty($this->region_name) || ! empty($this->country_name);
             case 'shipping':
-                return ! empty($this->shipping_id) || ! empty($this->shipping_type_id) || ! empty($this->shipping_plugin);
+                // Вариант — единственная идентичность выбора доставки; shipping_plugin
+                // намеренно не заполняется (см. FillParamsProvider — комментарий у
+                // getFillParamsByOrderParams() про shipping_params_ и isSameDeliveryOption()).
+                return $this->getShippingVariantId() !== null;
             case 'details':
                 // Проверяем хотя бы одно поле из адреса или контактов (кроме емейла/телефона, которые в auth)
                 return ! empty($this->street) || ! empty($this->zip) || ! empty($this->lastname) || ! empty($this->company)
@@ -177,16 +185,6 @@ class shopPrefillPluginFillParams
     public function setShippingId(?int $shipping_id): void
     {
         $this->shipping_id = $shipping_id;
-    }
-
-    public function getShippingTypeId(): ?string
-    {
-        return $this->shipping_type_id;
-    }
-
-    public function setShippingTypeId(?string $shipping_type_id): void
-    {
-        $this->shipping_type_id = $shipping_type_id;
     }
 
     public function getShippingRateId(): ?string

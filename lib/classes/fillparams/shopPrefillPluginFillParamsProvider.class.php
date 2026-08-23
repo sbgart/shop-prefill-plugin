@@ -363,16 +363,12 @@ class shopPrefillPluginFillParamsProvider
             }
         }
 
-        // Получаем данные о доставке
+        // Получаем данные о доставке. Вариант — единственная идентичность выбора;
+        // type_id в сессии ядра больше не читаем (ядро сверяет только variant_id,
+        // shopCheckoutShippingStep:226-234).
         $shipping_params = $checkout_params['order']['shipping'] ?? [];
-        if ($shipping_params) {
-            if (isset($shipping_params['type_id'])) {
-                $fill_params->setShippingTypeId($shipping_params['type_id']);
-            }
-
-            if (isset($shipping_params['variant_id'])) {
-                $fill_params->setShippingVariantId($shipping_params['variant_id']);
-            }
+        if ($shipping_params && isset($shipping_params['variant_id'])) {
+            $fill_params->setShippingVariantId($shipping_params['variant_id']);
         }
 
         // Получаем данные о деталях доставки (адрес и кастомные поля)
@@ -496,9 +492,6 @@ class shopPrefillPluginFillParamsProvider
         }
         if (isset($order_params['shipping_rate_id'])) {
             $fill_params->setShippingRateId($order_params['shipping_rate_id']);
-        }
-        if (isset($order_params['shipping_type_id'])) {
-            $fill_params->setShippingTypeId($order_params['shipping_type_id']);
         }
 
         if (isset($order_params['shipping_name'])) {

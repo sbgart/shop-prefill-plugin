@@ -31,7 +31,6 @@ function makeFullDeliveryOption(): shopPrefillPluginFillParams
     $params->setStreet('Тверская 1');
 
     $params->setShippingId(5);
-    $params->setShippingTypeId('pickup');
     $params->setShippingRateId('MSK123');
     $params->setShippingName('Самовывоз'); // должно игнорироваться сравнением
     $params->setShippingPlugin('cdek');
@@ -113,12 +112,11 @@ $different_name = cloneWith($full, static function (shopPrefillPluginFillParams 
 });
 assertSameValue(true, $full->isSameDeliveryOption($different_name), 'shipping_name is ignored by comparison');
 
-// 4. разные street, zip, shipping_id, shipping_type_id, shipping_rate_id дают false
+// 4. разные street, zip, shipping_id, shipping_rate_id дают false
 $fields_to_diff = [
     'street'           => ['setStreet', 'Другая улица'],
     'zip'              => ['setZip', '999999'],
     'shipping_id'      => ['setShippingId', 999],
-    'shipping_type_id' => ['setShippingTypeId', 'courier'],
     'shipping_rate_id' => ['setShippingRateId', 'OTHER'],
 ];
 
@@ -208,5 +206,33 @@ foreach ([$saved_variant_a, $saved_variant_b] as $saved_variant) {
     }
 }
 assertSameValue(0, $active_count, 'partial current checkout does not falsely highlight any saved variant');
+
+// 11. '0' — легитимный rate_id самовывоза (issue-84), а не пустота: отличается и от ''
+// и от null, но равен другому '0'. areDeliveryValuesEqual() сравнивает через (string).
+$rate_zero_a = cloneWith($full, static function (shopPrefillPluginFillParams $p) {
+    $p->setShippingRateId('0');
+});
+$rate_zero_b = cloneWith($full, static function (shopPrefillPluginFillParams $p) {
+    $p->setShippingRateId('0');
+});
+$rate_empty = cloneWith($full, static function (shopPrefillPluginFillParams $p) {
+    $p->setShippingRateId('');
+});
+$rate_null = cloneWith($full, static function (shopPrefillPluginFillParams $p) {
+    $p->setShippingRateId(null);
+});
+assertSameValue(true, $rate_zero_a->isSameDeliveryOption($rate_zero_b), "'0' vs '0' rate_id — один и тот же самовывоз");
+assertSameValue(false, $rate_zero_a->isSameDeliveryOption($rate_empty), "'0' vs '' rate_id — не одно и то же");
+assertSameValue(false, $rate_zero_a->isSameDeliveryOption($rate_null), "'0' vs null rate_id — не одно и то же");
+
+// 12. Структурный страж: тип доставки не входит в идентичность варианта.
+// Красный тест здесь — сигнал, что shipping_type_id вернули в $shipping_params
+// (issue-84: variant_id — единственная идентичность, тип из него выводит ядро).
+$shipping_params_prop = (new ReflectionClass('shopPrefillPluginFillParams'))
+    ->getDefaultProperties()['shipping_params'];
+assertSameValue(false, in_array('shipping_type_id', $shipping_params_prop, true),
+    'тип доставки не входит в идентичность варианта');
+assertSameValue(true, in_array('shipping_id', $shipping_params_prop, true), 'shipping_id входит');
+assertSameValue(true, in_array('shipping_rate_id', $shipping_params_prop, true), 'shipping_rate_id входит');
 
 echo "FillParamsSameDeliveryOptionTest: OK\n";
