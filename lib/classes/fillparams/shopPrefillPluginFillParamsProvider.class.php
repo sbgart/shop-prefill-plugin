@@ -278,8 +278,10 @@ class shopPrefillPluginFillParamsProvider
 
                 $order_params = $orders_params[$order_id] ?? [];
 
-                // Пропускаем заказы без ключевых параметров доставки
-                if (empty($order_params['shipping_id']) || empty($order_params['shipping_type_id'])) {
+                // Единственный ключевой параметр доставки — вариант (shipping_id + rate_id).
+                // Тип из него выводит ядро (shopCheckoutShippingStep:253), спрашивать
+                // про тип здесь нечего.
+                if (shopPrefillPluginFillParamsHelper::deliveryVariantId($order_params) === null) {
                     continue;
                 }
 

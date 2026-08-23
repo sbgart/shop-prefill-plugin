@@ -20,6 +20,8 @@ $variants = [
     '5.pickup.MSK123'  => [5, 'pickup.MSK123'],
     '12.cdek.PVZ-4419' => [12, 'cdek.PVZ-4419'],
     '3.courier'         => [3, 'courier'],
+    // Самовывоз: rate_id === '0' — легитимное значение, не путать с пустотой (empty('0') === true).
+    '37.0'              => [37, '0'],
 ];
 
 foreach ($variants as $variant_id => $expected) {
