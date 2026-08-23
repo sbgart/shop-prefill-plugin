@@ -1,12 +1,17 @@
 <?php
 
 /**
- * Проверяет разделение двух признаков непустоты секции (issue-59):
- *   - isSectionOwnedByCustomer() — «покупатель держал секцию в руках, писать нельзя» (учитывает `html`)
- *   - isSectionFilled()          — «в секции есть реальные данные» (`html` игнорируется)
+ * Проверяет разделение двух признаков непустоты секции:
+ *   - isSectionOwnedByCustomer() — «покупатель держал секцию в руках, писать нельзя» — только `html`
+ *   - isSectionFilled()          — «в секции есть реальные данные» (`html` не считается)
  *
- * Главный щит от регресса: секция со стёртым вручную полем не должна предзаполняться заново,
- * иначе город/улицу/комментарий станет невозможно очистить.
+ * С 22.08.2026 владение — единственный сигнал `html`, одинаковый для всех шести секций
+ * (issue-65): раньше часть секций считалась занятой по содержимому (`city`, `type_id`...),
+ * что путало происхождение значения с его содержимым — системные дефолты (страна, единственный
+ * способ оплаты) и чужие плагины (cityselect), пишущие в сессию до первого рендера чекаута,
+ * становились ложным владением. Теперь «данные есть» и «владение» — независимые вопросы:
+ * данные без html не блокируют перезапись (блок 3), а голый html без данных блокирует (блок 2) —
+ * это и есть щит от issue-59: без него стёртое значение вернётся.
  *
  * Запуск: php tests/SectionCheckerOwnershipVsDataTest.php
  */
@@ -50,16 +55,13 @@ function params(string $section, $data): array
 $all_enabled = ['customer' => true, 'delivery' => true, 'payment' => true, 'confirm' => true];
 $checker     = new shopPrefillPluginSectionChecker($all_enabled);
 
-// Секции со свободным вводом: `html` делает секцию собственностью покупателя.
-$free_text = [
-    'auth'    => ['path' => ['data', 'email'], 'value' => 'a@b.co'],
-    'region'  => ['path' => ['city'], 'value' => 'Москва'],
-    'details' => ['path' => ['shipping_address', 'street'], 'value' => 'ул. Гостевая'],
-    'confirm' => ['path' => ['comment'], 'value' => 'позвонить'],
-];
-
-// Секции с выбором из вариантов: стереть значение нельзя, `html` там не нужен.
-$choice = [
+// Путь и тестовое значение ключевого DATA-поля каждой секции. Владение (html) теперь
+// одинаково для всех шести — разделения на «свободный ввод» и «выбор» для него больше нет.
+$sections = [
+    'auth'     => ['path' => ['data', 'email'], 'value' => 'a@b.co'],
+    'region'   => ['path' => ['city'], 'value' => 'Москва'],
+    'details'  => ['path' => ['shipping_address', 'street'], 'value' => 'ул. Гостевая'],
+    'confirm'  => ['path' => ['comment'], 'value' => 'позвонить'],
     'shipping' => ['path' => ['type_id'], 'value' => 'courier'],
     'payment'  => ['path' => ['id'], 'value' => '7'],
 ];
@@ -74,100 +76,83 @@ function nest(array $path, $value): array
 }
 
 echo "1. Пустая секция — ничья, предзаполнять можно" . PHP_EOL;
-foreach (array_merge(array_keys($free_text), array_keys($choice)) as $section) {
+foreach (array_keys($sections) as $section) {
     check(false, $checker->isSectionOwnedByCustomer($section, params($section, [])), "{$section}: owned");
     check(false, $checker->isSectionFilled($section, params($section, [])), "{$section}: filled");
     check(true, $checker->canPrefillSection($section, params($section, [])), "{$section}: canPrefill");
 }
 
-echo "2. Только служебный html" . PHP_EOL;
-foreach ($free_text as $section => $_) {
+echo "2. Только служебный html — владение одинаково для любой секции" . PHP_EOL;
+foreach ($sections as $section => $_) {
     $p = params($section, ['html' => 'only']);
     check(true, $checker->isSectionOwnedByCustomer($section, $p), "{$section}: owned (html)");
     check(false, $checker->isSectionFilled($section, $p), "{$section}: НЕ filled (html не данные)");
     check(false, $checker->canPrefillSection($section, $p), "{$section}: писать нельзя");
 }
-foreach ($choice as $section => $_) {
-    $p = params($section, ['html' => 'only']);
-    check(false, $checker->isSectionOwnedByCustomer($section, $p), "{$section}: html не влияет");
-    check(false, $checker->isSectionFilled($section, $p), "{$section}: НЕ filled");
-    check(true, $checker->canPrefillSection($section, $p), "{$section}: предзаполнять можно");
-}
 
-echo "3. Реальные данные без html" . PHP_EOL;
-foreach (array_merge($free_text, $choice) as $section => $spec) {
+echo "3. Реальные данные без html — НЕ владение (ключевое поведение issue-65)" . PHP_EOL;
+foreach ($sections as $section => $spec) {
     $p = params($section, nest($spec['path'], $spec['value']));
-    check(true, $checker->isSectionOwnedByCustomer($section, $p), "{$section}: owned");
     check(true, $checker->isSectionFilled($section, $p), "{$section}: filled");
-    check(false, $checker->canPrefillSection($section, $p), "{$section}: не перезаписываем");
+    check(false, $checker->isSectionOwnedByCustomer($section, $p), "{$section}: без html НЕ owned, даже если данные есть");
+    check(true, $checker->canPrefillSection($section, $p), "{$section}: можно перезаписать — ровно то, что нужно против системных дефолтов и cityselect");
 }
 
 echo "4. ЩИТ ОТ РЕГРЕССА: покупатель стёр поле (html остался, значение пустое)" . PHP_EOL;
-foreach ($free_text as $section => $spec) {
+foreach ($sections as $section => $spec) {
     $p = params($section, nest($spec['path'], '') + ['html' => 'only']);
     check(true, $checker->isSectionOwnedByCustomer($section, $p), "{$section}: секция всё ещё его");
     check(false, $checker->isSectionFilled($section, $p), "{$section}: данных нет");
     check(false, $checker->canPrefillSection($section, $p), "{$section}: НЕ возвращаем стёртое значение");
 }
 
-echo "5. Снапшот: пустая секция с html не восстанавливается" . PHP_EOL;
-foreach ($free_text as $section => $_) {
+echo "5. isSectionFilled: одного html недостаточно, нужны реальные данные" . PHP_EOL;
+foreach ($sections as $section => $_) {
     check(false, $checker->isSectionFilled($section, params($section, ['html' => 1])),
-        "{$section}: снапшот с одним html — нечего восстанавливать");
+        "{$section}: один html — данных нет");
 }
-foreach ($free_text as $section => $spec) {
+foreach ($sections as $section => $spec) {
     check(true, $checker->isSectionFilled($section, params($section, nest($spec['path'], $spec['value']) + ['html' => 1])),
-        "{$section}: снапшот с данными — восстанавливаем");
+        "{$section}: данные плюс html — filled");
 }
 
-echo "6. Каждое ключевое поле auth работает поодиночке" . PHP_EOL;
+echo "6. Каждое ключевое поле auth работает поодиночке (isSectionFilled), но без html не owned" . PHP_EOL;
 foreach (['data.email' => 'a@b.co', 'data.phone' => '79001234567', 'data.firstname' => 'Иван'] as $path => $value) {
     $p = params('auth', nest(explode('.', $path), $value));
     check(true, $checker->isSectionFilled('auth', $p), "auth: только {$path}");
-    check(true, $checker->isSectionOwnedByCustomer('auth', $p), "auth: только {$path} (owned)");
+    check(false, $checker->isSectionOwnedByCustomer('auth', $p), "auth: только {$path}, без html — НЕ owned");
 }
 // Сценарий из TESTS.md: стёрли email, телефон остался — секция всё ещё с данными
 $p = params('auth', ['html' => 1, 'data' => ['email' => '', 'phone' => '79001234567']]);
 check(true, $checker->isSectionFilled('auth', $p), 'auth: email стёрт, телефон остался — данные есть');
 check(false, $checker->canPrefillSection('auth', $p), 'auth: email стёрт — не дозаполняем секцию');
 
-echo "7. Структурный инвариант двух списков" . PHP_EOL;
+echo "7. Структурный инвариант: владение — только html, и не пересекается с DATA" . PHP_EOL;
 $reflection = new ReflectionClass('shopPrefillPluginSectionChecker');
 $ownership  = $reflection->getConstant('SECTION_OWNERSHIP_FIELDS');
 $data       = $reflection->getConstant('SECTION_DATA_FIELDS');
 
 check(array_keys($ownership), array_keys($data), 'списки описывают одни и те же секции');
 foreach ($ownership as $section => $fields) {
-    check([], array_values(array_diff($data[$section], $fields)),
-        "{$section}: DATA — подмножество OWNERSHIP");
-    check(array_values(array_diff($fields, $data[$section])), array_values(array_intersect($fields, ['html'])),
-        "{$section}: списки различаются ровно на html");
+    check(['html'], $fields, "{$section}: владение — это ровно ['html']");
+    check([], array_values(array_intersect($data[$section], $fields)),
+        "{$section}: DATA и OWNERSHIP не пересекаются — html не входит в DATA");
 }
 
 echo "8. Список владения закреплён дословно" . PHP_EOL;
-// Пока список не расширен, «занятыми» секции свободного ввода держит один лишь `html`,
-// и предзаполнение вправе войти в секцию, где покупатель уже заполнил другое поле группы
-// (страна без города, подъезд без улицы). Расширение списка до всей секции — и есть фикс
-// issue-65; вместе с ним переписываются блок 7 (инвариант «различаются ровно на html»)
-// и этот блок.
+// Владение больше не зависит от секции: единственный сигнал — html, одинаковый везде.
+// Если здесь снова появится содержательное поле (city, type_id...) — это регресс issue-65:
+// системный дефолт страны или единственный способ оплаты опять станут ложным владением.
 check([
-    'auth'     => ['data.email', 'data.phone', 'data.firstname', 'html'],
-    'region'   => ['city', 'html'],
-    'shipping' => ['type_id'],
-    'details'  => ['shipping_address.street', 'html'],
-    'payment'  => ['id'],
-    'confirm'  => ['comment', 'html'],
-], $ownership, 'SECTION_OWNERSHIP_FIELDS дословно совпадает с прежним SECTION_KEY_FIELDS');
+    'auth'     => ['html'],
+    'region'   => ['html'],
+    'shipping' => ['html'],
+    'details'  => ['html'],
+    'payment'  => ['html'],
+    'confirm'  => ['html'],
+], $ownership, 'SECTION_OWNERSHIP_FIELDS — везде только html');
 
-echo "9. Данные всегда означают владение (но не наоборот)" . PHP_EOL;
-foreach (array_merge($free_text, $choice) as $section => $spec) {
-    $p = params($section, nest($spec['path'], $spec['value']));
-    if ($checker->isSectionFilled($section, $p)) {
-        check(true, $checker->isSectionOwnedByCustomer($section, $p), "{$section}: filled ⟹ owned");
-    }
-}
-
-echo "10. Минимум группы для дзен-режима" . PHP_EOL;
+echo "9. Минимум группы для дзен-режима" . PHP_EOL;
 // delivery: только shipping.type_id. details и region в минимум не входят —
 // их данные не переживают короткое замыкание конвейера шагов.
 check(false, $checker->isGroupMinimumFilled('delivery', params('shipping', [])), 'delivery: пусто');
@@ -203,21 +188,21 @@ check(false, $checker->isGroupMinimumFilled('customer', params('auth', ['html' =
 check(true, $checker->isGroupMinimumFilled('confirm', params('confirm', [])), 'confirm: не сворачивается, минимума нет');
 check(true, $checker->isGroupMinimumFilled('unknown', []), 'неизвестная группа не мешает');
 
-echo "11. Выключенная группа перевешивает всё" . PHP_EOL;
+echo "10. Выключенная группа перевешивает всё" . PHP_EOL;
 $off = new shopPrefillPluginSectionChecker(
     ['customer' => false, 'delivery' => false, 'payment' => false, 'confirm' => false]
 );
-foreach (array_merge(array_keys($free_text), array_keys($choice)) as $section) {
+foreach (array_keys($sections) as $section) {
     check(false, $off->canPrefillSection($section, params($section, [])), "{$section}: группа выключена");
 }
 
-echo "12. Пустые значения не считаются данными (существующее поведение isValueFilled)" . PHP_EOL;
+echo "11. Пустые значения не считаются данными (существующее поведение isValueFilled)" . PHP_EOL;
 foreach (['', null, '0', 0] as $empty) {
     $p = params('region', ['city' => $empty]);
     check(false, $checker->isSectionFilled('region', $p), 'region: city=' . var_export($empty, true));
 }
 
-echo "13. Устойчивость к мусору" . PHP_EOL;
+echo "12. Устойчивость к мусору" . PHP_EOL;
 check(false, $checker->isSectionFilled('region', []), 'нет ключа order');
 check(false, $checker->isSectionOwnedByCustomer('region', []), 'нет ключа order (owned)');
 check(false, $checker->isSectionFilled('unknown', params('unknown', ['x' => 1])), 'неизвестная секция');

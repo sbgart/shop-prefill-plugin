@@ -7,7 +7,7 @@
  * - grant       — дать согласие на сохранение данных
  * - revoke      — отозвать согласие, удалить связи в заказах и токен (чтобы следующий за ПК не видел старые данные)
  * - clear       — очистить историю (удалить связи в заказах и токен)
- * - clear_form  — очистить сессию формы оформления заказа (checkout + snapshot)
+ * - clear_form  — очистить сессию формы оформления заказа (checkout)
  */
 class shopPrefillPluginFrontendConsentController extends waJsonController
 {
@@ -52,7 +52,6 @@ class shopPrefillPluginFrontendConsentController extends waJsonController
 
                 case 'clear_form':
                     wa()->getStorage()->remove('shop/checkout');
-                    wa()->getStorage()->remove('shop/prefill_snapshot');
                     $plugin->getSessionStorageProvider()->clearSourceMarker();
                     shopPrefillPluginLog::info('User cleared checkout form session');
                     $this->response = ['status' => 'ok', 'message' => _wp('message.form_data_cleared')];

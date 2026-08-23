@@ -10,7 +10,6 @@ return [
     'prefill/clear-storage/?'        => 'frontend/ClearStorage',
     'prefill/force-prefill/?'        => 'frontend/ForcePrefill',
     'prefill/reset-and-refill/?'     => 'frontend/ResetAndRefill',
-    'prefill/reset-snapshot/?'       => 'frontend/ResetSnapshot',
     'prefill/refresh-debug/?'        => 'frontend/RefreshDebug',
     'prefill/consent/?'              => 'frontend/Consent',
     'prefill/toggle-zen/?'           => 'frontend/ToggleZen',

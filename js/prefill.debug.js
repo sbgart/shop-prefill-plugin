@@ -201,16 +201,6 @@
         });
     };
 
-    window.PrefillDebugHelper.resetSnapshot = function () {
-        if (!confirm('Clear Prefill Snapshot storage?')) return;
-
-        var url = (window.PrefillDebugHelper.baseUrl || '/shop/') + 'prefill/reset-snapshot';
-        fetchAction(url, function (data) {
-            alert('✅ Snapshot cleared! Page will reload.');
-            location.reload();
-        });
-    };
-
     window.PrefillDebugHelper.toggleZen = function () {
         if (!confirm('Переключить статус Zen Mode?')) return;
 

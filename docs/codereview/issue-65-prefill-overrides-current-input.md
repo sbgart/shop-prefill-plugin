@@ -1,9 +1,9 @@
 # Issue 65 — единица предзаполнения мельче связанной группы полей
 
-**Статус:** ⬜ Открыта
+**Статус:** 🟡 Реализовано и проверено в браузере 22.08.2026, не закоммичено — план [snapshot-removal-and-html-ownership.md](../plans/snapshot-removal-and-html-ownership.md), этапы 0-3
 **Приоритет:** 🟢 Низкий — понижен 22.08.2026 после проверки в коде: сценарий недостижим в текущем ядре, см. «Ревизия 4»
-**Сложность фикса:** 🔧 Небольшой для большинства полей (расширить `SECTION_OWNERSHIP_FIELDS`), но `country` и `payment.id` требуют сравнения со значением по умолчанию, а не плоской проверки непустоты — `SectionChecker` из чистого статического массива становится зависимым от настроек магазина. Плюс нужен браузерный прогон
-**Файлы:** `lib/classes/sections/shopPrefillPluginSectionChecker.class.php` (`SECTION_OWNERSHIP_FIELDS`, потребуется доступ к `shopConfig::getGeneralSettings('country')`), `lib/classes/checkout/shopPrefillCheckoutState.class.php` (`applyPrefillInput`)
+**Сложность фикса:** Фактическая — свести `SECTION_OWNERSHIP_FIELDS` к `['html']` на всех секциях и снять снапшот (детали в плане). Прежняя оценка сложности (расширение списка + сравнение `country`/`payment.id` с дефолтом) была для отменённой рекомендации №1, не реализовывалась
+**Файлы:** `lib/classes/sections/shopPrefillPluginSectionChecker.class.php` (`SECTION_OWNERSHIP_FIELDS`), `lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php` (снапшот убран целиком), плюс debug-панель и `RULES.md` — полный список файлов в плане
 **Смежные:** [issue-84](issue-84-prefill-inconsistent-across-groups.md) — та же связность, но между источниками и между секциями
 
 > **Ревизия 2, 19.08.2026.** Issue переписана второй раз, обе прежние формулировки были неверны.

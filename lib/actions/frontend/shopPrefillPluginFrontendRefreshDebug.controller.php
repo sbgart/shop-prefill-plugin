@@ -27,7 +27,6 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
             $fill_params_data = $debug_data['fill_params_data'];
             $fill_params_meta = $debug_data['fill_params_meta'];
             $checkout_params = $debug_data['current_storage'];
-            $snapshot_storage = $debug_data['snapshot_storage'];
 
             $this->response = [
                 'status' => 'ok',
@@ -48,7 +47,6 @@ class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
                 'fill_params' => $fill_params_data,
                 'fill_params_meta' => $fill_params_meta,
                 'current_storage' => $checkout_params,
-                'snapshot_storage' => $snapshot_storage,
                 'show_validation' => waRequest::cookie('wa_prefill_debug_show_validation', 0),
             ]);
 

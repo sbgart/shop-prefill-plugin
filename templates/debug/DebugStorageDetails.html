@@ -1,4 +1,4 @@
-{* Актуальные данные хранилища и снапшот *}
+{* Актуальные данные хранилища *}
 <div class="prefill-debug-storage-wrapper">
 
   {* Актуальные данные хранилища *}
@@ -34,44 +34,6 @@
         </div>
 
         <pre class="pd-section__pre pd-section__pre--storage">{$current_storage|@print_r}</pre>
-        {/if}
-      </div>
-    </details>
-  </div>
-
-  {* Снапшот хранилища *}
-  <div class="pd-section pd-section--snapshot">
-    <details id="prefill-debug-snapshot-details" ontoggle="PrefillDebugHelper.toggleStorageDetails(this)">
-      <summary class="pd-section__summary pd-section__summary--snapshot">
-        📸 Снапшот хранилища (Prefill Snapshot)
-      </summary>
-      <div class="pd-section__body">
-        {if empty($snapshot_storage)}
-        <p class="pd-section__empty">❌ Снапшот пуст</p>
-        {else}
-        {assign var="s_has_order"    value=isset($snapshot_storage.order)}
-        {assign var="s_has_auth"     value=isset($snapshot_storage.order.auth)}
-        {assign var="s_has_auth_data" value=isset($snapshot_storage.order.auth.data)}
-        {assign var="s_has_region"   value=isset($snapshot_storage.order.region)}
-        {assign var="s_has_shipping" value=isset($snapshot_storage.order.shipping)}
-        {assign var="s_has_details"  value=isset($snapshot_storage.order.details)}
-        {assign var="s_has_payment"  value=isset($snapshot_storage.order.payment)}
-        {assign var="s_has_confirm"  value=isset($snapshot_storage.order.confirm)}
-
-        <div class="pd-section__overview pd-section__overview--snapshot">
-          <strong class="pd-section__overview-title--snapshot">📊 Структура данных снапшота:</strong><br />
-          order: {if $s_has_order}✅{else}❌{/if}<br />
-          {if $s_has_order}
-          └─ auth: {if $s_has_auth}✅{else}❌{/if}{if $s_has_auth} → data: {if $s_has_auth_data}✅{else}❌{/if}{/if}<br />
-          └─ region: {if $s_has_region}✅{else}❌{/if}<br />
-          └─ shipping: {if $s_has_shipping}✅{else}❌{/if}<br />
-          {/if}
-          └─ details: {if $s_has_details}✅{else}❌{/if}<br />
-          └─ payment: {if $s_has_payment}✅{else}❌{/if}<br />
-          └─ confirm: {if $s_has_confirm}✅{else}❌{/if}
-        </div>
-
-        <pre class="pd-section__pre pd-section__pre--snapshot">{$snapshot_storage|@print_r}</pre>
         {/if}
       </div>
     </details>

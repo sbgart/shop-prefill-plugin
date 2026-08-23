@@ -171,7 +171,6 @@ class shopPrefillPluginDebug
             $fill_params_data = $debug_data['fill_params_data'];
             $fill_params_meta = $debug_data['fill_params_meta'];
             $current_storage = $debug_data['current_storage'];
-            $snapshot_storage = $debug_data['snapshot_storage'];
 
             // Подготавливаем данные для шаблона
             $template_vars = [
@@ -182,7 +181,6 @@ class shopPrefillPluginDebug
                 'fill_params' => $fill_params_data,
                 'fill_params_meta' => $fill_params_meta,
                 'current_storage' => $current_storage,
-                'snapshot_storage' => $snapshot_storage,
                 'show_validation' => waRequest::cookie('wa_prefill_debug_show_validation', 0),
             ];
 
@@ -313,13 +311,11 @@ class shopPrefillPluginDebug
             $fill_params_meta['source'] = 'error: ' . $e->getMessage();
         }
 
-        // Получаем текущее состояние хранилища checkout и snapshot
+        // Получаем текущее состояние хранилища checkout
         $current_storage = [];
-        $snapshot_storage = [];
         try {
             $session_storage = $plugin->getSessionStorageProvider();
             $current_storage = $session_storage->getCheckoutParams();
-            $snapshot_storage = $session_storage->getSnapshot() ?: [];
         } catch (Exception $e) {
             shopPrefillPluginLog::warning('Failed fetching session storage in shopPrefillPluginDebug', [
                 'message' => $e->getMessage()
@@ -330,7 +326,6 @@ class shopPrefillPluginDebug
             'fill_params_data' => $fill_params_data,
             'fill_params_meta' => $fill_params_meta,
             'current_storage' => $current_storage,
-            'snapshot_storage' => $snapshot_storage,
         ];
     }
 
