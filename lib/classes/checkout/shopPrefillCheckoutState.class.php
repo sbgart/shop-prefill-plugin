@@ -816,12 +816,13 @@ class shopPrefillCheckoutState
             return;
         }
 
+        $before = $this->params['data']['input'];
         $this->params['data']['input'] = shopPrefillPluginHelper::deepMergeArrays(
-            $this->params['data']['input'],
+            $before,
             $filled_order
         );
 
-        $this->is_prefilled = true;
+        $this->is_prefilled = ($this->params['data']['input'] !== $before);
     }
 
     /**
