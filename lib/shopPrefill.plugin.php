@@ -314,8 +314,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getZenMode(),
             $this->getUserProvider(),
             $this->getConsentStorage(),
-            $this->getEffectiveStorefrontSettings(),
-            wa()->getRequest()
+            $this->getEffectiveStorefrontSettings()
         );
     }
 

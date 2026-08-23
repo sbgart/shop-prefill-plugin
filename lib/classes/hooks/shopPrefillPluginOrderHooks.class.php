@@ -12,7 +12,6 @@ class shopPrefillPluginOrderHooks
     private shopPrefillPluginUserProvider $user_provider;
     private shopPrefillPluginConsentStorage $consent_storage;
     private array $storefront_settings;
-    private waRequest $request;
 
     public function __construct(
         shopPrefillPluginSessionStorageProvider $session_storage,
@@ -21,8 +20,7 @@ class shopPrefillPluginOrderHooks
         shopPrefillPluginZenMode $zen_mode,
         shopPrefillPluginUserProvider $user_provider,
         shopPrefillPluginConsentStorage $consent_storage,
-        array $storefront_settings,
-        waRequest $request
+        array $storefront_settings
     ) {
         $this->session_storage = $session_storage;
         $this->order_provider = $order_provider;
@@ -31,7 +29,6 @@ class shopPrefillPluginOrderHooks
         $this->user_provider = $user_provider;
         $this->consent_storage = $consent_storage;
         $this->storefront_settings = $storefront_settings;
-        $this->request = $request;
     }
 
     /**
@@ -53,11 +50,6 @@ class shopPrefillPluginOrderHooks
         }
 
         $order_id = (int) $data['order_id'];
-
-        $checkout_params = $this->session_storage->getCheckoutParams();
-
-        // Сохраняем shipping_type_id (для предзаполнения следующего заказа)
-        $this->saveShippingType($order_id, $checkout_params);
 
         // Для неавторизованных: выдаём токен и привязываем к нему заказ
         $this->saveGuestLink($order_id);
@@ -129,26 +121,6 @@ class shopPrefillPluginOrderHooks
         $mode = $config['confirmation']['order_without_auth'] ?? '';
 
         return is_string($mode) ? $mode : '';
-    }
-
-    /**
-     * Сохраняет тип доставки в параметры заказа
-     *
-     * @param int $order_id ID заказа
-     * @param array $checkout_params Параметры checkout
-     */
-    private function saveShippingType(int $order_id, array $checkout_params): void
-    {
-        $shipping_type_id = $checkout_params['order']['shipping']['type_id'] ?? '';
-
-        if (!$shipping_type_id) {
-            $shipping_post = $this->request->post('shipping', [], waRequest::TYPE_ARRAY_TRIM);
-            if (!empty($shipping_post['type_id'])) {
-                $shipping_type_id = $shipping_post['type_id'];
-            }
-        }
-
-        $this->order_provider->storeShippingTypeId($order_id, (string) $shipping_type_id);
     }
 
     /**

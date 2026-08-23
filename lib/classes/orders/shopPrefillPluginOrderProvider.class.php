@@ -191,15 +191,6 @@ class shopPrefillPluginOrderProvider
         }
     }
 
-    public function storeShippingTypeId(int $order_id, string $shipping_type_id): bool
-    {
-        if (empty($shipping_type_id) || $order_id <= 0) {
-            return false;
-        }
-
-        return $this->order_params_model->setOne($order_id, 'shipping_type_id', $shipping_type_id);
-    }
-
     public function getOrderComment(int $order_id): ?string
     {
         $row = $this->getOrderRow($order_id);

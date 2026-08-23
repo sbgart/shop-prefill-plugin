@@ -18,6 +18,6 @@ return [
         'checkout_render_details' => 'checkoutRenderDetails', //Добавляем контент в секцию details (Zen Mode для delivery)
         'checkout_render_payment' => 'checkoutRenderPayment', //Добавляем контент в секцию оплаты (Zen Mode)
         'checkout_render_confirm' => 'checkoutRenderConfirm', //DEBUG: Показываем все delayed_errors
-        'order_action.create' => 'orderActionCreate', // shipping_type + гостевая ссылка prefill_guest_<lookup_id> в параметрах заказа
+        'order_action.create' => 'orderActionCreate', // гостевая ссылка prefill_guest_<lookup_id>, сброс маркера источника и состояния Zen — своих параметров заказа не пишет
     ],
 ];
