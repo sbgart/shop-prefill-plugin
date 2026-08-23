@@ -60,10 +60,13 @@ class shopPrefillPluginSectionChecker
      *
      * Список намеренно короткий — в него входят только те секции, чьи данные
      * переживают короткое замыкание конвейера шагов (ошибка валидации выше по цепочке,
-     * fast_render). `shipping` и `payment` его переживают, потому что JS-контроллер
-     * checkout2 держит выбор у себя и отправляет его даже при пустом DOM. А `details`
-     * сериализуется из формы, которая после такого рендера пуста, — и адрес пропадает
-     * из сессии, хотя покупатель его не трогал. Поэтому `details` и `region` здесь нет.
+     * fast_render). `shipping` и `payment` его переживают — оба поля лежат в одной форме
+     * с `details` и сериализуются тем же `serializeArray()` (form.js), но замер
+     * (docs/bugs/zen-collapse-on-upstream-checkout-error.md, пункт 3) показал, что именно
+     * они доживают до конца, а `details.shipping_address.street` — нет. Это установлено
+     * замером, а не выведено из кода; при добавлении нового поля в список — мерить заново,
+     * а не полагаться на «то же самое, что уже здесь». Поэтому `details` и `region` в
+     * списке нет.
      *
      * См. docs/bugs/zen-collapse-on-upstream-checkout-error.md, пункт 3.
      */
@@ -82,7 +85,10 @@ class shopPrefillPluginSectionChecker
     private const SECTION_DATA_FIELDS = [
         'auth'     => ['data.email', 'data.phone', 'data.firstname'],
         'region'   => ['city'],
-        'shipping' => ['type_id'],
+        // Вариант — единственная идентичность выбора доставки (ядро выводит тип из
+        // варианта, а не наоборот: shopCheckoutShippingStep:226-234, :253). Тип без
+        // варианта — не выбор, а открытая вкладка; считать его данными нельзя (Z2).
+        'shipping' => ['variant_id'],
         'details'  => ['shipping_address.street'],
         'payment'  => ['id'],
         'confirm'  => ['comment'],

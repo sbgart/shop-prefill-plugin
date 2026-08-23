@@ -62,7 +62,7 @@ $sections = [
     'region'   => ['path' => ['city'], 'value' => 'Москва'],
     'details'  => ['path' => ['shipping_address', 'street'], 'value' => 'ул. Гостевая'],
     'confirm'  => ['path' => ['comment'], 'value' => 'позвонить'],
-    'shipping' => ['path' => ['type_id'], 'value' => 'courier'],
+    'shipping' => ['path' => ['variant_id'], 'value' => '33.courier'],
     'payment'  => ['path' => ['id'], 'value' => '7'],
 ];
 
@@ -153,13 +153,20 @@ check([
 ], $ownership, 'SECTION_OWNERSHIP_FIELDS — везде только html');
 
 echo "9. Минимум группы для дзен-режима" . PHP_EOL;
-// delivery: только shipping.type_id. details и region в минимум не входят —
+// delivery: только shipping.variant_id. details и region в минимум не входят —
 // их данные не переживают короткое замыкание конвейера шагов.
 check(false, $checker->isGroupMinimumFilled('delivery', params('shipping', [])), 'delivery: пусто');
 check(false, $checker->isGroupMinimumFilled('delivery', params('shipping', ['html' => 'only'])), 'delivery: один html — не минимум');
-check(true,  $checker->isGroupMinimumFilled('delivery', params('shipping', ['type_id' => 'courier'])), 'delivery: есть type_id');
+check(true,  $checker->isGroupMinimumFilled('delivery', params('shipping', ['variant_id' => '33.courier'])), 'delivery: есть variant_id');
+// Тип без варианта — открытая вкладка, а не выбор (Z2): минимум не выполнен, даже если
+// он один в секции. Это утверждение краснеет первым, если минимум откатить на type_id.
+check(false, $checker->isGroupMinimumFilled('delivery', params('shipping', ['type_id' => 'courier'])), 'delivery: только type_id, без variant_id — НЕ минимум');
+// '0' — легитимный rate_id самовывоза (см. FillParamsHelperDeliveryVariantIdTest), не путать
+// с isValueFilled(), где '0' — незаполненность человеческого выбора. Здесь variant_id — строка
+// '37.0', а не '0', так что isValueFilled() её не отбрасывает.
+check(true, $checker->isGroupMinimumFilled('delivery', params('shipping', ['variant_id' => '37.0'])), 'delivery: variant_id самовывоза с rate_id=0');
 
-// Ключевой сценарий: короткое замыкание съело улицу, но type_id уцелел → группа заполнена
+// Ключевой сценарий: короткое замыкание съело улицу, но variant_id уцелел → группа заполнена
 $short_circuited = ['order' => [
     'shipping' => ['type_id' => 'todoor', 'variant_id' => '33.courier', 'html' => 'only'],
     'details'  => ['html' => 'only'],
@@ -171,7 +178,7 @@ check(false, $checker->isSectionFilled('details', $short_circuited),
 
 // Самовывоз без адресных полей — тот же расклад, отдельной логики не нужно
 check(true, $checker->isGroupMinimumFilled('delivery', ['order' => [
-    'shipping' => ['type_id' => 'pickup', 'variant_id' => '12.pickup.DES7'],
+    'shipping' => ['variant_id' => '12.pickup.DES7'],
     'details'  => ['html' => 'only'],
 ]]), 'delivery: самовывоз без адресных полей');
 

@@ -13,7 +13,7 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 
 | Файл | Что закрывает |
 |---|---|
-| `tests/SectionCheckerOwnershipVsDataTest.php` | S1, S2, P1, P2, N2, Z2, Z5 — разделение «принадлежит покупателю» и «есть данные», минимум группы для дзен-режима; 132 проверки: структурный инвариант «списки различаются ровно на `html`», дословная сверка списка владения (его расширение до всей секции — фикс [issue-65](codereview/issue-65-prefill-overrides-current-input.md), тогда же переписываются блоки 7-8), короткое замыкание и самовывоз без адресных полей |
+| `tests/SectionCheckerOwnershipVsDataTest.php` | S1, S2, P1, P2, N2, Z2, Z5 — разделение «принадлежит покупателю» и «есть данные», минимум группы для дзен-режима; 158 проверок: структурный инвариант «списки различаются ровно на `html`», дословная сверка списка владения (его расширение до всей секции — фикс [issue-65](codereview/issue-65-prefill-overrides-current-input.md), тогда же переписываются блоки 7-8), короткое замыкание и самовывоз без адресных полей. Блок 9: минимум `delivery` — `shipping.variant_id`, а не `type_id` (тип без варианта — открытая вкладка, не выбор); включает случай `variant_id = '37.0'` (самовывоз, `rate_id` = `'0'`) |
 | `tests/FillParamsShippingVariantIdTest.php` | Разбор `variant_id` на `shipping_id` + `rate_id` |
 | `tests/FillParamsSameDeliveryOptionTest.php` | Схлопывание одинаковых вариантов доставки |
 | `tests/CheckoutPageDetectorTest.php` | A1 — ассеты только там, где рендерится форма заказа: матрица маршрутов витрины, приоритет сработавшего checkout-хука над маршрутом, лень чтения маршрута ([issue-64](codereview/issue-64-assets-loaded-on-every-page.md)) |
