@@ -17,29 +17,26 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
 
     public function setSetting(string $storefront_code, $key, $value, $groups = null): void
     {
-        if (is_array($value)) {
-            foreach ($value as $k => $v) {
-                $this->setSetting($storefront_code, $k, $v, array_merge((array) $groups, [$key]));
-            }
-            return;
-        }
-
-        // bool → int so false isn't stored as empty string
-        if (is_bool($value)) {
-            $value = (int) $value;
-        }
-
-        $this->model->set($storefront_code, $key, $value, $groups);
+        $this->flattenSettings($key, $value, $groups, function ($name, $val, $g) use ($storefront_code) {
+            $this->model->set($storefront_code, $name, $val, $g);
+        });
     }
 
     public function saveSettings(string $storefront_code, array $settings = []): void
     {
+        $entries = [];
+        $collect = function ($name, $val, $g) use (&$entries) {
+            $entries[] = ['name' => $name, 'value' => $val, 'groups' => $g];
+        };
+
         foreach ($settings as $key => $value) {
-            $this->setSetting($storefront_code, $key, $value);
+            $this->flattenSettings($key, $value, null, $collect);
         }
 
-        $this->setSetting($storefront_code, 'update_time', time());
-        $this->setSetting($storefront_code, 'updated_by', wa()->getUser()->getId() ?? 0);
+        $this->flattenSettings('update_time', time(), null, $collect);
+        $this->flattenSettings('updated_by', wa()->getUser()->getId() ?? 0, null, $collect);
+
+        $this->model->setBulk($storefront_code, $entries);
 
         $this->purgeOrphanedCustomTemplates($storefront_code);
         $this->syncCssFile($storefront_code, $settings);

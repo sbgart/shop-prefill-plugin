@@ -40,6 +40,67 @@ class shopPrefillPluginSettingsModel extends waModel
     }
 
     /**
+     * Пишет весь плоский список листьев дерева настроек за 1 SELECT + максимум один
+     * multi-row INSERT + один batched UPDATE, вместо SELECT+INSERT/UPDATE на каждый лист
+     * (issue-74#5). Без уникального индекса и ON DUPLICATE KEY — тот подход отклонён в
+     * issue-57#4 (MyISAM/utf8mb3, префиксный индекс на groups не влезает).
+     *
+     * @param array $entries листья {name, value, groups}; groups — путь как PHP-массив/null
+     */
+    public function setBulk(string $storefront_code, array $entries): void
+    {
+        if (!$entries) {
+            return;
+        }
+
+        $sql = "SELECT id, name, `groups` FROM {$this->table} WHERE `storefront_code` = s:storefront_code";
+        $existing_rows = $this->query($sql, ['storefront_code' => $storefront_code])->fetchAll();
+
+        $plan = shopPrefillPluginSettingsBulkWritePlanner::plan($existing_rows, $entries);
+
+        if ($plan['to_insert']) {
+            $rows = array_map(static function (array $row) use ($storefront_code) {
+                return $row + ['storefront_code' => $storefront_code];
+            }, $plan['to_insert']);
+
+            $this->multipleInsert($rows);
+        }
+
+        if ($plan['to_update']) {
+            $this->bulkUpdateValues($plan['to_update']);
+        }
+
+        unset(self::$cache[$storefront_code]);
+    }
+
+    /**
+     * UPDATE ... SET value = CASE id WHEN ... THEN ... END WHERE id IN (...) — один запрос
+     * на любое число строк вместо updateByField() на каждую. id — свои же автоинкрементные
+     * значения (из SELECT в setBulk()), поэтому безопасно приводить к int напрямую.
+     *
+     * @param array<int|string, mixed> $values_by_id id строки => новое value
+     */
+    private function bulkUpdateValues(array $values_by_id): void
+    {
+        $case_sql = 'CASE id';
+        $params   = [];
+        $index    = 0;
+
+        foreach ($values_by_id as $id => $value) {
+            $index++;
+            $case_sql .= " WHEN i:id_{$index} THEN s:val_{$index}";
+            $params["id_{$index}"] = (int) $id;
+            $params["val_{$index}"] = $value;
+        }
+
+        $case_sql .= ' END';
+        $params['ids'] = array_map('intval', array_keys($values_by_id));
+
+        $sql = "UPDATE {$this->table} SET value = {$case_sql} WHERE id IN (i:ids)";
+        $this->exec($sql, $params);
+    }
+
+    /**
      * Удаляет строки, чей groups лежит под $groups_prefix, а следующий сегмент пути
      * (id инстанса) отсутствует в $keep_keys — то, что осталось от удалённых
      * способов доставки/оплаты и не перезаписывается штатным save (issue-80#4).

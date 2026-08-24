@@ -20,29 +20,26 @@ class shopPrefillPluginSettingProvider extends shopPrefillPluginAbstractSettingP
 
     public function setSetting($key, $value, $groups = null): void
     {
-        if (is_array($value)) {
-            foreach ($value as $k => $v) {
-                $this->setSetting($k, $v, array_merge((array) $groups, [$key]));
-            }
-            return;
-        }
-
-        // bool → int so false isn't stored as empty string
-        if (is_bool($value)) {
-            $value = (int) $value;
-        }
-
-        $this->model->set(self::CODE, $key, $value, $groups);
+        $this->flattenSettings($key, $value, $groups, function ($name, $val, $g) {
+            $this->model->set(self::CODE, $name, $val, $g);
+        });
     }
 
     public function saveSettings($settings = []): void
     {
+        $entries = [];
+        $collect = function ($name, $val, $g) use (&$entries) {
+            $entries[] = ['name' => $name, 'value' => $val, 'groups' => $g];
+        };
+
         foreach ($settings as $name => $value) {
-            $this->setSetting($name, $value);
+            $this->flattenSettings($name, $value, null, $collect);
         }
 
-        $this->setSetting('update_time', time());
-        $this->setSetting('updated_by', wa()->getUser()->getId() ?? 0);
+        $this->flattenSettings('update_time', time(), null, $collect);
+        $this->flattenSettings('updated_by', wa()->getUser()->getId() ?? 0, null, $collect);
+
+        $this->model->setBulk(self::CODE, $entries);
 
         shopPrefillPluginLog::info('Global plugin settings saved', [
             'updated_by' => wa()->getUser()->getId() ?? 'system',
