@@ -18,9 +18,6 @@ msgstr "Предзаполнение полей оформления заказ�
 msgid "menu.help"
 msgstr "Поддержка"
 
-msgid "menu.contacts"
-msgstr "Контакты"
-
 msgid "menu.contacts.dialog.title"
 msgstr "Мы на связи"
 
@@ -35,9 +32,6 @@ msgstr "Написать разработчику"
 
 msgid "menu.contacts.dev.hint"
 msgstr "Делитесь идеями и пожеланиями — ваши предложения помогают делать плагин лучше"
-
-msgid "menu.contacts.close"
-msgstr "Закрыть"
 
 msgid "menu.contacts.copied"
 msgstr "Скопировано"
@@ -852,17 +846,11 @@ msgstr "Название выбранного тарифа доставки"
 msgid "Shipping cost"
 msgstr "Стоимость доставки"
 
-msgid "Formatted shipping cost"
-msgstr "Стоимость доставки (форматированная)"
-
 msgid "Formatted shipping cost (HTML)"
 msgstr "Стоимость доставки (HTML-разметка)"
 
 msgid "Delivery method name"
 msgstr "Название метода доставки"
-
-msgid "Name of the shipping method in store settings"
-msgstr "Название метода доставки в настройках магазина"
 
 msgid "Shipping plugin name from store DB (may be empty if not found)"
 msgstr "Название плагина доставки из БД магазина (может быть пустым, если не найден)"
@@ -876,23 +864,14 @@ msgstr "URL логотипа выбранного плагина доставк�
 msgid "Plugin name"
 msgstr "Название плагина"
 
-msgid "Delivery plugin name"
-msgstr "Название плагина доставки"
-
 msgid "Shipping carrier name from checkout data (always set when delivery is selected)"
 msgstr "Название службы доставки из данных чекаута (всегда заполнено при выбранной доставке)"
-
-msgid "Pickup point"
-msgstr "Пункт самовывоза"
 
 msgid "Delivery tariff"
 msgstr "Тариф доставки"
 
 msgid "Delivery tariff/service name"
 msgstr "Название тарифа/услуги доставки"
-
-msgid "Store pickup"
-msgstr "Самовывоз из магазина"
 
 msgid "Delivery type"
 msgstr "Тип доставки"
@@ -1002,9 +981,6 @@ msgstr "Описание оплаты"
 msgid "Payment method description"
 msgstr "Описание метода оплаты"
 
-msgid "Payment upon receipt"
-msgstr "Оплата при получении"
-
 msgid "Custom payment fields"
 msgstr "Доп. поля оплаты"
 
@@ -1022,9 +998,6 @@ msgstr "Основные настройки для витрины"
 
 msgid "hint.group.storefront_main"
 msgstr "Настройте основные параметры плагина для выбранной витрины."
-
-msgid "setting.section.placeholder"
-msgstr "Блок будет заполнен на следующем этапе."
 
 msgid "tab.general"
 msgstr "Основные"

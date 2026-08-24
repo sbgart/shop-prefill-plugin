@@ -847,9 +847,9 @@ function prefillZenTemplateAceInit($wrapper) {
         return;
     }
 
+    ace.config.set('basePath', (window.wa_url || '') + 'wa-content/js/ace/');
     var editor = ace.edit($mount[0]);
     editor.commands.removeCommand('find');
-    ace.config.set('basePath', (window.wa_url || '') + 'wa-content/js/ace/');
 
     function applyAceTheme() {
         if (document.documentElement.dataset.theme === 'dark') {
@@ -1057,8 +1057,8 @@ function prefillCssAceInit($container, initialValue) {
         return;
     }
 
-    var editor = ace.edit($mount[0]);
     ace.config.set('basePath', (window.wa_url || '') + 'wa-content/js/ace/');
+    var editor = ace.edit($mount[0]);
     editor.commands.removeCommand('find');
 
     function applyTheme() {
@@ -1104,8 +1104,8 @@ function prefillCssReadonlyAceInit($mount, value) {
         return;
     }
 
-    var editor = ace.edit($mount[0]);
     ace.config.set('basePath', (window.wa_url || '') + 'wa-content/js/ace/');
+    var editor = ace.edit($mount[0]);
     editor.commands.removeCommand('find');
     editor.setReadOnly(true);
     editor.renderer.$cursorLayer.element.style.display = 'none';

@@ -2,8 +2,6 @@
 
 class shopPrefillPluginFillParams
 {
-    private bool $active = false;
-
     private ?int $id = null;
 
     private ?string $country      = null;
@@ -32,20 +30,7 @@ class shopPrefillPluginFillParams
     private ?string $customer_type = null; // "person" или "company"
     private array   $auth_data     = [];         // Все поля auth[data] (email, phone, кастомные)
 
-    // Главные поля контактов
-    private ?string $title      = null; // Обращение
-    private ?string $firstname  = null; // Имя
-    private ?string $middlename = null; // Отчество
-    private ?string $lastname   = null; // Фамилия
-    private ?string $jobtitle   = null; // Должность
-    private ?string $company    = null; // Компания
-    private ?string $email      = null; // Email
-    private ?string $phone      = null; // Телефон
-
     private array $region_params   = ['country', 'region', 'city', 'zip', 'street'];
-    private array $auth_params     = ['customer_type', 'auth_data'];
-    private array $contact_params  = ['title', 'firstname', 'middlename', 'lastname', 'jobtitle', 'company', 'email', 'phone'];
-    private array $payment_params  = ['payment_id', 'payment_name', 'payment_plugin', 'payment_custom'];
     private array $shipping_params
         = [
             'shipping_id',
@@ -59,14 +44,12 @@ class shopPrefillPluginFillParams
      * Есть ли у источника данные для секции — в отличие от SectionChecker (тот же вопрос
      * про сессию), здесь про сам источник предзаполнения. Сейчас без вызовов — оставлен
      * намеренно как примитив для issue-84 §2 (полнота источника по группе delivery).
-     * Перед первым боевым использованием сверить поля с тем, что реально пишут сеттеры —
-     * см. docs/codereview/issue-53-empty-prefill-writes-session.md, «Отвергнутые варианты».
      */
     public function hasDataForSection(string $section_id): bool
     {
         switch ($section_id) {
             case 'auth':
-                return ! empty($this->email) || ! empty($this->phone) || ! empty($this->auth_data) || ! empty($this->firstname);
+                return ! empty($this->auth_data);
             case 'region':
                 return ! empty($this->city) || ! empty($this->region_name) || ! empty($this->country_name);
             case 'shipping':
@@ -75,9 +58,7 @@ class shopPrefillPluginFillParams
                 // getFillParamsByOrderParams() про shipping_params_ и isSameDeliveryOption()).
                 return $this->getShippingVariantId() !== null;
             case 'details':
-                // Проверяем хотя бы одно поле из адреса или контактов (кроме емейла/телефона, которые в auth)
-                return ! empty($this->street) || ! empty($this->zip) || ! empty($this->lastname) || ! empty($this->company)
-                    || ! empty($this->shipping_address_custom);
+                return ! empty($this->street) || ! empty($this->zip) || ! empty($this->shipping_address_custom);
             case 'payment':
                 return ! empty($this->payment_id) || ! empty($this->payment_plugin);
             case 'confirm':
@@ -95,16 +76,6 @@ class shopPrefillPluginFillParams
     public function setId(?int $id): void
     {
         $this->id = $id;
-    }
-
-    public function isActive(): bool
-    {
-        return $this->active;
-    }
-
-    public function setActive(bool $active): void
-    {
-        $this->active = $active;
     }
 
     public function getCountry(): ?string
@@ -337,114 +308,6 @@ class shopPrefillPluginFillParams
         $this->auth_data = $auth_data;
     }
 
-    /**
-     * Возвращает значение конкретного поля auth
-     *
-     * @param string $field_id ID поля
-     * @return string|null Значение или null
-     */
-    public function getAuthField(string $field_id): ?string
-    {
-        return $this->auth_data[$field_id] ?? null;
-    }
-
-    /**
-     * Устанавливает значение конкретного поля auth
-     *
-     * @param string $field_id ID поля
-     * @param string|null $value Значение
-     */
-    public function setAuthField(string $field_id, ?string $value): void
-    {
-        if ($value !== null) {
-            $this->auth_data[$field_id] = $value;
-        } else {
-            unset($this->auth_data[$field_id]);
-        }
-    }
-
-    // === Геттеры и сеттеры для главных полей контактов ===
-
-    public function getTitle(): ?string
-    {
-        return $this->title;
-    }
-
-    public function setTitle(?string $title): void
-    {
-        $this->title = $title;
-    }
-
-    public function getFirstname(): ?string
-    {
-        return $this->firstname;
-    }
-
-    public function setFirstname(?string $firstname): void
-    {
-        $this->firstname = $firstname;
-    }
-
-    public function getMiddlename(): ?string
-    {
-        return $this->middlename;
-    }
-
-    public function setMiddlename(?string $middlename): void
-    {
-        $this->middlename = $middlename;
-    }
-
-    public function getLastname(): ?string
-    {
-        return $this->lastname;
-    }
-
-    public function setLastname(?string $lastname): void
-    {
-        $this->lastname = $lastname;
-    }
-
-    public function getJobtitle(): ?string
-    {
-        return $this->jobtitle;
-    }
-
-    public function setJobtitle(?string $jobtitle): void
-    {
-        $this->jobtitle = $jobtitle;
-    }
-
-    public function getCompany(): ?string
-    {
-        return $this->company;
-    }
-
-    public function setCompany(?string $company): void
-    {
-        $this->company = $company;
-    }
-
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(?string $email): void
-    {
-        $this->email = $email;
-    }
-
-    public function getPhone(): ?string
-    {
-        return $this->phone;
-    }
-
-    public function setPhone(?string $phone): void
-    {
-        $this->phone = $phone;
-    }
-
     public function getShippingVariantId(): ?string
     {
         if (! is_null($this->getShippingId()) && ! is_null($this->getShippingRateId())) {
@@ -511,27 +374,5 @@ class shopPrefillPluginFillParams
         }
 
         return (string) ($left ?? '') === (string) ($right ?? '');
-    }
-
-    public function mergePaymentParams(shopPrefillPluginFillParams $other): void
-    {
-        $this->mergeWith($other, $this->payment_params);
-    }
-
-    public function mergeAuthParams(shopPrefillPluginFillParams $other): void
-    {
-        $this->mergeWith($other, $this->auth_params);
-    }
-
-    public function mergeContactParams(shopPrefillPluginFillParams $other): void
-    {
-        $this->mergeWith($other, $this->contact_params);
-    }
-
-    private function mergeWith(shopPrefillPluginFillParams $other, array $properties): void
-    {
-        foreach ($properties as $property) {
-            $this->$property = $other->$property;
-        }
     }
 }

@@ -1,21 +1,21 @@
 # Issue 74 — Мелкие находки второго прохода ревью
 
-**Статус:** ⬜ Открыта
+**Статус:** 🟡 Открыта (4 из 8 закрыты — сверено с кодом 24.08.2026)
 **Приоритет:** 🟢 Низкий
 **Сложность фикса:** 🔧 Тривиальные, независимые друг от друга
 
 Продолжение [issue-57](issue-57-minor-robustness-findings.md). Каждый пункт самостоятельный.
 
-## 1. Общий `waView` загрязняется без восстановления
+## 1. Общий `waView` загрязняется без восстановления — ✅ закрыто
 
-`ZenMode::renderGroupSummary()` аккуратно сохраняет и возвращает переменные вида (`$old_vars` + `clearAssign`). А вот два соседних места пишут в тот же singleton-view и ничего не восстанавливают:
+`ZenMode::renderGroupSummary()` аккуратно сохраняла и возвращала переменные вида (`$old_vars` + `clearAssign`). Два соседних места писали в тот же singleton-view и ничего не восстанавливали:
 
 - `ZenMode::renderCollapseBlock()` — `group`, `is_collapsed`, `icon_url`, `icon_is_default`, `icon_sprite_url`, `summary_html`, `zen_toggle_button_extra_classes`;
 - `ViewProvider::render()` — `plugin_url` + всё, что передали (для чекбокса согласия — `has_consent`).
 
-В шаблонах ядра Shop-Script коллизий по этим именам нет (проверено grep'ом по `templates/actions/frontend/`), но `plugin_url` и `group` — имена, которые вполне может занять сторонняя тема или другой плагин. Стоит привести все три места к одному паттерну (проще всего — сохранять/возвращать `getVars()`, как в `renderGroupSummary`).
+Проверено 24.08.2026 по коду: паттерн унифицирован именно так, как предлагалось — общий статический хелпер `shopPrefillPluginViewProvider::withScopedVars(waView $view, array $vars, callable $render)` (`lib/classes/view/shopPrefillPluginViewProvider.class.php`) сохраняет только реально перезаписанные ключи, подставляет `$vars`, выполняет `$render` и в `finally` восстанавливает старые значения / чистит новые. `renderCollapseBlock()` и `renderGroupSummary()` (`ZenMode.class.php`) и `ViewProvider::render()` теперь все три вызывают этот хелпер вместо прямого `$view->assign()`.
 
-## 2. `waRequest::post('code')` без типа → `TypeError` вместо 400
+## 2. `waRequest::post('code')` без типа → `TypeError` вместо 400 — ✅ закрыто
 
 `shopPrefillPluginSettingsStorefrontAction::handle()`:
 
@@ -25,9 +25,11 @@ $storefront_code = waRequest::post('code');
 $storefront = $plugin->getStorefrontProvider()->findStorefront($storefront_code);
 ```
 
-`findStorefront(?string $storefront_code)` при массиве в `code` получит `TypeError` — а это `Error`, не `Exception`, ловилок нет → 500. Лечится `waRequest::TYPE_STRING_TRIM` (как это сделано в `TemplateEditor`). Тот же приём стоит применить в `FillCheckoutParams`, если контроллер не удалят по [issue-62](issue-62-dead-unguarded-fill-checkout-endpoint.md).
+`findStorefront(?string $storefront_code)` при массиве в `code` получал бы `TypeError` — а это `Error`, не `Exception`, ловилок нет → 500.
 
-## 3. Undefined index при заказе с регионом без страны
+Проверено 24.08.2026 по коду: строка теперь `waRequest::post('code', '', waRequest::TYPE_STRING_TRIM)` (`lib/actions/shopPrefillPluginSettingsStorefront.action.php:12`). Оговорка про `FillCheckoutParams` снята сама собой — контроллер удалён целиком по [issue-62](issue-62-dead-unguarded-fill-checkout-endpoint.md).
+
+## 3. Undefined index при заказе с регионом без страны — ✅ закрыто
 
 `FillParamsProvider::getFillParamsByOrderParams()`:
 
@@ -42,9 +44,15 @@ if (isset($order_params['shipping_address.region'])) {
 
 Ключ `country` проверяется отдельно выше, здесь — нет. Заказ, где регион есть, а страна не сохранилась (импорт, API, старые данные), даёт notice в PHP 7.4 и warning в PHP 8.
 
-## 4. Просмотрщик логов перечитывает оба файла целиком на каждую страницу пагинации
+Исправлено 24.08.2026: `$order_params['shipping_address.country'] ?? null` (`lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php:453`). `getRegionName($country, $region)` у себя не типизирован, `null` проходит как и раньше проходил бы результат отсутствующего ключа — поведение то же, notice убран. Прогнан весь набор `tests/*Test.php` — без регрессий.
+
+## 4. Просмотрщик логов перечитывает оба файла целиком на каждую страницу пагинации — ✅ закрыто
 
 `SettingsReadLogs::handle()` → `LogReader::readMerged()` читает до 1 МБ с хвоста каждого файла (+ ротированные поколения), парсит регулярками **все** записи, сортирует `usort`'ом — и только потом делает `array_slice($all_reversed, $offset, $limit)`. При скролле на 10 страниц это 10 полных разборов ~2 МБ. Админский путь, некритично, но при активном дебаге заметно. Вариант: кэшировать распарсенный массив в сессии/файле по mtime логов.
+
+Исправлено 24.08.2026: `readMerged()` кэширует результат файлом в приватном `wa-data/protected/shop/plugins/prefill/cache/logs-merged.cache` (`lib/classes/log/shopPrefillPluginLogReader.class.php`). Отпечаток — `mtime:size` всех 4 файлов (main + `.1`, error + `.1`); при совпадении с сохранённым в кэше парсинг и сортировка пропускаются целиком, при расхождении (новая запись в лог, ротация) — кэш перезаписывается. `unserialize()` вызывается с `allowed_classes => false` (файл пишет только сам плагин, но от инъекции объектов подстраховались).
+
+Проверено в браузере: открыл «Отладка → Просмотр логов» (10205 записей уровня debug) — файл кэша появился на диске сразу, `stat` до/после повторного нажатия «Обновить» показал одинаковые mtime/size (кэш отработал, повторного парсинга не было). Затем `touch` на `prefill.plugin.log` (эмуляция новой записи) + «Обновить» — mtime кэш-файла изменился, список в UI отрисовался корректно (подтверждает инвалидацию по отпечатку). Тесты `tests/*Test.php` — без регрессий (класс логов в тестовый набор не входит, проверка только браузером).
 
 ## 5. Сохранение настроек — по SELECT + UPDATE на каждый лист дерева
 

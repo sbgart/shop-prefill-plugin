@@ -41,12 +41,35 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
         $this->setSetting($storefront_code, 'update_time', time());
         $this->setSetting($storefront_code, 'updated_by', wa()->getUser()->getId() ?? 0);
 
+        $this->purgeOrphanedCustomTemplates($storefront_code);
         $this->syncCssFile($storefront_code, $settings);
 
         shopPrefillPluginLog::info('Storefront settings saved', [
             'storefront_code' => $storefront_code,
             'updated_by'      => wa()->getUser()->getId(),
         ]);
+    }
+
+    /**
+     * Удаляет zen.groups.{delivery,payment}.custom_templates.<id> для инстансов доставки/оплаты,
+     * которых больше нет в shop_plugin (issue-80#4). UI рисует шаблон только для существующих
+     * методов, поэтому удалённый инстанс никогда не попадает в POST и без явной чистки строки
+     * оставались бы в таблице навсегда.
+     *
+     * 'all' => true обязателен: выключенный (но не удалённый) метод не должен считаться
+     * осиротевшим — listPlugins() без него отдаёт только status=1.
+     *
+     * @throws waException
+     */
+    private function purgeOrphanedCustomTemplates(string $storefront_code): void
+    {
+        $model = new shopPluginModel();
+
+        $delivery_ids = array_map('strval', array_keys($model->listPlugins(shopPluginModel::TYPE_SHIPPING, ['all' => true])));
+        $payment_ids  = array_map('strval', array_keys($model->listPlugins(shopPluginModel::TYPE_PAYMENT, ['all' => true])));
+
+        $this->model->deleteOrphanedGroups($storefront_code, ['zen', 'groups', 'delivery', 'custom_templates'], $delivery_ids);
+        $this->model->deleteOrphanedGroups($storefront_code, ['zen', 'groups', 'payment', 'custom_templates'], $payment_ids);
     }
 
     /**

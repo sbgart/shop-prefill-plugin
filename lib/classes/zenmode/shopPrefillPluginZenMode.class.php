@@ -277,20 +277,6 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * @deprecated Используй getPluginGroupIcon() для delivery/payment.
-     * Оставлен для обратной совместимости.
-     */
-    public function getGroupIcon(string $group): string
-    {
-        $custom_icon = $this->settings['groups'][$group]['icon'] ?? '';
-        if (! empty($custom_icon)) {
-            return $custom_icon;
-        }
-
-        return shopPrefillPlugin::getStaticUrl("img/zen/{$group}.svg");
-    }
-
-    /**
      * Возвращает иконку для группы «Покупатель» согласно настройке icon_source.
      *
      * Дефолтная иконка рендерится инлайново через спрайт (см. getPluginGroupIcon()),
@@ -499,7 +485,7 @@ class shopPrefillPluginZenMode
             $summary_html = $this->renderGroupSummary($group, $state);
         }
 
-        $this->view->assign([
+        $vars = [
             'group'                           => $group,
             'is_collapsed'                    => $is_collapsed,
             'icon_url'                        => $icon_url,
@@ -513,10 +499,13 @@ class shopPrefillPluginZenMode
             // на загрузку страницы и кэшируется по хешу, а блокировка меняется от запроса
             // к запросу. Блок же перерисовывается вместе с секцией на каждом пересчёте.
             'blocking_group'                  => $state->getBlockingGroup(),
-        ]);
+        ];
 
         $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/CollapseBlock.html';
-        $html = $this->view->fetch('file:' . $template_path);
+        $view = $this->view;
+        $html = shopPrefillPluginViewProvider::withScopedVars($view, $vars, static function () use ($view, $template_path) {
+            return $view->fetch('file:' . $template_path);
+        });
 
         return $is_collapsed ? ($this->generateGroupStyles($group) . $html) : $html;
     }
@@ -556,31 +545,10 @@ class shopPrefillPluginZenMode
 
         // Используем существующий View из Webasyst (не создаём новый Smarty!)
         try {
-            $view     = $this->view;
-            $old_vars = [];
-
-            // Сохраняем существующие переменные с теми же именами
-            foreach ($data as $key => $value) {
-                if (isset($view->getVars()[$key])) {
-                    $old_vars[$key] = $view->getVars()[$key];
-                }
-            }
-
-            // Присваиваем наши данные
-            $view->assign($data);
-
-            // Рендерим шаблон
-            $summary = $view->fetch('string:' . $template);
-
-            // Восстанавливаем оригинальные переменные
-            $view->assign($old_vars);
-
-            // Удаляем временные переменные, которых не было
-            foreach ($data as $key => $value) {
-                if (! isset($old_vars[$key])) {
-                    $view->clearAssign($key);
-                }
-            }
+            $view = $this->view;
+            $summary = shopPrefillPluginViewProvider::withScopedVars($view, $data, static function () use ($view, $template) {
+                return $view->fetch('string:' . $template);
+            });
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Template rendering failed in shopPrefillPluginZenMode::renderGroupSummary', [
                 'group'   => $group,

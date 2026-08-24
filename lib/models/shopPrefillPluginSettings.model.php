@@ -39,6 +39,30 @@ class shopPrefillPluginSettingsModel extends waModel
         unset(self::$cache[$storefront_code]);
     }
 
+    /**
+     * Удаляет строки, чей groups лежит под $groups_prefix, а следующий сегмент пути
+     * (id инстанса) отсутствует в $keep_keys — то, что осталось от удалённых
+     * способов доставки/оплаты и не перезаписывается штатным save (issue-80#4).
+     *
+     * @param string[] $groups_prefix
+     * @param string[] $keep_keys
+     * @return int Число удалённых строк
+     */
+    public function deleteOrphanedGroups(string $storefront_code, array $groups_prefix, array $keep_keys): int
+    {
+        $sql  = "SELECT id, `groups` FROM {$this->table} WHERE `storefront_code` = s:storefront_code";
+        $rows = $this->query($sql, ['storefront_code' => $storefront_code])->fetchAll();
+
+        $ids = shopPrefillPluginOrphanedGroupsFilter::filter($rows, $groups_prefix, $keep_keys);
+
+        if ($ids) {
+            $this->deleteById($ids);
+            unset(self::$cache[$storefront_code]);
+        }
+
+        return count($ids);
+    }
+
     private function parse($rows): array
     {
         $settings = [];

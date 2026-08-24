@@ -25,11 +25,6 @@ class shopPrefillPluginLocationProvider
         return $this->region_model;
     }
 
-    public function getCountries($group = false): array
-    {
-        return $this->getCountryModel()->allWithFav();
-    }
-
     public function getCountryName($country): ?string
     {
         $country_key = (string) $country;
@@ -38,13 +33,6 @@ class shopPrefillPluginLocationProvider
         }
 
         return self::$country_name_cache[$country_key];
-    }
-
-    public function getRegions($country, $group = false)
-    {
-        $method = $group ? 'getByCountry' : 'getByCountryWithFav';
-
-        return $this->getRegionModel()->$method($country);
     }
 
     public function getRegionName($country, $region)

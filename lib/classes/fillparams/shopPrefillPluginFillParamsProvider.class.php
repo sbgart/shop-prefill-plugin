@@ -450,7 +450,7 @@ class shopPrefillPluginFillParamsProvider
             $fill_params->setRegion($order_params['shipping_address.region']);
 
             $region_name = $this->location_provider->getRegionName(
-                $order_params['shipping_address.country'],
+                $order_params['shipping_address.country'] ?? null,
                 $order_params['shipping_address.region']
             );
             $fill_params->setRegionName($region_name);

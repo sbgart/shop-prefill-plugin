@@ -12,38 +12,42 @@ class shopPrefillPluginViewProvider
 
         $params['plugin_url'] = shopPrefillPlugin::getStaticUrl();
 
-        $view->assign($params);
-
         $view_path = shopPrefillPlugin::getPluginPath() . '/templates/' . $path;
 
-        return $view->fetch($view_path . '.html');
+        return self::withScopedVars($view, $params, static function () use ($view, $view_path) {
+            return $view->fetch($view_path . '.html');
+        });
     }
 
     /**
-     * @throws waException
-     * @throws SmartyException
+     * Временно подставляет $vars в общий (singleton) waView, выполняет $render и
+     * восстанавливает исходные значения переменных — иначе они «утекают» в шаблоны
+     * темы/других плагинов, рендерящихся тем же view позже в этом же запросе.
+     *
+     * Восстановление — в finally: значения не должны потеряться, даже если $render бросит.
+     *
+     * @throws Exception
      */
-    public static function getFormattedMessage(string $template, array $params): string
+    public static function withScopedVars(waView $view, array $vars, callable $render): string
     {
-        $message = wa()->getView();
-        $message->assign($params);
+        $old_vars = [];
+        foreach ($vars as $key => $value) {
+            if (isset($view->getVars()[$key])) {
+                $old_vars[$key] = $view->getVars()[$key];
+            }
+        }
 
-        return $message->fetch('string:' . $template);
-    }
+        $view->assign($vars);
 
-    /**
-     * @throws waException
-     * @throws waDbException
-     */
-    public static function getFormattedPrice(int $amount, bool $html = true): string
-    {
-        $shop_currency = wa()->getSetting('currency', 'RUB', 'shop');
-        if ($html) {
-            return '<span style="white-space:nowrap!important;">' . shop_currency_html($amount, $shop_currency)
-                . '</span>';
-        } else {
-            return shop_currency($amount, $shop_currency);
+        try {
+            return $render();
+        } finally {
+            $view->assign($old_vars);
+            foreach ($vars as $key => $value) {
+                if (! isset($old_vars[$key])) {
+                    $view->clearAssign($key);
+                }
+            }
         }
     }
-
 }

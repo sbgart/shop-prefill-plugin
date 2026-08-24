@@ -1,6 +1,6 @@
 # Issue 73 — `getInstance()` отдаёт объект от первого сработавшего хука; per-instance кэши значат не то, что написано в комментариях
 
-**Статус:** ⬜ Открыта
+**Статус:** ✅ Закрыта 24.08.2026 как неактуальная — рекомендация №1 ошибочна: `wa('shop')->getPlugin('prefill')` (`waSystem::getPlugin()`, `wa-system/waSystem.class.php:1433`) сам ничего не кэширует и на каждый вызов создаёт новый объект, так что переход на него не решает проблему устаревания `$instance`. Требуется пересмотр подхода, пока не актуально
 **Приоритет:** 🟢 Низкий (сейчас не проявляется, но это мина под будущими правками)
 **Сложность фикса:** 🔧 Небольшой
 **Файлы:** `lib/shopPrefill.plugin.php` (`__construct`, `getInstance`), `lib/classes/sessionstorage/…` (`$prefilled`), `lib/classes/view/shopPrefillPluginAssetsManager.class.php` (`$assets_initialized`)

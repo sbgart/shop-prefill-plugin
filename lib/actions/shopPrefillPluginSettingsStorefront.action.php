@@ -9,7 +9,7 @@ class shopPrefillPluginSettingsStorefrontAction extends shopPrefillPluginSetting
      */
     protected function handle()
     {
-        $storefront_code = waRequest::post('code');
+        $storefront_code = waRequest::post('code', '', waRequest::TYPE_STRING_TRIM);
 
         $app_id = shopPrefillPlugin::APP_ID;
         $plugin_id = shopPrefillPlugin::PLUGIN_ID;

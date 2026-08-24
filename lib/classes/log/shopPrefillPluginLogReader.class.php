@@ -5,14 +5,29 @@ class shopPrefillPluginLogReader
     /** Максимум читаемых байт с конца файла */
     private const MAX_BYTES = 1048576; // 1 MB
 
+    /** Имя файла кэша распарсенных записей внутри приватного data-каталога плагина */
+    private const CACHE_FILE_NAME = 'logs-merged.cache';
+
     /**
      * Читает оба лог-файла (вместе с ротированными поколениями), объединяет и сортирует по времени.
      * Лимит по числу записей не применяется — естественная граница задана MAX_BYTES (1MB) на файл.
      * Срезать записи нельзя: error-лог обычно содержит более старые записи,
      * чем main-лог (warning/error реже debug/info), и при срезе они вырезаются первыми.
+     *
+     * Результат кэшируется по отпечатку (mtime+size) всех 4 файлов: постраничный
+     * просмотр в UI дёргает readMerged() на каждую страницу и без кэша заново читает
+     * и парсит ~2 МБ текста при каждом клике. Новая запись в лог меняет mtime → кэш мимо.
      */
     public static function readMerged(): array
     {
+        $log_dir     = wa()->getConfig()->getPath('log');
+        $fingerprint = self::buildFingerprint($log_dir);
+
+        $cached = self::readCache($fingerprint);
+        if ($cached !== null) {
+            return $cached;
+        }
+
         $main  = self::read(shopPrefillPluginLog::LOG_FILE,       PHP_INT_MAX);
         $error = self::read(shopPrefillPluginLog::ERROR_LOG_FILE, PHP_INT_MAX);
 
@@ -20,7 +35,62 @@ class shopPrefillPluginLogReader
 
         usort($all, static fn(array $a, array $b): int => strcmp($a['datetime'], $b['datetime']));
 
+        self::writeCache($fingerprint, $all);
+
         return $all;
+    }
+
+    /**
+     * @param string $log_dir Каталог логов (wa()->getConfig()->getPath('log'))
+     */
+    private static function buildFingerprint(string $log_dir): string
+    {
+        $files = [
+            shopPrefillPluginLog::LOG_FILE,
+            shopPrefillPluginLog::LOG_FILE . shopPrefillPluginLog::ROTATED_SUFFIX,
+            shopPrefillPluginLog::ERROR_LOG_FILE,
+            shopPrefillPluginLog::ERROR_LOG_FILE . shopPrefillPluginLog::ROTATED_SUFFIX,
+        ];
+
+        $parts = [];
+        foreach ($files as $file) {
+            $path = $log_dir . '/' . $file;
+            clearstatcache(true, $path);
+            $parts[] = is_file($path) ? (filemtime($path) . ':' . filesize($path)) : '0:0';
+        }
+
+        return implode('|', $parts);
+    }
+
+    private static function getCachePath(): string
+    {
+        $cache_dir = wa()->getDataPath('plugins/' . shopPrefillPlugin::PLUGIN_ID . '/cache/', false, 'shop');
+        return $cache_dir . self::CACHE_FILE_NAME;
+    }
+
+    private static function readCache(string $fingerprint): ?array
+    {
+        $raw = @file_get_contents(self::getCachePath());
+        if ($raw === false) {
+            return null;
+        }
+
+        // allowed_classes: false — файл пишем только сами, но от объектов подстраховываемся
+        $cache = @unserialize($raw, ['allowed_classes' => false]);
+        if (!is_array($cache) || ($cache['fingerprint'] ?? null) !== $fingerprint) {
+            return null;
+        }
+
+        return $cache['data'];
+    }
+
+    private static function writeCache(string $fingerprint, array $data): void
+    {
+        @file_put_contents(
+            self::getCachePath(),
+            serialize(['fingerprint' => $fingerprint, 'data' => $data]),
+            LOCK_EX
+        );
     }
 
     /**

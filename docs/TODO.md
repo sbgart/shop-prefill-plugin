@@ -13,10 +13,9 @@
 
 ### Код-гигиена
 
-- [ ] 🟢 [Мёртвый код уезжает в релизный архив, часть — «настройки, которые ничего не делают»](codereview/issue-71-dead-code-in-release-archive.md) — 9 неиспользуемых классов/методов + незаполняемые контактные поля `FillParams`; блокирующего эффекта нет
-- [ ] 🟢 [getInstance() отдаёт объект от первого хука; per-instance кэши значат не то, что в комментариях](codereview/issue-73-stale-plugin-singleton.md)
+
+
 - [ ] 🟢 [Сборник мелких находок второго прохода (загрязнение waView, типы в post, notice, логи, SameSite)](codereview/issue-74-minor-findings-pass-2.md)
-- [ ] 🟢 [Сборник мелких находок третьего прохода (jQuery без guard, ложный диалог, мусор в настройках, локали, ace)](codereview/issue-80-frontend-minor-findings.md)
 
 ---
 
@@ -112,7 +111,11 @@
 - [x] [Плагин навязывает display:inline !important элементам шапки авторизации всегда](codereview/issue-77-auth-header-display-important-always.md) — правило перенесено из статического frontend.css в генерируемый variables_*.css, эмитится только при включённой hide_auth_header, `!important` сохранён, 20.08.2026; **проверено в браузере** on/off
 - [x] [Абсолютный путь /wa-apps/shop/img/... ломает иконки на установках в подкаталоге](codereview/issue-70-hardcoded-absolute-sprite-path.md) — путь собирается через `{$wa_url}`, заодно исправлена опечатка `?v` → `?v=`; 20.08.2026, **проверено в браузере**
 - [x] [Сборник мелких находок ревью (null-витрина, secure-cookies, мусор в wa-data, ротация логов, custom_css в TEXT)](codereview/issue-57-minor-robustness-findings.md) — 7 из 8 закрыты 21.08.2026; уникальный индекс на shop_prefill_settings отклонён (YAGNI + лимит ключа MyISAM/utf8mb3), обоснование в файле
+- [x] 🟢 [Сборник мелких находок третьего прохода (jQuery без guard, ложный диалог, мусор в настройках, локали, ace)](codereview/issue-80-frontend-minor-findings.md)
 
+
+- [x] 🟢 [Мёртвый код уезжает в релизный архив, часть — «настройки, которые ничего не делают»](codereview/issue-71-dead-code-in-release-archive.md) — 9 неиспользуемых классов/методов + незаполняемые контактные поля `FillParams`; блокирующего эффекта нет
+- [ ] 🟢 [getInstance() отдаёт объект от первого хука; per-instance кэши значат не то, что в комментариях](codereview/issue-73-stale-plugin-singleton.md)
 ### Хвосты issue-51 (remember me)
 
 - [x] Путь A: вход через штатную форму логина, с галочкой «Запомнить меня» и без неё — 21.08.2026, оба сценария прогнаны в браузере на тестовом контакте с известным паролем и подтверждены логом плагина: с галочкой `[DEBUG] Auth token extended` (expires_days: 90), без галочки — строка не появляется вовсе
