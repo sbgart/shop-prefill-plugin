@@ -4,12 +4,14 @@
 *
 * @param string $group Имя группы (customer, delivery, payment)
 * @param bool $is_collapsed Состояние группы (свёрнута/развёрнута)
+* @param string $blocking_group Группа с серверной ошибкой, из-за которой сейчас
+*        нельзя сворачивать (опционально). Клиентская валидация её не видит.
 *}
 
 {if $is_collapsed}
 {* Свёрнуто: кнопка "Изменить", стрелка вниз *}
 <span class="wa-link prefill-zen-toggle-btn js-prefill-zen-toggle prefill-zen-expand{if $zen_toggle_button_extra_classes} {$zen_toggle_button_extra_classes|escape:'html'}{/if}" data-group="{$group|escape}"
-  data-action="expand">
+  data-action="expand"{if !empty($blocking_group)} data-blocked-by="{$blocking_group|escape}"{/if}>
   {_wp("action.edit")}&nbsp;&nbsp;
   <svg class="wa-icon size-8 prefill-zen-arrow" style="vertical-align: middle;">
     <use xlink:href="{$wa_url}wa-apps/shop/img/frontend/order/svg/sprite.svg?v={$wa->version(true)}#arrow-bottom"></use>
@@ -18,7 +20,7 @@
 {else}
 {* Развёрнуто: кнопка "Свернуть", стрелка вверх (перевёрнута) *}
 <span class="wa-link prefill-zen-toggle-btn js-prefill-zen-toggle prefill-zen-collapse{if $zen_toggle_button_extra_classes} {$zen_toggle_button_extra_classes|escape:'html'}{/if}" data-group="{$group|escape}"
-  data-action="collapse">
+  data-action="collapse"{if !empty($blocking_group)} data-blocked-by="{$blocking_group|escape}"{/if}>
   {_wp("action.collapse")}&nbsp;&nbsp;
   <svg class="wa-icon size-8 prefill-zen-arrow prefill-zen-arrow-up" style="vertical-align: middle;">
     <use xlink:href="{$wa_url}wa-apps/shop/img/frontend/order/svg/sprite.svg?v={$wa->version(true)}#arrow-bottom"></use>

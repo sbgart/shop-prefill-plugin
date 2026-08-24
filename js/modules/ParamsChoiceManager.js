@@ -108,7 +108,8 @@ class ParamsChoiceManager {
      */
     async displayDialog() {
         const dialogId = "prefill-params-choice-dialog";
-        const content = this.httpClient.fetchView("prefill/params-choice");
+
+        const content = this.httpClient.fetchView("prefill/params-choice", this.getFormSnapshot());
         const dialog = await this.dialogManager.showDialog(dialogId, content);
 
         // Устанавливаем локализованный заголовок
@@ -117,6 +118,36 @@ class ParamsChoiceManager {
         return dialog;
     }
 
+    /**
+     * Снимок текущей формы заказа для подсветки активной карточки на сервере.
+     *
+     * Сессия shop/checkout может на цикл отставать от формы (ядро пишет сырой POST
+     * раньше, чем досчитывает часть полей — авто-выбор единственного варианта
+     * доставки, восстановление адреса после короткого замыкания при валидации и
+     * т.д., см. docs/bugs/params-choice-stale-highlight-after-type-switch.md).
+     * Источник истины в момент открытия диалога — сама форма, а не сессия.
+     *
+     * Вместо точечного чтения отдельных полей used берём контроллер чекаута ядра
+     * (сохранён им самим на #js-order-form через jQuery.data, form.js Form.initClass)
+     * и его же getFormData() — тот же метод, которым ядро само себя сериализует
+     * перед отправкой в /order/calculate/. Так подсветка не отстаёт ни по одному
+     * полю, включая те, о которых плагин сегодня не знает.
+     *
+     * @returns {Array<[string, string]>} Пары [имя_поля, значение] в разметке
+     *          ядра ("shipping[variant_id]", "details[shipping_address][street]", …)
+     *          — пусто, если контроллер недоступен (тогда сервер использует сессию).
+     */
+    getFormSnapshot() {
+        const $wrapper = window.jQuery ? window.jQuery("#js-order-form") : null;
+        const controller = $wrapper && $wrapper.length ? $wrapper.data("controller") : null;
+
+        if (!controller || typeof controller.getFormData !== "function") {
+            this.logger.debug("getFormSnapshot: контроллер ядра недоступен, подсветка вернётся к сессии");
+            return [];
+        }
+
+        return controller.getFormData().map(({ name, value }) => [name, value]);
+    }
 
     /**
      * Показывает диалог-предупреждение о недоступности выбранного способа доставки.

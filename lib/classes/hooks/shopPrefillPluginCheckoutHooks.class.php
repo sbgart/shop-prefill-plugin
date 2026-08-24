@@ -48,11 +48,18 @@ class shopPrefillPluginCheckoutHooks
      * Хук вызывается перед обработкой шага auth в processAll().
      * Срабатывает при каждом AJAX-запросе calculate/create.
      *
-     * Выполняет три задачи:
+     * Выполняет четыре задачи:
      * 1. Записывает prefill-данные в сессию (для следующего use_session_input запроса)
      * 2. Применяет prefill-данные к $params['data']['input'] для ТЕКУЩЕГО processAll
      * 3. Восстанавливает способ оплаты, механически обнулённый ядром при смене
      *    доставки/региона — эхо-кэш секции payment (P9)
+     * 4. Восстанавливает выбор доставки, стёртый коротким замыканием конвейера, —
+     *    эхо-кэш группы delivery
+     *
+     * Оба эха пишут дважды, и оба письма обязательны: в сессию — чтобы пережить запрос
+     * (её читают formVars() при загрузке страницы и ветка use_session_input), и прямо
+     * в $data['input'] — потому что calculateAction() строит $input из POST и сессию
+     * при обычном calculate не читает вовсе.
      *
      * @param array $params ['data' => &$data] где $data['input'] — текущий $input processAll
      */
@@ -87,10 +94,34 @@ class shopPrefillPluginCheckoutHooks
         // подходит: его is_prefilled означал бы «предзаполнено из истории», а это
         // восстановление другого рода (docs/plans/payment-section-echo-cache.md).
         $payment_echo = $this->session_storage->syncPaymentEcho();
-        if ($payment_echo !== null && isset($params['data']['input'])) {
-            $params['data']['input']['payment'] = shopPrefillPluginHelper::deepMergeArrays(
-                $params['data']['input']['payment'] ?? [],
-                $payment_echo
+        if ($payment_echo !== null) {
+            $this->applyEchoToInput($params, ['payment' => $payment_echo]);
+        }
+
+        // Эхо-кэш группы доставки — по той же причине мимо applyPrefillInput()
+        $this->applyEchoToInput($params, $this->session_storage->syncDeliveryEcho());
+    }
+
+    /**
+     * Вливает восстановленные эхом секции в живой $data['input'] текущего processAll.
+     *
+     * Отдельно от applyPrefillInput(): тот выставляет is_prefilled, который означает
+     * «предзаполнено из истории заказов», а восстановление после короткого замыкания —
+     * другой род события и в статистику предзаполнения попадать не должно.
+     *
+     * @param array $params  Параметры хука
+     * @param array $sections [section_id => значения секции]
+     */
+    private function applyEchoToInput(array &$params, array $sections): void
+    {
+        if (empty($sections) || !isset($params['data']['input'])) {
+            return;
+        }
+
+        foreach ($sections as $section_id => $values) {
+            $params['data']['input'][$section_id] = shopPrefillPluginHelper::deepMergeArrays(
+                $params['data']['input'][$section_id] ?? [],
+                $values
             );
         }
     }
@@ -219,10 +250,16 @@ class shopPrefillPluginCheckoutHooks
             return '';
         }
 
-
         if ($state->getShippingType() !== '') {
             // Доставка успешно заполнена — гасим куку server-side
             $this->response->setCookie('prefill_user_selected', '', -1, '/');
+            return '';
+        }
+
+        if ($state->isFastRender()) {
+            // Шаг shipping в этом ответе не считался (Shop-Script fast_render) — это не значит,
+            // что вариант недоступен, просто расчёт ещё впереди. Куку не гасим: следующий
+            // рендер (после fast_render всегда идёт фоновый calculate) досчитает по-настоящему.
             return '';
         }
 

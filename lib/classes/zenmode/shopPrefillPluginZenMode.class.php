@@ -509,6 +509,10 @@ class shopPrefillPluginZenMode
             'icon_sprite_url'                 => $icon_is_default ? shopPrefillPlugin::getStaticUrl('img/zen/sprite.svg') : null,
             'summary_html'                    => $summary_html ?? null,
             'zen_toggle_button_extra_classes' => $this->settings['toggle_button_classes'] ?? '',
+            // Признак живёт в разметке, а не в JS-инициализаторе: тот генерируется один раз
+            // на загрузку страницы и кэшируется по хешу, а блокировка меняется от запроса
+            // к запросу. Блок же перерисовывается вместе с секцией на каждом пересчёте.
+            'blocking_group'                  => $state->getBlockingGroup(),
         ]);
 
         $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/CollapseBlock.html';

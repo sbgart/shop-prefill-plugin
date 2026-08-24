@@ -16,9 +16,13 @@ class shopPrefillPluginFrontendClearStorageController extends waJsonController
         }
 
         try {
-            // Очищаем хранилище checkout (сессия)
+            // Очищаем хранилище checkout (сессия) вместе с эхо-кэшами: иначе следующий
+            // же запрос вернёт в «очищенную» форму выбор доставки и оплаты
             wa()->getStorage()->remove('shop/checkout');
-            shopPrefillPlugin::getInstance()->getSessionStorageProvider()->clearSourceMarker();
+            $session_storage = shopPrefillPlugin::getInstance()->getSessionStorageProvider();
+            $session_storage->clearSourceMarker();
+            $session_storage->clearPaymentEcho();
+            $session_storage->clearDeliveryEcho();
 
             $this->response = [
                 'status' => 'ok',

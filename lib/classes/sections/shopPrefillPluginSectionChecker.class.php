@@ -60,20 +60,49 @@ class shopPrefillPluginSectionChecker
      *
      * Список намеренно короткий — в него входят только те секции, чьи данные
      * переживают короткое замыкание конвейера шагов (ошибка валидации выше по цепочке,
-     * fast_render). `shipping` и `payment` его переживают — оба поля лежат в одной форме
-     * с `details` и сериализуются тем же `serializeArray()` (form.js), но замер
-     * (docs/bugs/zen-collapse-on-upstream-checkout-error.md, пункт 3) показал, что именно
-     * они доживают до конца, а `details.shipping_address.street` — нет. Это установлено
-     * замером, а не выведено из кода; при добавлении нового поля в список — мерить заново,
-     * а не полагаться на «то же самое, что уже здесь». Поэтому `details` и `region` в
-     * списке нет.
+     * fast_render).
      *
-     * См. docs/bugs/zen-collapse-on-upstream-checkout-error.md, пункт 3.
+     * Важно: сами по себе `shipping.variant_id` и `payment.id` короткое замыкание
+     * НЕ переживают — ядро прячет секцию целиком, браузер сериализует пустоту, и
+     * calculateAction() заменяет `order` этой пустотой. Устойчивость им даёт эхо-кэш
+     * (SessionStorageProvider::syncDeliveryEcho/syncPaymentEcho), а не природа полей.
+     * Прежняя формулировка утверждала обратное, опираясь на замер 19.08.2026, и была
+     * опровергнута замером 24.08.2026.
+     *
+     * `details.shipping_address.street` в список не входит по другой причине: его
+     * восстанавливает само ядро (`details_address`), но только когда доставка выбрана, —
+     * как признак выбора он ложный.
+     *
+     * См. docs/bugs/shipping-payment-identity-lost-after-snapshot-removal.md
      */
     private const GROUP_MINIMUM_SECTIONS = [
         'customer' => ['auth'],
         'delivery' => ['shipping'],
         'payment'  => ['payment'],
+    ];
+
+    /**
+     * Поля, которые секция рендерит в СВОЕЙ форме (ключи верхнего уровня).
+     * Служебный `html` сюда не входит — его добавляет JS, а не разметка секции.
+     *
+     * Список необходим, потому что ядро кладёт в пространство имён одной секции поля,
+     * отрисованные другой: `shipping[service_agreement]` живёт в форме **region**
+     * (region.html:476-484). Секция region короткое замыкание переживает — она делает
+     * работу в prepare(), — поэтому `order.shipping` в чекауте с включённым согласием
+     * никогда не приходит «только с html», и проверка «секция ничего не прислала» по
+     * составу всех ключей давала ложное «она говорила».
+     *
+     * Источники: auth.html, region.html, shipping.html, payment.html, confirm.html и
+     * имена, собираемые шагами (shopCheckoutDetailsStep:144/210, PaymentStep:104/145,
+     * shopCheckoutConfig:935).
+     */
+    private const SECTION_INPUT_FIELDS = [
+        'auth'     => ['mode', 'user_id', 'data', 'service_agreement'],
+        'region'   => ['country', 'region', 'city', 'city_id', 'zip', 'location_id'],
+        'shipping' => ['type_id', 'variant_id'],
+        'details'  => ['shipping_address', 'custom'],
+        'payment'  => ['id', 'custom'],
+        'confirm'  => ['comment', 'terms'],
     ];
 
     /**
@@ -200,10 +229,25 @@ class shopPrefillPluginSectionChecker
     }
 
     /**
-     * Секция сегодня не отправляла собственных полей — виджет неактивен либо
-     * ядро его не спрашивало (Payment.prototype.getData, form.js:2637-2665).
-     * Пустота здесь ничего не говорит о намерении покупателя, в отличие от
-     * html === 1 или отсутствия html, где секция «говорила сама за себя».
+     * Секция не прислала ни одного собственного поля — её не было на странице либо
+     * ядро её не спрашивало. Пустота здесь ничего не говорит о намерении покупателя.
+     *
+     * Смотрим на присутствие собственных полей секции, а не на значение `html`: ядро
+     * кодирует одно и то же «просто перерисуй меня» двумя разными значениями — `'only'`
+     * у shipping и details (form.js:1871, :2429) и `1` у payment (form.js:2660).
+     * Сравнение с `'only'` не срабатывало для payment при коротком замыкании и стирало
+     * эхо-кэш ровно тогда, когда он был нужен.
+     *
+     * Почему именно собственные поля: отрисованная секция всегда шлёт хотя бы одно из
+     * них — скрытые инпуты сериализуются даже пустыми (`shipping[type_id]` живёт в блоке
+     * типов). Значит «покупатель не выбрал» приезжает как `{type_id:'', ...}`, а
+     * отсутствие ключа целиком бывает только когда секции на странице нет. Это признак
+     * отсутствия секции, а не признак пустоты, и путать их нельзя (P2).
+     *
+     * Считать «все ключи, кроме html» нельзя: в пространство имён секции попадают поля
+     * чужих форм — см. SECTION_INPUT_FIELDS.
+     *
+     * См. docs/bugs/shipping-payment-identity-lost-after-snapshot-removal.md
      *
      * @param string $section_id ID секции
      * @param array $checkout_params Параметры checkout
@@ -211,7 +255,15 @@ class shopPrefillPluginSectionChecker
      */
     public function isSectionMechanicallyClean(string $section_id, array $checkout_params): bool
     {
-        return ($checkout_params['order'][$section_id]['html'] ?? null) === 'only';
+        $section    = $checkout_params['order'][$section_id] ?? null;
+        $own_fields = self::SECTION_INPUT_FIELDS[$section_id] ?? null;
+
+        if (!is_array($section) || $own_fields === null) {
+            return false;
+        }
+
+        // Важно наличие ключа, а не его значение: пустой скрытый инпут — тоже разговор
+        return empty(array_intersect_key($section, array_flip($own_fields)));
     }
 
     /**

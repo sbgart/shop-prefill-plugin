@@ -138,6 +138,12 @@ msgstr "Проверьте форму — под некоторыми полям
 msgid "zen.validation.error.button"
 msgstr "Сейчас проверю"
 
+msgid "zen.blocked.title"
+msgstr "Сначала нужно исправить ошибку"
+
+msgid "zen.blocked.message"
+msgstr "В разделе «%s» есть ошибка. Сначала исправьте её — остальные блоки заказа пока изменить нельзя. Ваши данные сохранены и вернутся сами."
+
 msgid "dialog.header.choose_delivery"
 msgstr "Выберите адрес доставки"
 

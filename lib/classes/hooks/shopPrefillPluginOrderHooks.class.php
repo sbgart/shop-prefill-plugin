@@ -63,8 +63,9 @@ class shopPrefillPluginOrderHooks
         // Сбрасываем состояние Zen Mode: cookies групп и кэш данных сводки
         $this->zen_mode->resetState();
 
-        // Заказ создан — эхо-кэш payment не должен пережить его и достаться следующему
+        // Заказ создан — эхо-кэши не должны пережить его и достаться следующему заказу
         $this->session_storage->clearPaymentEcho();
+        $this->session_storage->clearDeliveryEcho();
 
         shopPrefillPluginLog::info('Order creation hook processed successfully', [
             'order_id' => $order_id

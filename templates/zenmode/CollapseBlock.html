@@ -8,10 +8,11 @@
 * @param bool $icon_is_default Дефолтная моно-иконка группы (рендерится инлайново через спрайт)
 * @param string $icon_sprite_url URL спрайта для инлайновых иконок (опционально)
 * @param string $summary_html HTML сводки (опционально)
+* @param string $blocking_group Группа с серверной ошибкой, блокирующей оформление (опционально)
 *}
 
 <div class="prefill-zen-collapse-block {if $is_collapsed}js-prefill-zen-toggle{/if}" {if
-    $is_collapsed}data-group="{$group|escape}" data-action="expand" {/if}>
+    $is_collapsed}data-group="{$group|escape}" data-action="expand" {if !empty($blocking_group)}data-blocked-by="{$blocking_group|escape}" {/if}{/if}>
     {if $is_collapsed && $icon_is_default}
     {* Дефолтная иконка: инлайн через спрайт, чтобы stroke="currentColor" наследовал цвет темы витрины *}
     <svg class="js-prefill-zen-icon prefill-zen-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -29,6 +30,6 @@
         {/if}
 
         {* Кнопка переключения (Изменить / Свернуть) *}
-        {include file="./ToggleButton.html" group=$group is_collapsed=$is_collapsed}
+        {include file="./ToggleButton.html" group=$group is_collapsed=$is_collapsed blocking_group=$blocking_group}
     </div>
 </div>

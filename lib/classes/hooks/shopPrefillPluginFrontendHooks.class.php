@@ -238,6 +238,13 @@ class shopPrefillPluginFrontendHooks
                 'validation_error_title'      => _wp('zen.validation.error.title'),
                 'validation_error_message'    => _wp('zen.validation.error.message'),
                 'validation_error_button'     => _wp('zen.validation.error.button'),
+                'checkout_blocked_title'      => _wp('zen.blocked.title'),
+                'checkout_blocked_message'    => _wp('zen.blocked.message'),
+                'group_names'                 => [
+                    'customer' => _wp('zen.group.customer'),
+                    'delivery' => _wp('zen.group.delivery'),
+                    'payment'  => _wp('zen.group.payment'),
+                ],
                 'dialog_choose_delivery'      => _wp('dialog.header.choose_delivery'),
                 'delivery_unavailable_title'  => _wp('dialog.delivery_unavailable.title'),
                 'delivery_unavailable_text'   => _wp('dialog.delivery_unavailable.text'),

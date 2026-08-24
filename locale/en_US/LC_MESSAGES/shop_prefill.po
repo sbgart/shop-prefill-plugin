@@ -582,6 +582,12 @@ msgstr "Check the form — some fields have tips below."
 msgid "zen.validation.error.button"
 msgstr "Got it"
 
+msgid "zen.blocked.title"
+msgstr "There is an error to fix first"
+
+msgid "zen.blocked.message"
+msgstr "The “%s” section has an error. Please fix it first — other order blocks cannot be changed meanwhile. Your data is saved and will come back on its own."
+
 msgid "error.internal"
 msgstr "Internal error"
 

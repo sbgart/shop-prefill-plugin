@@ -4,13 +4,13 @@
 **Приоритет:** 🟢 Низкий
 **Сложность фикса:** 🔧 Тривиальные, независимые
 
-## 1. Бандл жёстко зависит от глобального jQuery, без единой проверки
+## 1. Бандл жёстко зависит от глобального jQuery, без единой проверки ✅ Исправлено
 
 `PrefillFrontendController.init()` вызывает `paramsChoiceManager.init()`, `orderFormManager.init()` и `consentManager.init()` — все три начинаются с `$(document).on(...)`. Если `$` на странице нет, конструктор падает с `ReferenceError`, `window.prefill` не создаётся, весь функционал плагина мёртв, а в консоли покупателя висит ошибка.
 
 Пока бандл грузится на всех страницах витрины (см. [issue-64](issue-64-assets-loaded-on-every-page.md)), под удар попадают и те страницы, где тема могла jQuery не подключать. Достаточно guard'а в начале `init()` с записью в лог.
 
-## 2. Ложное «Выбранный способ доставки недоступен»
+## 2. Ложное «Выбранный способ доставки недоступен» ✅ Исправлено
 
 ```php
 // CheckoutHooks::renderDeliveryUnavailableScript()
@@ -22,9 +22,15 @@ return '<script>$(document).trigger("prefill_delivery_unavailable");</script>';
 
 Стоит различать «вариант посчитан и не подошёл» и «расчёт ещё не выполнялся» — например, сигналить только когда шаг доставки реально отработал (`error_step_id !== 'shipping'` и есть `vars.shipping`).
 
-## 3. Мёртвая инфраструктура настроек
+**Подтверждено и исправлено.** `shopCheckoutViewHelper::formVars()` безусловно проставляет `input['fast_render'] = true` на каждом полном рендере `/shop/order/`; `shopCheckoutShippingStep::process()` при этом выходит до вычисления `data.shipping.selected_variant`, оставляя в `errors` только служебный сентинел `['fast_render' => true]` (тот же, что уже фильтровался в `getRegularErrors()`). `prepareFormVars()` тем не менее безусловно прогоняет `checkout_render_confirm` для этого ответа — то есть баг воспроизводится систематически на каждом `apply-delivery` + `location.reload()`, а не изредка.
+
+Добавлен `shopPrefillCheckoutState::isFastRender()` (переиспользует сентинел-проверку из `getRegularErrors()`), и `renderDeliveryUnavailableScript()` теперь пропускает сигнал, если шаг shipping в этом ответе не считался — куку не гасит, следующий рендер (фоновый `calculate` после fast_render) досчитает по-настоящему. Проверено логом на реальном сценарии (apply-delivery по карточке из истории → reload): первый рендер — `shipping_type=""`, `is_fast_render=true`, `error_step_id="shipping"` (до фикса здесь ушёл бы ложный сигнал); второй рендер (фоновый calculate) — `shipping_type="todoor"`, `is_fast_render=false`, кука гасится штатно. Юнит-тест: `tests/CheckoutStateFastRenderTest.php`.
+
+## 3. Мёртвая инфраструктура настроек ✅ Исправлено
 
 `lib/config/setting_groups.php` возвращает `[]`, а `shopPrefillPluginAbstractArraySettingGroup` не имеет ни одного наследника. Ветка `$`-префикса в `shopPrefillPluginSettingsConfig::group()` при этом живёт и всегда уходит в фолбэк. Либо удалить, либо использовать — например, как раз для `custom_templates`, где ключ = ID инстанса плагина и его стоило бы валидировать. Смежно с [issue-71](issue-71-dead-code-in-release-archive.md).
+
+**Подтверждено и удалено.** Механизм был перенесён из плагина `minorder`, но здесь ни разу не задействован: ни один конфиг (`settings.php`, `storefront.settings.php`) не объявляет ключ с префиксом `$`. Единственный правдоподобный кандидат, `custom_templates`, на деле объявлен обычным полем `['value' => []]` и пропускает массив без валидации по ключу — а ключи (`instance_id`) там и так приходят не от пользователя, а из `foreach` по реальным инстансам плагинов доставки/оплаты в самой admin-форме (`Zen.html`), так что валидировать по сути нечего. Удалены `lib/config/setting_groups.php` и `lib/classes/settings/groups/shopPrefillPluginAbstractArraySettingGroup.class.php`, из `shopPrefillPluginSettingsConfig` убраны параметр `$setting_groups` и мёртвая ветка `$`-префикса в `group()`. Юнит-тесты плагина (`tests/*Test.php`) проходят без изменений.
 
 ## 4. Настройки никогда не удаляются
 

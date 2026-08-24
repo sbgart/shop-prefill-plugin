@@ -62,6 +62,13 @@ class PrefillFrontendController {
    * Инициализирует все менеджеры
    */
   init() {
+    // Модули полагаются на глобальный $ (jQuery). Если тема его не подключает,
+    // $(document).on(...) в init() падает с ReferenceError и весь плагин молча умирает.
+    if (typeof $ === "undefined") {
+      this.logger.error("jQuery ($) is not available on this page, prefill frontend is disabled.");
+      return;
+    }
+
     this.paramsChoiceManager.init();
     this.orderFormManager.init();
     this.consentManager.init();

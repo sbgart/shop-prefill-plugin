@@ -33,6 +33,29 @@ class shopPrefillPluginSessionStorageProvider
      */
     private const PAYMENT_ECHO_KEY = 'shop/prefill_payment_echo';
 
+    /**
+     * Последний подтверждённый выбор доставки: `variant_id`, кастомные поля плагина
+     * доставки (`details.custom`) и отпечаток адреса, под который выбор сделан.
+     *
+     * Нужен по той же причине, что и эхо оплаты, но по другому поводу: при ошибке
+     * на шаге `auth` ядро короткозамыкает конвейер, прячет секцию `shipping` целиком
+     * (shipping.html:41) и не рендерит её скрытые поля. Следующий POST сериализует
+     * пустой DOM, а calculateAction() заменяет `order` целиком — выбор доставки
+     * исчезает безвозвратно, вместе с датой и интервалом доставки.
+     *
+     * Отпечаток адреса — обязательная часть: смена региона шлёт секцию `clean`, то есть
+     * ровно тот же `{html:'only'}`, что и короткое замыкание. Различить их можно только
+     * по региону, ошибок в том запросе нет ни у той, ни у другой стороны.
+     *
+     * См. docs/bugs/shipping-payment-identity-lost-after-snapshot-removal.md
+     */
+    private const DELIVERY_ECHO_KEY = 'shop/prefill_delivery_echo';
+
+    /**
+     * Поля адреса, образующие отпечаток: по ним ядро считает список вариантов, тариф и срок.
+     */
+    private const REGION_FINGERPRINT_FIELDS = ['country', 'region', 'city', 'zip'];
+
     private array $storefront_settings;
     private waSessionStorage $storage;
     private shopPrefillPluginUserProvider $user_provider;
@@ -223,7 +246,7 @@ class shopPrefillPluginSessionStorageProvider
 
         if ($source_allowed) {
             foreach ($available as $section_id) {
-                $this->prepareSection($section_id, $load(), $final_params);
+                $this->prepareSection($section_id, $load(), $final_params, $checker, $checkout_params);
                 $used_source = true;
             }
         }
@@ -255,11 +278,18 @@ class shopPrefillPluginSessionStorageProvider
 
     /**
      * Диспетчер секций: один вход вместо шести ветвлений в вызывающем коде.
+     *
+     * $checker/$checkout_params нужны только ветке 'shipping': её кастомные поля
+     * доставки пишутся в чужое пространство имён details.custom (см. комментарий
+     * prepareShippingSectionParams), и эта запись обязана спросить владение details
+     * отдельно — canPrefillSection('shipping') его не проверяет (P1, issue-60).
      */
     private function prepareSection(
         string $section_id,
         shopPrefillPluginFillParams $fill_params,
-        array &$final_params
+        array &$final_params,
+        shopPrefillPluginSectionChecker $checker,
+        array $checkout_params
     ): void {
         switch ($section_id) {
             case 'auth':
@@ -269,7 +299,8 @@ class shopPrefillPluginSessionStorageProvider
                 $this->prepareRegionSectionParams($fill_params, $final_params);
                 break;
             case 'shipping':
-                $this->prepareShippingSectionParams($fill_params, $final_params);
+                $can_write_details = $checker->canPrefillSection('details', $checkout_params);
+                $this->prepareShippingSectionParams($fill_params, $final_params, $can_write_details);
                 break;
             case 'details':
                 $this->prepareDetailsSectionParams($fill_params, $final_params);
@@ -352,12 +383,15 @@ class shopPrefillPluginSessionStorageProvider
      * типа/варианта доставки или региона, либо обновляет/чистит кэш по
      * текущему, реально отправленному покупателем выбору.
      *
-     * `html === 'only'` отличает «секцию сегодня не спрашивали» от «покупатель
-     * сам оставил её пустой» — см. isSectionMechanicallyClean() и план
+     * «Секцию сегодня не спрашивали» от «покупатель сам оставил её пустой» отличает
+     * состав присланных полей — см. isSectionMechanicallyClean() и план
      * docs/plans/payment-section-echo-cache.md. Совместимость восстановленного
      * `id` с текущей доставкой не проверяется: Этап 0 плана показал, что ядро
      * само рендерит несовместимое эхо нейтрально и блокирует его на
      * /order/create/, ровно как отсутствие выбора.
+     *
+     * Отпечатка адреса здесь нет намеренно, в отличие от syncDeliveryEcho(): способ
+     * оплаты от региона не зависит, а несовместимость ловит само ядро.
      *
      * @return array|null Восстановленный кусок order.payment для текущего рендера
      */
@@ -373,7 +407,8 @@ class shopPrefillPluginSessionStorageProvider
 
         if ($checker->isSectionMechanicallyClean('payment', $checkout_params)) {
             if (!empty($id)) {
-                // По протоколу ядра html==='only' с непустым id не бывает одновременно
+                // Недостижимо: «механически чисто» значит, что кроме html секция ничего
+                // не прислала, а значит и id взяться неоткуда. Оставлено утверждением.
                 return null;
             }
 
@@ -408,6 +443,142 @@ class shopPrefillPluginSessionStorageProvider
         }
 
         return null;
+    }
+
+    /**
+     * Читает эхо-кэш группы доставки.
+     *
+     * @return array{variant_id: string, custom: array, region: array}|null
+     */
+    private function getDeliveryEcho(): ?array
+    {
+        $value = $this->getStorage()->get(self::DELIVERY_ECHO_KEY);
+
+        return is_array($value) && !empty($value['variant_id']) ? $value : null;
+    }
+
+    private function saveDeliveryEcho(array $echo): void
+    {
+        try {
+            $this->getStorage()->set(self::DELIVERY_ECHO_KEY, $echo);
+        } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed setting delivery echo cache', [
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Сбрасывает эхо-кэш группы доставки.
+     *
+     * Вызывается при оформлении заказа и явной очистке формы — там же, где
+     * сбрасывается остальное состояние чекаута.
+     */
+    public function clearDeliveryEcho(): void
+    {
+        $this->getStorage()->remove(self::DELIVERY_ECHO_KEY);
+    }
+
+    /**
+     * Отпечаток адреса, под который сделан выбор доставки.
+     *
+     * Секция `region` никогда не приходит `clean` (сокращённый список секций есть только
+     * в Shipping.prototype.update и onRegionChange, и region входит в оба), поэтому
+     * сравнивать всегда есть с чем.
+     *
+     * @param array $checkout_params Параметры checkout
+     * @return array<string, string>
+     */
+    private function getRegionFingerprint(array $checkout_params): array
+    {
+        $region      = $checkout_params['order']['region'] ?? [];
+        $fingerprint = [];
+
+        foreach (self::REGION_FINGERPRINT_FIELDS as $field) {
+            $value              = is_array($region) ? ($region[$field] ?? null) : null;
+            $fingerprint[$field] = is_scalar($value) ? trim((string) $value) : '';
+        }
+
+        return $fingerprint;
+    }
+
+    /**
+     * Восстанавливает выбор доставки, механически стёртый коротким замыканием
+     * конвейера шагов, либо обновляет/чистит кэш по реально отправленному выбору.
+     *
+     * Условие восстановления двойное и оба звена обязательны:
+     *   1. секция промолчала (`isSectionMechanicallyClean`) — её не было на странице;
+     *   2. адрес не менялся — иначе прежний вариант относится к другому городу.
+     *
+     * Второе звено и отличает этот механизм от снятого снапшота: тот восстанавливал по
+     * признаку пустоты и не умел отличить «ядро замкнуло конвейер» от «покупатель сменил
+     * город». Смена региона шлёт секцию `clean`, то есть тот же `{html:'only'}`, и ошибок
+     * в этом запросе нет — по `error_step_id` эти случаи неразличимы в принципе.
+     *
+     * Совместимость восстановленного варианта с корзиной не проверяется: ShippingStep
+     * на каждом расчёте сопоставляет `variant_id` с заново посчитанным списком
+     * (shopCheckoutShippingStep:251) и сам сбрасывает вариант, которого там нет.
+     *
+     * @return array Восстановленные куски order.* для текущего рендера (пусто, если нечего)
+     */
+    public function syncDeliveryEcho(): array
+    {
+        if (!$this->getSectionChecker()->isGroupEnabledForSection('shipping')) {
+            return [];
+        }
+
+        $checkout_params = $this->getCheckoutParams();
+        $checker         = $this->getSectionChecker();
+        $variant_id      = $checkout_params['order']['shipping']['variant_id'] ?? null;
+
+        if ($checker->isSectionMechanicallyClean('shipping', $checkout_params)) {
+            $echo = $this->getDeliveryEcho();
+            if ($echo === null) {
+                return [];
+            }
+
+            // Вариант доставки осмыслен только для адреса, под который выбран: от региона
+            // зависят и список вариантов, и тариф, и срок. Сменился адрес — выбор
+            // недействителен, и группа обязана развернуться (Z2, B2a).
+            if (($echo['region'] ?? null) !== $this->getRegionFingerprint($checkout_params)) {
+                $this->clearDeliveryEcho();
+                shopPrefillPluginLog::debug('Delivery echo dropped: region changed');
+                return [];
+            }
+
+            $restored = ['shipping' => ['variant_id' => $echo['variant_id']]];
+
+            // Кастомные поля пишем, только если и details промолчала: иначе перезапишем
+            // то, что покупатель прислал в этом же запросе (P1).
+            if (!empty($echo['custom']) && $checker->isSectionMechanicallyClean('details', $checkout_params)) {
+                $restored['details'] = ['custom' => $echo['custom']];
+            }
+
+            $this->setCheckoutParams(
+                shopPrefillPluginHelper::deepMergeArrays($checkout_params, ['order' => $restored])
+            );
+
+            shopPrefillPluginLog::debug('Delivery section restored from echo cache', [
+                'variant_id' => $echo['variant_id'],
+            ]);
+
+            return $restored;
+        }
+
+        // Секция говорила сама за себя — это её настоящее состояние
+        if (!empty($variant_id)) {
+            $this->saveDeliveryEcho([
+                'variant_id' => $variant_id,
+                'custom'     => $checkout_params['order']['details']['custom'] ?? [],
+                'region'     => $this->getRegionFingerprint($checkout_params),
+            ]);
+        } elseif ($this->getDeliveryEcho() !== null) {
+            // Покупатель сменил тип и ещё не выбрал вариант: прежний выбор больше не его
+            $this->clearDeliveryEcho();
+            shopPrefillPluginLog::debug('Delivery echo cleared: customer left shipping section empty');
+        }
+
+        return [];
     }
 
     /**
@@ -469,14 +640,25 @@ class shopPrefillPluginSessionStorageProvider
      * stripEmptyLeaves() («нет варианта в источнике» = «не пишем ничего»),
      * applyDeliveryAddress() сливает без строгого выброса пустот и явно затирает
      * устаревший вариант на `null` — для явного выбора покупателя это правильно.
+     *
+     * Кастомные поля доставки (`getShippingCustom()`) смыслово принадлежат варианту
+     * (issue-60), но физически лежат в чужом пространстве имён — `order.details.custom`,
+     * не `order.shipping`, — поэтому запись сюда обязана спросить владение `details`
+     * отдельно от владения `shipping`. `$can_write_details` — этот второй гейт:
+     *   - из applyPrefill() приходит canPrefillSection('details', ...) — тихий prefill
+     *     не имеет права трогать секцию, которую покупатель уже видел (P1);
+     *   - из applyDeliveryAddress() приходит дефолт `true` — там это явный выбор
+     *     покупателя, замещающий region/details/shipping целиком, а не тихая подстановка,
+     *     и своего чекера у вызова нет.
      */
     private function prepareShippingSectionParams(
         shopPrefillPluginFillParams $fill_params,
-        array &$final_params
+        array &$final_params,
+        bool $can_write_details = true
     ): void {
         $final_params['order']['shipping']['variant_id'] = $fill_params->getShippingVariantId();
 
-        if ($fill_params->getShippingVariantId() !== null && $fill_params->getShippingCustom()) {
+        if ($can_write_details && $fill_params->getShippingVariantId() !== null && $fill_params->getShippingCustom()) {
             foreach ($fill_params->getShippingCustom() as $param => $value) {
                 $final_params['order']['details']['custom'][$param] = $value;
             }
@@ -577,9 +759,12 @@ class shopPrefillPluginSessionStorageProvider
      */
     public function resetAndRefill(shopPrefillPluginFillParams $params): void
     {
-        // Шаг 1: Очищаем хранилище checkout и маркер источника
+        // Шаг 1: Очищаем хранилище checkout, маркер источника и эхо-кэши —
+        // иначе «сброшенная» форма тут же получит обратно прежние доставку и оплату
         $this->getStorage()->remove('shop/checkout');
         $this->clearSourceMarker();
+        $this->clearPaymentEcho();
+        $this->clearDeliveryEcho();
 
         // Шаг 2: Сбрасываем флаг prefilled (для текущего запроса)
         $this->prefilled = false;

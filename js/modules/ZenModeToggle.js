@@ -57,10 +57,17 @@ class ZenModeToggle {
     var group = btn.dataset.group;
     var action = btn.dataset.action;
 
+    // data-blocked-by ставит сервер на каждом рендере: клиентская валидация не видит
+    // серверных ошибок (waEmailValidator, забаненный адрес, чужой контакт, кончившийся
+    // товар). Пока оформление ими заблокировано, бессмысленны оба направления: свернуть
+    // значит спрятать сообщение об ошибке, развернуть — показать пустоту, потому что
+    // секцию ядро в этом запросе не отрисовало.
+    var blockedBy = btn.dataset.blockedBy;
+
     if (action === "expand") {
-      this.expandGroup(group);
+      this.expandGroup(group, blockedBy);
     } else {
-      this.collapseGroup(group);
+      this.collapseGroup(group, blockedBy);
     }
   }
 
@@ -68,8 +75,20 @@ class ZenModeToggle {
    * Разворачивает группу секций
    *
    * @param {string} group - Имя группы (customer, delivery, payment)
+   * @param {string} [blockedBy] - Группа с серверной ошибкой, блокирующей оформление
    */
-  expandGroup(group) {
+  expandGroup(group, blockedBy) {
+    // Разворачивать нечего: ядро короткозамкнуло конвейер и секции этой группы не
+    // отрисовало. Покупатель увидел бы пустоту вместо своих данных — а они целы,
+    // их вернёт эхо-кэш, как только ошибка выше будет исправлена.
+    if (blockedBy) {
+      if (this.logger) {
+        this.logger.info("User attempted to expand the " + group + " group section while checkout is blocked by " + blockedBy);
+      }
+      this.showCheckoutBlockedDialog(blockedBy);
+      return;
+    }
+
     var cookieName = "prefill_zen_" + group;
 
     // Устанавливаем cookie состояния
@@ -88,9 +107,21 @@ class ZenModeToggle {
    * Сворачивает группу секций с предварительной валидацией
    *
    * @param {string} group - Имя группы
+   * @param {string} [blockedBy] - Группа с серверной ошибкой, блокирующей оформление
    */
-  collapseGroup(group) {
+  collapseGroup(group, blockedBy) {
     if (!window.waOrder || !window.waOrder.form) {
+      return;
+    }
+
+    // Оформление заблокировано ошибкой, которую увидел только сервер. Сворачивать нечего
+    // и незачем: секции ниже упавшего шага ядро в этом запросе не отрисовало, а в самой
+    // упавшей группе блок скрыл бы сообщение об ошибке.
+    if (blockedBy) {
+      if (this.logger) {
+        this.logger.info("User attempted to collapse the " + group + " group section while checkout is blocked by " + blockedBy);
+      }
+      this.showCheckoutBlockedDialog(blockedBy);
       return;
     }
 
@@ -124,14 +155,43 @@ class ZenModeToggle {
    * Показывает диалог с ошибкой валидации
    */
   showValidationErrorDialog() {
+    this.showNoticeDialog(
+      "zen-validation-error",
+      this.messages.validation_error_title || "",
+      this.messages.validation_error_message || "Validation error"
+    );
+  }
+
+  /**
+   * Сообщает, что оформление заблокировано ошибкой в другом (или в этом же) разделе.
+   *
+   * @param {string} blockedBy - Имя группы с ошибкой (customer, delivery, payment)
+   */
+  showCheckoutBlockedDialog(blockedBy) {
+    const groupNames = this.messages.group_names || {};
+    const template = this.messages.checkout_blocked_message || 'Fix the error in the "%s" section first.';
+
+    this.showNoticeDialog(
+      "zen-checkout-blocked",
+      this.messages.checkout_blocked_title || "",
+      template.replace("%s", groupNames[blockedBy] || blockedBy)
+    );
+  }
+
+  /**
+   * Показывает простое уведомление с кнопкой «ОК».
+   *
+   * @param {string} dialogId - Идентификатор диалога
+   * @param {string} title - Заголовок
+   * @param {string} message - Текст (из файлов локализации, не пользовательский ввод)
+   */
+  showNoticeDialog(dialogId, title, message) {
     if (!this.dialogManager) return;
 
-    const title = this.messages.validation_error_title || "";
-    const message = this.messages.validation_error_message || "Validation error";
     const buttonText = this.messages.validation_error_button || "OK";
 
     // Устанавливаем заголовок
-    this.dialogManager.setHeader("zen-validation-error", title);
+    this.dialogManager.setHeader(dialogId, title);
 
     // Используем HTML для контента диалога
     const content = `
@@ -141,7 +201,7 @@ class ZenModeToggle {
             </div>
         `;
 
-    this.dialogManager.showDialog("zen-validation-error", content).then((dialog) => {
+    this.dialogManager.showDialog(dialogId, content).then((dialog) => {
       // Добавляем обработчик на кнопку OK внутри диалога
       const okBtn = dialog.querySelector(".js-close-dialog");
       if (okBtn) {

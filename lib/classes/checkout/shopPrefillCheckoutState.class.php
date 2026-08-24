@@ -623,18 +623,37 @@ class shopPrefillCheckoutState
     public function getRegularErrors(): array
     {
         $errors = $this->params['errors'] ?? [];
-
-        // Shop-Script при fast_render добавляет в errors элемент ['fast_render' => true] —
-        // это не ошибка валидации, а служебный маркер ответа шага доставки.
-        $is_fast_render_sentinel = static function ($item): bool {
-            return is_array($item)
-                && count($item) === 1
-                && array_key_exists('fast_render', $item);
-        };
-
-        $real_errors = array_filter($errors, fn($e) => !$is_fast_render_sentinel($e));
+        $real_errors = array_filter($errors, static fn($e) => !self::isFastRenderSentinel($e));
 
         return array_values($real_errors);
+    }
+
+    /**
+     * true, если в этом ответе шаг shipping не считался вообще (Shop-Script fast_render),
+     * а не потому, что вариант доставки реально недоступен. См. shopCheckoutShippingStep::process():
+     * при fast_render шаг выходит до вычисления data.shipping.selected_variant, поэтому
+     * getShippingType() пуст точно так же, как при настоящей недоступности варианта.
+     */
+    public function isFastRender(): bool
+    {
+        $errors = $this->params['errors'] ?? [];
+        foreach ($errors as $error) {
+            if (self::isFastRenderSentinel($error)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Shop-Script при fast_render добавляет в errors элемент ['fast_render' => true] —
+     * это не ошибка валидации, а служебный маркер ответа шага доставки.
+     */
+    private static function isFastRenderSentinel($item): bool
+    {
+        return is_array($item)
+            && count($item) === 1
+            && array_key_exists('fast_render', $item);
     }
 
     /**
@@ -680,6 +699,47 @@ class shopPrefillCheckoutState
 
         // Ошибка только если опция включена, но пользователь явно не согласился (значение 0)
         return $value === 0 || $value === '0';
+    }
+
+    /**
+     * Шаг ядра → группа дзен-режима. `confirm` намеренно отсутствует: см. getBlockingGroup().
+     */
+    private const STEP_TO_GROUP = [
+        'auth'     => 'customer',
+        'region'   => 'delivery',
+        'shipping' => 'delivery',
+        'details'  => 'delivery',
+        'payment'  => 'payment',
+    ];
+
+    /**
+     * Группа, из-за которой ядро сейчас короткозамкнуло конвейер шагов, либо null.
+     *
+     * Нужна для обратной связи покупателю: пока такая ошибка держится, сворачивать
+     * блоки бессмысленно — сворачивание либо прячет само сообщение об ошибке, либо
+     * прячет секцию, которую ядро в этом запросе вообще не отрисовало. Клиентская
+     * валидация об этом не знает: серверные проверки (waEmailValidator, забаненный
+     * адрес, чужой контакт, кончившийся товар) JS-регулярками не воспроизводятся.
+     *
+     * `confirm` исключён намеренно: его ошибки (не отмечено согласие с условиями)
+     * штатно возникают на обычных пересчётах, ничего не короткозамыкают — шаг
+     * последний — и блокировать из-за них сворачивание было бы навязчиво.
+     *
+     * @return string|null customer | delivery | payment
+     */
+    public function getBlockingGroup(): ?string
+    {
+        $step = $this->getErrorStepId();
+        if ($step === null || !isset(self::STEP_TO_GROUP[$step])) {
+            return null;
+        }
+
+        // Маркер fast_render отфильтрован в getRegularErrors() — это не ошибка валидации
+        if (empty($this->getRegularErrors())) {
+            return null;
+        }
+
+        return self::STEP_TO_GROUP[$step];
     }
 
     /**

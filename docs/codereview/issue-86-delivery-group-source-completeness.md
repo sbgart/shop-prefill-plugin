@@ -1,10 +1,24 @@
 # Issue 86 — секции группы delivery заполняются независимо от полноты источника
 
-**Статус:** ⬜ Открыта
-**Приоритет:** 🟡 Средний
-**Сложность фикса:** 🧩 Требует решения — примитив для гейта готов, применение не сделано
-**Файлы:** `lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php` (`applyPrefill`), `lib/classes/fillparams/shopPrefillPluginFillParams.class.php` (`hasDataForSection` — зарезервирован, без вызовов)
+**Статус:** ✅ Закрыта 23.08.2026 как неприменимая — риск покрыт ядром
+**Приоритет:** ~~🟡 Средний~~
+**Сложность фикса:** —
+**Файлы:** ~~`lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php` (`applyPrefill`), `lib/classes/fillparams/shopPrefillPluginFillParams.class.php` (`hasDataForSection` — зарезервирован, без вызовов)~~
 **Смежные:** [issue-84](issue-84-prefill-inconsistent-across-groups.md) п.2 — вынесена сюда 23.08.2026 при закрытии issue-84 (по образцу issue-52 → issue-79); [issue-65](issue-65-prefill-overrides-current-input.md) — связность **внутри** группы, здесь — **между** источниками и секциями
+
+## Закрытие 23.08.2026
+
+Разбор в чате показал, что раскол по полноте источника (ради которого заведена issue) не может дать сломанный заказ — его гасят две независимые и постоянно действующие проверки ядра, а не что-то, что нужно строить на нашей стороне:
+
+1. **`shopCheckoutRegionStep`** требует город как обязательное поле ([RegionStep.class.php:294-297](../../../lib/classes/checkout2/shopCheckoutRegionStep.class.php)) и возвращает `can_continue: false`, если адрес неполон.
+2. **`shopCheckoutStep::processAll()`** вызывает `process()` следующего шага только если предыдущий не вернул ошибку ([shopCheckoutStep.class.php:275-290](../../../lib/classes/checkout2/shopCheckoutStep.class.php)) — значит `shopCheckoutShippingStep::process()` физически не выполнится, пока регион не пройдёт валидацию. Сценарий «источник без города, но с `shipping_id`» вырождается в обычное «укажите город», а не в мусорный заказ.
+3. Даже когда регион валиден, **`shopCheckoutShippingStep`** на каждом расчёте пересчитывает доступные варианты из живого адреса и молча сбрасывает `variant_id`, если он не входит в список для текущего города ([ShippingStep.class.php:238-304](../../../lib/classes/checkout2/shopCheckoutShippingStep.class.php)) — это работает всегда, а не только один раз, независимо от того, сколько попыток предзаполнения было и что именно они писали.
+
+Отдельно разобран смежный, более реальный сценарий — сторонний плагин (`cityselect`) пишет `order.region` в сессию напрямую, минуя `html` ([shopCityselectHelper.class.php:109-197](../../../../cityselect/lib/classes/shopCityselectHelper.class.php)), и наш `applyPrefill()` перезаписывает это историей заказов. Это не баг: `docs/TODO.md` (пункт про синхронизацию с cityselect) фиксирует, что перекрытие автоопределения города историей заказов — осознанное решение продукта («прошлый заказ достовернее, автоопределение врёт при VPN»). Незакрытый хвост там — синхронизация кук `cityselect__*` **после** перезаписи, а не отказ от неё. Гейт вида «сравнить, что уже в секции, и не трогать группу при расхождении» воспроизвёл бы отменённый подход issue-59/65 (путать факт наличия данных с фактом владения ими) — комментарий в `SectionChecker` прямо называет cityselect примером ложного сигнала владения.
+
+`hasDataForSection()` остаётся зарезервированным без вызовов — применять его для этого гейта не нужно.
+
+Текст ниже сохранён только для истории.
 
 ## Проблема
 

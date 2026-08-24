@@ -18,17 +18,15 @@ class HttpClient {
 
     /**
      * Выполняет POST-запрос для получения HTML контента
-     * 
+     *
      * @param {string} url - URL относительно baseUrl
-     * @param {Object} data - Данные для отправки
+     * @param {Object|Array} data - Данные для отправки: {key: value} или [[key, value], ...]
+     *        (второй вариант — для повторяющихся имён вроде "shipping[variant_id]")
      * @returns {Promise<string>} HTML контент
      * @throws {Error} Если запрос завершился с ошибкой
      */
     async fetchView(url, data = {}) {
-        const formData = new URLSearchParams();
-        for (const [key, value] of Object.entries(data)) {
-            formData.append(key, value);
-        }
+        const formData = new URLSearchParams(data);
 
         const response = await fetch(this.baseUrl + url, {
             method: "POST",

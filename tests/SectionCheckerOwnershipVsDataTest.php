@@ -217,19 +217,51 @@ check(false, $checker->isSectionOwnedByCustomer('unknown', params('unknown', ['x
 check(false, $checker->isSectionFilled('region', params('region', 'строка вместо массива')), 'секция не массив');
 check(false, $checker->isSectionFilled('details', params('details', ['shipping_address' => 'не массив'])), 'вложенный путь упирается в скаляр');
 
-echo "13. isSectionMechanicallyClean: html==='only' — секция сегодня не отправляла полей" . PHP_EOL;
-// Механизм эхо-кэша payment (docs/plans/payment-section-echo-cache.md) общий для всех
-// шести секций, хотя сейчас используется только для payment.
+echo "13. isSectionMechanicallyClean: секция не прислала ни одного своего поля" . PHP_EOL;
+// Механизм эхо-кэшей (payment и delivery) общий для всех шести секций.
+// Критерий — присутствие собственных полей секции, а НЕ значение html: ядро кодирует
+// одно и то же «просто перерисуй меня» двумя значениями — 'only' у shipping/details и
+// 1 у payment (form.js:1871, :2429, :2660). Сравнение с 'only' стирало эхо оплаты ровно
+// тогда, когда оно было нужно.
+// См. docs/bugs/shipping-payment-identity-lost-after-snapshot-removal.md
 foreach (array_keys($sections) as $section) {
     check(true, $checker->isSectionMechanicallyClean($section, params($section, ['html' => 'only'])),
-        "{$section}: html==='only' — механически пусто");
-    check(false, $checker->isSectionMechanicallyClean($section, params($section, ['html' => 1])),
-        "{$section}: html===1 — секция говорила сама за себя");
-    check(false, $checker->isSectionMechanicallyClean($section, params($section, [])),
-        "{$section}: html отсутствует — не 'only'");
+        "{$section}: только html==='only' — секция промолчала");
+    check(true, $checker->isSectionMechanicallyClean($section, params($section, ['html' => 1])),
+        "{$section}: только html===1 — тоже промолчала (протокол payment)");
+    check(true, $checker->isSectionMechanicallyClean($section, params($section, [])),
+        "{$section}: секция пуста — своих полей тоже нет");
 }
+
+// Ключевое различение: отрисованная секция всегда шлёт хотя бы одно своё поле,
+// скрытые инпуты сериализуются даже пустыми. Значит «покупатель не выбрал»
+// от «секции не было на странице» отличимо, и P2 не нарушается.
+check(false, $checker->isSectionMechanicallyClean('shipping', params('shipping', ['type_id' => '', 'html' => 'only'])),
+    'shipping: пустой type_id — покупатель на секции, просто не выбрал');
+check(false, $checker->isSectionMechanicallyClean('shipping', params('shipping', ['type_id' => 'pickup', 'variant_id' => '', 'html' => 'only'])),
+    'shipping: тип выбран, вариант ещё нет — секция говорила сама за себя');
+check(false, $checker->isSectionMechanicallyClean('payment', params('payment', ['id' => '20', 'html' => 1])),
+    'payment: обычный перерендер с выбором — не молчание (иначе эхо перестало бы сохраняться)');
+check(false, $checker->isSectionMechanicallyClean('details', params('details', ['shipping_address' => [], 'html' => 'only'])),
+    'details: пустой подмассив адреса — всё равно своё поле');
+
+// РЕГРЕСС-ЩИТ. Ядро рендерит shipping[service_agreement] внутри формы секции region
+// (region.html:476-484), а region короткое замыкание переживает. Поэтому order.shipping
+// в чекауте с включённым согласием НИКОГДА не приходит «только с html», и критерий
+// «нет ключей кроме html» давал ложное «секция говорила» — эхо доставки стиралось
+// на каждом запросе. Замерено в браузере 24.08.2026.
+check(true, $checker->isSectionMechanicallyClean('shipping', params('shipping', ['service_agreement' => '1', 'html' => 'only'])),
+    'shipping: чужое поле service_agreement из формы region не считается разговором');
+check(false, $checker->isSectionMechanicallyClean('shipping', params('shipping', ['service_agreement' => '1', 'type_id' => 'todoor', 'variant_id' => '33.courier', 'html' => 'only'])),
+    'shipping: своё поле рядом с чужим — секция говорила');
+check(true, $checker->isSectionMechanicallyClean('region', params('region', ['possible_address' => ['city' => 'Москва']])),
+    'region: possible_address приходит из формы shipping — тоже чужое поле');
+
 check(false, $checker->isSectionMechanicallyClean('payment', []), 'нет ключа order');
-check(false, $checker->isSectionMechanicallyClean('unknown', params('unknown', [])), 'неизвестная секция, html нет');
+check(false, $checker->isSectionMechanicallyClean('unknown', params('unknown', ['html' => 'only'])),
+    'неизвестная секция: состав своих полей неизвестен, молчание не утверждаем');
+check(false, $checker->isSectionMechanicallyClean('region', params('region', 'строка вместо массива')),
+    'секция не массив');
 
 echo PHP_EOL;
 if ($failures === 0) {
