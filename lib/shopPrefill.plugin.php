@@ -332,6 +332,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getConsentStorage(),
             $this->getAssetsManager(),
             $this->getCheckoutPageDetector(),
+            $this->getZenMode(),
             $this->isDebug(),
             $this->isDebugPanelEnabled(),
             $this->getEffectiveStorefrontSettings(),
@@ -413,9 +414,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->isDebugPanelEnabled(),
             $this->getEffectiveStorefrontSettings(),
             wa()->getRequest(),
-            wa()->getResponse(),
-            $this->getPluginStaticUrl(true),
-            $this->getVersion()
+            wa()->getResponse()
         );
     }
 

@@ -15,8 +15,6 @@ class shopPrefillPluginCheckoutHooks
     private array $storefront_settings;
     private waRequest $request;
     private waResponse $response;
-    private string $plugin_static_url;
-    private string $plugin_version;
 
     public function __construct(
         shopPrefillPluginZenMode $zen_mode,
@@ -27,9 +25,7 @@ class shopPrefillPluginCheckoutHooks
         bool $is_debug_panel,
         array $storefront_settings,
         waRequest $request,
-        waResponse $response,
-        string $plugin_static_url,
-        string $plugin_version
+        waResponse $response
     ) {
         $this->zen_mode = $zen_mode;
         $this->user_provider = $user_provider;
@@ -40,8 +36,6 @@ class shopPrefillPluginCheckoutHooks
         $this->storefront_settings = $storefront_settings;
         $this->request = $request;
         $this->response = $response;
-        $this->plugin_static_url = $plugin_static_url;
-        $this->plugin_version = $plugin_version;
     }
 
     /**
@@ -252,7 +246,11 @@ class shopPrefillPluginCheckoutHooks
 
         if ($state->getShippingType() !== '') {
             // Доставка успешно заполнена — гасим куку server-side
-            $this->response->setCookie('prefill_user_selected', '', -1, '/');
+            $this->response->setCookie('prefill_user_selected', '', [
+                'expires'  => -1,
+                'path'     => '/',
+                'samesite' => 'Lax',
+            ]);
             return '';
         }
 
@@ -268,28 +266,10 @@ class shopPrefillPluginCheckoutHooks
     }
 
     /**
-     * Рендерит тег <link> для подключения zenmode.css если Zen Mode активен.
+     * Строит блок Zen Mode для группы: синхронизация cookie + рендер.
      *
-     * @return string HTML-тег подключения стилей или пустая строка
-     */
-    private function renderZenModeStylesheet(): string
-    {
-        if (!$this->zen_mode->isActive()) {
-            return '';
-        }
-
-        return '<link rel="stylesheet" href="'
-            . $this->plugin_static_url
-            . 'css/zenmode.css?v'
-            . rawurlencode($this->plugin_version)
-            . '">';
-    }
-
-    /**
-     * Строит блок Zen Mode для группы: подключение zenmode.css + синхронизация cookie + рендер.
-     *
-     * Стиль подключается здесь же, а не отдельным хуком на auth — так он привязан к тому,
-     * выводится ли вообще хоть один блок группы в секции, а не к глобальному isActive().
+     * zenmode.css в это HTML больше не входит — подключается в frontend_head вместе
+     * с остальными ассетами плагина (issue-74 §8), а не тегом <link> посреди <body>.
      *
      * @param string $group Имя группы (customer, delivery, payment)
      * @param array $params Параметры хука
@@ -302,7 +282,7 @@ class shopPrefillPluginCheckoutHooks
             if (!$this->zen_mode->isGroupEnabled($group)) {
                 return '';
             }
-            return $this->renderZenModeStylesheet() . $this->zen_mode->buildCollapseBlock($group, $state);
+            return $this->zen_mode->buildCollapseBlock($group, $state);
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Zen Mode error in ' . $log_context, [
                 'message' => $e->getMessage()

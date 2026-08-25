@@ -156,7 +156,7 @@ class ParamsChoiceManager {
     async showDeliveryUnavailableDialog() {
         // Гасим куку сразу — PHP не делает этого в failure-ветке, поэтому скрипт есть
         // во всех AJAX-ответах checkout до финального рендера. Гасим при первом срабатывании.
-        document.cookie = 'prefill_user_selected=; max-age=0; path=/';
+        document.cookie = 'prefill_user_selected=; max-age=0; path=/; SameSite=Lax';
 
         // Защита от повторного показа: если диалог уже открыт — выходим.
         // Edge-case: несколько параллельных AJAX-ответов с <script> до гашения куки.

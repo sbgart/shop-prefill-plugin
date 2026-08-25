@@ -12,6 +12,7 @@ class shopPrefillPluginFrontendHooks
     private shopPrefillPluginConsentStorage         $consent_storage;
     private shopPrefillPluginAssetsManager          $assets_manager;
     private shopPrefillPluginCheckoutPageDetector   $page_detector;
+    private shopPrefillPluginZenMode                $zen_mode;
     private bool                                    $is_debug;
     private bool                                    $is_debug_panel;
     private array                                   $storefront_settings;
@@ -29,6 +30,7 @@ class shopPrefillPluginFrontendHooks
         shopPrefillPluginConsentStorage $consent_storage,
         shopPrefillPluginAssetsManager $assets_manager,
         shopPrefillPluginCheckoutPageDetector $page_detector,
+        shopPrefillPluginZenMode $zen_mode,
         bool $is_debug,
         bool $is_debug_panel,
         array $storefront_settings,
@@ -42,6 +44,7 @@ class shopPrefillPluginFrontendHooks
         $this->consent_storage      = $consent_storage;
         $this->assets_manager       = $assets_manager;
         $this->page_detector        = $page_detector;
+        $this->zen_mode             = $zen_mode;
         $this->is_debug             = $is_debug;
         $this->is_debug_panel       = $is_debug_panel;
         $this->storefront_settings  = $storefront_settings;
@@ -215,6 +218,13 @@ class shopPrefillPluginFrontendHooks
         $extra_css = '';
         if ($this->isAuthHeaderHidden()) {
             $extra_css = $this->buildAuthHeaderHiddenRule();
+        }
+
+        // zenmode.css нужен только если хоть одна группа реально сворачивается (issue-74 §8:
+        // раньше подключался тегом <link> посреди <body> из auth/delivery/payment секций —
+        // рендер-блокирующе и после начала отрисовки формы).
+        if ($this->zen_mode->hasAnyGroupEnabled()) {
+            ($this->add_css_callback)('css/zenmode.css');
         }
 
         // Добавляем переменные для размера иконок в Zen Mode (если активен и иконки отображаются)

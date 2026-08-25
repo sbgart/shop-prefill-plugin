@@ -130,6 +130,22 @@ class shopPrefillPluginZenMode
             && ! empty($this->settings['groups'][$group]['enabled']);
     }
 
+    /**
+     * Хоть одна группа включена — от этого зависит, нужен ли zenmode.css вообще
+     * (issue-74 §8: подключается в frontend_head, а не по месту рендера секции).
+     *
+     * @return bool
+     */
+    public function hasAnyGroupEnabled(): bool
+    {
+        foreach (array_keys(self::GROUP_SECTIONS) as $group) {
+            if ($this->isGroupEnabled($group)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 
     /**
@@ -426,9 +442,17 @@ class shopPrefillPluginZenMode
     protected function syncCollapseCookieState(string $group, bool $is_collapsed): void
     {
         if ($is_collapsed) {
-            $this->response->setCookie(self::COOKIE_PREFIX . $group, '', -1, '/');
+            $this->response->setCookie(self::COOKIE_PREFIX . $group, '', [
+                'expires'  => -1,
+                'path'     => '/',
+                'samesite' => 'Lax',
+            ]);
         } else {
-            $this->response->setCookie(self::COOKIE_PREFIX . $group, 'expanded', 0, '/');
+            $this->response->setCookie(self::COOKIE_PREFIX . $group, 'expanded', [
+                'expires'  => 0,
+                'path'     => '/',
+                'samesite' => 'Lax',
+            ]);
         }
     }
 
@@ -591,12 +615,11 @@ class shopPrefillPluginZenMode
         // Очищаем куки для всех групп (customer, delivery, payment)
         // Куки: 'expanded' или отсутствовать
         foreach (array_keys(self::GROUP_SECTIONS) as $group) {
-            $this->response->setCookie(
-                self::COOKIE_PREFIX . $group,
-                '',
-                -1,  // отрицательное время = удаление
-                '/'
-            );
+            $this->response->setCookie(self::COOKIE_PREFIX . $group, '', [
+                'expires'  => -1, // отрицательное время = удаление
+                'path'     => '/',
+                'samesite' => 'Lax',
+            ]);
         }
 
         shopPrefillPluginLog::info('Zen Mode cookies cleared after order creation');
