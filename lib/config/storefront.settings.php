@@ -17,9 +17,13 @@ return [
             'payment'  => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
             'confirm'  => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
         ],
+        // Передача города из последнего заказа плагинам выбора города. Opt-in: интеграция
+        // меняет видимое поведение сайта (город в шапке, у regions — ещё наборы доставки
+        // и оплаты), поэтому включать её за магазин молча нельзя.
         'integration'                         => [
-            'cityselect' => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
-            'dp'         => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'cityselect' => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'regions'    => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
+            'dp'         => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
         ],
         'remember_me'                         => [
             // Продлевать уже выданный фреймворком auth_token (покупатель сам отметил «Запомнить меня»)

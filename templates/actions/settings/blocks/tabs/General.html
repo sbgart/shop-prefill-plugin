@@ -33,6 +33,12 @@
                         <span>[`setting.group.sections`]</span>
                     </a>
                 </li>
+                <li class="rounded">
+                    <a href="#" data-tab-trigger="integrations" data-tab-group="general">
+                        <i class="fas fa-plug"></i>
+                        <span>[`setting.group.integrations`]</span>
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
@@ -220,6 +226,50 @@
                     label='[`setting.prefill.sections.confirm`]'
                     value=$settings['prefill']['sections']['confirm']
                     hint_after='[`hint.prefill.sections.confirm`]'}
+                </div>
+            </div>
+        </div>
+
+        <div id="general-integrations-tab" data-tab-group="general" data-tab-content="integrations" class="article">
+            <div class="s-section-header">
+                <h3 class="s-title">[`setting.group.integrations`]</h3>
+                <p class="s-description">[`hint.group.integrations`]</p>
+            </div>
+            <div class="fields">
+                <div class="fields-group">
+                    {if $installed_integrations.cityselect}
+                        {include file='../../components/Field.html'
+                        name="{$name_prefix}[prefill][integration][cityselect]"
+                        type='Switcher'
+                        label='[`setting.prefill.integration.cityselect`]'
+                        value=$settings['prefill']['integration']['cityselect']
+                        tooltip='[`tooltip.prefill.integration.cityselect`]'
+                        hint_after='[`hint.prefill.integration.cityselect`]'}
+                    {/if}
+
+                    {if $installed_integrations.regions}
+                        {include file='../../components/Field.html'
+                        name="{$name_prefix}[prefill][integration][regions]"
+                        type='Switcher'
+                        label='[`setting.prefill.integration.regions`]'
+                        value=$settings['prefill']['integration']['regions']
+                        tooltip='[`tooltip.prefill.integration.regions`]'
+                        hint_after='[`hint.prefill.integration.regions`]'}
+                    {/if}
+
+                    {if $installed_integrations.dp}
+                        {include file='../../components/Field.html'
+                        name="{$name_prefix}[prefill][integration][dp]"
+                        type='Switcher'
+                        label='[`setting.prefill.integration.dp`]'
+                        value=$settings['prefill']['integration']['dp']
+                        tooltip='[`tooltip.prefill.integration.dp`]'
+                        hint_after='[`hint.prefill.integration.dp`]'}
+                    {/if}
+
+                    {if !$installed_integrations.cityselect && !$installed_integrations.regions && !$installed_integrations.dp}
+                        <p class="s-description">[`hint.group.integrations_empty`]</p>
+                    {/if}
                 </div>
             </div>
         </div>

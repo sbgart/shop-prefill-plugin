@@ -36,6 +36,8 @@ class shopPrefillPlugin extends shopPlugin
     private ?shopPrefillPluginGuestTokenStorage $guest_token_storage = null;
     private ?shopPrefillPluginConsentStorage   $consent_storage    = null;
 
+    private ?shopPrefillPluginGeoSync $geo_sync = null;
+
     private ?shopPrefillPluginZenMode $zen_mode = null;
 
     private ?shopPrefillPluginOrderHooks $order_hooks = null;
@@ -282,6 +284,30 @@ class shopPrefillPlugin extends shopPlugin
         );
     }
 
+    /**
+     * Передача города из последнего заказа сторонним плагинам выбора города.
+     *
+     * @throws waException
+     */
+    public function getGeoSync(): shopPrefillPluginGeoSync
+    {
+        if ($this->geo_sync !== null) {
+            return $this->geo_sync;
+        }
+
+        $settings = $this->getEffectiveStorefrontSettings();
+        $response = wa()->getResponse();
+
+        return $this->geo_sync = new shopPrefillPluginGeoSync(
+            [
+                new shopPrefillPluginGeoAdapterCityselect($settings, $response),
+                new shopPrefillPluginGeoAdapterRegions($settings),
+            ],
+            new shopPrefillPluginGeoStorage(wa()->getStorage(), $response),
+            $this->getFillParamsProvider()
+        );
+    }
+
     public function getOrderProvider(): shopPrefillPluginOrderProvider
     {
         return $this->order_provider ??= new shopPrefillPluginOrderProvider(
@@ -314,6 +340,7 @@ class shopPrefillPlugin extends shopPlugin
             $this->getZenMode(),
             $this->getUserProvider(),
             $this->getConsentStorage(),
+            $this->getGeoSync(),
             $this->getEffectiveStorefrontSettings()
         );
     }
@@ -504,6 +531,52 @@ class shopPrefillPlugin extends shopPlugin
         }
 
         return $this->getFrontendHooks()->handleFrontendHead($params);
+    }
+
+    /**
+     * Хук срабатывает перед запуском любого фронтового контроллера магазина.
+     *
+     * Единственная задача — передать сторонним плагинам выбора города (cityselect,
+     * «SEO-регионы») город из последнего заказа покупателя до того, как они запустят
+     * собственное определение по IP. Путь предзаполнения отсюда не трогается вовсе:
+     * `shop/checkout` этот хук не пишет.
+     *
+     * ВАЖНО: метод обязан возвращать `null`. `shopFrontController::runController()`
+     * считает любой непустой результат события `controller_before.*` признаком
+     * «запрос уже обработан» и не запускает контроллер — страница окажется пустой.
+     *
+     * Гарды выстроены от бесплатного к дорогому: форма запроса, затем установленные
+     * соседние плагины из кэша конфига, затем настройки витрины. Опознан ли покупатель,
+     * проверяет уже сам `GeoSync::run()` — до единого обращения к базе.
+     */
+    public function controllerBefore($params = null): void
+    {
+        try {
+            if (wa()->getEnv() !== 'frontend') {
+                return;
+            }
+
+            // AJAX и POST пропускаем: на них нечего показывать, а редирект чужого плагина
+            // посреди `calculate` сломал бы оформление
+            if (waRequest::isXMLHttpRequest() || waRequest::method() !== 'get') {
+                return;
+            }
+
+            if (! self::enableInstall('cityselect') && ! self::enableInstall('regions')) {
+                return;
+            }
+
+            if (! $this->isActive()) {
+                return;
+            }
+
+            $this->getGeoSync()->run();
+        } catch (Throwable $e) {
+            // waEvent ловит только Exception и пропустил бы Error наружу, обрушив витрину
+            shopPrefillPluginLog::error('Geo sync failed in controllerBefore', [
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

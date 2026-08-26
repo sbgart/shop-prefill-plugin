@@ -11,6 +11,10 @@ return [
     'frontend' => true,
     'handlers' => [
         'frontend_head' => 'frontendHead', // Куки, ассеты, отладка. НЕ предзаполняет: см. docs/codereview/issue-63-*
+        // Передача города сторонним плагинам выбора города до их определения по IP.
+        // Маска: маршрут уже разобран, контроллер ещё не запущен, вывода нет.
+        // Обработчик обязан возвращать null — иначе ядро не запустит контроллер.
+        'controller_before.*' => 'controllerBefore',
         'checkout_before_auth' => 'checkoutBeforeAuth', // Предзаполняем при каждом AJAX-обновлении формы
         'checkout_render_auth' => 'checkoutRenderAuth', //Добавляем контент в секцию авторизации
         'checkout_render_region' => 'checkoutRenderRegion', //Добавляем контент в секцию региона

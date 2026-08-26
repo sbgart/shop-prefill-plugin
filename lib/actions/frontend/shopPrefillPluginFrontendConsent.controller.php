@@ -46,6 +46,9 @@ class shopPrefillPluginFrontendConsentController extends waJsonController
                     // недостижимыми сиротами навсегда.
                     $plugin->getGuestTokenStorage()->forget();
                     $plugin->getSessionStorageProvider()->clearSourceMarker();
+                    // Подставленный нами город стороннему плагину — тоже данные прошлого
+                    // покупателя: без этого он останется в шапке следующему за компьютером
+                    $plugin->getGeoSync()->forgetEverything();
                     shopPrefillPluginLog::info('User revoked prefill consent');
                     $this->response = ['status' => 'ok', 'message' => _wp('message.consent.revoked')];
                     break;
@@ -62,6 +65,7 @@ class shopPrefillPluginFrontendConsentController extends waJsonController
                 case 'clear':
                     $plugin->getGuestTokenStorage()->forget();
                     $plugin->getSessionStorageProvider()->clearSourceMarker();
+                    $plugin->getGeoSync()->forgetEverything();
                     shopPrefillPluginLog::info('User cleared guest prefill history');
                     $this->response = ['status' => 'ok', 'message' => _wp('message.history_cleared')];
                     break;

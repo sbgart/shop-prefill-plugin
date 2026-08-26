@@ -11,6 +11,7 @@ class shopPrefillPluginOrderHooks
     private shopPrefillPluginZenMode $zen_mode;
     private shopPrefillPluginUserProvider $user_provider;
     private shopPrefillPluginConsentStorage $consent_storage;
+    private shopPrefillPluginGeoSync $geo_sync;
     private array $storefront_settings;
 
     public function __construct(
@@ -20,6 +21,7 @@ class shopPrefillPluginOrderHooks
         shopPrefillPluginZenMode $zen_mode,
         shopPrefillPluginUserProvider $user_provider,
         shopPrefillPluginConsentStorage $consent_storage,
+        shopPrefillPluginGeoSync $geo_sync,
         array $storefront_settings
     ) {
         $this->session_storage = $session_storage;
@@ -28,6 +30,7 @@ class shopPrefillPluginOrderHooks
         $this->zen_mode = $zen_mode;
         $this->user_provider = $user_provider;
         $this->consent_storage = $consent_storage;
+        $this->geo_sync = $geo_sync;
         $this->storefront_settings = $storefront_settings;
     }
 
@@ -57,6 +60,11 @@ class shopPrefillPluginOrderHooks
         // Источник изменился — следующий цикл предзаполнения обязан перечитать его
         $this->session_storage->clearSourceMarker();
 
+        // Город фактического заказа — теперь он и есть наш слепок. Без этого покупатель,
+        // сменивший город в ходе оформления, навсегда расходится с нашей записью, правило
+        // G1 уводит интеграцию в отступление, и она для него тихо умирает
+        $this->rememberOrderCity();
+
         // Помечаем заказ, который авторизует покупателя без его выбора
         $this->markPendingAuth();
 
@@ -70,6 +78,29 @@ class shopPrefillPluginOrderHooks
         shopPrefillPluginLog::info('Order creation hook processed successfully', [
             'order_id' => $order_id
         ]);
+    }
+
+    /**
+     * Передаёт городу заказа статус «наша запись» в состоянии гео-синхронизации.
+     *
+     * Адрес берём из сессии чекаута, а не из заказа: хук срабатывает внутри $order->save(),
+     * сессия ещё цела, и лишнего запроса к базе не требуется.
+     */
+    private function rememberOrderCity(): void
+    {
+        try {
+            $region = $this->session_storage->getCheckoutParams()['order']['region'] ?? null;
+
+            if (! is_array($region)) {
+                return;
+            }
+
+            $this->geo_sync->rememberOrderCity(shopPrefillPluginGeoTarget::fromArray($region));
+        } catch (Throwable $e) {
+            shopPrefillPluginLog::warning('Failed remembering order city for geo sync', [
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
