@@ -562,11 +562,16 @@ class shopPrefillPlugin extends shopPlugin
                 return;
             }
 
-            if (! self::enableInstall('cityselect') && ! self::enableInstall('regions')) {
+            if (! shopPrefillPluginGeoIntegrations::hasAnyCityProvider()) {
                 return;
             }
 
             if (! $this->isActive()) {
+                return;
+            }
+
+            // Ни одной работоспособной интеграции — не поднимаем адаптеры и хранилище
+            if (! shopPrefillPluginGeoIntegrations::hasEnabled($this->getEffectiveStorefrontSettings())) {
                 return;
             }
 

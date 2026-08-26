@@ -43,13 +43,9 @@ class shopPrefillPluginSettingsStorefrontAction extends shopPrefillPluginSetting
             'auth_dependencies'    => $this->getAuthDependencies($storefront),
             // Потолок настройки «сколько вариантов показывать» — одно число на форму и на бэкенд
             'variants_limit_max'   => shopPrefillPluginFillParamsCollection::MAX_LIMIT,
-            // Тумблер интеграции показываем только там, где соответствующий плагин стоит:
-            // настройка без плагина ничего не значит и только путает администратора
-            'installed_integrations' => [
-                'cityselect' => shopPrefillPlugin::enableInstall('cityselect'),
-                'regions'    => shopPrefillPlugin::enableInstall('regions'),
-                'dp'         => shopPrefillPlugin::enableInstall('dp'),
-            ],
+            // Тумблер интеграции показываем только там, где соответствующий плагин стоит
+            // и включён: настройка без плагина ничего не значит и только путает администратора
+            'installed_integrations' => shopPrefillPluginGeoIntegrations::getAvailability(),
         ]);
     }
 

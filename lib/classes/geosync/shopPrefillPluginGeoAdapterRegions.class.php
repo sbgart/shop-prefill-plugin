@@ -18,9 +18,7 @@
  */
 class shopPrefillPluginGeoAdapterRegions implements shopPrefillPluginGeoAdapterInterface
 {
-    public const ID = 'regions';
-
-    private const PLUGIN_ID = 'regions';
+    public const ID = shopPrefillPluginGeoIntegrations::REGIONS;
 
     /** @var array<string, mixed> Настройки витрины */
     private array $settings;
@@ -37,11 +35,8 @@ class shopPrefillPluginGeoAdapterRegions implements shopPrefillPluginGeoAdapterI
 
     public function isAvailable(): bool
     {
-        if (empty($this->settings['prefill']['integration'][self::ID])) {
-            return false;
-        }
-
-        if (! shopPrefillPlugin::enableInstall(self::PLUGIN_ID)) {
+        // Тумблер имеет силу только вместе с установленным и включённым плагином
+        if (! shopPrefillPluginGeoIntegrations::isEnabled($this->settings, self::ID)) {
             return false;
         }
 

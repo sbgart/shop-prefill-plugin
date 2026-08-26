@@ -12,7 +12,11 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
 
     public function getSettings(string $storefront_code): array
     {
-        return $this->validate($this->model->get($storefront_code));
+        // Плагин мог быть удалён или выключен уже после того, как интеграцию включили:
+        // хранимое `true` не должно выглядеть работающей интеграцией ни в форме, ни в коде
+        return shopPrefillPluginGeoIntegrations::sanitize(
+            $this->validate($this->model->get($storefront_code))
+        );
     }
 
     public function setSetting(string $storefront_code, $key, $value, $groups = null): void
@@ -28,6 +32,10 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
         $collect = function ($name, $val, $g) use (&$entries) {
             $entries[] = ['name' => $name, 'value' => $val, 'groups' => $g];
         };
+
+        // Тумблер без плагина в базу не попадает: администратор не увидит его в форме
+        // (поле отсутствующего плагина не рендерится) и не сможет выключить обратно
+        $settings = shopPrefillPluginGeoIntegrations::sanitize($settings);
 
         foreach ($settings as $key => $value) {
             $this->flattenSettings($key, $value, null, $collect);

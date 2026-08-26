@@ -17,10 +17,9 @@
  */
 class shopPrefillPluginGeoAdapterCityselect implements shopPrefillPluginGeoAdapterInterface
 {
-    public const ID = 'cityselect';
+    public const ID = shopPrefillPluginGeoIntegrations::CITYSELECT;
 
-    private const PLUGIN_ID = 'cityselect';
-    private const DP_PLUGIN_ID = 'dp';
+    private const DP_PLUGIN_ID = shopPrefillPluginGeoIntegrations::DP;
 
     /** Кука «уведомление уже показывали»: гасит режим «выборочно» в getNotifierType() */
     private const NOTIFIER_SHOWN_COOKIE = 'cityselect__show_notifier';
@@ -48,11 +47,8 @@ class shopPrefillPluginGeoAdapterCityselect implements shopPrefillPluginGeoAdapt
 
     public function isAvailable(): bool
     {
-        if (empty($this->settings['prefill']['integration'][self::ID])) {
-            return false;
-        }
-
-        if (! shopPrefillPlugin::enableInstall(self::PLUGIN_ID)) {
+        // Тумблер имеет силу только вместе с установленным и включённым плагином
+        if (! shopPrefillPluginGeoIntegrations::isEnabled($this->settings, self::ID)) {
             return false;
         }
 
@@ -182,11 +178,7 @@ class shopPrefillPluginGeoAdapterCityselect implements shopPrefillPluginGeoAdapt
      */
     private function applyDeliveryPaymentPlugin(shopPrefillPluginGeoTarget $target): void
     {
-        if (empty($this->settings['prefill']['integration'][self::DP_PLUGIN_ID])) {
-            return;
-        }
-
-        if (! shopPrefillPlugin::enableInstall(self::DP_PLUGIN_ID)) {
+        if (! shopPrefillPluginGeoIntegrations::isEnabled($this->settings, self::DP_PLUGIN_ID)) {
             return;
         }
 
