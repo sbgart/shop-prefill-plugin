@@ -1,5 +1,13 @@
 # Концепция: Zen Mode (Дзен-режим корзины)
 
+> [!WARNING]
+> Документ описывает решения на момент их принятия и местами разошёлся с текущим кодом —
+> расхождения отмечены пометками ниже по тексту. Механизм скрытия/показа CSS и карта
+> «группа → секция-носитель» в актуальном виде — правило **B2b** в
+> [RULES.md](RULES.md) и `shopPrefillPluginZenMode::GROUP_CARD_SECTION` /
+> `generateGroupStyles()` / `generateSectionRevealStyles()` в коде; при расхождении
+> с этим файлом верить коду и RULES.md.
+
 > **Нейминг:** Используем **"Дзен-режим"** в UI и **"zen"** в коде.
 >
 > Почему "Дзен"? Это не просто "сделали меньше" — это про:
@@ -66,7 +74,7 @@
 | Группа (ID в коде) | Секции чекаута                  | Хуки для кнопок                                 | Сворачивать? |
 | ------------------ | ------------------------------- | ----------------------------------------------- | ------------ |
 | `customer`         | `auth`                          | `checkout_render_auth` (в конце)                | ✅ Да        |
-| `delivery`         | `region`, `shipping`, `details` | последний хук группы (`details` или `shipping`) | ✅ Да        |
+| `delivery`         | `region`, `shipping`, `details` | `checkout_render_details` (безусловно, не «последний из отрисовавшихся») | ✅ Да        |
 | `payment`          | `payment`                       | `checkout_render_payment` (в конце)             | ✅ Да        |
 | —                  | `confirm`                       | —                                               | ❌ Нет\*     |
 
@@ -101,17 +109,22 @@
 
 ### Архитектура хуков ✅
 
-> [!IMPORTANT]
-> **Один `<style>` тег на ВСЕ группы** — вставляется в последнем хуке (`checkout_render_confirm`).
-> **Сводка и кнопка** — в последнем хуке каждой группы (auth для customer, details/shipping для delivery, payment для payment).
+> [!WARNING]
+> Устарело (issue-75 + B2b). Каждая группа несёт **свой** `<style>` тег вместе со своим
+> блоком — не единый тег из `checkout_render_confirm`: тот хук с 24.08.2026 не собирает
+> CSS сворачивания вовсе (см. `handleCheckoutRenderConfirm()`). Так CSS физически не может
+> попасть в разметку без кнопки «Изменить» (Z3). Правил в `<style>` группы теперь два:
+> скрывающее (как было) и, при свёрнутой группе с неотработавшим шагом-носителем,
+> показывающее — снимает `display:none` ровно с секции-носителя (B2b,
+> `generateSectionRevealStyles()`).
 
 | Хук                        | Что вставляем                                        |
 | -------------------------- | ---------------------------------------------------- |
-| `checkout_render_auth`     | JavaScript Zen Mode + сводка/кнопка customer         |
-| `checkout_render_shipping` | Сводка/кнопка delivery (если details пустой или нет) |
-| `checkout_render_details`  | Сводка/кнопка delivery (если details существует)     |
-| `checkout_render_payment`  | Сводка/кнопка payment                                |
-| `checkout_render_confirm`  | `<style>` для ВСЕХ групп (генерируется последним)    |
+| `checkout_render_auth`     | Сводка/кнопка/CSS группы customer                    |
+| `checkout_render_shipping` | Только ошибки/debug — блока группы здесь нет         |
+| `checkout_render_details`  | Сводка/кнопка/CSS группы delivery (безусловно)       |
+| `checkout_render_payment`  | Сводка/кнопка/CSS группы payment                     |
+| `checkout_render_confirm`  | Чекбокс согласия гостя — CSS сворачивания здесь больше не собирается |
 
 **Преимущества:**
 

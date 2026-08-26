@@ -20,6 +20,23 @@ class shopPrefillPluginZenMode
     ];
 
     /**
+     * Секция, в которую хук плагина кладёт карточку и кнопку группы, — одна на группу.
+     * Не путать с GROUP_SECTIONS: там все секции группы, здесь только носитель разметки.
+     *
+     * У delivery носитель — `details`, а не последний элемент GROUP_SECTIONS по совпадению:
+     * хук checkout_render_details срабатывает безусловно, даже при коротком замыкании
+     * (см. docs/bugs/zen-collapse-on-upstream-checkout-error.md, «Отвергнутые варианты», п. 4).
+     * Менять карту можно только вместе с соответствующим хуком в
+     * shopPrefillPluginCheckoutHooks — иначе плагин снимет display:none с секции, в
+     * которой его блока нет. Связь заперта тестом tests/ZenGroupCarrierTest.php.
+     */
+    const GROUP_CARD_SECTION = [
+        'customer' => 'auth',      // handleCheckoutRenderAuth()
+        'delivery' => 'details',   // handleCheckoutRenderDetails()
+        'payment'  => 'payment',   // handleCheckoutRenderPayment()
+    ];
+
+    /**
      * Имена cookies для хранения состояния
      */
     const COOKIE_PREFIX = 'prefill_zen_';
@@ -244,20 +261,26 @@ class shopPrefillPluginZenMode
 
 
     /**
-     * Возвращает логотип активного плагина доставки/оплаты из данных чекаута.
+     * Возвращает логотип активного плагина доставки/оплаты из данных сводки.
      * Только для групп delivery и payment.
      *
+     * Берёт `shipping_logo`/`payment_logo` из уже разрешённых данных сводки
+     * (resolveSummaryData()), а не напрямую из $state — те же поля, что и в тексте
+     * сводки, и по той же причине (R4): при коротком замыкании/fast_render в $state
+     * логотипа нет, есть только в кэше, если группа уже собиралась однажды успешно.
+     * Оба поля extractSummaryData() кладёт всегда, пустой строкой при отсутствии.
+     *
      * @param string $group Имя группы (delivery | payment)
-     * @param shopPrefillCheckoutState $state Состояние чекаута
+     * @param array $summary_data Результат resolveSummaryData()
      * @return string|null URL логотипа или null
      */
-    private function getGroupPluginLogo(string $group, shopPrefillCheckoutState $state): ?string
+    private function getGroupPluginLogo(string $group, array $summary_data): ?string
     {
         if ($group === 'delivery') {
-            return $state->getShippingLogoUrl();
+            return $summary_data['shipping_logo'] ?: null;
         }
         if ($group === 'payment') {
-            return $state->getPaymentLogoUrl();
+            return $summary_data['payment_logo'] ?: null;
         }
         return null;
     }
@@ -271,10 +294,10 @@ class shopPrefillPluginZenMode
      *              'custom'  — URL из поля icon.
      *
      * @param string $group Имя группы (delivery | payment)
-     * @param shopPrefillCheckoutState $state Состояние чекаута
+     * @param array $summary_data Результат resolveSummaryData() — источник логотипа для 'plugin'
      * @return array{url: string, is_default: bool}
      */
-    private function getPluginGroupIcon(string $group, shopPrefillCheckoutState $state): array
+    private function getPluginGroupIcon(string $group, array $summary_data): array
     {
         $source = $this->settings['groups'][$group]['icon_source'] ?? 'default';
 
@@ -282,7 +305,7 @@ class shopPrefillPluginZenMode
             case 'custom':
                 return ['url' => $this->settings['groups'][$group]['icon'] ?? '', 'is_default' => false];
             case 'plugin':
-                $logo = $this->getGroupPluginLogo($group, $state);
+                $logo = $this->getGroupPluginLogo($group, $summary_data);
                 if ($logo) {
                     return ['url' => $logo, 'is_default' => false];
                 }
@@ -376,6 +399,35 @@ class shopPrefillPluginZenMode
         }
 
         return '<style id="prefill-zen-styles-' . $group . '">' . "\n" . implode("\n", $css) . "\n" . '</style>';
+    }
+
+    /**
+     * Возвращает видимость секции-носителя группы, когда ядро прячет её целиком, потому
+     * что не отработало шаг в этом запросе — короткое замыкание конвейера либо fast_render
+     * (последний включается на каждой загрузке /order/). Вместе с секцией с экрана
+     * исчезает и вставленный в неё блок плагина, к решению ядра отношения не имеющий.
+     *
+     * Осознанно выключенный шаг сюда не попадает — isStepSkipped() отличает «шаг не
+     * считался» от «ядро само ничего не предлагает» (B2b, docs/concept/RULES.md).
+     * Под снятым скрытием в такой секции нет ничего, кроме .wa-plugin-hook и служебного
+     * <script> ядра — правило не отменяет короткое замыкание и не показывает поля ядра.
+     *
+     * Вызывается только из renderCollapseBlock(), для свёрнутой группы — как и скрывающий
+     * CSS: показывать одинокую кнопку «Свернуть» в пустой секции незачем (Z1, Z3).
+     *
+     * @param string $group Имя группы (customer, delivery, payment)
+     * @return string HTML с тегом <style> или пустая строка
+     */
+    private function generateSectionRevealStyles(string $group, shopPrefillCheckoutState $state): string
+    {
+        $section = self::GROUP_CARD_SECTION[$group] ?? null;
+        if ($section === null || !$state->isStepSkipped($section)) {
+            return '';
+        }
+
+        return '<style id="prefill-zen-reveal-' . $group . '">' . "\n"
+            . ".wa-step-{$section}-section { display: block !important; }" . "\n"
+            . '</style>';
     }
 
     // ==================== COLLAPSE BLOCK ====================
@@ -491,6 +543,10 @@ class shopPrefillPluginZenMode
         $summary_html    = null;
 
         if ($is_collapsed) {
+            // Один раз для группы: и текст сводки, и логотип 'plugin'-иконки читают одни и
+            // те же поля (shipping_logo/payment_logo) с одним и тем же фолбэком на кэш (R4).
+            $summary_data = $this->resolveSummaryData($group, $state);
+
             // Иконка группы: только если глобальный режим не 'none'
             $icon_mode = $this->getIconDisplayMode();
             if ($icon_mode !== 'none') {
@@ -499,14 +555,14 @@ class shopPrefillPluginZenMode
                     $icon = $this->getCustomerGroupIcon();
                 } else {
                     // Для delivery/payment — per-group icon_source (default/plugin/custom)
-                    $icon = $this->getPluginGroupIcon($group, $state);
+                    $icon = $this->getPluginGroupIcon($group, $summary_data);
                 }
                 $icon_url        = $icon['url'] !== '' ? $icon['url'] : null;
                 $icon_is_default = $icon['is_default'];
             }
 
             // Свёрнуто: сводка + кнопка "Изменить"
-            $summary_html = $this->renderGroupSummary($group, $state);
+            $summary_html = $this->renderSummaryFromData($group, $state, $summary_data);
         }
 
         $vars = [
@@ -531,27 +587,40 @@ class shopPrefillPluginZenMode
             return $view->fetch('file:' . $template_path);
         });
 
-        return $is_collapsed ? ($this->generateGroupStyles($group) . $html) : $html;
+        if (! $is_collapsed) {
+            return $html;
+        }
+
+        // Показываем только свёрнутую карточку. Развёрнутая группа в неотработавшем шаге
+        // остаётся скрытой — там нечего показывать, кроме одинокой кнопки «Свернуть»,
+        // нажать которую всё равно нельзя (Z1, data-blocked-by). Z3 требует кнопку рядом
+        // со скрывающим CSS, а у развёрнутой группы его нет вовсе.
+        return $this->generateSectionRevealStyles($group, $state)
+            . $this->generateGroupStyles($group)
+            . $html;
     }
 
 
     /**
-     * Рендерит сводку данных для группы
+     * Собирает данные сводки группы с фолбэком на кэш (R4).
+     *
+     * $params (а значит и $state) пуст при коротком замыкании конвейера и при
+     * fast_render, а названия тарифов, способов оплаты и их логотипы существуют
+     * только там. Удачный набор запоминаем, пустой — достаём из кэша, иначе и сводка,
+     * и иконка группы (getGroupPluginLogo()) выйдут наполовину пустыми.
+     *
+     * Единственное место, где читаются extractSummaryData()/кэш — renderGroupSummary()
+     * и иконка 'plugin' в renderCollapseBlock() берут отсюда один и тот же результат,
+     * а не считают каждый своё.
      *
      * @param string $group Имя группы
-     * @param array $params Данные чекаута
-     * @return string HTML
+     * @param shopPrefillCheckoutState $state Данные чекаута
+     * @return array Данные для подстановки в шаблон сводки (ZenData::getAvailableFields())
      */
-    public function renderGroupSummary(string $group, shopPrefillCheckoutState $state): string
+    private function resolveSummaryData(string $group, shopPrefillCheckoutState $state): array
     {
-        $template = $this->getSummaryTemplate($group, $state);
-
-        // Подготавливаем данные для подстановки через ZenData
         $data = $this->zen_data->extractSummaryData($group, $state);
 
-        // $params пуст при коротком замыкании конвейера и при fast_render, а названия
-        // тарифов и способов оплаты существуют только там. Удачный набор запоминаем,
-        // пустой — достаём из кэша, иначе сводка выйдет наполовину пустой.
         if ($this->summary_cache->hasFreshData($group, $data)) {
             $this->summary_cache->set($group, $data);
         } else {
@@ -561,6 +630,35 @@ class shopPrefillPluginZenMode
                 shopPrefillPluginLog::debug("Zen summary for '{$group}' rendered from cache");
             }
         }
+
+        return $data;
+    }
+
+    /**
+     * Рендерит сводку данных для группы
+     *
+     * @param string $group Имя группы
+     * @param shopPrefillCheckoutState $state Данные чекаута
+     * @return string HTML
+     */
+    public function renderGroupSummary(string $group, shopPrefillCheckoutState $state): string
+    {
+        return $this->renderSummaryFromData($group, $state, $this->resolveSummaryData($group, $state));
+    }
+
+    /**
+     * Рендерит шаблон сводки по уже разрешённым данным (см. resolveSummaryData()) —
+     * отдельно от их сборки, чтобы renderCollapseBlock() мог посчитать данные один раз
+     * и переиспользовать для иконки группы.
+     *
+     * @param string $group Имя группы
+     * @param shopPrefillCheckoutState $state Нужен только для выбора шаблона (пер-инстансный override)
+     * @param array $data Результат resolveSummaryData()
+     * @return string HTML
+     */
+    private function renderSummaryFromData(string $group, shopPrefillCheckoutState $state, array $data): string
+    {
+        $template = $this->getSummaryTemplate($group, $state);
 
         // Если шаблон пустой — ничего не выводим
         if (empty($template)) {

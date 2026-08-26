@@ -247,18 +247,6 @@ class ZenModeToggle {
 
     return hasErrors;
   }
-
-  /**
-   * Принудительно показывает секцию деталей заказа, убирая style="display:none"
-   * Это необходимо для корректной работы Zen Mode в некоторых сценариях
-   */
-  forceDetailSectionVisible() {
-    const $section = $("#wa-step-details-section");
-    if ($section.length && $section.attr("style") && $section.attr("style").indexOf("display") !== -1) {
-      // console.log("ZenMode: Removing display:none from #wa-step-details-section");
-      $section.removeAttr("style");
-    }
-  }
 }
 
 // Экспорт класса в глобальную область для использования в других модулях

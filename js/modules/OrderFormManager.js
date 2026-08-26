@@ -51,7 +51,6 @@ class OrderFormManager {
         // Инициализируем Zen Mode при готовности формы
         if (this.zenModeToggle) {
             this.zenModeToggle.init();
-            this.zenModeToggle.forceDetailSectionVisible();
         }
     }
 
@@ -67,9 +66,5 @@ class OrderFormManager {
      */
     handleDetailsChanged() {
         this.paramsChoiceManager.renderLink();
-
-        if (this.zenModeToggle) {
-            this.zenModeToggle.forceDetailSectionVisible();
-        }
     }
 }

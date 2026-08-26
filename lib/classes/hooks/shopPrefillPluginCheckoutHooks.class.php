@@ -124,6 +124,10 @@ class shopPrefillPluginCheckoutHooks
      * Хук срабатывает при рендере секции авторизации на странице оформления заказа.
      * Добавляет JavaScript Zen Mode и рендерит блок управления для группы customer.
      *
+     * Секция-носитель группы `customer` — см. shopPrefillPluginZenMode::GROUP_CARD_SECTION.
+     * Перенос блока в другой хук требует правки той константы: от неё зависит, с какой
+     * секции плагин снимает display:none ядра.
+     *
      * @param array $params Параметры хука
      * @return string HTML для вставки в секцию авторизации
      */
@@ -176,6 +180,10 @@ class shopPrefillPluginCheckoutHooks
      * Хук срабатывает при рендере секции адреса доставки на странице оформления заказа.
      * Рендерит блок управления для Zen Mode группы delivery в конце секции.
      *
+     * Секция-носитель группы `delivery` — см. shopPrefillPluginZenMode::GROUP_CARD_SECTION.
+     * Перенос блока в другой хук требует правки той константы: от неё зависит, с какой
+     * секции плагин снимает display:none ядра.
+     *
      * @param array $params Параметры хука
      * @return string HTML для вставки в секцию адреса
      */
@@ -193,6 +201,10 @@ class shopPrefillPluginCheckoutHooks
     /**
      * Хук срабатывает при рендере секции оплаты на странице оформления заказа.
      * Выводит блок управления для Zen Mode группы payment в конце секции.
+     *
+     * Секция-носитель группы `payment` — см. shopPrefillPluginZenMode::GROUP_CARD_SECTION.
+     * Перенос блока в другой хук требует правки той константы: от неё зависит, с какой
+     * секции плагин снимает display:none ядра.
      *
      * @param array $params Параметры хука
      * @return string HTML для вставки в секцию оплаты

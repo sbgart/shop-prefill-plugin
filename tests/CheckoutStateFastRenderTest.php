@@ -61,5 +61,47 @@ $state = new shopPrefillCheckoutState($params);
 check(false, $state->isFastRender(), 'успех: isFastRender() false (errors вообще нет)');
 check('todoor', $state->getShippingType(), 'успех: getShippingType() возвращает тип варианта');
 
+// --- isStepSkipped(): различает «шаг не считался» и «ядро осознанно ничего не предлагает» ---
+// (payment-zen-card-vanishes-on-shortcircuit.md — карточка группы не должна пропадать
+// вместе со скрытой секцией ядра; B2b в RULES.md)
+
+// шаг не считался вовсе — короткое замыкание / fast_render, vars.<шаг> === []
+$params = ['vars' => ['payment' => []]];
+$state = new shopPrefillCheckoutState($params);
+check(true, $state->isStepSkipped('payment'), 'isStepSkipped: payment=[] — шаг не считался');
+
+// оплата осознанно выключена настройками магазина — результат непустой (ключ disabled)
+$params = ['vars' => ['payment' => ['disabled' => true]]];
+$state = new shopPrefillCheckoutState($params);
+check(false, $state->isStepSkipped('payment'), 'isStepSkipped: payment.disabled=true — шаг отработал, оплата выключена');
+
+// шаг отработал, но способов оплаты для этой корзины нет — тоже не пустой результат.
+// Регресс-щит на ошибку первой редакции фикса: там проверялось empty(methods), и это
+// давало true в обоих случаях выше — false-positive «шаг не считался» для disabled
+// и для честного «способов нет» (ловушка D1: свёрнутая карточка обещала бы выбор,
+// которого на чекауте нет вовсе).
+$params = ['vars' => ['payment' => ['selected_method_id' => null, 'methods' => []]]];
+$state = new shopPrefillCheckoutState($params);
+check(false, $state->isStepSkipped('payment'), 'isStepSkipped: methods=[] после реального рендера — не пустой результат');
+
+// happy path — способы есть
+$params = ['vars' => ['payment' => ['methods' => ['16' => ['id' => '16']]]]];
+$state = new shopPrefillCheckoutState($params);
+check(false, $state->isStepSkipped('payment'), 'isStepSkipped: happy path — способы оплаты посчитаны');
+
+// ключа payment в vars нет вовсе — неопределённость, а не пустота (B2a: стоковый чекаут)
+$params = ['vars' => ['auth' => ['fields' => []]]];
+$state = new shopPrefillCheckoutState($params);
+check(false, $state->isStepSkipped('payment'), 'isStepSkipped: ключа шага в vars нет — неопределённость (B2a)');
+
+// details: та же пара состояний, что и у payment (shipping.used = false ⇒ disabled)
+$params = ['vars' => ['details' => []]];
+$state = new shopPrefillCheckoutState($params);
+check(true, $state->isStepSkipped('details'), 'isStepSkipped: details=[] — шаг не считался');
+
+$params = ['vars' => ['details' => ['disabled' => true]]];
+$state = new shopPrefillCheckoutState($params);
+check(false, $state->isStepSkipped('details'), 'isStepSkipped: details.disabled=true — shipping.used=false, не пустота');
+
 echo "\n{$checks} проверок, {$failures} провалено\n";
 exit($failures > 0 ? 1 : 0);

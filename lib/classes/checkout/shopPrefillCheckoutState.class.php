@@ -657,6 +657,24 @@ class shopPrefillCheckoutState
     }
 
     /**
+     * Ядро не отработало шаг в этом запросе — протокольная пустота (R1, P9).
+     *
+     * Результат шага пуст ровно в одном случае: process() не вызывался — упал шаг выше
+     * (короткое замыкание) либо сработал fast_render, — и шаг прошёл через
+     * shopCheckoutStep::prepare(), положив в vars.<шаг> пустой массив. Отработавший шаг
+     * всегда кладёт хотя бы один ключ: `disabled` — когда выключен настройками магазина,
+     * свой набор — когда посчитан (даже если способов не нашлось).
+     *
+     * Отсутствие ключа vars.<шаг> — неопределённость, а не пустота: по B2a отвечаем «нет».
+     *
+     * @param string $step auth | region | shipping | details | payment | confirm
+     */
+    public function isStepSkipped(string $step): bool
+    {
+        return isset($this->params['vars'][$step]) && $this->params['vars'][$step] === [];
+    }
+
+    /**
      * Возвращает ID шага, на котором произошла ошибка.
      */
     public function getErrorStepId(): ?string

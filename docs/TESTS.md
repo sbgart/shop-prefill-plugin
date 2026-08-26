@@ -19,6 +19,8 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 | `tests/CheckoutPageDetectorTest.php` | A1 — ассеты только там, где рендерится форма заказа: матрица маршрутов витрины, приоритет сработавшего checkout-хука над маршрутом, лень чтения маршрута ([issue-64](codereview/issue-64-assets-loaded-on-every-page.md)) |
 | `tests/FillParamsCollectionLimitTest.php` | Настройка «сколько вариантов показывать»: клампинг диапазона 1–10 и фоллбэк на умолчание для мусора и нуля ([issue-68](codereview/issue-68-params-choice-collection-n-plus-1.md)) |
 | `tests/ShippingCustomDetailsOwnershipGateTest.php` | P1 — кросс-секционная запись `shipping`→`details.custom` спрашивает владение `details` отдельным гейтом, а не только `canPrefillSection('shipping')`; независимость гейтов и то, что `applyDeliveryAddress()` (явный выбор, без чекера) пишет всегда ([issue-60](codereview/issue-60-cross-section-write-details-custom.md)) |
+| `tests/CheckoutStateFastRenderTest.php` | `isFastRender()` (сентинел `fast_render` не путается с реальной недоступностью варианта) и `isStepSkipped()` — B2b, различает «шаг не считался» (`vars.<шаг> === []`) от «шаг выключен настройками» (`disabled`) и от «шаг отработал, но пуст» (`methods: []`, ловушка D1); регресс-щит на первую редакцию фикса, где критерий был `empty($vars.payment.methods)` ([баг пропажи карточки оплаты](bugs/payment-zen-card-vanishes-on-shortcircuit.md)) |
+| `tests/ZenGroupCarrierTest.php` | B2b, Z3 — `shopPrefillPluginZenMode::GROUP_CARD_SECTION`: структурный замок (носитель объявлен для каждой группы и входит в её же `GROUP_SECTIONS`), носитель `delivery` дословно `details` (щит от «упрощения» до `end(GROUP_SECTIONS[...])`); `generateGroupStyles()`/`generateSectionRevealStyles()` — счёт правил, показывающее правило только для секции-носителя (щит от раскрытия `region`/`shipping` вместе с заголовком «Регион») |
 
 Тест обязан уметь падать. Проверяется мутацией: внести регресс, убедиться что тест краснеет, откатить.
 
@@ -114,6 +116,16 @@ const s = getComputedStyle(document.querySelector('.prefill-dialog__confirm-btn'
 Сценарий 15 (магазин с `details.custom` — датой и интервалом доставки) на этой инсталляции проверить нечем: ни один установленный плагин доставки таких полей не отдаёт. Ветка кода покрыта только чтением.
 
 Автотесты: `SectionCheckerOwnershipVsDataTest` — 166 проверок, включая регресс-щит на `shipping[service_agreement]` (поле чужой формы в пространстве имён секции, из-за которого первая реализация критерия не работала).
+
+### Видимость свёрнутой карточки при коротком замыкании (B2b) — статус: ✅ пройдено 25.08.2026
+
+Сценарии и результаты — в разделе «Проверено после фикса» [бага пропажи карточки оплаты](bugs/payment-zen-card-vanishes-on-shortcircuit.md). Прогнаны 1-4 — все ✅: обычная загрузка с первого кадра, репро «сломать email со свёрнутыми доставкой и оплатой» (обе карточки не пропадают), развёрнутая оплата при короткой замыкании (секция остаётся скрытой, без одинокой кнопки — осознанное отличие от снятого JS-костыля `forceDetailSectionVisible()`), обычное сворачивание доставки без костыля.
+
+`config.payment.used = false` и `shipping.used = false` живьём не гонялись — требуют менять настройки чекаута на общем дев-стенде, закрыты автотестом (`CheckoutStateFastRenderTest`, регресс-щит на `empty()`-версию критерия).
+
+**Побочная находка, тоже исправлена и проверена:** иконка группы (`icon_source: plugin`) читала логотип способа доставки/оплаты напрямую из `$state`, мимо кэша сводки — при коротком замыкании падала на дефолтный SVG, хотя текст сводки в тот же момент уже восстанавливался из кэша. Проверено на сторфронте `wa-dev.loc/*` с временно включённым `icon_source: plugin` для `payment` (лого `cash.png`) — при разбитом email лого остаётся, настройка возвращена в `default` после проверки.
+
+PHP-лог (`/Applications/ServBay/logs/php/7.4/errors.log`) и лог плагина (`wa-log/prefill.plugin.log`) за время прогона чисты — сверено по приросту строк и mtime, а не по метке времени (та отстаёт на ~7 часов).
 
 ### Экранирование данных покупателя (Z7) — статус: ✅ пройдено 20.08.2026
 
