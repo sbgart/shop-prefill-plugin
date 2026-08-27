@@ -74,10 +74,10 @@ class shopPrefillPluginGeoAdapterRegions implements shopPrefillPluginGeoAdapterI
     }
 
     /**
-     * Стоп-условия первого этапа: города нет в базе плагина либо он привязан к другой
-     * витрине. Во втором случае подстановка просто не подействовала бы — `getCurrentCity()`
-     * сверяет витрину города с текущей и чужой отвергает, — а перевести покупателя на
-     * нужную витрину умеет только `changeCity()` с редиректом (этап 4).
+     * Стоп-условия: города нет в базе плагина либо он привязан к другой витрине. Во втором
+     * случае подстановка просто не подействовала бы — `getCurrentCity()` сверяет витрину
+     * города с текущей и чужой отвергает, — а перевести покупателя на нужную витрину умеет
+     * только `changeCity()` с редиректом. Для этого случая есть `propose()`.
      */
     public function canApply(shopPrefillPluginGeoTarget $target): bool
     {
@@ -121,6 +121,71 @@ class shopPrefillPluginGeoAdapterRegions implements shopPrefillPluginGeoAdapterI
         }, false);
     }
 
+    /**
+     * Кладёт наш город в слот «результат определения» плагина. Его окно после этого
+     * показывается и называет наш город вместо догадки по IP, а переход выполняет его
+     * собственный `changeCity()` — и только если покупатель нажмёт «Да» (правило G4).
+     *
+     * Побочно гасит их IP-детект на всю сессию: `getDetectedLocation()` сначала смотрит
+     * в этот же ключ (`hasDetectedLocation()`), и внешнего запроса к геобазе не будет.
+     */
+    public function propose(shopPrefillPluginGeoTarget $target): bool
+    {
+        if ($target->isEmpty()) {
+            return false;
+        }
+
+        return $this->call(function () use ($target) {
+            $session = shopRegionsSessionStorage::getInstance();
+
+            // Покупатель уже подтвердил город — их окно и так не показывается,
+            // а предложение поверх подтверждения было бы спором с человеком (P1)
+            if ($session->isConfirmedLocation()) {
+                return false;
+            }
+
+            $location = $this->buildLocation($target);
+            $city     = shopRegionsRouting::getInstance()->getCityByLocation($location);
+
+            // Только зарегистрированный город. Слот читается через `getDetectedCity()`,
+            // а тот при ненайденном городе падает в `getClosestCityByLocation()` — там
+            // расстояние считается по `geo_lat`/`geo_lon`, которых у нашей локации нет,
+            // и `null` превратился бы в точку (0,0): окно предложило бы случайный город.
+            //
+            // Виртуальный город (без ID) сюда не попадает по построению: его принимает
+            // `findApplicableCity()`, то есть до `propose()` дело бы не дошло.
+            if (! $city || ! $city->getID()) {
+                return false;
+            }
+
+            $session->setDetectedLocation($location);
+
+            shopPrefillPluginLog::info('City offered to regions as a storefront switch', [
+                'city'       => $target->getCity(),
+                'storefront' => $city->getStorefront(),
+            ]);
+
+            return true;
+        }, false);
+    }
+
+    /**
+     * Снимает предложение и возвращает плагину стоковое поведение.
+     *
+     * Через их `setDetectedLocation(null)` не выйдет: `hasDetectedLocation()` сравнивает
+     * с `null` само значение ключа, а там оказалась бы строка `'N;'` — их IP-детект остался
+     * бы подавлен до конца сессии. Метода удаления у них нет, поэтому убираем ключ напрямую;
+     * имя проверено на 3.2.10 (`shopRegionsSessionStorage`).
+     */
+    public function forgetProposal(): void
+    {
+        $this->call(static function () {
+            wa()->getStorage()->remove('shop/plugins/regions/detected_location');
+
+            return null;
+        }, null);
+    }
+
     public function forget(shopPrefillPluginGeoTarget $applied): void
     {
         if (! $this->getCurrent()->equals($applied)) {
@@ -160,18 +225,9 @@ class shopPrefillPluginGeoAdapterRegions implements shopPrefillPluginGeoAdapterI
                 return null;
             }
 
-            $location = new shopRegionsLocation(
-                $target->getCountry(),
-                $target->getRegion(),
-                $target->getCity(),
-                null,
-                null,
-                $target->getZip()
-            );
-
             // Публичный метод плагина: сам разбирает точное совпадение, слияние и
             // виртуальный город по настройкам магазина
-            $city = shopRegionsRouting::getInstance()->getCityByLocation($location);
+            $city = shopRegionsRouting::getInstance()->getCityByLocation($this->buildLocation($target));
 
             if (! $city) {
                 return null;
@@ -184,6 +240,24 @@ class shopPrefillPluginGeoAdapterRegions implements shopPrefillPluginGeoAdapterI
 
             return $city->getStorefront() === $storefront ? $city : null;
         }, null);
+    }
+
+    /**
+     * Локация в терминах чужого плагина. Координаты не заполняем: в истории заказов их нет,
+     * а нужны они только его режимам «ближайший город».
+     *
+     * @return object shopRegionsLocation
+     */
+    private function buildLocation(shopPrefillPluginGeoTarget $target)
+    {
+        return new shopRegionsLocation(
+            $target->getCountry(),
+            $target->getRegion(),
+            $target->getCity(),
+            null,
+            null,
+            $target->getZip()
+        );
     }
 
     /**

@@ -135,6 +135,27 @@ class shopPrefillPluginGeoAdapterCityselect implements shopPrefillPluginGeoAdapt
         return true;
     }
 
+    /**
+     * Предложить переход через cityselect нельзя — осознанный отказ, а не заглушка.
+     *
+     * Их нотифаер «Ваш город X?» показывает город из куки локации, а кнопка «Да» зовёт
+     * `say_yes` и никуда не переводит: единственный путь к переходу у них — контроллер
+     * `set_city`, который считает `detectRedirect()`. То есть предложить город, не записав
+     * его в куку, невозможно, а записывать мы здесь как раз и отказались — иначе кука сама
+     * стала бы триггером перехода на обычном просмотре каталога (см. `canApply()`).
+     *
+     * Переход у cityselect остаётся там же, где был: покупатель выбирает город в их модалке.
+     */
+    public function propose(shopPrefillPluginGeoTarget $target): bool
+    {
+        return false;
+    }
+
+    public function forgetProposal(): void
+    {
+        // Предложений не делаем — снимать нечего
+    }
+
     public function forget(shopPrefillPluginGeoTarget $applied): void
     {
         if (! $this->getCurrent()->equals($applied)) {

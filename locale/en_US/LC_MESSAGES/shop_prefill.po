@@ -1117,7 +1117,7 @@ msgid "tooltip.prefill.integration.regions"
 msgstr "Sets the store city to the one the customer ordered to last time."
 
 msgid "hint.prefill.integration.regions"
-msgstr "The city from the last order becomes the current SEO Regions city, exactly as if the customer had picked it: the \"Is this your city?\" prompt is not shown and no geo database is queried. No storefront switching happens: if the city belongs to another storefront or is missing from the SEO Regions list, the plugin stays out of the way. Note that in SEO Regions the city drives available shipping and payment methods, stock and currency — by enabling this you allow the applied city to affect them."
+msgstr "The city from the last order becomes the current SEO Regions city, exactly as if the customer had picked it: the \"Is this your city?\" prompt is not shown and no geo database is queried. If the city belongs to another storefront, the plugin offers it in the SEO Regions city prompt instead: the customer sees a suggestion to switch to their own storefront and decides for themselves — the switch is performed by SEO Regions itself, and nobody is moved anywhere without clicking. The suggestion only works when IP-based detection is enabled in SEO Regions. If the city is missing from their list, the plugin stays out of the way entirely. Note that in SEO Regions the city drives available shipping and payment methods, stock and currency — by enabling this you allow the applied city to affect them."
 
 msgid "setting.prefill.integration.dp"
 msgstr "Integration with the Delivery and Payments plugin"
