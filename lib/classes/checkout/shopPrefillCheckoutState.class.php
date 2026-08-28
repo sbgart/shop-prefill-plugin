@@ -562,7 +562,7 @@ class shopPrefillCheckoutState
         }
 
         // logo — кастомный из БД (shop_plugin.logo), img — дефолтный из конфига плагина (= icon[48])
-        return ($variant['logo'] ?: $variant['img']) ?: null;
+        return ($variant['logo'] ?? null) ?: ($variant['img'] ?? null) ?: null;
     }
 
     /**

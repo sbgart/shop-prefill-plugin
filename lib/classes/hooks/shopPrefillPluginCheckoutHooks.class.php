@@ -274,7 +274,7 @@ class shopPrefillPluginCheckoutHooks
         }
 
         // Shipping не применим — сигнализируем JS; куку гасит JS при показе диалога
-        return '<script>$(document).trigger("prefill_delivery_unavailable");</script>';
+        return '<script>if(typeof $!=="undefined"){$(document).trigger("prefill_delivery_unavailable");}</script>';
     }
 
     /**
