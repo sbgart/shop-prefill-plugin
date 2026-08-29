@@ -81,4 +81,4 @@ $selected_type_id = $type['id'];   // :253 — тип выводится из в
 - [issue-84 §1](../codereview/issue-84-prefill-inconsistent-across-groups.md) — закрыт этим планом
 - [issue-60](../codereview/issue-60-cross-section-write-details-custom.md) — снапшот-часть снята архитектурой (снапшота больше нет), кросс-секционная запись `details.custom` из `shipping`-кода частично сужена (гейтится вариантом), но не убрана — issue остаётся открытой
 - [RULES.md Z5, Z5a](../concept/RULES.md)
-- [TESTS.md](../TESTS.md)
+- [TESTS.md](../tests/TESTS.md)

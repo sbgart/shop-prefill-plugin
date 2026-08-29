@@ -128,7 +128,7 @@ Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`. Must be `.tar.gz`
 
 ## Important Notes
 
-- **Read [docs/concept/RULES.md](docs/concept/RULES.md) before touching checkout logic** — plugin invariants in one short file; checks that defend them are in [docs/TESTS.md](docs/TESTS.md)
+- **Read [docs/concept/RULES.md](docs/concept/RULES.md) before touching checkout logic** — plugin invariants in one short file; checks that defend them are in [docs/tests/TESTS.md](docs/tests/TESTS.md)
 - **Tests:** plain PHP scripts in `tests/`, no framework — `for t in tests/*Test.php; do php "$t"; done`. They cover pure logic only; everything touching the checkout render is verified manually in the browser
 - CSS variables and JS initializer are generated dynamically into `wa-data/public/shop/plugins/prefill/` (cached by hash, not versioned)
 - `shopPrefillPlugin::$instance` is a static singleton — use `shopPrefillPlugin::getInstance()` to access it
