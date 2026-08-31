@@ -80,6 +80,8 @@
 - **[tests/TEST-PLAN.md](tests/TEST-PLAN.md)** — что и в каком объёме проверять перед релизом: уровни L0–L5, реестр функциональных областей, матрица конфигураций стенда, критерии выпуска, шаблон отчёта
 - **[tests/TESTS.md](tests/TESTS.md)** — журнал прогонов: что уже проверено, когда, с какими находками и граблями
 - **[tests/issue-63-browser-test-runbook.md](tests/issue-63-browser-test-runbook.md)** — инструментарий браузерного стенда (счётчик SQL, чистая сессия, EXPLAIN)
+- **[tests/external-sites-survey.md](tests/external-sites-survey.md)** — обзор реальных Shop-Script-магазинов (без доступа к коду/БД): какие темы/конфигурации доставки встречаются в жизни, для расширения матрицы конфигураций K17/S-05..S-08
+- **[tests/zen-fields-render-test-plan.md](tests/zen-fields-render-test-plan.md)** — отдельный план (не часть реестра ФО): адекватность визуального вывода всех 35 полей Zen-сводки на живой витрине, сравнение с эталонным ядровым виджетом `details.html`; результаты первого прогона — [tests/zen-fields-render-results-2026-08-29.md](tests/zen-fields-render-results-2026-08-29.md)
 - **tests/runs/** — отчёты о конкретных прогонах, один файл на прогон: `tests/runs/<версия>-<ГГГГ-ММ-ДД>.md` (шаблон — в TEST-PLAN.md §9)
 
 ### [releases/](releases/) - Артефакты релизов

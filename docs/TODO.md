@@ -11,8 +11,7 @@
 
 ## 🚀 До релиза
 
-
-
+- [ ] 🔴 **Разобрать результаты прогона по [zen-fields-render-test-plan.md](tests/zen-fields-render-test-plan.md)** (29.08.2026) — два новых бага ниже ([zen-delivery-schedule-source-missing.md](bugs/zen-delivery-schedule-source-missing.md), [zen-photos-css-scope-broken.md](bugs/zen-photos-css-scope-broken.md)), решить по каждому отдельно (root cause уже найден в обоих файлах, дизайн фикса — нет). Полный разбор находок и что осталось непроверенным — [zen-fields-render-results-2026-08-29.md](tests/zen-fields-render-results-2026-08-29.md)
 
 ## 🐞 Баги
 
@@ -23,6 +22,8 @@
 - [ ] 🔴 [Группа «Покупатель» (customer) не сворачивается в Zen-режиме на первом кадре](bugs/zen-customer-group-never-collapses-f01.md) — найдено 28.08.2026 при прогоне R (ФО-06, F-01), воспроизведено дважды на независимых сессиях, не разобрано
 - [ ] 🔴 [`zen.active = false` не отключает Zen-режим](bugs/zen-active-off-not-respected.md) — найдено 28.08.2026 при прогоне R (ФО-06, F-16), воспроизведено дважды подряд, не разобрано
 - [ ] [Диалог выбора области сохранения (SaveScopeDialog) не поддерживает тёмную тему](bugs/save-scope-dialog-no-dark-theme.md) — найдено 30.08.2026 на Docker-стенде (UI 2.0, тёмная тема); тот же фикс, что уже сделан для диалога редактора шаблона, не перенесён на этот диалог, не разобрано
+- [ ] 🔴 [`$delivery_schedule` всегда пуст в Zen-сводке — читается не тот источник данных](bugs/zen-delivery-schedule-source-missing.md) — найдено 29.08.2026 при прогоне по [zen-fields-render-test-plan.md](tests/zen-fields-render-test-plan.md), причина найдена (`vars.details.shipping_rate.pickup_schedule` не читается), затрагивает все ПВЗ-плагины, не разобрано
+- [ ] 🔴 [`$delivery_photos_html` — фото пункта выдачи невидимы в Zen-карточке (0×0px)](bugs/zen-photos-css-scope-broken.md) — найдено 29.08.2026 там же, CSS-скоуп ядра не совпадает с плоской разметкой Zen-карточки, не разобрано
 
 ---
 
