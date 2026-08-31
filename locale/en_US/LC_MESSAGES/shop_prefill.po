@@ -289,7 +289,7 @@ msgid "setting.prefill.guest.enabled"
 msgstr "Prefill for guests"
 
 msgid "hint.prefill.guest.enabled"
-msgstr "Disabled by default. When enabled, the guest's latest order may be used for automatic prefill on the next visit. Address history and My Delivery Options remain unavailable to guests."
+msgstr "Disabled by default. When enabled, the guest’s latest order may be used for automatic prefill on the next visit. Address history and My Delivery Options remain unavailable to guests."
 
 msgid "setting.prefill.guest.consent_required"
 msgstr "Require guest consent for data storage"
@@ -592,7 +592,7 @@ msgid "setting.styles.accent_color_dark"
 msgstr "Accent color (dark theme)"
 
 msgid "hint.styles.accent_color_dark"
-msgstr "Accent color for plugin elements when the customer's device has dark theme enabled."
+msgstr "Accent color for plugin elements when the customer’s device has dark theme enabled."
 
 msgid "hint.zen.group.main"
 msgstr "Main Zen Mode parameters for this storefront."
