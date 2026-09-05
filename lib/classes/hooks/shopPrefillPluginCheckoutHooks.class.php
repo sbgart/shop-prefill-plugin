@@ -36,6 +36,7 @@ class shopPrefillPluginCheckoutHooks
         $this->storefront_settings = $storefront_settings;
         $this->request = $request;
         $this->response = $response;
+        shopPrefillPluginDebug::setEnabled($is_debug_panel);
     }
 
     /**
@@ -67,12 +68,61 @@ class shopPrefillPluginCheckoutHooks
         // Источник читается лениво: сначала снапшот и список пустых секций, и только
         // если пробелы остались — обращение к БД, не чаще раза на источник за сессию.
         $provider     = $this->fill_params_provider;
+        $source_key   = $provider->getSourceKey();
+        $source_before = $this->session_storage->getAppliedSource();
+        $storage_before = $this->session_storage->getCheckoutParams();
+        $checker = $this->session_storage->getSectionChecker();
+        $section_decisions = [];
+        foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
+            $available = $checker->canPrefillSection($section_id, $storage_before);
+            $section_decisions[$section_id] = [
+                'available' => $available,
+                'reason' => $available
+                    ? 'available'
+                    : ($checker->isGroupEnabledForSection($section_id) ? 'owned_or_filled' : 'disabled'),
+            ];
+        }
+        $source_loaded = false;
+        $source_order_id = null;
         $filled_order = $this->session_storage->preFillCheckoutParamsFromSource(
-            $provider->getSourceKey(),
-            static function () use ($provider) {
-                return $provider->getFillParams();
+            $source_key,
+            static function () use ($provider, &$source_loaded, &$source_order_id) {
+                $source_loaded = true;
+                $params = $provider->getFillParams();
+                $source_order_id = $params->getId();
+                return $params;
             }
         );
+
+        foreach ($section_decisions as $section_id => &$decision) {
+            if (!$decision['available']) {
+                continue;
+            }
+            if ($source_key === null) {
+                $decision['reason'] = 'source_absent';
+            } elseif ($source_before === $source_key) {
+                $decision['reason'] = 'source_already_applied';
+            } elseif (array_key_exists($section_id, $filled_order)) {
+                $decision['reason'] = 'applied';
+            } else {
+                $decision['reason'] = $source_loaded ? 'no_source_data' : 'not_observed';
+            }
+        }
+        unset($decision);
+
+        shopPrefillPluginDebug::recordEvent('prefill', 'checkout_before_auth', [
+            'source_key' => $source_key,
+            'applied_source_before' => $source_before,
+            'source_loaded' => $source_loaded,
+            'source_order_id' => $source_order_id,
+            'sections' => $section_decisions,
+            'applied_sections' => array_keys($filled_order),
+            'session_changed_paths' => $this->findChangedPaths(
+                $storage_before,
+                $this->session_storage->getCheckoutParams()
+            ),
+            'input_changed_paths' => $this->listLeafPaths($filled_order),
+        ]);
 
         if (!empty($filled_order)) {
             $state = new shopPrefillCheckoutState($params);
@@ -92,8 +142,20 @@ class shopPrefillPluginCheckoutHooks
             $this->applyEchoToInput($params, ['payment' => $payment_echo]);
         }
 
+        shopPrefillPluginDebug::recordEvent('echo', 'payment', [
+            'result' => $payment_echo === null ? 'not_restored' : 'restored',
+            'payment_id' => $payment_echo['id'] ?? null,
+        ]);
+
         // Эхо-кэш группы доставки — по той же причине мимо applyPrefillInput()
-        $this->applyEchoToInput($params, $this->session_storage->syncDeliveryEcho());
+        $delivery_echo = $this->session_storage->syncDeliveryEcho();
+        $this->applyEchoToInput($params, $delivery_echo);
+        shopPrefillPluginDebug::recordEvent('echo', 'delivery', [
+            'result' => empty($delivery_echo) ? 'not_restored' : 'restored',
+            'shipping_type_id' => $delivery_echo['shipping']['type_id'] ?? null,
+            'shipping_id' => $delivery_echo['shipping']['id'] ?? null,
+            'variant_id' => $delivery_echo['shipping']['variant_id'] ?? null,
+        ]);
     }
 
     /**
@@ -292,9 +354,24 @@ class shopPrefillPluginCheckoutHooks
     {
         try {
             if (!$this->zen_mode->isGroupEnabled($group)) {
+                shopPrefillPluginDebug::recordEvent('zen', $group, [
+                    'collapsed' => false,
+                    'reason' => $this->zen_mode->isActive() ? 'group_disabled' : 'zen_disabled',
+                    'zen_active' => $this->zen_mode->isActive(),
+                    'group_enabled' => $this->zen_mode->isGroupConfigured($group),
+                    'rendered' => false,
+                ]);
                 return '';
             }
-            return $this->zen_mode->buildCollapseBlock($group, $state);
+            $html = $this->zen_mode->buildCollapseBlock($group, $state);
+            $decision = $this->zen_mode->getLastDecision();
+            shopPrefillPluginDebug::recordEvent('zen', $group, array_merge($decision, [
+                'rendered' => $html !== '',
+                'shipping_id' => $group === 'delivery' ? $state->getShippingInstanceId() : null,
+                'variant_id' => $group === 'delivery' ? $state->getShippingVariantId() : null,
+                'payment_id' => $group === 'payment' ? $state->getPaymentId() : null,
+            ]));
+            return $html;
         } catch (Exception $e) {
             shopPrefillPluginLog::error('Zen Mode error in ' . $log_context, [
                 'message' => $e->getMessage()
@@ -352,18 +429,54 @@ class shopPrefillPluginCheckoutHooks
         $errors_info = $state->getAllErrorsInfo();
 
         if ($this->is_debug_panel) {
-            shopPrefillPluginDebug::addDebugEntry(
-                $state->getData(),
-                'CHECKOUT HOOK (' . $hook_name . ')',
-                ['errors_info' => $errors_info]
-            );
+            shopPrefillPluginDebug::recordEvent('render', $hook_name, [
+                'fast_render' => $state->isFastRender(),
+                'error_step_id' => $state->getErrorStepId(),
+                'has_errors' => !empty($errors_info['has_errors']),
+                'shipping_type_id' => $state->getShippingType(),
+                'shipping_id' => $state->getShippingInstanceId(),
+                'variant_id' => $state->getShippingVariantId(),
+                'payment_id' => $state->getPaymentId(),
+                'errors' => $errors_info,
+            ]);
         }
 
-        if (!$errors_info['has_errors']) {
-            return '';
-        }
+        $errors_html = empty($errors_info['has_errors'])
+            ? ''
+            : shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, $section_label);
+        return $errors_html . shopPrefillPluginDebug::renderPendingEvents();
+    }
 
-        return shopPrefillPluginDebug::renderErrorsDebugHtml($errors_info, $section_label);
+    /** @return string[] */
+    private function findChangedPaths(array $before, array $after, string $prefix = ''): array
+    {
+        $paths = [];
+        foreach (array_unique(array_merge(array_keys($before), array_keys($after))) as $key) {
+            $path = $prefix === '' ? (string) $key : $prefix . '.' . $key;
+            $has_before = array_key_exists($key, $before);
+            $has_after = array_key_exists($key, $after);
+            if ($has_before && $has_after && is_array($before[$key]) && is_array($after[$key])) {
+                $paths = array_merge($paths, $this->findChangedPaths($before[$key], $after[$key], $path));
+            } elseif (!$has_before || !$has_after || $before[$key] !== $after[$key]) {
+                $paths[] = $path;
+            }
+        }
+        return array_slice($paths, 0, 200);
+    }
+
+    /** @return string[] */
+    private function listLeafPaths(array $data, string $prefix = 'order'): array
+    {
+        $paths = [];
+        foreach ($data as $key => $value) {
+            $path = $prefix . '.' . $key;
+            if (is_array($value)) {
+                $paths = array_merge($paths, $this->listLeafPaths($value, $path));
+            } else {
+                $paths[] = $path;
+            }
+        }
+        return array_slice($paths, 0, 200);
     }
 
 }

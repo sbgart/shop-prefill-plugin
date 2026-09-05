@@ -10,6 +10,8 @@
  */
 class shopPrefillPluginZenMode
 {
+    /** Последнее фактически исполненное решение для debug-панели. */
+    private array $last_decision = [];
     /**
      * Маппинг группа → секции чекаута
      */
@@ -142,9 +144,14 @@ class shopPrefillPluginZenMode
      */
     public function isGroupEnabled(string $group): bool
     {
-        return $this->isActive()
-            && isset($this->settings['groups'][$group])
-            && ! empty($this->settings['groups'][$group]['enabled']);
+        return $this->isActive() && $this->isGroupConfigured($group);
+    }
+
+    /** Включена ли сама группа в настройках, независимо от общего zen.active. */
+    public function isGroupConfigured(string $group): bool
+    {
+        return isset($this->settings['groups'][$group])
+            && !empty($this->settings['groups'][$group]['enabled']);
     }
 
     /**
@@ -189,26 +196,67 @@ class shopPrefillPluginZenMode
     public function shouldCollapseGroup(string $group, shopPrefillCheckoutState $state): bool
     {
         if (! $this->isGroupEnabled($group)) {
+            $this->last_decision = [
+                'collapsed' => false,
+                'reason' => $this->isActive() ? 'group_disabled' : 'zen_disabled',
+                'zen_active' => $this->isActive(),
+                'group_enabled' => $this->isGroupConfigured($group),
+            ];
             return false;
         }
 
         $cookie_state = $this->request->cookie(self::COOKIE_PREFIX . $group);
 
         if ($cookie_state === 'expanded') {
+            $this->last_decision = [
+                'collapsed' => false,
+                'reason' => 'expanded_by_user',
+                'zen_active' => $this->isActive(),
+                'group_enabled' => true,
+            ];
             return false;
         }
 
         if ($state->hasGroupErrors($group)) {
+            $this->last_decision = [
+                'collapsed' => false,
+                'reason' => 'validation_errors',
+                'zen_active' => $this->isActive(),
+                'group_enabled' => true,
+                'errors' => $state->getGroupErrorsInfo($group),
+            ];
             shopPrefillPluginLog::debug("Zen group '{$group}' expanded: validation errors");
             return false;
         }
 
         if (! $this->isGroupMinimumFilled($group)) {
+            $this->last_decision = [
+                'collapsed' => false,
+                'reason' => 'minimum_not_filled',
+                'zen_active' => $this->isActive(),
+                'group_enabled' => true,
+            ];
             shopPrefillPluginLog::debug("Zen group '{$group}' expanded: nothing to summarize yet");
             return false;
         }
 
+        $this->last_decision = [
+            'collapsed' => true,
+            'reason' => 'minimum_filled',
+            'zen_active' => $this->isActive(),
+            'group_enabled' => true,
+        ];
         return true;
+    }
+
+    /** Возвращает решение, которое использовал последний buildCollapseBlock(). */
+    public function getLastDecision(): array
+    {
+        return $this->last_decision ?: [
+            'collapsed' => null,
+            'reason' => 'not_observed',
+            'zen_active' => $this->isActive(),
+        ];
     }
 
     /**
@@ -724,4 +772,3 @@ class shopPrefillPluginZenMode
     }
 
 }
-

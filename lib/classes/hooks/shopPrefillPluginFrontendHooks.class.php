@@ -47,6 +47,7 @@ class shopPrefillPluginFrontendHooks
         $this->zen_mode             = $zen_mode;
         $this->is_debug             = $is_debug;
         $this->is_debug_panel       = $is_debug_panel;
+        shopPrefillPluginDebug::setEnabled($is_debug_panel);
         $this->storefront_settings  = $storefront_settings;
         $this->add_css_callback     = $add_css_callback;
         $this->add_js_callback      = $add_js_callback;
@@ -78,9 +79,6 @@ class shopPrefillPluginFrontendHooks
     {
         $head_html = '';
 
-        // DEBUG: Регистрируем вызов хука
-        $this->registerDebugHookCall('frontendHead');
-
         if (! $this->storefront_settings['active']) {
             shopPrefillPluginLog::debug('Skipping frontendHead: storefront is inactive');
             return '';
@@ -96,22 +94,10 @@ class shopPrefillPluginFrontendHooks
         $this->initializeFrontendAssets();
 
         if ($this->is_debug_panel) {
-            $head_html .= shopPrefillPluginDebug::renderDebugStack();
+            $head_html .= shopPrefillPluginDebug::renderDebugPanel();
         }
 
         return $head_html;
-    }
-
-    /**
-     * Регистрирует вызов хука в debug-логе
-     *
-     * @param string $hook_name Имя хука
-     */
-    private function registerDebugHookCall(string $hook_name): void
-    {
-        if ($this->is_debug_panel) {
-            shopPrefillPluginDebug::registerHookCall($hook_name);
-        }
     }
 
     /**
@@ -331,4 +317,3 @@ class shopPrefillPluginFrontendHooks
         return $sizes[$size] ?? $sizes['medium'];
     }
 }
-

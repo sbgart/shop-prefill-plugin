@@ -1,0 +1,33 @@
+<article class="pd-event" data-sequence="{$event.sequence|escape}">
+  <header class="pd-event__header">
+    <span class="pd-event__stage">{$event.stage|escape}</span>
+    <strong>{$event.label|escape}</strong>
+    <time>{$event.time|escape}</time>
+  </header>
+  {if $event.stage == 'prefill' && !empty($event.data.sections)}
+    <table class="pd-table">
+      <thead><tr><th>{_wp('debug.section')}</th><th>{_wp('debug.decision')}</th></tr></thead>
+      <tbody>
+      {foreach $event.data.sections as $section => $decision}
+        <tr><td><code>{$section|escape}</code></td><td><code>{$decision.reason|escape}</code></td></tr>
+      {/foreach}
+      </tbody>
+    </table>
+  {elseif $event.stage == 'zen'}
+    <div class="pd-facts">
+      <span>{_wp('debug.result')}: <code>{if $event.data.collapsed}collapsed{else}expanded{/if}</code></span>
+      <span>{_wp('debug.reason')}: <code>{$event.data.reason|default:'not_observed'|escape}</code></span>
+    </div>
+  {elseif $event.stage == 'echo'}
+    <div class="pd-facts"><span>{_wp('debug.result')}: <code>{$event.data.result|escape}</code></span></div>
+  {elseif $event.stage == 'render'}
+    <div class="pd-facts">
+      <span>fast_render: <code>{if $event.data.fast_render}true{else}false{/if}</code></span>
+      <span>{_wp('debug.errors')}: <code>{if $event.data.has_errors}true{else}false{/if}</code></span>
+    </div>
+  {/if}
+  <details class="pd-dump">
+    <summary>{_wp('debug.full_data')}</summary>
+    <pre>{$event.dump|escape}</pre>
+  </details>
+</article>

@@ -1,0 +1,10 @@
+<details class="prefill-errors-debug">
+  <summary>⚠️ {$hook_name|escape}: {_wp('debug.validation_found')}</summary>
+  <div class="prefill-errors-debug__body">
+    <p>{_wp('debug.validation_explanation')}</p>
+    {if !empty($errors_info.error_step_id)}<p>{_wp('debug.error_step')}: <code>{$errors_info.error_step_id|escape}</code></p>{/if}
+    {if !empty($errors_info.regular_errors)}
+      <ul>{foreach $errors_info.regular_errors as $error}<li><code>{$error.name|escape}</code>: {$error.text|escape}</li>{/foreach}</ul>
+    {/if}
+  </div>
+</details>

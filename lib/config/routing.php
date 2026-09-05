@@ -11,7 +11,7 @@ return [
     'prefill/force-prefill/?'        => 'frontend/ForcePrefill',
     'prefill/reset-and-refill/?'     => 'frontend/ResetAndRefill',
     'prefill/refresh-debug/?'        => 'frontend/RefreshDebug',
+    'prefill/debug-source/?'         => 'frontend/DebugSource',
     'prefill/consent/?'              => 'frontend/Consent',
-    'prefill/toggle-zen/?'           => 'frontend/ToggleZen',
     'prefill/apply-delivery/?'       => 'frontend/ApplyDelivery',
 ];

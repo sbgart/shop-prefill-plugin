@@ -1,0 +1,11 @@
+<template class="js-prefill-debug-carrier" data-request-id="{$request_id|escape}">
+  <section class="pd-request" data-request-id="{$request_id|escape}">
+    <header class="pd-request__header">
+      <strong>{$request_type|escape}</strong>
+      <code>{$request_id|escape}</code>
+    </header>
+    <div class="pd-request__events">
+      {foreach $events as $event}{include file='./DebugEvent.html' event=$event}{/foreach}
+    </div>
+  </section>
+</template>

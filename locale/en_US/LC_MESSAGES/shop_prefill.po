@@ -1127,3 +1127,120 @@ msgstr "Passes the same city to the DP plugin cookies."
 
 msgid "hint.prefill.integration.dp"
 msgstr "Works together with the CitySelect integration: the same city is written to the Delivery and Payments plugin cookies."
+
+msgid "debug.panel"
+msgstr "Prefill diagnostics"
+
+msgid "debug.refresh"
+msgstr "Refresh snapshot"
+
+msgid "debug.collapse"
+msgstr "Collapse"
+
+msgid "debug.close"
+msgstr "Close"
+
+msgid "debug.context"
+msgstr "Context"
+
+msgid "debug.current_storefront"
+msgstr "Current storefront"
+
+msgid "debug.effective_storefront"
+msgstr "Effective storefront"
+
+msgid "debug.global_fallback"
+msgstr "* settings"
+
+msgid "debug.visitor"
+msgstr "Visitor"
+
+msgid "debug.consent"
+msgstr "Guest consent"
+
+msgid "debug.source_marker"
+msgstr "Applied source"
+
+msgid "debug.checkout_session"
+msgstr "PHP session shop/checkout"
+
+msgid "debug.source"
+msgstr "Order history source"
+
+msgid "debug.source_order"
+msgstr "Order"
+
+msgid "debug.source_read_note"
+msgstr "Diagnostic read; data was not applied to the form"
+
+msgid "debug.source_not_loaded"
+msgstr "The panel has not loaded the source. Checkout reads it lazily."
+
+msgid "debug.load_source"
+msgstr "Load source"
+
+msgid "debug.requests"
+msgstr "Requests and decisions"
+
+msgid "debug.no_events"
+msgstr "No checkout events observed yet"
+
+msgid "debug.section"
+msgstr "Section"
+
+msgid "debug.decision"
+msgstr "Decision"
+
+msgid "debug.result"
+msgstr "Result"
+
+msgid "debug.reason"
+msgstr "Reason"
+
+msgid "debug.errors"
+msgstr "Errors"
+
+msgid "debug.full_data"
+msgstr "Full data"
+
+msgid "debug.force_prefill"
+msgstr "Apply Prefill"
+
+msgid "debug.reset_refill"
+msgstr "Clear and refill"
+
+msgid "debug.clear_storage"
+msgstr "Clear session"
+
+msgid "debug.settings"
+msgstr "Settings"
+
+msgid "debug.validation"
+msgstr "Checkout errors"
+
+msgid "debug.loading"
+msgstr "Loading…"
+
+msgid "debug.request_error"
+msgstr "Request failed"
+
+msgid "debug.clear_confirm"
+msgstr "Clear shop/checkout and echo caches? The next request may apply Prefill again."
+
+msgid "debug.refill_confirm"
+msgstr "Read the source again and apply the current fill rules?"
+
+msgid "debug.done"
+msgstr "Done"
+
+msgid "debug.not_observed"
+msgstr "not observed"
+
+msgid "debug.validation_found"
+msgstr "required field errors found"
+
+msgid "debug.validation_explanation"
+msgstr "The group cannot be hidden because the customer must correct these fields."
+
+msgid "debug.error_step"
+msgstr "Error step"

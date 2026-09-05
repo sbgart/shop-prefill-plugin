@@ -1,0 +1,12 @@
+<section class="pd-section" id="prefill-debug-source">
+  <h3>{_wp('debug.source')}</h3>
+  {if $source_loaded}
+    <div class="pd-facts">
+      <span>{_wp('debug.source_order')}: <code>{$source_order_id|default:'—'|escape}</code></span>
+      <span>{_wp('debug.source_read_note')}</span>
+    </div>
+    <details class="pd-dump"><summary>{_wp('debug.full_data')}</summary><pre>{$fill_params_dump|escape}</pre></details>
+  {else}
+    <p class="pd-muted">{_wp('debug.source_not_loaded')}</p>
+  {/if}
+</section>

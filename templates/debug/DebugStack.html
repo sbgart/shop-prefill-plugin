@@ -1,197 +1,24 @@
-<div id="prefill-debug-stack">
-  {* Заголовок с кнопками *}
-  <div class="pd-header" ondblclick="PrefillDebugHelper.toggleCollapse()" title="Двойной клик для сворачивания">
-    <strong>🔍 Debug Panel</strong>&nbsp;
-    <div class="pd-header__btns">
-      <button onclick="PrefillDebugHelper.refreshDebug()" class="prefill-debug-btn" title="Обновить данные">🔄</button>
-      <button id="prefill-debug-collapse-btn" onclick="PrefillDebugHelper.toggleCollapse()" class="prefill-debug-btn" title="Свернуть/Развернуть">➖</button>
-      <button onclick="this.closest('#prefill-debug-stack').remove()" class="prefill-debug-btn" title="Закрыть">❌</button>
+<aside id="prefill-debug-stack" class="pd-panel" aria-label="{_wp('debug.panel')}">
+  <header class="pd-header">
+    <strong>🔍 {_wp('debug.panel')}</strong>
+    <div class="pd-header__actions">
+      <button type="button" data-debug-action="refresh" title="{_wp('debug.refresh')}">↻</button>
+      <button type="button" data-debug-action="collapse" title="{_wp('debug.collapse')}">−</button>
+      <button type="button" data-debug-action="close" title="{_wp('debug.close')}">×</button>
     </div>
-  </div>
-
+  </header>
   <div id="prefill-debug-body">
-    {$html_status}
-
-    {* Актуальные данные хранилища и снапшот *}
-    {$html_storage}
-
-    {$html_fill_params}
-
-    {* Содержимое с прокруткой *}
-    <div class="pd-scroll">
-      {foreach $debug_stack as $hook_name => $entries}
-      <div class="pd-hook">
-        {* Заголовок хука *}
-        <div class="prefill-debug-hook-header" data-hook="{$hook_name|escape}"
-          onclick="PrefillDebugHelper.toggleHookSection(this)">
-          <span class="pd-hook-header__left">
-            <span class="arrow-icon">▼</span>
-            <span>📍 {$hook_name|escape}</span>
-          </span>
-          <span class="pd-hook-header__count">{$entries|count} entries</span>
-        </div>
-
-        {* Контейнер с контентом хука *}
-        <div>
-          {* Статус секций - показываем из первой BEFORE записи *}
-          {assign var="first_sections_status" value=null}
-
-          {foreach $entries as $e}
-          {if $e.sections_prefill_status && !$first_sections_status}
-          {assign var="first_sections_status" value=$e.sections_prefill_status}
-          {/if}
-          {/foreach}
-
-          {if $first_sections_status}
-          <div class="pd-decision">
-            <div class="pd-decision__head">
-              <span class="pd-decision__title">Prefill Decision</span>
-              <details class="pd-decision__help">
-                <summary>ℹ️ как читать</summary>
-                <div class="pd-decision__help-popup">
-                  <div class="pd-decision__help-title">Как читать таблицу</div>
-                  <div class="pd-decision__help-intro">Каждая строка = одна секция checkout.<br>Логика: <code>Cfg</code> &amp;&amp; <code>Data</code> &amp;&amp; !<code>Fill</code> → <strong>🎯</strong></div>
-                  <table class="pd-decision__help-table">
-                    <tr><td class="pd-col-label">Cfg</td><td class="pd-col-val">группа секции включена в настройках</td></tr>
-                    <tr><td class="pd-col-label">Data</td><td class="pd-col-val">есть данные из последнего заказа</td></tr>
-                    <tr><td class="pd-col-label">Fill</td><td class="pd-col-val">секция уже заполнена в сессии (не перезаписываем)</td></tr>
-                    <tr><td class="pd-col-label">Res</td><td class="pd-col-val">итог: будет ли секция предзаполнена</td></tr>
-                  </table>
-                  <div class="pd-decision__help-legend">
-                    <div>&#9989; / &#128683; — вкл / выкл</div>
-                    <div>&#128190; — есть данные &nbsp; &#128230; — уже заполнено</div>
-                    <div>&#127919; — будет заполнено &nbsp; &#9193; — пропущено</div>
-                  </div>
-                </div>
-              </details>
-            </div>
-            <table class="pd-dtable">
-              <thead>
-                <tr>
-                  <th class="pd-th-section">SECTION</th>
-                  <th class="pd-th-col">Cfg</th>
-                  <th></th>
-                  <th class="pd-th-col">Data</th>
-                  <th></th>
-                  <th class="pd-th-col">Fill</th>
-                  <th></th>
-                  <th class="pd-th-col">Res</th>
-                </tr>
-              </thead>
-              <tbody>
-                {foreach from=$first_sections_status key=sec item=info}
-                <tr>
-                  <td class="pd-td-section">{$sec}</td>
-                  <td class="pd-td-val">
-                    {if $info.enabled}<span title="Enabled">&#9989;</span>{else}<span title="Disabled" class="pd-icon--dim-gray">&#128683;</span>{/if}
-                  </td>
-                  <td class="pd-td-arrow">&rarr;</td>
-                  <td class="pd-td-val">
-                    {if $info.has_data}<span title="Has Data">&#128190;</span>{else}<span title="No Data" class="pd-icon--dim">&#9617;</span>{/if}
-                  </td>
-                  <td class="pd-td-arrow">&rarr;</td>
-                  <td class="pd-td-val">
-                    {if $info.filled}<span title="Filled">&#128230;</span>{else}<span title="Empty" class="pd-icon--dim">&#9617;</span>{/if}
-                  </td>
-                  <td class="pd-td-arrow">&rarr;</td>
-                  <td class="pd-td-val">
-                    {if $info.result && $info.has_data}&#127919;{else}<span title="Skipped" class="pd-icon--dim-gray">&#9193;</span>{/if}
-                  </td>
-                </tr>
-                {/foreach}
-              </tbody>
-            </table>
-          </div>
-          {/if}
-
-          <div class="pd-entries">
-            {foreach $entries as $entry}
-            <div class="pd-entry" style="border-left-color: {$entry.color}">
-              <div class="pd-entry__title" style="color: {$entry.color}">{$entry.title|escape}</div>
-
-              {if empty($entry.data)}
-              <p class="pd-entry__empty">❌ Хранилище ПУСТОЕ</p>
-              {else}
-              {if $entry.sections_filled_status}
-              <div class="pd-entry__sections">
-                <strong>Filled:</strong><br />
-                └─ auth: {if $entry.sections_filled_status.auth}✅{else}❌{/if}<br />
-                └─ region: {if $entry.sections_filled_status.region}✅{else}❌{/if}<br />
-                └─ shipping: {if $entry.sections_filled_status.shipping}✅{else}❌{/if}<br />
-                └─ details: {if $entry.sections_filled_status.details}✅{else}❌{/if}<br />
-                └─ payment: {if $entry.sections_filled_status.payment}✅{else}❌{/if}<br />
-                └─ confirm: {if $entry.sections_filled_status.confirm}✅{else}❌{/if}
-              </div>
-              {else}
-              {assign var="has_order" value=isset($entry.data.order)}
-              <div class="pd-entry__sections">order: {if $has_order}✅{else}❌{/if}</div>
-              {/if}
-
-              <div class="pd-entry__details">
-                <details>
-                  <summary class="pd-dump-summary">📋 Дамп</summary>
-                  <pre class="pd-dump-pre">{$entry.data|@print_r}</pre>
-                </details>
-                {if $entry.errors_info && $entry.errors_info.has_errors}
-                <details>
-                  <summary class="pd-errors-summary">⚠️ Errors</summary>
-                  <div class="pd-errors-body">
-                    {if $entry.errors_info.error_step_id}
-                    <div class="pd-error-step">Шаг с ошибкой: <code>{$entry.errors_info.error_step_id|escape}</code></div>
-                    {/if}
-                    {if $entry.errors_info.regular_errors && is_array($entry.errors_info.regular_errors) && count($entry.errors_info.regular_errors) > 0}
-                    <div class="pd-error-group">
-                      <strong class="pd-error-group__title">🚨 Критические:</strong>
-                      <ul class="pd-error-list">
-                        {foreach $entry.errors_info.regular_errors as $error}
-                        <li class="pd-error-item">
-                          {if isset($error.name) && $error.name}<code>{$error.name|escape}</code>{else}<code class="pd-error-unknown">unknown</code>{/if}
-                          {if isset($error.section) && $error.section}<span class="pd-error-section">({$error.section|escape})</span>{/if}
-                          : {if isset($error.text) && $error.text}{$error.text|escape}{else}<span class="pd-error-notext">Unknown error</span>{/if}
-                        </li>
-                        {/foreach}
-                      </ul>
-                      <details class="pd-raw-details">
-                        <summary class="pd-raw-summary">🔍 Raw data</summary>
-                        <pre class="pd-raw-pre">{$entry.errors_info.regular_errors|@print_r}</pre>
-                      </details>
-                    </div>
-                    {/if}
-                    {if $entry.errors_info.auth_delayed_errors}
-                    <div class="pd-auth-delayed">
-                      <strong class="pd-auth-delayed__title">📝 Auth delayed:</strong>
-                      <ul class="pd-error-list">
-                        {foreach $entry.errors_info.auth_delayed_errors as $field => $text}
-                        <li class="pd-error-item"><code>{$field|escape}</code>: {$text|escape}</li>
-                        {/foreach}
-                      </ul>
-                    </div>
-                    {/if}
-                    {if $entry.errors_info.details_delayed_errors}
-                    <div class="pd-auth-delayed">
-                      <strong class="pd-auth-delayed__title">🚚 Details delayed:</strong>
-                      <ul class="pd-error-list">
-                        {foreach $entry.errors_info.details_delayed_errors as $field => $text}
-                        <li class="pd-error-item"><code>{$field|escape}</code>: {$text|escape}</li>
-                        {/foreach}
-                      </ul>
-                    </div>
-                    {/if}
-                    {if $entry.errors_info.service_agreement_error}
-                    <div class="pd-service-agreement"><strong>⚠️ Service Agreement:</strong> Требуется согласие с условиями</div>
-                    {/if}
-                  </div>
-                </details>
-                {/if}
-              </div>
-              {/if}
-            </div>
-            {/foreach}
-          </div>
-
-        </div> {* Конец контейнера с контентом хука *}
-      </div>
-      {/foreach}
-    </div>
+    {include file='./DebugState.html'}
+    <section class="pd-actions">
+      <button type="button" data-debug-action="load-source">{_wp('debug.load_source')}</button>
+      {if $is_admin}
+        <button type="button" data-debug-action="force-prefill">{_wp('debug.force_prefill')}</button>
+        <button type="button" data-debug-action="reset-refill">{_wp('debug.reset_refill')}</button>
+        <button type="button" data-debug-action="clear-storage">{_wp('debug.clear_storage')}</button>
+        <a href="{$settings_url|escape}" target="_blank" rel="noopener">{_wp('debug.settings')}</a>
+      {/if}
+      <button type="button" data-debug-action="validation">{_wp('debug.validation')}</button>
+      <span class="pd-action-status" aria-live="polite"></span>
+    </section>
   </div>
-</div>
+</aside>

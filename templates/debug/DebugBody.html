@@ -1,0 +1,35 @@
+<section class="pd-section" id="prefill-debug-context">
+  <h3>{_wp('debug.context')}</h3>
+  <div class="pd-grid">
+    <span>{_wp('debug.current_storefront')}</span><code>{$current_storefront|escape}</code>
+    <span>{_wp('debug.effective_storefront')}</span><code>{$effective_storefront|escape}{if $uses_global_fallback} ({_wp('debug.global_fallback')}){/if}</code>
+    <span>Prefill / Zen</span><code>{if $plugin_enabled}ON{else}OFF{/if} / {if $zen_enabled}ON{else}OFF{/if}</code>
+    <span>{_wp('debug.visitor')}</span><code>{if $user_authorized}user:{$user_id|escape}{else}guest{/if}</code>
+    <span>{_wp('debug.consent')}</span><code>{if $guest_consent}yes{else}no{/if}</code>
+    <span>{_wp('debug.source_marker')}</span><code>{$applied_source|default:'—'|escape}</code>
+  </div>
+</section>
+
+<section class="pd-section" id="prefill-debug-storage">
+  <details>
+    <summary>{_wp('debug.checkout_session')}</summary>
+    <pre>{$storage_dump|escape}</pre>
+  </details>
+</section>
+
+{include file='./DebugSource.html'}
+
+<section class="pd-section" id="prefill-debug-trace">
+  <h3>{_wp('debug.requests')}</h3>
+  <p class="pd-muted js-prefill-debug-empty">{_wp('debug.no_events')}</p>
+  <div id="prefill-debug-requests">
+    {if !empty($initial_events)}
+      <section class="pd-request" data-request-id="{$request_id|escape}">
+        <header class="pd-request__header"><strong>{$request_type|escape}</strong><code>{$request_id|escape}</code></header>
+        <div class="pd-request__events">
+          {foreach $initial_events as $event}{include file='./DebugEvent.html' event=$event}{/foreach}
+        </div>
+      </section>
+    {/if}
+  </div>
+</section>

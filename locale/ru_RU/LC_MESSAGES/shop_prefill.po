@@ -1127,3 +1127,120 @@ msgstr "Передаёт тот же город в куки плагина DP."
 
 msgid "hint.prefill.integration.dp"
 msgstr "Работает вместе с интеграцией CitySelect: тот же город записывается в куки плагина «Доставка и платежи»."
+
+msgid "debug.panel"
+msgstr "Диагностика Prefill"
+
+msgid "debug.refresh"
+msgstr "Обновить снимок"
+
+msgid "debug.collapse"
+msgstr "Свернуть"
+
+msgid "debug.close"
+msgstr "Закрыть"
+
+msgid "debug.context"
+msgstr "Контекст"
+
+msgid "debug.current_storefront"
+msgstr "Текущая витрина"
+
+msgid "debug.effective_storefront"
+msgstr "Эффективная витрина"
+
+msgid "debug.global_fallback"
+msgstr "настройки *"
+
+msgid "debug.visitor"
+msgstr "Посетитель"
+
+msgid "debug.consent"
+msgstr "Согласие гостя"
+
+msgid "debug.source_marker"
+msgstr "Обработанный источник"
+
+msgid "debug.checkout_session"
+msgstr "PHP-сессия shop/checkout"
+
+msgid "debug.source"
+msgstr "Источник истории заказов"
+
+msgid "debug.source_order"
+msgstr "Заказ"
+
+msgid "debug.source_read_note"
+msgstr "Диагностическое чтение; данные не применены к форме"
+
+msgid "debug.source_not_loaded"
+msgstr "Источник не загружался панелью. Рабочий checkout читает его лениво."
+
+msgid "debug.load_source"
+msgstr "Загрузить источник"
+
+msgid "debug.requests"
+msgstr "Запросы и решения"
+
+msgid "debug.no_events"
+msgstr "События checkout ещё не наблюдались"
+
+msgid "debug.section"
+msgstr "Секция"
+
+msgid "debug.decision"
+msgstr "Решение"
+
+msgid "debug.result"
+msgstr "Результат"
+
+msgid "debug.reason"
+msgstr "Причина"
+
+msgid "debug.errors"
+msgstr "Ошибки"
+
+msgid "debug.full_data"
+msgstr "Полные данные"
+
+msgid "debug.force_prefill"
+msgstr "Применить Prefill"
+
+msgid "debug.reset_refill"
+msgstr "Очистить и заполнить"
+
+msgid "debug.clear_storage"
+msgstr "Очистить сессию"
+
+msgid "debug.settings"
+msgstr "Настройки"
+
+msgid "debug.validation"
+msgstr "Ошибки в checkout"
+
+msgid "debug.loading"
+msgstr "Загрузка…"
+
+msgid "debug.request_error"
+msgstr "Ошибка запроса"
+
+msgid "debug.clear_confirm"
+msgstr "Очистить shop/checkout и эхо-кэши? Следующий запрос может снова применить Prefill."
+
+msgid "debug.refill_confirm"
+msgstr "Повторно прочитать источник и применить действующие правила заполнения?"
+
+msgid "debug.done"
+msgstr "Готово"
+
+msgid "debug.not_observed"
+msgstr "не наблюдалось"
+
+msgid "debug.validation_found"
+msgstr "обнаружены ошибки обязательных полей"
+
+msgid "debug.validation_explanation"
+msgstr "Группу нельзя скрывать: покупатель должен исправить эти поля."
+
+msgid "debug.error_step"
+msgstr "Шаг с ошибкой"

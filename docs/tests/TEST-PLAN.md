@@ -88,7 +88,7 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 | L2.1 | Гость не создаёт следов | `curl -sk -o /dev/null -D - https://wa-dev.loc/ \| grep -i '^set-cookie'` | нет ни одной куки `prefill_*` | P5, P8 |
 | L2.2 | Ассеты не висят на каталоге | `test $(curl -sk https://wa-dev.loc/ \| grep -c 'plugins/prefill') -eq 0` | 0 на главной и в карточке товара | A1 |
 | L2.3 | Ассеты есть на чекауте | `curl -sk -b jar https://wa-dev.loc/order/ \| grep -c 'plugins/prefill'` | > 0 при товаре в корзине | A1 |
-| L2.4 | Отладочные эндпоинты закрыты | `for e in logs clear-storage force-prefill reset-and-refill toggle-zen; do curl -sk -o /dev/null -w "%{http_code} $e\n" -X POST https://wa-dev.loc/prefill/$e; done` | ни один не отдаёт данные анониму | — |
+| L2.4 | Изменяющие debug-эндпоинты закрыты | `for e in clear-storage force-prefill reset-and-refill; do curl -sk -o /dev/null -w "%{http_code} $e\n" -X POST https://wa-dev.loc/prefill/$e; done` | ни один не выполняет команду анониму; GET `refresh-debug`/`debug-source` доступны только при gate панели и читают текущий контекст | — |
 | L2.5 | Гость не лезет в чужую историю | `curl -sk -X POST https://wa-dev.loc/prefill/params-choice` и `.../apply-delivery -d 'order_id=1'` | **403** | P6 |
 
 На инсталляции с плагином «SEO-регионы» L2.1 не может требовать «только `landing`»: `PHPSESSID` анониму ставит он, проверено его выключением. Критерий сужен до отсутствия `prefill_*`.
@@ -387,7 +387,7 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 | L-01 | debug off | Панель не выводится, служебные эндпоинты отказывают даже админу | — | K16 |
 | L-02 | debug on + `debug_panel=off` | Панель не выводится | — | K16 |
 | L-03 | debug on + `debug_panel=on` + админ | Панель и стек хуков видны, `refresh-debug` работает | — | K16 |
-| L-04 `SMOKE` | Аноним дёргает `logs`, `clear-storage`, `force-prefill`, `reset-and-refill`, `toggle-zen` | Все отказывают | — | K2 |
+| L-04 `SMOKE` | Аноним дёргает изменяющие debug-endpoints `clear-storage`, `force-prefill`, `reset-and-refill` | Все отказывают | — | K2 |
 | L-05 | Админ: `force-prefill`, `reset-and-refill` | Источник действительно перечитывается (видно по счётчику SQL) | — | K16 |
 | L-06 | Уровень лога `warning` (умолчание) | `debug`-строки не пишутся; лог не растёт на каждом запросе | — | K1 |
 
@@ -408,7 +408,7 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 | N-02 | Прямой доступ к чужому заказу через `apply-delivery` | 403 | P6 | K2 |
 | N-03 | Подбор гостевого токена | Промах безопасен; сырой токен в БД не лежит | P6 | K2 |
 | N-04 | SQL-инъекция в параметрах эндпоинтов | Параметризация `waModel`, ошибок нет | — | K2 |
-| N-05 | **CSRF на публичных эндпоинтах** (`consent`, `toggle-zen`, `apply-delivery`) | ⚠️ Известный долг [issue-79](../codereview/issue-79-issue-52-csrf-half-done.md), сознательно отложен. В отчёте фиксировать как принятый риск, не как «пройдено» | — | K2 |
+| N-05 | **CSRF на публичных эндпоинтах** (`consent`, `apply-delivery`) | ⚠️ Известный долг [issue-79](../codereview/issue-79-issue-52-csrf-half-done.md), сознательно отложен. В отчёте фиксировать как принятый риск, не как «пройдено» | — | K2 |
 | N-06 | Редактор шаблонов = исполнение PHP | Доступ строго `isAdmin('shop')` + CSRF ядра; эквивалент штатного редактора тем | B4 | K1 |
 | N-07 | Логи | Не содержат сырых токенов, паролей, полных данных контактов | — | K16 |
 

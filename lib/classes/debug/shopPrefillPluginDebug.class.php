@@ -1,446 +1,278 @@
 <?php
 
 /**
- * Класс для отладки состояния хранилища checkout_params
+ * Диагностика checkout Prefill.
  *
- * - addDebugEntry() - добавить запись в стек дебага
- * - renderDebugStack() - вывести весь накопленный стек одним летающим окном
- * - renderErrorsDebugHtml() - вывести ошибки валидации (для checkout хуков)
+ * События живут только в памяти одного PHP-запроса. Render-хуки передают их браузеру
+ * через <template>, поэтому debug не пишет служебные данные в checkout-сессию или БД.
  */
 class shopPrefillPluginDebug
 {
-    /**
-     * Стек дебаг-записей для накопления
-     * @var array
-     */
-    private static array $debug_stack = [];
+    private const MAX_EVENTS = 50;
+    private const MAX_DUMP_BYTES = 32768;
 
-    /**
-     * Список вызванных хуков (для диагностики)
-     * @var array
-     */
-    private static array $called_hooks = [];
+    private static bool $enabled = false;
+    private static array $events = [];
+    private static int $sent_events = 0;
+    private static ?string $request_id = null;
+    private static int $sequence = 0;
 
-    /**
-     * Добавляет запись в стек дебага
-     *
-     * @param mixed  $checkout_params Данные из хранилища
-     * @param string $title           Заголовок записи
-     * @param array  $extra           Дополнительные данные (например, sections_prefill_status)
-     * @return void
-     */
-    public static function addDebugEntry($checkout_params, string $title, array $extra = []): void
+    public static function setEnabled(bool $enabled): void
     {
-        self::$debug_stack[] = array_merge([
-            'title' => $title,
-            'data' => $checkout_params,
-        ], $extra);
+        self::$enabled = $enabled;
     }
 
-    /**
-     * Регистрирует вызов хука (для диагностики)
-     *
-     * @param string $hook_name Имя хука
-     * @return void
-     */
-    public static function registerHookCall(string $hook_name): void
+    public static function isEnabled(): bool
     {
-        if (!in_array($hook_name, self::$called_hooks)) {
-            self::$called_hooks[] = $hook_name;
+        return self::$enabled;
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function recordEvent(string $stage, string $label, array $data = []): void
+    {
+        if (!self::$enabled || count(self::$events) >= self::MAX_EVENTS) {
+            return;
         }
+
+        self::$events[] = [
+            'request_id' => self::getRequestId(),
+            'sequence' => ++self::$sequence,
+            'time' => date('H:i:s'),
+            'stage' => $stage,
+            'label' => $label,
+            'data' => self::sanitize($data),
+        ];
     }
 
-    /**
-     * Выводит весь накопленный стек дебага одним летающим окном
-     *
-     * @return string
-     */
-    public static function renderDebugStack(): string
+    /** Передаёт браузеру только ещё не отправленные события текущего запроса. */
+    public static function renderPendingEvents(): string
     {
-        static $rendered = false;
-
-        if ($rendered) {
+        if (!self::$enabled || self::$sent_events >= count(self::$events)) {
             return '';
         }
 
-        if (empty(self::$debug_stack)) {
+        $events = array_slice(self::$events, self::$sent_events);
+        self::$sent_events = count(self::$events);
+
+        return shopPrefillPluginViewProvider::render('debug/DebugEventsCarrier', [
+            'request_id' => self::getRequestId(),
+            'request_type' => self::getRequestType(),
+            'events' => self::prepareEventsForView($events),
+        ]);
+    }
+
+    public static function renderDebugPanel(): string
+    {
+        if (!self::$enabled) {
             return '';
         }
 
         try {
-            $rendered = true;
-
-            // Получаем экземпляр плагина
             $plugin = shopPrefillPlugin::getInstance();
+            $vars = self::collectCurrentState($plugin);
+            $vars['initial_events'] = self::prepareEventsForView(
+                array_slice(self::$events, self::$sent_events)
+            );
+            $vars['request_id'] = self::getRequestId();
+            $vars['request_type'] = self::getRequestType();
+            $vars['is_admin'] = wa()->getUser()->isAdmin('shop');
+            $vars['settings_url'] = wa()->getConfig()->getBackendUrl(true) . '/shop/?plugin=prefill&action=settings';
 
-            // Получаем настройки витрины
-            $storefront_settings = $plugin->getEffectiveStorefrontSettings();
-            $plugin_enabled = !empty($storefront_settings['active']);
-            $zen_enabled = !empty($storefront_settings['zen']['active']);
+            $html = shopPrefillPluginViewProvider::render('debug/DebugStack', $vars);
+            self::$sent_events = count(self::$events);
 
-            // Группируем стек по хукам
-            $grouped_stack = [];
-            foreach (self::$debug_stack as $entry) {
-                $hook_name = 'General';
-                if (preg_match('/\((.+)\)/', $entry['title'], $matches)) {
-                    $hook_name = $matches[1];
-                }
-
-                $clean_title = $entry['title'];
-                if (stripos($entry['title'], 'BEFORE') !== false) {
-                    $clean_title = 'BEFORE';
-                } elseif (stripos($entry['title'], 'AFTER') !== false) {
-                    $clean_title = 'AFTER';
-                }
-
-                if (!isset($grouped_stack[$hook_name])) {
-                    $grouped_stack[$hook_name] = [];
-                }
-
-                // Нормализуем errors_info для безопасного отображения в шаблоне
-                $errors_info = $entry['errors_info'] ?? null;
-                if ($errors_info && isset($errors_info['regular_errors']) && is_array($errors_info['regular_errors'])) {
-                    // Убеждаемся, что все элементы regular_errors имеют нужную структуру
-                    $normalized_errors = [];
-                    foreach ($errors_info['regular_errors'] as $key => $error) {
-                        $field_name = is_string($key) && !empty($key) ? $key : 'error';
-
-                        if (is_array($error)) {
-                            // Если это массив, проверяем структуру
-                            if (isset($error['name']) || isset($error['text']) || isset($error['message'])) {
-                                // Структурированная ошибка с полями name/text/message
-                                $normalized_errors[] = [
-                                    'name' => $error['name'] ?? $field_name,
-                                    'text' => $error['text'] ?? $error['message'] ?? 'Unknown error',
-                                    'section' => $error['section'] ?? '',
-                                ];
-                            } elseif (!empty($error)) {
-                                // Массив без структуры, но не пустой - выводим содержимое
-                                $normalized_errors[] = [
-                                    'name' => $field_name,
-                                    'text' => json_encode($error, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
-                                    'section' => '',
-                                ];
-                            } else {
-                                // Пустой массив - пропускаем или создаем информативное сообщение
-                                $normalized_errors[] = [
-                                    'name' => $field_name,
-                                    'text' => 'Empty error data',
-                                    'section' => '',
-                                ];
-                            }
-                        } elseif (is_string($error) && !empty($error)) {
-                            // Если ошибка - строка, ключ - это имя поля
-                            $normalized_errors[] = [
-                                'name' => $field_name,
-                                'text' => $error,
-                                'section' => '',
-                            ];
-                        } elseif (is_scalar($error)) {
-                            // Число, boolean и т.д.
-                            $normalized_errors[] = [
-                                'name' => $field_name,
-                                'text' => (string) $error,
-                                'section' => '',
-                            ];
-                        } elseif (!empty($error)) {
-                            // Объект или другой тип
-                            $normalized_errors[] = [
-                                'name' => $field_name,
-                                'text' => json_encode($error, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
-                                'section' => '',
-                            ];
-                        }
-                        // Пустые значения пропускаем
-                    }
-                    $errors_info['regular_errors'] = $normalized_errors;
-                }
-
-                $grouped_stack[$hook_name][] = [
-                    'title' => $clean_title,
-                    'data' => $entry['data'],
-                    'color' => self::getEntryColor($entry['title']),
-                    'sections_prefill_status' => $entry['sections_prefill_status'] ?? null,
-                    'sections_filled_status' => $entry['sections_filled_status'] ?? null,
-                    'errors_info' => $errors_info,
-                ];
-            }
-
-            // Собираем общие отладочные данные
-            $debug_data = self::collectDebugData($plugin);
-            $fill_params_data = $debug_data['fill_params_data'];
-            $fill_params_meta = $debug_data['fill_params_meta'];
-            $current_storage = $debug_data['current_storage'];
-
-            // Подготавливаем данные для шаблона
-            $template_vars = [
-                'debug_stack' => $grouped_stack,
-                'plugin_enabled' => $plugin_enabled,
-                'zen_enabled' => $zen_enabled,
-                'has_orders' => ($fill_params_meta['orders_count'] ?? 0) > 0,
-                'fill_params' => $fill_params_data,
-                'fill_params_meta' => $fill_params_meta,
-                'current_storage' => $current_storage,
-                'show_validation' => waRequest::cookie('wa_prefill_debug_show_validation', 0),
+            $static_base = wa()->getAppStaticUrl('shop') . 'plugins/prefill/';
+            $version = date('YmdHi');
+            $config = [
+                'baseUrl' => wa()->getRouteUrl('shop/frontend'),
+                'maxRequests' => 10,
+                'messages' => [
+                    'loading' => _wp('debug.loading'),
+                    'request_error' => _wp('debug.request_error'),
+                    'clear_confirm' => _wp('debug.clear_confirm'),
+                    'refill_confirm' => _wp('debug.refill_confirm'),
+                    'done' => _wp('debug.done'),
+                ],
             ];
 
-            // Рендерим шаблон
-            $view = wa()->getView();
-            $view->assign($template_vars);
-
-            $template_path = shopPrefillPlugin::getPluginPath() . '/templates/debug/';
-            $html_status     = $view->fetch('file:' . $template_path . 'DebugStatusPanel.html');
-            $html_storage    = $view->fetch('file:' . $template_path . 'DebugStorageDetails.html');
-            $html_fill_params = $view->fetch('file:' . $template_path . 'DebugFillParams.html');
-            $view->assign('html_status', $html_status);
-            $view->assign('html_storage', $html_storage);
-            $view->assign('html_fill_params', $html_fill_params);
-
-            $debug_html = $view->fetch('string:' . file_get_contents(
-                $template_path . 'DebugStack.html'
-            ));
-
-            $debug_html_json = json_encode($debug_html, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            if ($debug_html_json === false) {
-                $debug_html_json = json_encode('', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            }
-
-            // Подключаем JS и CSS файлы
-            $plugin_id = 'prefill';
-            $static_base = wa()->getAppStaticUrl('shop') . "plugins/{$plugin_id}/";
-            $version = date('YmdHi');
-            $js_url  = $static_base . "js/prefill.debug.js?v={$version}";
-            $css_url = $static_base . "css/prefill.debug.css?v={$version}";
-
-            // Определяем базовый URL для AJAX запросов
-            $base_url = wa()->getRouteUrl('shop/frontend');
-            $base_url_json = json_encode($base_url, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            if ($base_url_json === false) {
-                $base_url_json = json_encode('', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            }
-
-            // Передаем данные в JS
-            return "<link rel=\"stylesheet\" href=\"{$css_url}\">"
-                . "<script src=\"{$js_url}\"></script>"
-                . "<script>
-            (function() {
-                window.PrefillDebugHelper = window.PrefillDebugHelper || {};
-                window.PrefillDebugHelper.stackHtml = {$debug_html_json};
-                window.PrefillDebugHelper.baseUrl = {$base_url_json};
-            })();
-            </script>";
+            return '<link rel="stylesheet" href="' . htmlspecialchars($static_base . 'css/prefill.debug.css?v=' . $version) . '">'
+                . '<script>window.PrefillDebugConfig=' . self::json(
+                    $config,
+                    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+                ) . ';</script>'
+                . '<script src="' . htmlspecialchars($static_base . 'js/prefill.debug.js?v=' . $version) . '"></script>'
+                . '<template id="prefill-debug-bootstrap">' . $html . '</template>';
         } catch (Exception $e) {
-            // Фоллбэк - выводим ошибку
-            shopPrefillPluginLog::error('Critical error rendering debug stack in shopPrefillPluginDebug', [
-                'message' => $e->getMessage()
-            ]);
-            return "<script>console.error('Prefill debug render error:', " . json_encode($e->getMessage()) . ");</script>";
+            shopPrefillPluginLog::error('Failed rendering Prefill debug panel', ['message' => $e->getMessage()]);
+            return '';
         }
-
-        // НЕ очищаем стек здесь! Он будет очищаться при следующем вызове
     }
 
-    /**
-     * Собирает общие отладочные данные о параметрах предзаполнения и хранилище
-     *
-     * @param shopPrefillPlugin $plugin
-     * @return array
-     */
-    public static function collectDebugData(shopPrefillPlugin $plugin): array
+    /** Текущее состояние без чтения истории заказов. */
+    public static function collectCurrentState(shopPrefillPlugin $plugin): array
     {
-        $fill_params_data = [];
-        $fill_params_meta = [
-            'user_authorized' => false,
-            'user_id' => null,
-            'contact_id' => null,
-            'guest_lookup' => null,
-            'orders_count' => 0,
-            'source' => 'empty',
-            'source_order_id' => null,
-        ];
-
-        try {
-            // Проверяем авторизацию
-            $user_provider = $plugin->getUserProvider();
-            $guest_token_storage = $plugin->getGuestTokenStorage();
-
-            $fill_params_meta['user_authorized'] = $user_provider->isAuth();
-
-            if ($fill_params_meta['user_authorized']) {
-                // Авторизованный пользователь
-                $fill_params_meta['user_id'] = $user_provider->getId();
-                $fill_params_meta['contact_id'] = $user_provider->getId();
-
-                // Получаем количество заказов
-                $order_provider = $plugin->getOrderProvider();
-                $orders_ids = $order_provider->getUserOrdersId((int) $fill_params_meta['user_id']);
-                $fill_params_meta['orders_count'] = count($orders_ids ?: []);
-            } else {
-                // Гость: показываем префикс производного lookup id, а не сам токен из куки
-                $param_name = $guest_token_storage->getParamName();
-                $fill_params_meta['guest_lookup'] = $param_name === null
-                    ? null
-                    : substr($param_name, 0, 22) . '...';
-
-                // Пустая кука — штатное состояние посетителя без заказов, а не ошибка
-                if ($param_name !== null) {
-                    $order_provider = $plugin->getOrderProvider();
-                    $orders_ids = $order_provider->getOrderIdsByGuestParam($param_name);
-                    $fill_params_meta['orders_count'] = count($orders_ids);
-                }
-            }
-
-            // Получаем параметры предзаполнения из БД
-            $fill_params = $plugin->getFillParamsProvider()->getFillParams();
-            $fill_params_data = $fill_params->toArray();
-
-            // Определяем источник данных
-            $order_id = $fill_params->getId();
-            if ($order_id) {
-                $fill_params_meta['source'] = 'order';
-                $fill_params_meta['source_order_id'] = $order_id;
-            } elseif ($fill_params_meta['orders_count'] > 0) {
-                $fill_params_meta['source'] = 'orders (no data)';
-            } else {
-                $fill_params_meta['source'] = 'empty (no orders)';
-            }
-        } catch (Exception $e) {
-            shopPrefillPluginLog::error('Failed preparing debug info for fill params in shopPrefillPluginDebug', [
-                'message' => $e->getMessage()
-            ]);
-            $fill_params_meta['source'] = 'error: ' . $e->getMessage();
-        }
-
-        // Получаем текущее состояние хранилища checkout
-        $current_storage = [];
-        try {
-            $session_storage = $plugin->getSessionStorageProvider();
-            $current_storage = $session_storage->getCheckoutParams();
-        } catch (Exception $e) {
-            shopPrefillPluginLog::warning('Failed fetching session storage in shopPrefillPluginDebug', [
-                'message' => $e->getMessage()
-            ]);
-        }
+        $provider = $plugin->getStorefrontProvider();
+        $current = $provider->findCurrentStorefront();
+        $effective = $plugin->getEffectiveStorefront();
+        $settings = $effective->getSettings();
+        $user = $plugin->getUserProvider();
+        $guest = $plugin->getGuestTokenStorage();
+        $storage = $plugin->getSessionStorageProvider();
+        $lookup = $guest->getParamName();
+        $checkout = $storage->getCheckoutParams();
 
         return [
-            'fill_params_data' => $fill_params_data,
-            'fill_params_meta' => $fill_params_meta,
-            'current_storage' => $current_storage,
+            'plugin_enabled' => !empty($settings['active']),
+            'zen_enabled' => !empty($settings['zen']['active']),
+            'current_storefront' => $current ? $current->getFullUrl() : _wp('debug.not_observed'),
+            'effective_storefront' => $effective->getFullUrl(),
+            'uses_global_fallback' => $effective->getCode() === shopPrefillPluginStorefrontProvider::GLOBAL_CODE,
+            'user_authorized' => $user->isAuth(),
+            'user_id' => $user->isAuth() ? $user->getId() : null,
+            'guest_lookup' => $lookup === null ? null : substr($lookup, 0, 22) . '...',
+            'guest_consent' => waRequest::cookie(shopPrefillPluginConsentStorage::CONSENT_COOKIE) === '1',
+            'source_key' => self::shortSourceKey($plugin->getFillParamsProvider()->getSourceKey()),
+            'applied_source' => self::shortSourceKey($storage->getAppliedSource()),
+            'current_storage' => self::sanitize($checkout),
+            'storage_dump' => self::dump($checkout),
+            'source_loaded' => false,
+            'fill_params' => [],
+            'fill_params_dump' => '',
+            'source_order_id' => null,
         ];
     }
 
-    /**
-     * Возвращает цвет для записи в зависимости от заголовка
-     *
-     * @param string $title
-     * @return string
-     */
-    private static function getEntryColor(string $title): string
+    /** Явное диагностическое чтение источника. Данные не применяются к форме. */
+    public static function loadSource(shopPrefillPlugin $plugin): array
     {
-        if (stripos($title, 'BEFORE') !== false) {
-            return '#ff9800'; // Оранжевый для BEFORE
-        }
-        if (stripos($title, 'AFTER') !== false) {
-            return '#4caf50'; // Зелёный для AFTER
-        }
-        return '#2196f3'; // Синий по умолчанию
+        $state = self::collectCurrentState($plugin);
+        $fill_params = $plugin->getFillParamsProvider()->getFillParams();
+        $data = $fill_params->toArray();
+        $state['source_loaded'] = true;
+        $state['fill_params'] = self::sanitize($data);
+        $state['fill_params_dump'] = self::dump($data);
+        $state['source_order_id'] = $fill_params->getId();
+        return $state;
     }
 
-    /**
-     * Рендерит HTML для отображения ошибок валидации checkout
-     *
-     * @param array  $errors_info Массив с информацией об ошибках
-     * @param string $hook_name   Название хука/секции
-     * @return string HTML для вставки
-     */
-    public static function renderErrorsDebugHtml(array $errors_info, string $hook_name = 'CONFIRM SECTION'): string
+    /** Блок ошибок checkout включается отдельной debug-cookie. */
+    public static function renderErrorsDebugHtml(array $errors_info, string $hook_name = 'confirm'): string
     {
-        if (!$errors_info['has_errors']) {
+        if (empty($errors_info['has_errors']) || !waRequest::cookie('wa_prefill_debug_show_validation', 0)) {
             return '';
         }
 
-        // Проверяем куку отображения ошибок валидации (по умолчанию скрыто)
-        $show_validation = waRequest::cookie('wa_prefill_debug_show_validation', 0);
-        if (!$show_validation) {
-            return '';
+        return shopPrefillPluginViewProvider::render('debug/DebugValidationErrors', [
+            'hook_name' => $hook_name,
+            'errors_info' => self::normalizeErrors($errors_info),
+        ]);
+    }
+
+    /** @param array<int, array<string, mixed>> $events */
+    private static function prepareEventsForView(array $events): array
+    {
+        foreach ($events as &$event) {
+            $event['dump'] = self::dump($event['data']);
         }
+        unset($event);
+        return $events;
+    }
 
-        static $style_output = false;
-        $debug_html = '';
-        if (!$style_output) {
-            $debug_html .= '<style>.prefill-errors-debug[open] .prefill-errors-debug-arrow{transform:rotate(90deg)}</style>';
-            $style_output = true;
-        }
-
-        $debug_html .= '<details class="prefill-errors-debug" style="background: #f8d7da; margin: 10px; border: 2px solid #dc3545; border-radius: 5px;">';
-        $debug_html .= '<summary style="padding: 12px 15px; cursor: pointer; font-weight: bold; user-select: none; list-style: none; display: flex; align-items: center; gap: 6px;">';
-        $debug_html .= '<span class="prefill-errors-debug-arrow" style="font-size: 14px; display: inline-block; transition: transform 0.2s;">▶</span>';
-        $debug_html .= '⚠️ ' . htmlspecialchars($hook_name) . ': Обнаружены незаполненные обязательные поля!';
-        $debug_html .= '<span style="font-size: 10px; font-weight: normal; color: #666; margin-left: auto;">(Debug info)</span>';
-        $debug_html .= '</summary>';
-        $debug_html .= '<div style="padding: 0 15px 15px 15px; border-top: 1px solid #dc3545;">';
-        $debug_html .= '<p style="margin: 5px 0 10px 0; color: #721c24;">Нельзя скрывать поля - пользователь не сможет их заполнить!</p>';
-
-        // КРИТИЧЕСКИЕ ОШИБКИ (блокируют checkout, влияют на расчет доставки)
-        if ($errors_info['regular_errors']) {
-            $debug_html .= '<div style="background: #ffcccc; padding: 10px; margin-top: 10px; border: 2px solid #dc3545; border-radius: 3px;">';
-            $debug_html .= '<strong>🚨 КРИТИЧЕСКИЕ ОШИБКИ (блокируют checkout):</strong>';
-            if ($errors_info['error_step_id']) {
-                $debug_html .= '<p style="margin: 5px 0; font-size: 12px;">Шаг с ошибкой: <code>' . htmlspecialchars($errors_info['error_step_id']) . '</code></p>';
+    private static function getRequestId(): string
+    {
+        if (self::$request_id === null) {
+            try {
+                self::$request_id = substr(bin2hex(random_bytes(8)), 0, 12);
+            } catch (Exception $e) {
+                self::$request_id = substr(sha1(uniqid('', true)), 0, 12);
             }
-            $debug_html .= '<ul style="margin: 5px 0; padding-left: 20px;">';
-            foreach ($errors_info['regular_errors'] as $error) {
-                $field_name = ifset($error, 'name', 'unknown');
-                $error_text = ifset($error, 'text', 'Unknown error');
-                $section = ifset($error, 'section', '');
-                $debug_html .= '<li><code>' . htmlspecialchars($field_name) . '</code>';
-                if ($section) {
-                    $debug_html .= ' <span style="font-size: 11px; color: #666;">(' . htmlspecialchars($section) . ')</span>';
+        }
+        return self::$request_id;
+    }
+
+    private static function getRequestType(): string
+    {
+        $uri = (string) waRequest::server('REQUEST_URI', '');
+        if (strpos($uri, '/order/calculate') !== false) {
+            return 'calculate';
+        }
+        if (strpos($uri, '/order/create') !== false) {
+            return 'create';
+        }
+        return waRequest::isXMLHttpRequest() ? 'ajax' : 'page';
+    }
+
+    private static function shortSourceKey(?string $value): ?string
+    {
+        if ($value === null || strpos($value, 'guest:') !== 0) {
+            return $value;
+        }
+        return substr($value, 0, 14) . '...';
+    }
+
+    private static function sanitize($value, int $depth = 0)
+    {
+        if ($depth > 8) {
+            return '[depth limit]';
+        }
+        if (is_array($value)) {
+            $result = [];
+            foreach (array_slice($value, 0, 200, true) as $key => $item) {
+                if (preg_match('/token|cookie|csrf|password/i', (string) $key)) {
+                    $result[$key] = '[redacted]';
+                } else {
+                    $result[$key] = self::sanitize($item, $depth + 1);
                 }
-                $debug_html .= ': ' . htmlspecialchars($error_text) . '</li>';
             }
-            $debug_html .= '</ul>';
-            $debug_html .= '<p style="margin: 5px 0 0 0; font-size: 12px; color: #721c24;"><strong>Важно:</strong> Эти поля влияют на расчет стоимости/доступности доставки</p>';
-            $debug_html .= '</div>';
-        }
-
-        // ОТЛОЖЕННЫЕ ОШИБКИ - Auth (не блокируют, но проверяются при создании заказа)
-        if ($errors_info['auth_delayed_errors']) {
-            $debug_html .= '<div style="background: #fff3cd; padding: 10px; margin-top: 10px; border: 1px solid #ffc107; border-radius: 3px;">';
-            $debug_html .= '<strong>📝 Auth errors (секция авторизации):</strong>';
-            $debug_html .= '<ul style="margin: 5px 0; padding-left: 20px;">';
-            foreach ($errors_info['auth_delayed_errors'] as $field_name => $error_text) {
-                $debug_html .= '<li><code>' . htmlspecialchars($field_name) . '</code>: ' . htmlspecialchars($error_text) . '</li>';
+            if (count($value) > 200) {
+                $result['__truncated__'] = count($value) - 200;
             }
-            $debug_html .= '</ul></div>';
+            return $result;
         }
-
-        // SERVICE AGREEMENT ERROR (чекбокс согласия с условиями)
-        if ($errors_info['service_agreement_error']) {
-            $debug_html .= '<div style="background: #ffebee; padding: 10px; margin-top: 10px; border: 2px solid #f44336; border-radius: 3px;">';
-            $debug_html .= '<strong>⚠️ Service Agreement (чекбокс согласия с условиями):</strong>';
-            $debug_html .= '<p style="margin: 5px 0; padding-left: 20px; color: #c62828;">';
-            $debug_html .= '<code>auth[service_agreement]</code>: Пользователь должен согласиться с условиями обслуживания';
-            $debug_html .= '</p></div>';
+        if (is_object($value)) {
+            return '[object ' . get_class($value) . ']';
         }
-
-        // ОТЛОЖЕННЫЕ ОШИБКИ - Details (не блокируют, но проверяются при создании заказа)
-        if ($errors_info['details_delayed_errors']) {
-            $debug_html .= '<div style="background: #fff3cd; padding: 10px; margin-top: 10px; border: 1px solid #ffc107; border-radius: 3px;">';
-            $debug_html .= '<strong>🚚 Details errors (секция доставки):</strong>';
-            $debug_html .= '<ul style="margin: 5px 0; padding-left: 20px;">';
-            foreach ($errors_info['details_delayed_errors'] as $field_name => $error_text) {
-                $debug_html .= '<li><code>' . htmlspecialchars($field_name) . '</code>: ' . htmlspecialchars($error_text) . '</li>';
+        if (is_string($value)) {
+            if (strpos($value, 'guest:') === 0 || strpos($value, 'prefill_guest_') === 0) {
+                return substr($value, 0, 14) . '...';
             }
-            $debug_html .= '</ul></div>';
+            if (strlen($value) > 4096) {
+                return substr($value, 0, 4096) . '…';
+            }
         }
+        return $value;
+    }
 
-        $debug_html .= '<div style="background: #e7f3ff; padding: 10px; margin-top: 10px; border: 1px solid #0066cc; border-radius: 3px;">';
-        $debug_html .= '<strong>💡 Решение:</strong> Не скрывать блоки формы, если есть ЛЮБЫЕ ошибки (критические или delayed)';
-        $debug_html .= '</div>';
+    private static function dump($data): string
+    {
+        $dump = self::json(self::sanitize($data), JSON_PRETTY_PRINT);
+        return strlen($dump) > self::MAX_DUMP_BYTES
+            ? substr($dump, 0, self::MAX_DUMP_BYTES) . "\n[truncated]"
+            : $dump;
+    }
 
-        $debug_html .= '</div></details>';
+    private static function json($data, int $flags = 0): string
+    {
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | $flags);
+        return $json === false ? 'null' : $json;
+    }
 
-        return $debug_html;
+    private static function normalizeErrors(array $errors_info): array
+    {
+        $regular = [];
+        foreach (($errors_info['regular_errors'] ?? []) as $key => $error) {
+            $name = is_string($key) ? $key : 'error';
+            if (is_array($error)) {
+                $regular[] = [
+                    'name' => $error['name'] ?? $name,
+                    'text' => $error['text'] ?? $error['message'] ?? self::dump($error),
+                    'section' => $error['section'] ?? '',
+                ];
+            } else {
+                $regular[] = ['name' => $name, 'text' => (string) $error, 'section' => ''];
+            }
+        }
+        $errors_info['regular_errors'] = $regular;
+        return self::sanitize($errors_info);
     }
 }

@@ -70,9 +70,9 @@ Main controller: `js/prefill.frontend.js` (minified: `prefill.frontend.min.js`) 
 Located in `lib/actions/frontend/`:
 - `FrontendParamsChoice` — returns available delivery options for selection UI
 - `FrontendApplyDelivery` — applies selected delivery option
-- `FrontendTogglePrefill`, `FrontendToggleZen` — toggle modes
+- `FrontendRefreshDebug`, `FrontendDebugSource` — refresh the diagnostic snapshot and explicitly inspect the order-history source
 - `FrontendConsent` — saves guest consent
-- `FrontendLogs`, `FrontendRefreshDebug` — debug endpoints
+- `FrontendLogs` — receives frontend debug logs
 
 ### Data Flow
 
