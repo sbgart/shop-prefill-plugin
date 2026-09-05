@@ -4,6 +4,8 @@
     var config = window.PrefillDebugConfig || {};
     var maxRequests = config.maxRequests || 10;
     var observer = null;
+    var themeObserver = null;
+    var themeMedia = null;
 
     function panel() {
         return document.getElementById('prefill-debug-stack');
@@ -11,6 +13,79 @@
 
     function message(key) {
         return (config.messages && config.messages[key]) || key;
+    }
+
+    function colorLuminance(color) {
+        var match = String(color || '').match(/^rgba?\((\d+)[, ]+\s*(\d+)[, ]+\s*(\d+)(?:[, /]+\s*([\d.]+))?\)$/i);
+        if (!match || (match[4] !== undefined && Number(match[4]) < 0.2)) return null;
+        var channels = [Number(match[1]), Number(match[2]), Number(match[3])].map(function (value) {
+            value /= 255;
+            return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+        });
+        return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+    }
+
+    function detectColorScheme() {
+        var elements = [document.body, document.documentElement];
+        var themeHint = elements.map(function (element) {
+            if (!element) return '';
+            return [
+                element.getAttribute('data-theme'),
+                element.getAttribute('data-color-scheme'),
+                element.className
+            ].filter(Boolean).join(' ');
+        }).join(' ').toLowerCase();
+        if (/(^|[\s_-])dark([\s_-]|$)/.test(themeHint)) return 'dark';
+        if (/(^|[\s_-])light([\s_-]|$)/.test(themeHint)) return 'light';
+
+        for (var i = 0; i < elements.length; i++) {
+            if (!elements[i]) continue;
+            var luminance = colorLuminance(window.getComputedStyle(elements[i]).backgroundColor);
+            if (luminance !== null) return luminance < 0.32 ? 'dark' : 'light';
+        }
+
+        var declaredScheme = window.getComputedStyle(document.documentElement).colorScheme.trim();
+        if (declaredScheme === 'dark' || declaredScheme === 'only dark') return 'dark';
+        if (declaredScheme === 'light' || declaredScheme === 'only light') return 'light';
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function syncColorScheme() {
+        var rootPanel = panel();
+        if (rootPanel) rootPanel.setAttribute('data-color-scheme', detectColorScheme());
+    }
+
+    function scheduleThemeSync() {
+        window.requestAnimationFrame(syncColorScheme);
+    }
+
+    function observeColorScheme() {
+        syncColorScheme();
+        themeObserver = new MutationObserver(scheduleThemeSync);
+        themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class', 'style', 'data-theme', 'data-color-scheme']
+        });
+        if (document.body) {
+            themeObserver.observe(document.body, {
+                attributes: true,
+                attributeFilter: ['class', 'style', 'data-theme', 'data-color-scheme']
+            });
+        }
+        if (window.matchMedia) {
+            themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+            if (themeMedia.addEventListener) themeMedia.addEventListener('change', scheduleThemeSync);
+            else if (themeMedia.addListener) themeMedia.addListener(scheduleThemeSync);
+        }
+    }
+
+    function stopObservers() {
+        if (observer) observer.disconnect();
+        if (themeObserver) themeObserver.disconnect();
+        if (themeMedia) {
+            if (themeMedia.removeEventListener) themeMedia.removeEventListener('change', scheduleThemeSync);
+            else if (themeMedia.removeListener) themeMedia.removeListener(scheduleThemeSync);
+        }
     }
 
     function setCookie(name, value, days) {
@@ -122,7 +197,7 @@
 
         var action = button.getAttribute('data-debug-action');
         if (action === 'close') {
-            if (observer) observer.disconnect();
+            stopObservers();
             panel().remove();
         } else if (action === 'collapse') {
             var body = document.getElementById('prefill-debug-body');
@@ -180,6 +255,7 @@
         if (!rootPanel || rootPanel.dataset.initialized === '1') return;
         rootPanel.dataset.initialized = '1';
         rootPanel.addEventListener('click', handleAction);
+        observeColorScheme();
 
         if (getCookie('wa_prefill_debug_collapsed') === '1') {
             var body = document.getElementById('prefill-debug-body');

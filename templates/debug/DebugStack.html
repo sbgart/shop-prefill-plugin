@@ -1,23 +1,29 @@
-<aside id="prefill-debug-stack" class="pd-panel" aria-label="{_wp('debug.panel')}">
+<aside id="prefill-debug-stack" class="pd-panel" aria-label="{_wp('debug.panel')}" data-color-scheme="light">
   <header class="pd-header">
-    <strong>🔍 {_wp('debug.panel')}</strong>
+    <div class="pd-brand">
+      <span class="pd-brand__mark" aria-hidden="true">P</span>
+      <span class="pd-brand__copy">
+        <strong>{_wp('debug.panel')}</strong>
+        <small>{_wp('debug.subtitle')}</small>
+      </span>
+    </div>
     <div class="pd-header__actions">
-      <button type="button" data-debug-action="refresh" title="{_wp('debug.refresh')}">↻</button>
-      <button type="button" data-debug-action="collapse" title="{_wp('debug.collapse')}">−</button>
-      <button type="button" data-debug-action="close" title="{_wp('debug.close')}">×</button>
+      <button class="pd-icon-button" type="button" data-debug-action="refresh" title="{_wp('debug.refresh')}" aria-label="{_wp('debug.refresh')}">↻</button>
+      <button class="pd-icon-button" type="button" data-debug-action="collapse" title="{_wp('debug.collapse')}" aria-label="{_wp('debug.collapse')}">−</button>
+      <button class="pd-icon-button" type="button" data-debug-action="close" title="{_wp('debug.close')}" aria-label="{_wp('debug.close')}">×</button>
     </div>
   </header>
   <div id="prefill-debug-body">
     {include file='./DebugState.html'}
     <section class="pd-actions">
-      <button type="button" data-debug-action="load-source">{_wp('debug.load_source')}</button>
+      <button class="pd-button pd-button--primary" type="button" data-debug-action="load-source">{_wp('debug.load_source')}</button>
       {if $is_admin}
-        <button type="button" data-debug-action="force-prefill">{_wp('debug.force_prefill')}</button>
-        <button type="button" data-debug-action="reset-refill">{_wp('debug.reset_refill')}</button>
-        <button type="button" data-debug-action="clear-storage">{_wp('debug.clear_storage')}</button>
-        <a href="{$settings_url|escape}" target="_blank" rel="noopener">{_wp('debug.settings')}</a>
+        <button class="pd-button" type="button" data-debug-action="force-prefill">{_wp('debug.force_prefill')}</button>
+        <button class="pd-button" type="button" data-debug-action="reset-refill">{_wp('debug.reset_refill')}</button>
+        <button class="pd-button pd-button--danger" type="button" data-debug-action="clear-storage">{_wp('debug.clear_storage')}</button>
+        <a class="pd-button" href="{$settings_url|escape}" target="_blank" rel="noopener">{_wp('debug.settings')}</a>
       {/if}
-      <button type="button" data-debug-action="validation">{_wp('debug.validation')}</button>
+      <button class="pd-button" type="button" data-debug-action="validation">{_wp('debug.validation')}</button>
       <span class="pd-action-status" aria-live="polite"></span>
     </section>
   </div>

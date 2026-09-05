@@ -1,4 +1,4 @@
-<article class="pd-event" data-sequence="{$event.sequence|escape}">
+<article class="pd-event" data-sequence="{$event.sequence|escape}" data-stage="{$event.stage|escape}">
   <header class="pd-event__header">
     <span class="pd-event__stage">{$event.stage|escape}</span>
     <strong>{$event.label|escape}</strong>
@@ -9,7 +9,7 @@
       <thead><tr><th>{_wp('debug.section')}</th><th>{_wp('debug.decision')}</th></tr></thead>
       <tbody>
       {foreach $event.data.sections as $section => $decision}
-        <tr><td><code>{$section|escape}</code></td><td><code>{$decision.reason|escape}</code></td></tr>
+        <tr><td><code>{$section|escape}</code></td><td><span class="pd-decision" data-decision="{$decision.reason|escape}">{$decision.reason|escape}</span></td></tr>
       {/foreach}
       </tbody>
     </table>

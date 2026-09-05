@@ -1131,6 +1131,27 @@ msgstr "Works together with the CitySelect integration: the same city is written
 msgid "debug.panel"
 msgstr "Prefill diagnostics"
 
+msgid "debug.subtitle"
+msgstr "Checkout trace"
+
+msgid "debug.enabled"
+msgstr "Enabled"
+
+msgid "debug.disabled"
+msgstr "Disabled"
+
+msgid "debug.user"
+msgstr "User"
+
+msgid "debug.guest"
+msgstr "Guest"
+
+msgid "debug.yes"
+msgstr "Yes"
+
+msgid "debug.no"
+msgstr "No"
+
 msgid "debug.refresh"
 msgstr "Refresh snapshot"
 

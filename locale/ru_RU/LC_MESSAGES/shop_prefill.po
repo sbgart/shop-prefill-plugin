@@ -1131,6 +1131,27 @@ msgstr "Работает вместе с интеграцией CitySelect: то
 msgid "debug.panel"
 msgstr "Диагностика Prefill"
 
+msgid "debug.subtitle"
+msgstr "Трассировка checkout"
+
+msgid "debug.enabled"
+msgstr "Включено"
+
+msgid "debug.disabled"
+msgstr "Выключено"
+
+msgid "debug.user"
+msgstr "Пользователь"
+
+msgid "debug.guest"
+msgstr "Гость"
+
+msgid "debug.yes"
+msgstr "Есть"
+
+msgid "debug.no"
+msgstr "Нет"
+
 msgid "debug.refresh"
 msgstr "Обновить снимок"
 
