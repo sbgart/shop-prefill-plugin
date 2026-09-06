@@ -182,11 +182,60 @@
         });
     }
 
+    /**
+     * Диалог подтверждения панели — замена window.confirm() (см.
+     * docs/bugs/native-confirm-dialogs-not-templated.md). Разметка — в
+     * templates/debug/DebugStack.html, здесь только показ/резолв.
+     *
+     * @returns {Promise<boolean>} true при подтверждении, false при отмене/закрытии
+     */
+    function showConfirm(text) {
+        var dialog = panel() && panel().querySelector('#prefill-debug-confirm');
+        if (!dialog || typeof dialog.showModal !== 'function') {
+            return Promise.resolve(false);
+        }
+
+        dialog.querySelector('.pd-confirm__text').textContent = text || '';
+
+        return new Promise(function (resolve) {
+            var settled = false;
+            var okButton = dialog.querySelector('.js-pd-confirm-ok');
+            var cancelButton = dialog.querySelector('.js-pd-confirm-cancel');
+
+            function cleanup() {
+                okButton.removeEventListener('click', onOk);
+                cancelButton.removeEventListener('click', onCancel);
+                dialog.removeEventListener('close', onClose);
+            }
+
+            function finish(value) {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                resolve(value);
+            }
+
+            function onOk() { dialog.close(); finish(true); }
+
+            function onCancel() { dialog.close(); finish(false); }
+
+            function onClose() { finish(false); }
+
+            okButton.addEventListener('click', onOk);
+            cancelButton.addEventListener('click', onCancel);
+            dialog.addEventListener('close', onClose);
+            dialog.showModal();
+        });
+    }
+
     function mutate(button, path, confirmation) {
-        if (confirmation && !window.confirm(confirmation)) return;
-        runAction(button, function () {
-            return request(path, 'POST').then(function () {
-                window.location.reload();
+        var proceed = confirmation ? showConfirm(confirmation) : Promise.resolve(true);
+        proceed.then(function (confirmed) {
+            if (!confirmed) return;
+            runAction(button, function () {
+                return request(path, 'POST').then(function () {
+                    window.location.reload();
+                });
             });
         });
     }

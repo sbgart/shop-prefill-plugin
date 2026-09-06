@@ -1050,6 +1050,12 @@ msgstr "Clear"
 msgid "dialog.css_reset.confirm"
 msgstr "Clear CSS overrides? All changes will be lost."
 
+msgid "dialog.confirm.ok"
+msgstr "Confirm"
+
+msgid "dialog.confirm.cancel"
+msgstr "cancel"
+
 msgid "button.show_original_css"
 msgstr "Show original CSS"
 
@@ -1250,6 +1256,12 @@ msgstr "Clear shop/checkout and echo caches? The next request may apply Prefill 
 
 msgid "debug.refill_confirm"
 msgstr "Read the source again and apply the current fill rules?"
+
+msgid "debug.confirm_ok"
+msgstr "Confirm"
+
+msgid "debug.confirm_cancel"
+msgstr "Cancel"
 
 msgid "debug.done"
 msgstr "Done"

@@ -27,4 +27,13 @@
       <span class="pd-action-status" aria-live="polite"></span>
     </section>
   </div>
+
+  {* Диалог подтверждения деструктивных действий панели — замена window.confirm() (docs/bugs/native-confirm-dialogs-not-templated.md) *}
+  <dialog id="prefill-debug-confirm" class="pd-confirm">
+    <p class="pd-confirm__text"></p>
+    <div class="pd-confirm__actions">
+      <button type="button" class="pd-button js-pd-confirm-cancel">{_wp('debug.confirm_cancel')}</button>
+      <button type="button" class="pd-button pd-button--danger js-pd-confirm-ok">{_wp('debug.confirm_ok')}</button>
+    </div>
+  </dialog>
 </aside>

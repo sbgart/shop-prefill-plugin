@@ -6,6 +6,49 @@ var PrefillSettings = (function () {
 
     if (!$) throw error('jQuery is required.');
 
+    /**
+     * Единая точка показа диалога подтверждения в настройках плагина —
+     * замена window.confirm() (см. docs/bugs/native-confirm-dialogs-not-templated.md).
+     * Разметка — в templates/actions/settings/blocks/ConfirmDialog.html.
+     *
+     * @param {string} message Текст вопроса
+     * @returns {Promise<boolean>} true при подтверждении, false при отмене/закрытии
+     */
+    function prefillConfirm(message) {
+        var template = document.getElementById('prefill-confirm-dialog-template');
+        if (!template || typeof $.waDialog !== 'function') {
+            return Promise.resolve(false);
+        }
+
+        var root = template.content.cloneNode(true).querySelector('.prefill-confirm-dialog');
+        root.querySelector('[data-id="confirm-text"]').textContent = message || '';
+
+        return new Promise(function (resolve) {
+            var resolved = false;
+            var done = function (value) {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(value);
+                }
+            };
+
+            $.waDialog({
+                html: root,
+                onOpen: function ($wrapper, dialog) {
+                    $wrapper.on('click', '.js-prefill-confirm-submit', function (e) {
+                        e.preventDefault();
+                        done(true);
+                        dialog.close();
+                    });
+                },
+                onClose: function () {
+                    // Крестик, Esc и «отмена» — действие не выполняем
+                    done(false);
+                }
+            });
+        });
+    }
+
     PrefillSettings = function (wrapper) {
         const $wrapper = $(wrapper);
 
@@ -536,11 +579,13 @@ var PrefillSettings = (function () {
 
         self.$wrapper.on('click', '.js-prefill-css-reset-btn', function (e) {
             e.preventDefault();
-            if (!confirm($_('dialog.css_reset.confirm'))) { return; }
             var $panel = $(this).closest('.js-prefill-css-editor-panel');
-            // Сброс — это очистка переопределений, а не подстановка оригинала (issue-76: override-модель)
-            prefillCssAceSetValue($panel, '');
-            $panel.find('.js-prefill-css-status').text('');
+            prefillConfirm($_('dialog.css_reset.confirm')).then(function (confirmed) {
+                if (!confirmed) { return; }
+                // Сброс — это очистка переопределений, а не подстановка оригинала (issue-76: override-модель)
+                prefillCssAceSetValue($panel, '');
+                $panel.find('.js-prefill-css-status').text('');
+            });
         });
 
         self.$wrapper.on('click', '.js-prefill-css-original-toggle', function (e) {
@@ -795,13 +840,15 @@ var PrefillSettings = (function () {
         // Очистить
         self.$wrapper.on('click', '.js-prefill-log-clear', function (e) {
             e.preventDefault();
-            if (!confirm(msgClearConfirm)) { return; }
-            $.post('?module=prefillPluginSettingsClearLog')
-                .done(function () {
-                    allEntries = []; currentOffset = 0; hasMore = false; totalInFile = 0;
-                    $tab.find('[data-count-level]').hide();
-                    renderLogs();
-                });
+            prefillConfirm(msgClearConfirm).then(function (confirmed) {
+                if (!confirmed) { return; }
+                $.post('?module=prefillPluginSettingsClearLog')
+                    .done(function () {
+                        allEntries = []; currentOffset = 0; hasMore = false; totalInFile = 0;
+                        $tab.find('[data-count-level]').hide();
+                        renderLogs();
+                    });
+            });
         });
 
         // Уровень лога — авто-сохранение

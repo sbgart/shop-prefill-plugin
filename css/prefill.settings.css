@@ -648,3 +648,25 @@
     padding: 1px 0;
 }
 
+/* Диалог подтверждения настроек (docs/bugs/native-confirm-dialogs-not-templated.md) */
+.prefill-confirm-dialog .wa-dialog-body {
+    max-width: 420px;
+}
+
+/*
+ * Тёмная тема бэкенда включается через html[data-theme="dark"] (см. переменные в
+ * wa-content/css/wa/wa-2.0.css). Старый $.waDialog (классы wa-dialog/wa-dialog-body,
+ * wa-content/js/dialog/dialog.js) под неё не адаптирован в ядре и рисует те же
+ * непрозрачные #fff — переопределяем только для своего диалога теми же переменными,
+ * которыми пользуется актуальный core-компонент .dialog/.dialog-body.
+ */
+html[data-theme="dark"] .prefill-confirm-dialog .wa-dialog-background {
+    background: var(--dialog-background-color);
+}
+
+html[data-theme="dark"] .prefill-confirm-dialog .wa-dialog-body {
+    background: var(--background-color-blank);
+    color: var(--text-color);
+    box-shadow: 0 0 70px var(--dialog-shadow-color);
+}
+

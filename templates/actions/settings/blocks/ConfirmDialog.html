@@ -1,0 +1,18 @@
+{* Универсальный диалог подтверждения настроек (docs/bugs/native-confirm-dialogs-not-templated.md).
+   Клонируется из <template> в js/prefill.settings.js (prefillConfirm). *}
+<template id="prefill-confirm-dialog-template">
+    <div class="wa-dialog prefill-confirm-dialog">
+        <div class="wa-dialog-background"></div>
+        <div class="wa-dialog-body">
+            <div class="wa-dialog-content">
+                <p data-id="confirm-text"></p>
+            </div>
+
+            <footer class="wa-dialog-footer">
+                <button type="button" class="button red js-prefill-confirm-submit">[`dialog.confirm.ok`]</button>
+                <span class="text-between-buttons">[`dialog.save_scope.or`]</span>
+                <a href="javascript:void(0);" class="js-close-dialog">[`dialog.confirm.cancel`]</a>
+            </footer>
+        </div>
+    </div>
+</template>

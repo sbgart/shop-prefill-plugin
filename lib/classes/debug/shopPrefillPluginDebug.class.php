@@ -91,6 +91,8 @@ class shopPrefillPluginDebug
                     'request_error' => _wp('debug.request_error'),
                     'clear_confirm' => _wp('debug.clear_confirm'),
                     'refill_confirm' => _wp('debug.refill_confirm'),
+                    'confirm_ok' => _wp('debug.confirm_ok'),
+                    'confirm_cancel' => _wp('debug.confirm_cancel'),
                     'done' => _wp('debug.done'),
                 ],
             ];
