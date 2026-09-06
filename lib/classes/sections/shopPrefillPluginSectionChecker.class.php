@@ -137,12 +137,35 @@ class shopPrefillPluginSectionChecker
     public function isGroupEnabledForSection(string $section_id): bool
     {
         $group = self::SECTION_TO_GROUP[$section_id] ?? null;
+        $enabled = $this->isGroupEnabledForSectionWithoutLogging($section_id);
         if ($group === null) {
-            return true;
+            return $enabled;
         }
-        $enabled = (bool)($this->enabled_groups[$group] ?? true);
         shopPrefillPluginLog::debug("Section group check: {$section_id} → {$group} " . ($enabled ? 'enabled' : 'disabled'));
         return $enabled;
+    }
+
+    /**
+     * Возвращает диагностическое решение по тем же правилам, но не пишет в лог.
+     * Рабочий canPrefillSection() ниже остаётся единственным источником строк о решении.
+     *
+     * @return array{available: bool, reason: string}
+     */
+    public function inspectPrefillSection(string $section_id, array $checkout_params): array
+    {
+        if (!$this->isGroupEnabledForSectionWithoutLogging($section_id)) {
+            return ['available' => false, 'reason' => 'disabled'];
+        }
+        if ($this->isSectionOwnedByCustomer($section_id, $checkout_params)) {
+            return ['available' => false, 'reason' => 'owned_by_customer'];
+        }
+        return ['available' => true, 'reason' => 'available'];
+    }
+
+    private function isGroupEnabledForSectionWithoutLogging(string $section_id): bool
+    {
+        $group = self::SECTION_TO_GROUP[$section_id] ?? null;
+        return $group === null || (bool)($this->enabled_groups[$group] ?? true);
     }
 
     /**

@@ -74,13 +74,7 @@ class shopPrefillPluginCheckoutHooks
         $checker = $this->session_storage->getSectionChecker();
         $section_decisions = [];
         foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
-            $available = $checker->canPrefillSection($section_id, $storage_before);
-            $section_decisions[$section_id] = [
-                'available' => $available,
-                'reason' => $available
-                    ? 'available'
-                    : ($checker->isGroupEnabledForSection($section_id) ? 'owned_or_filled' : 'disabled'),
-            ];
+            $section_decisions[$section_id] = $checker->inspectPrefillSection($section_id, $storage_before);
         }
         $source_loaded = false;
         $source_order_id = null;

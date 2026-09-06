@@ -124,6 +124,7 @@ class shopPrefillPluginDebug
         return [
             'plugin_enabled' => !empty($settings['active']),
             'zen_enabled' => !empty($settings['zen']['active']),
+            'logging_level' => shopPrefillPluginLog::getConfiguredLevel(),
             'current_storefront' => $current ? $current->getFullUrl() : _wp('debug.not_observed'),
             'effective_storefront' => $effective->getFullUrl(),
             'uses_global_fallback' => $effective->getCode() === shopPrefillPluginStorefrontProvider::GLOBAL_CODE,

@@ -33,6 +33,12 @@ class shopPrefillPluginLog
         self::$configured_level = in_array($level, $valid, true) ? $level : 'warning';
     }
 
+    /** Фактически применяемый уровень для диагностического интерфейса. */
+    public static function getConfiguredLevel(): string
+    {
+        return self::getLevel();
+    }
+
     public static function debug($message, $context = null): void
     {
         if (!self::isLevelEnabled('debug')) {

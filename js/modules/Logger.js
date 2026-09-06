@@ -13,11 +13,13 @@ class Logger {
      * @param {string} pluginID - ID плагина для префикса
      * @param {boolean} isDebug - Режим отладки
      * @param {HttpClient} httpClient - HTTP клиент для отправки логов
+     * @param {boolean} canSendServerLogs - Разрешена ли отправка в серверный лог
      */
-    constructor(pluginID, isDebug, httpClient) {
+    constructor(pluginID, isDebug, httpClient, canSendServerLogs = false) {
         this.pluginID = pluginID;
         this.isDebug = isDebug;
         this.httpClient = httpClient;
+        this.canSendServerLogs = canSendServerLogs;
     }
 
     /**
@@ -36,11 +38,16 @@ class Logger {
             console[type](`[${this.pluginID}] ${message}`);
         }
 
-        // Отправка лога на сервер (асинхронно, не ждём ответа)
-        this.httpClient.post(`${this.pluginID}/logs`, {
-            message: message,
-            type: type,
-        });
+        // Серверный endpoint административный. Для гостей и покупателей оставляем
+        // сообщение в консоли, не создавая заведомо отклоняемый POST на каждый лог.
+        if (this.canSendServerLogs) {
+            this.httpClient.post(`${this.pluginID}/logs`, {
+                message: message,
+                type: type,
+            }).catch(() => {
+                // Логирование не должно создавать unhandled rejection и ломать checkout.
+            });
+        }
     }
 
     /**

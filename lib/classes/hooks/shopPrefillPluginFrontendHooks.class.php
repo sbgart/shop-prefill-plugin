@@ -227,6 +227,7 @@ class shopPrefillPluginFrontendHooks
             'pluginID'                  => shopPrefillPlugin::PLUGIN_ID,
             'appUrl'                    => wa()->getAppUrl('shop'),
             'isDebug'                   => $this->is_debug,
+            'canSendServerLogs'         => wa()->getUser()->isAdmin('shop'),
             'isAuth'                    => $this->user_provider->isAuth(),
             'myDeliveryVariantsEnabled' => $this->storefront_settings['prefill']['my_delivery_variants'] ?? true,
             'myDeliveryVariantsButtonClasses' => $this->storefront_settings['prefill']['my_delivery_variants_button_classes'] ?? '',

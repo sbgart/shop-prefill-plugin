@@ -20,6 +20,7 @@
     <span>{_wp('debug.current_storefront')}</span><code>{$current_storefront|escape}</code>
     <span>{_wp('debug.effective_storefront')}</span><code>{$effective_storefront|escape}{if $uses_global_fallback} ({_wp('debug.global_fallback')}){/if}</code>
     <span>{_wp('debug.consent')}</span><strong>{if $guest_consent}{_wp('debug.yes')}{else}{_wp('debug.no')}{/if}</strong>
+    <span>{_wp('setting.logging.level')}</span><code>{$logging_level|escape}</code>
     <span>{_wp('debug.source_marker')}</span><code>{$applied_source|default:'—'|escape}</code>
   </div>
 </section>

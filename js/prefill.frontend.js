@@ -23,7 +23,12 @@ class PrefillFrontendController {
 
     // Создаём зависимости (Dependency Injection)
     this.httpClient = new HttpClient(params.appUrl);
-    this.logger = new Logger(params.pluginID, params.isDebug, this.httpClient);
+    this.logger = new Logger(
+      params.pluginID,
+      params.isDebug,
+      this.httpClient,
+      params.canSendServerLogs
+    );
     this.dialogManager = new DialogManager(params.messages);
 
     // Создаём менеджеры с инъекцией зависимостей
