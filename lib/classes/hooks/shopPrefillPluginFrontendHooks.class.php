@@ -213,10 +213,9 @@ class shopPrefillPluginFrontendHooks
             ($this->add_css_callback)('css/zenmode.css');
         }
 
-        // Добавляем переменные для размера иконок в Zen Mode (если активен и иконки отображаются)
-        if (!empty($this->storefront_settings['zen']['active'])
-            && ($this->storefront_settings['zen']['icon_display'] ?? 'plugin') !== 'none'
-        ) {
+        // Добавляем переменные для размера иконок в Zen Mode (если активен; конкретная группа
+        // может не выводить иконку через свой icon_source, но лишняя CSS-переменная безвредна)
+        if (!empty($this->storefront_settings['zen']['active'])) {
             $icon_size = $this->storefront_settings['zen']['icon_size'] ?? 'medium';
             $dimensions = $this->getIconSizeDimensions($icon_size);
             $css_variables['prefill-zen-icon-width'] = $dimensions['width'];
@@ -237,6 +236,9 @@ class shopPrefillPluginFrontendHooks
                 'validation_error_button'     => _wp('zen.validation.error.button'),
                 'checkout_blocked_title'      => _wp('zen.blocked.title'),
                 'checkout_blocked_message'    => _wp('zen.blocked.message'),
+                'nothing_to_summarize_title'   => _wp('zen.nothing_to_summarize.title'),
+                'nothing_to_summarize_message' => _wp('zen.nothing_to_summarize.message'),
+                'nothing_to_summarize_button'  => _wp('zen.nothing_to_summarize.button'),
                 'group_names'                 => [
                     'customer' => _wp('zen.group.customer'),
                     'delivery' => _wp('zen.group.delivery'),

@@ -116,27 +116,6 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Проверяет, нужно ли показывать иконки в свернутом состоянии.
-     *
-     * @return bool
-     */
-    public function shouldShowIcons(): bool
-    {
-        return $this->getIconDisplayMode() !== 'none';
-    }
-
-    /**
-     * Режим отображения иконок: 'default' | 'plugin' | 'none'.
-     *
-     * @return string
-     */
-    private function getIconDisplayMode(): string
-    {
-        $mode = $this->settings['icon_display'] ?? 'plugin';
-        return in_array($mode, ['default', 'plugin', 'none'], true) ? $mode : 'plugin';
-    }
-
-    /**
      * Проверяет, включен ли дзен-режим для группы
      *
      * @param string $group Имя группы (customer, delivery, payment)
@@ -339,7 +318,8 @@ class shopPrefillPluginZenMode
      * icon_source: 'default' — дефолтный SVG группы (рендерится инлайново через спрайт,
      *              чтобы stroke="currentColor" наследовал цвет темы витрины, в т.ч. тёмной);
      *              'plugin'  — логотип активного плагина → fallback на дефолтный SVG;
-     *              'custom'  — URL из поля icon.
+     *              'custom'  — URL из поля icon;
+     *              'none'    — иконка не выводится.
      *
      * @param string $group Имя группы (delivery | payment)
      * @param array $summary_data Результат resolveSummaryData() — источник логотипа для 'plugin'
@@ -350,6 +330,8 @@ class shopPrefillPluginZenMode
         $source = $this->settings['groups'][$group]['icon_source'] ?? 'default';
 
         switch ($source) {
+            case 'none':
+                return ['url' => '', 'is_default' => false];
             case 'custom':
                 return ['url' => $this->settings['groups'][$group]['icon'] ?? '', 'is_default' => false];
             case 'plugin':
@@ -595,19 +577,16 @@ class shopPrefillPluginZenMode
             // те же поля (shipping_logo/payment_logo) с одним и тем же фолбэком на кэш (R4).
             $summary_data = $this->resolveSummaryData($group, $state);
 
-            // Иконка группы: только если глобальный режим не 'none'
-            $icon_mode = $this->getIconDisplayMode();
-            if ($icon_mode !== 'none') {
-                if ($group === 'customer') {
-                    // Для customer — собственная логика icon_source (default/none/custom/avatar)
-                    $icon = $this->getCustomerGroupIcon();
-                } else {
-                    // Для delivery/payment — per-group icon_source (default/plugin/custom)
-                    $icon = $this->getPluginGroupIcon($group, $summary_data);
-                }
-                $icon_url        = $icon['url'] !== '' ? $icon['url'] : null;
-                $icon_is_default = $icon['is_default'];
+            // Иконка группы: тип и видимость решает исключительно per-group icon_source
+            if ($group === 'customer') {
+                // customer: default/none/custom/avatar
+                $icon = $this->getCustomerGroupIcon();
+            } else {
+                // delivery/payment: default/plugin/custom/none
+                $icon = $this->getPluginGroupIcon($group, $summary_data);
             }
+            $icon_url        = $icon['url'] !== '' ? $icon['url'] : null;
+            $icon_is_default = $icon['is_default'];
 
             // Свёрнуто: сводка + кнопка "Изменить"
             $summary_html = $this->renderSummaryFromData($group, $state, $summary_data);
@@ -627,6 +606,16 @@ class shopPrefillPluginZenMode
             // на загрузку страницы и кэшируется по хешу, а блокировка меняется от запроса
             // к запросу. Блок же перерисовывается вместе с секцией на каждом пересчёте.
             'blocking_group'                  => $state->getBlockingGroup(),
+            // Сворачивать нечего: минимума данных нет (Z2). Клиентская валидация этого не
+            // видит — на витрине, где все поля секции необязательные, ошибок в ней нет вовсе,
+            // и клик по «Свернуть» уходил в холостой пересчёт без единого сообщения.
+            //
+            // Спрашиваем данные напрямую, а не причину из last_decision: причина отвечает на
+            // «почему группа развёрнута сейчас», и уже со второго запроса это всегда кука-ветка
+            // (Z4 пишет 'expanded' при любом разворачивании, в т.ч. из-за пустоты), которая
+            // короткозамыкает shouldCollapseGroup() до проверки данных. По причине признак
+            // жил бы ровно один кадр, а потом молча пропадал вместе с починкой.
+            'nothing_to_summarize'            => !$is_collapsed && !$this->isGroupMinimumFilled($group),
         ];
 
         $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/CollapseBlock.html';

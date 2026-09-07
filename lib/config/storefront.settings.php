@@ -47,8 +47,6 @@ return [
     // Zen Mode — сворачивание секций чекаута
     'zen'         => [
         'active'                => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
-        // 'default' | 'plugin' | 'none' — иконки в свёрнутых секциях: дефолтные, логотипы плагинов или без иконок
-        'icon_display'          => ['value' => 'plugin'],
         // 'small' | 'medium' | 'large' — размер иконок (2.5rem×1.5rem, 3.5rem×2rem, 4.5rem×2.5rem)
         'icon_size'             => ['value' => 'medium'],
         'toggle_button_classes' => ['value' => ''],
@@ -68,14 +66,14 @@ return [
             'delivery' => [
                 'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon'             => ['value' => ''],
-                'icon_source'      => ['value' => 'default'], // 'default' | 'plugin' | 'custom'
+                'icon_source'      => ['value' => 'default'], // 'default' | 'plugin' | 'custom' | 'none'
                 'summary_template' => ['value' => '<div class="wa-header">{$delivery_plugin}</div> <strong>{$shipping_name}</strong> • {$shipping_rate}{if $delivery_pickup_address}<br />{$delivery_pickup_address}{elseif $city || $street}<br />{$city}{if $street}, {$street}{/if}{if $building}, {$building}{/if}{if $apartment}, {$apartment}{/if}{/if}{if $delivery_est_delivery}<br /><strong>{$delivery_est_delivery}</strong>{/if}'],
                 'custom_templates' => ['value' => []],
             ],
             'payment'  => [
                 'enabled'          => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
                 'icon'             => ['value' => ''],
-                'icon_source'      => ['value' => 'default'], // 'default' | 'plugin' | 'custom'
+                'icon_source'      => ['value' => 'default'], // 'default' | 'plugin' | 'custom' | 'none'
                 'summary_template' => ['value' => '<div class="wa-header">{$payment_name}</div>{$payment_description}'],
                 'custom_templates' => ['value' => []],
             ],

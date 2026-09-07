@@ -141,7 +141,17 @@ class ZenModeToggle {
         this.logger.info("User collapsed the " + group + " group section");
       }
 
-      form.update();
+      // Сворачивание могло не состояться: минимума данных нет, и сервер оставит группу
+      // развёрнутой (Z2). Узнаём это по перерисованной разметке, а не по флагу до клика —
+      // покупатель мог заполнить поле уже после последнего рендера, и тогда сворачивание
+      // законно, а предупреждение было бы враньём.
+      var self = this;
+      var updated = form.update();
+      if (updated && typeof updated.then === "function") {
+        updated.then(function () {
+          self.warnIfNothingToSummarize(group);
+        });
+      }
     } else {
       if (this.logger) {
         this.logger.info("User attempted to collapse the " + group + " group section, but validation failed");
@@ -159,6 +169,42 @@ class ZenModeToggle {
       "zen-validation-error",
       this.messages.validation_error_title || "",
       this.messages.validation_error_message || "Validation error"
+    );
+  }
+
+  /**
+   * После пересчёта проверяет, свернулась ли группа, и объясняет, если нет.
+   *
+   * Признак `data-nothing-to-summarize` ставит сервер тем же решением, которым отказался
+   * сворачивать (Z2). Читаем его уже после обновления формы: там сервер видел свежие
+   * данные покупателя, а не те, что были на предыдущем рендере.
+   *
+   * @param {string} group - Имя группы
+   */
+  warnIfNothingToSummarize(group) {
+    var selector = '.js-prefill-zen-toggle[data-group="' + group + '"][data-nothing-to-summarize]';
+    if (!document.querySelector(selector)) {
+      return;
+    }
+
+    if (this.logger) {
+      this.logger.info("Collapse of the " + group + " group section had no effect: nothing to summarize yet");
+    }
+    this.showNothingToSummarizeDialog();
+  }
+
+  /**
+   * Сообщает, что группу нечего сворачивать: минимума данных нет.
+   * Свои строки, а не validation_error: ошибки в форме нет и подсказок под полями тоже —
+   * покупатель просто ещё ничего не заполнил, и «Сейчас проверю» на кнопке звало бы
+   * проверять несуществующие ошибки.
+   */
+  showNothingToSummarizeDialog() {
+    this.showNoticeDialog(
+      "zen-nothing-to-summarize",
+      this.messages.nothing_to_summarize_title || "",
+      this.messages.nothing_to_summarize_message || "A block can be collapsed once it has data.",
+      this.messages.nothing_to_summarize_button
     );
   }
 
@@ -184,11 +230,12 @@ class ZenModeToggle {
    * @param {string} dialogId - Идентификатор диалога
    * @param {string} title - Заголовок
    * @param {string} message - Текст (из файлов локализации, не пользовательский ввод)
+   * @param {string} [ownButtonText] - Своя подпись кнопки; по умолчанию — общая
    */
-  showNoticeDialog(dialogId, title, message) {
+  showNoticeDialog(dialogId, title, message, ownButtonText) {
     if (!this.dialogManager) return;
 
-    const buttonText = this.messages.validation_error_button || "OK";
+    const buttonText = ownButtonText || this.messages.validation_error_button || "OK";
 
     // Устанавливаем заголовок
     this.dialogManager.setHeader(dialogId, title);

@@ -6,6 +6,9 @@
 * @param bool $is_collapsed Состояние группы (свёрнута/развёрнута)
 * @param string $blocking_group Группа с серверной ошибкой, из-за которой сейчас
 *        нельзя сворачивать (опционально). Клиентская валидация её не видит.
+* @param bool $nothing_to_summarize Минимум группы не заполнен — сворачивать нечего (Z2).
+*        Клиентская валидация этого тоже не видит: на витрине без обязательных полей
+*        ошибок нет, и клик уходил в холостой пересчёт молча.
 *}
 
 {if $is_collapsed}
@@ -20,7 +23,7 @@
 {else}
 {* Развёрнуто: кнопка "Свернуть", стрелка вверх (перевёрнута) *}
 <span class="wa-link prefill-zen-toggle-btn js-prefill-zen-toggle prefill-zen-collapse{if $zen_toggle_button_extra_classes} {$zen_toggle_button_extra_classes|escape:'html'}{/if}" data-group="{$group|escape}"
-  data-action="collapse"{if !empty($blocking_group)} data-blocked-by="{$blocking_group|escape}"{/if}>
+  data-action="collapse"{if !empty($blocking_group)} data-blocked-by="{$blocking_group|escape}"{/if}{if !empty($nothing_to_summarize)} data-nothing-to-summarize="1"{/if}>
   {_wp("action.collapse")}&nbsp;&nbsp;
   <svg class="wa-icon size-8 prefill-zen-arrow prefill-zen-arrow-up" style="vertical-align: middle;">
     <use xlink:href="{$wa_url}wa-apps/shop/img/frontend/order/svg/sprite.svg?v={$wa->version(true)}#arrow-bottom"></use>

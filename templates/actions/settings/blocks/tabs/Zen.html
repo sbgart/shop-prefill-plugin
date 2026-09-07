@@ -52,19 +52,6 @@
                         tooltip='[`zen.tooltip.active`]'
                         hint_after='[`hint.zen.active`]'}
 
-                    {* Иконки в свёрнутых секциях: Select, согласно спеке *}
-                    <div class="field">
-                        <div class="name">[`zen.icon_display`]</div>
-                        <div class="value">
-                            <select name="{$name_prefix}[zen][icon_display]">
-                                <option value="plugin" {if ($settings['zen']['icon_display']|default:'plugin') == 'plugin'}selected{/if}>[`zen.icon_display.plugin`]</option>
-                                <option value="default" {if ($settings['zen']['icon_display']|default:'plugin') == 'default'}selected{/if}>[`zen.icon_display.default`]</option>
-                                <option value="none" {if ($settings['zen']['icon_display']|default:'plugin') == 'none'}selected{/if}>[`zen.icon_display.none`]</option>
-                            </select>
-                            <p class="hint">[`zen.icon_display.hint`]</p>
-                        </div>
-                    </div>
-
                     <div class="field">
                         <div class="name">[`zen.icon_size`]</div>
                         <div class="value">
@@ -195,6 +182,7 @@
                                 <option value="default" {if $delivery_icon_source == 'default'}selected{/if}>[`zen.icon_source.default_icons`]</option>
                                 <option value="plugin" {if $delivery_icon_source == 'plugin'}selected{/if}>[`zen.icon_source.plugin_logos`]</option>
                                 <option value="custom" {if $delivery_icon_source == 'custom'}selected{/if}>[`zen.icon_source.custom`]</option>
+                                <option value="none" {if $delivery_icon_source == 'none'}selected{/if}>[`zen.icon_source.none`]</option>
                             </select>
                             <p class="hint">[`hint.zen.icon_source.delivery`]</p>
                         </div>
@@ -316,6 +304,7 @@
                                 <option value="default" {if $payment_icon_source == 'default'}selected{/if}>[`zen.icon_source.default_icons`]</option>
                                 <option value="plugin" {if $payment_icon_source == 'plugin'}selected{/if}>[`zen.icon_source.plugin_logos`]</option>
                                 <option value="custom" {if $payment_icon_source == 'custom'}selected{/if}>[`zen.icon_source.custom`]</option>
+                                <option value="none" {if $payment_icon_source == 'none'}selected{/if}>[`zen.icon_source.none`]</option>
                             </select>
                             <p class="hint">[`hint.zen.icon_source.payment`]</p>
                         </div>

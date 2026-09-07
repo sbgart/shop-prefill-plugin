@@ -225,6 +225,7 @@ MY -e "SELECT MAX(id) AS max_order FROM shop_order; SELECT MAX(id) AS max_contac
 | 4.3 | `params-choice` / `apply-delivery` у авторизованного | При стоящем маркере (источник — заказ 85) `apply-delivery(82)` прочитал заказ 82 и применил его; в DOM доставка сменилась на «ПВЗ Новосибирск, Вокзальная магистраль». Маркер обойдён | PASS |
 | 4.4 | `force-prefill` и `reset-and-refill` | Оба при стоящем маркере заново выполнили `SELECT last_order_id FROM shop_customer WHERE contact_id = 1` + гидратацию заказа 85 | PASS |
 | 4.6 | Гость с токеном лезет в историю | Ссылки «Мои варианты» нет в DOM; `params-choice` → **403**, 0 карточек; `apply-delivery(89)` → **403 Access denied** — при том что заказ 89 привязан к его же токену | PASS |
+| 4.7 (05.09.2026) | `cityselect`: `user:1` (Новосибирск, Самовывоз+ПВЗ NSK2 свёрнуто) → виджет города → «Пермь» → `/order/` без перезагрузки | Регион/город в форме реально сменились на «Пермский край»/«Пермь» (виджет не проигнорирован); `delivery`-группа корректно **развернулась** без старого варианта (не подставила Новосибирский ПВЗ на пермский адрес). Лог: `Delivery echo dropped: region changed` — тот же код-путь, что уже описан для сценария 6 в [shipping-payment-identity-lost-after-snapshot-removal.md](../bugs/shipping-payment-identity-lost-after-snapshot-removal.md). Конфликта нет: prefill не пытался переписать город виджета историей заказов (`Section 'region' skipped: belongs to customer`). Город возвращён на «Новосибирск», доставка выбрана заново (Самовывоз+ПВЗ NSK2) | PASS |
 
 Побочно подтверждено на этом же прогоне:
 
@@ -237,7 +238,7 @@ MY -e "SELECT MAX(id) AS max_order FROM shop_order; SELECT MAX(id) AS max_contac
 
 ### Что осталось непроверенным
 
-- 4.5 (ручной ввод не перетирается) и 4.7 (`cityselect`) — в этот прогон не входили.
+- 4.5 (ручной ввод не перетирается) — в этот прогон не входил. 4.7 (`cityselect`) закрыт 05.09.2026, см. таблицу выше.
 - Фаза 0 (baseline «было») не снималась: реализация к моменту прогона уже была в коде.
 
 ## Уборка после сессии

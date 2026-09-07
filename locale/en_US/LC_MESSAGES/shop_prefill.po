@@ -150,21 +150,6 @@ msgstr "Form data cleared"
 msgid "tab.design"
 msgstr "Design"
 
-msgid "zen.icon_display"
-msgstr "Icons in collapsed sections"
-
-msgid "zen.icon_display.plugin"
-msgstr "Delivery and payment method logos"
-
-msgid "zen.icon_display.default"
-msgstr "Default group icons"
-
-msgid "zen.icon_display.none"
-msgstr "No icons"
-
-msgid "zen.icon_display.hint"
-msgstr "When «No icons» is selected, the icon block is not shown in collapsed sections."
-
 msgid "zen.icon_source.delivery"
 msgstr "Delivery section icon"
 
@@ -181,13 +166,13 @@ msgid "hint.zen.icon_source.customer"
 msgstr "Default — standard icon; No icon — hide; Custom icon — use the URL below; Avatar — customer avatar (guests fall back to Default)."
 
 msgid "hint.zen.icon_source.delivery"
-msgstr "Default — standard group icon; Plugin logos — selected shipping method logo; Custom icon — use the URL below."
+msgstr "Default — standard group icon; Plugin logos — selected shipping method logo; Custom icon — use the URL below; No icon — hide."
 
 msgid "hint.zen.icon_source.payment"
-msgstr "Default — standard group icon; Plugin logos — selected payment method logo; Custom icon — use the URL below."
+msgstr "Default — standard group icon; Plugin logos — selected payment method logo; Custom icon — use the URL below; No icon — hide."
 
 msgid "zen.icon_size"
-msgstr "Icon size"
+msgstr "Icon size in collapsed sections"
 
 msgid "zen.icon_size.small"
 msgstr "Small"
@@ -563,6 +548,15 @@ msgstr "There is an error to fix first"
 
 msgid "zen.blocked.message"
 msgstr "The “%s” section has an error. Please fix it first — other order blocks cannot be changed meanwhile. Your data is saved and will come back on its own."
+
+msgid "zen.nothing_to_summarize.title"
+msgstr "Nothing to collapse"
+
+msgid "zen.nothing_to_summarize.message"
+msgstr "A block can be collapsed once it has data. Fill in the fields and the button will work."
+
+msgid "zen.nothing_to_summarize.button"
+msgstr "Got it"
 
 msgid "error.internal"
 msgstr "Internal error"

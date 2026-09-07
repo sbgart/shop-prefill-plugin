@@ -138,6 +138,15 @@ msgstr "Сначала нужно исправить ошибку"
 msgid "zen.blocked.message"
 msgstr "В разделе «%s» есть ошибка. Сначала исправьте её — остальные блоки заказа пока изменить нельзя. Ваши данные сохранены и вернутся сами."
 
+msgid "zen.nothing_to_summarize.title"
+msgstr "Нечего сворачивать"
+
+msgid "zen.nothing_to_summarize.message"
+msgstr "Свернуть можно блок, в котором уже есть данные. Заполните поля — и кнопка сработает."
+
+msgid "zen.nothing_to_summarize.button"
+msgstr "Понятно"
+
 msgid "dialog.header.choose_delivery"
 msgstr "Выберите адрес доставки"
 
@@ -198,21 +207,6 @@ msgstr "Данные формы очищены"
 msgid "tab.design"
 msgstr "Дизайн"
 
-msgid "zen.icon_display"
-msgstr "Иконки в свёрнутых блоках"
-
-msgid "zen.icon_display.plugin"
-msgstr "Логотипы способов доставки и оплаты"
-
-msgid "zen.icon_display.default"
-msgstr "Стандартные иконки блоков"
-
-msgid "zen.icon_display.none"
-msgstr "Без иконок"
-
-msgid "zen.icon_display.hint"
-msgstr "При выборе «Без иконок» блок с иконкой в свёрнутых блоках не выводится."
-
 msgid "zen.icon_source.delivery"
 msgstr "Иконка блока «Доставка»"
 
@@ -229,13 +223,13 @@ msgid "hint.zen.icon_source.customer"
 msgstr "Стандартная иконка, скрытие иконки, свой URL или аватар покупателя. Для гостей вместо аватара используется стандартная иконка."
 
 msgid "hint.zen.icon_source.delivery"
-msgstr "Стандартная иконка блока, логотип выбранного способа доставки или свой URL."
+msgstr "Стандартная иконка блока, логотип выбранного способа доставки, свой URL или без иконки."
 
 msgid "hint.zen.icon_source.payment"
-msgstr "Стандартная иконка блока, логотип выбранного способа оплаты или свой URL."
+msgstr "Стандартная иконка блока, логотип выбранного способа оплаты, свой URL или без иконки."
 
 msgid "zen.icon_size"
-msgstr "Размер иконок"
+msgstr "Размер иконок в свёрнутых блоках"
 
 msgid "zen.icon_size.small"
 msgstr "Маленький"
