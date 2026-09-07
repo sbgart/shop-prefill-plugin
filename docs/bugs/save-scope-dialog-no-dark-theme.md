@@ -1,6 +1,14 @@
 # Диалог выбора области сохранения (SaveScopeDialog) не поддерживает тёмную тему
 
-**Статус:** факт, не разобран.
+**Статус:** исправлено 07.09.2026.
+
+## Фикс
+
+По образцу `.prefill-confirm-dialog` в `css/prefill.settings.css` добавлены правила
+`html[data-theme="dark"] .prefill-save-scope-dialog .wa-dialog-background` и
+`.prefill-save-scope-dialog .wa-dialog-body` (`background: var(--background-color-blank)`,
+`color: var(--text-color)`, тень). Проверено в браузере на бэкенде в тёмной теме — диалог
+«Сохранение настроек» теперь тёмный, читаемый.
 
 ## Наблюдение
 
@@ -18,7 +26,4 @@
 
 ## Не разобрано
 
-- Фикс, по образцу уже существующего для `.prefill-ct-dialog-body`: добавить
-  `background: var(--background-color-blank); color: var(--text-color);` в правило
-  `.prefill-save-scope-dialog .wa-dialog-body`.
 - Не проверено, есть ли третий подобный диалог (`ContactsDialog.html`?) с той же дырой.

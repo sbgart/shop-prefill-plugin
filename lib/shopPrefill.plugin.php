@@ -502,7 +502,10 @@ class shopPrefillPlugin extends shopPlugin
                 new shopPrefillPluginZenData($view),
                 wa()->getRequest(),
                 $this->getSessionStorageProvider(),
-                new shopPrefillPluginZenSummaryCache(wa()->getStorage())
+                new shopPrefillPluginZenSummaryCache(
+                    wa()->getStorage(),
+                    $this->getFillParamsProvider()
+                )
             );
         }
         return $this->zen_mode;

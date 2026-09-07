@@ -670,3 +670,13 @@ html[data-theme="dark"] .prefill-confirm-dialog .wa-dialog-body {
     box-shadow: 0 0 70px var(--dialog-shadow-color);
 }
 
+html[data-theme="dark"] .prefill-save-scope-dialog .wa-dialog-background {
+    background: var(--dialog-background-color);
+}
+
+html[data-theme="dark"] .prefill-save-scope-dialog .wa-dialog-body {
+    background: var(--background-color-blank);
+    color: var(--text-color);
+    box-shadow: 0 0 70px var(--dialog-shadow-color);
+}
+

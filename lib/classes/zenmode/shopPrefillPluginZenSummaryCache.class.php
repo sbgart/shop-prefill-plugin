@@ -16,11 +16,27 @@
  * Хранится массив, а не готовый HTML: смена шаблона или настроек витрины применяется
  * сразу, и разметка не оседает в сессии.
  *
- * См. docs/bugs/zen-collapse-on-upstream-checkout-error.md, пункт 2.
+ * Запись принадлежит личности, а не сессии. Сессия переживает смену личности целиком:
+ * PHPSESSID при логауте и логине не меняется, и без штампа владельца следующая личность
+ * видела в свёрнутой карточке данные предыдущей — при пустом $params кэш подставлялся
+ * не спрашивая, чей он. Поэтому рядом с данными лежит отпечаток источника
+ * (shopPrefillPluginFillParamsProvider::getSourceKey()), и чужая запись читается как пустая.
+ * Тот же приём уже применён в shopPrefillPluginGeoStorage.
+ *
+ * См. docs/bugs/zen-collapse-on-upstream-checkout-error.md, пункт 2,
+ * docs/bugs/zen-summary-cache-leaks-across-identity-change.md и
+ * docs/plans/zen-summary-cache-identity-scope.md.
  */
 class shopPrefillPluginZenSummaryCache
 {
     private const STORAGE_KEY = 'shop/prefill_zen_summary';
+
+    /**
+     * Владелец, с которым не совпадёт ни один настоящий отпечаток источника
+     * ('user:…', 'guest:…' либо null). Ставится, когда отпечаток не удалось вычислить:
+     * при неопределённости кэш обязан промахнуться, а не подставить непонятно чьё (B2a).
+     */
+    private const OWNER_UNKNOWN = "\0unknown";
 
     /**
      * Группа дзен-режима → группы полей в shopPrefillPluginZenData::getAvailableFields().
@@ -48,12 +64,17 @@ class shopPrefillPluginZenSummaryCache
 
     private waSessionStorage $storage;
 
+    private shopPrefillPluginFillParamsProvider $fill_params_provider;
+
     /** @var array<string, array<string, string>>|null Кэш имён полей по группам */
     private static ?array $field_names = null;
 
-    public function __construct(waSessionStorage $storage)
-    {
-        $this->storage = $storage;
+    public function __construct(
+        waSessionStorage $storage,
+        shopPrefillPluginFillParamsProvider $fill_params_provider
+    ) {
+        $this->storage              = $storage;
+        $this->fill_params_provider = $fill_params_provider;
     }
 
     /**
@@ -89,9 +110,15 @@ class shopPrefillPluginZenSummaryCache
         }
 
         try {
-            $all = $this->readAll();
-            $all[$group] = array_intersect_key($data, array_flip($fields));
-            $this->storage->set(self::STORAGE_KEY, $all);
+            // readAll() уже вернул пустоту, если запись была чужой, — так данные прежней
+            // личности вытесняются первой же записью текущей, а не копятся в сессии
+            $groups = $this->readAll();
+            $groups[$group] = array_intersect_key($data, array_flip($fields));
+
+            $this->storage->set(self::STORAGE_KEY, [
+                'owner'  => $this->currentOwner(),
+                'groups' => $groups,
+            ]);
         } catch (waException $e) {
             shopPrefillPluginLog::warning('Failed saving zen summary cache', [
                 'group'   => $group,
@@ -146,12 +173,47 @@ class shopPrefillPluginZenSummaryCache
     }
 
     /**
+     * Данные всех групп, если запись принадлежит текущей личности.
+     *
+     * Промах вместо чужих данных — это деградация в уже принятое состояние «первая отрисовка
+     * первого визита» (кэш пуст, $params пуст из-за fast_render), см. отвергнутый вариант 6
+     * в docs/bugs/zen-collapse-on-upstream-checkout-error.md.
+     *
      * @return array<string, array>
      */
     private function readAll(): array
     {
         $all = $this->storage->get(self::STORAGE_KEY);
 
-        return is_array($all) ? $all : [];
+        if (! is_array($all)) {
+            return [];
+        }
+
+        // Записи до появления штампа (старый плоский формат) владельца не имеют. Отличать их
+        // от легитимного владельца null (гость без куки) умеет только array_key_exists
+        if (! array_key_exists('owner', $all) || $all['owner'] !== $this->currentOwner()) {
+            return [];
+        }
+
+        return is_array($all['groups'] ?? null) ? $all['groups'] : [];
+    }
+
+    /**
+     * Отпечаток текущей личности: 'user:<id>', 'guest:<lookup_id>' либо null у гостя без куки.
+     * Запросов к БД не делает и куки не выдаёт — только читает уже имеющиеся (P5, P8).
+     *
+     * @return string|null
+     */
+    private function currentOwner(): ?string
+    {
+        try {
+            return $this->fill_params_provider->getSourceKey();
+        } catch (Throwable $e) {
+            shopPrefillPluginLog::warning('Failed resolving zen summary cache owner', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return self::OWNER_UNKNOWN;
+        }
     }
 }
