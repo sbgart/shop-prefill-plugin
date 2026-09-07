@@ -414,6 +414,7 @@ class shopPrefillPluginSessionStorageProvider
 
             $echo = $this->getPaymentEcho();
             if ($echo === null) {
+                shopPrefillPluginLog::debug('Payment echo empty: nothing to restore');
                 return null;
             }
 
@@ -437,9 +438,15 @@ class shopPrefillPluginSessionStorageProvider
             }
             $this->savePaymentEcho($section);
             shopPrefillPluginLog::debug('Payment echo cache updated with confirmed choice', ['id' => $id]);
-        } elseif ($this->getPaymentEcho() !== null) {
-            $this->clearPaymentEcho();
-            shopPrefillPluginLog::debug('Payment echo cache cleared: customer left payment section empty');
+        } else {
+            $discarded = $this->getPaymentEcho();
+            if ($discarded !== null) {
+                $this->clearPaymentEcho();
+                shopPrefillPluginLog::debug('Payment echo cache cleared: customer left payment section empty', [
+                    'payment_section' => $checkout_params['order']['payment'] ?? null,
+                    'discarded_id'    => $discarded['id'] ?? null,
+                ]);
+            }
         }
 
         return null;
@@ -534,6 +541,10 @@ class shopPrefillPluginSessionStorageProvider
         if ($checker->isSectionMechanicallyClean('shipping', $checkout_params)) {
             $echo = $this->getDeliveryEcho();
             if ($echo === null) {
+                // Конвейер замкнуло, восстанавливать нечем — эхо стёрли раньше. Без этой
+                // строки в логе видно только молчание, и «выбор потерялся» неотличимо от
+                // «плагин не сработал» (docs/bugs/shipping-payment-identity-lost-after-snapshot-removal.md)
+                shopPrefillPluginLog::debug('Delivery echo empty: nothing to restore');
                 return [];
             }
 
@@ -572,10 +583,25 @@ class shopPrefillPluginSessionStorageProvider
                 'custom'     => $checkout_params['order']['details']['custom'] ?? [],
                 'region'     => $this->getRegionFingerprint($checkout_params),
             ]);
-        } elseif ($this->getDeliveryEcho() !== null) {
-            // Покупатель сменил тип и ещё не выбрал вариант: прежний выбор больше не его
-            $this->clearDeliveryEcho();
-            shopPrefillPluginLog::debug('Delivery echo cleared: customer left shipping section empty');
+            // Симметрично payment-эху: без этой строки по логу не сказать, было ли эхо
+            // вообще сохранено до ошибки — а это первый вопрос при разборе потери выбора
+            shopPrefillPluginLog::debug('Delivery echo cache updated with confirmed choice', [
+                'variant_id' => $variant_id,
+            ]);
+        } else {
+            // Чистим только непустое эхо: лишняя запись в сессию поднимает Set-Cookie: PHPSESSID (P5)
+            $discarded = $this->getDeliveryEcho();
+            if ($discarded !== null) {
+                // Покупатель сменил тип и ещё не выбрал вариант: прежний выбор больше не его
+                $this->clearDeliveryEcho();
+                // Состав секции — единственное, что отличает этот случай от короткого
+                // замыкания конвейера. Без него по логу не восстановить, почему критерий
+                // счёл, что секция говорила сама за себя, а это и есть открытый вопрос бага
+                shopPrefillPluginLog::debug('Delivery echo cleared: customer left shipping section empty', [
+                    'shipping_section'     => $checkout_params['order']['shipping'] ?? null,
+                    'discarded_variant_id' => $discarded['variant_id'] ?? null,
+                ]);
+            }
         }
 
         return [];
