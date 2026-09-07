@@ -1,0 +1,158 @@
+# План: идентичность витрины — `checkout_storefront_id`, а не URL
+
+**Создан:** 07.09.2026
+**Источник:** [storefront-settings-orphaned-by-url-promotion.md](../bugs/storefront-settings-orphaned-by-url-promotion.md) — механизм установлен и воспроизведён 07.09.2026
+**Статус:** 🚧 не начат
+
+## Зачем
+
+Плагин вычисляет код витрины из её адреса — [`shopPrefillPluginStorefront::__construct()`](../../lib/classes/storefronts/shopPrefillPluginStorefront.class.php):
+
+```php
+$this->code = $domain === '*' && $url === '*' ? '*' : base64_encode($domain . '/' . $url);
+```
+
+`storefront_code` — первичный ключ всех строк в `shop_prefill_settings` и имя per-storefront CSS-файла на диске. То есть идентичность настроек висит на значении, которое ядро переписывает по действию администратора и никого об этом не уведомляет.
+
+Триггеры — штатные операции, не экзотика:
+
+1. **«Сделать главной страницей»** в карте сайта. [`siteMainPage::setNewMainPage()`](../../../../../../wa-apps/site/lib/classes/siteMainPage.class.php#L169) переписывает `url` в `*`, старый кладёт в `old_url`. Вызывающий [`siteMapSetMainPageController`](../../../../../../wa-apps/site/lib/actions/map/siteMapSetMainPage.controller.php) **не шлёт ни одного события** — `route_save.before/after` и `update.route` живут только в `siteConfigureRedirectSave`/`siteRoutingSave`.
+2. **Переименование URL раздела** в настройках домена.
+3. **Переименование домена.**
+
+При любом из них строки настроек осиротевают молча, витрина откатывается на глобальную `*`, а так как умолчание `active = false`, плагин для неё просто выключается. В админке это выглядит как «витрину никогда не настраивали».
+
+### Воспроизведено штатными средствами (07.09.2026)
+
+Без единой правки кода и конфигов, только через интерфейс:
+
+| Шаг | Действие | Результат |
+|---|---|---|
+| 1 | Карта сайта → «+ Добавить» → «Онлайн-магазин», URL `shop-2` | Маршрут создан, ядро выдало свежий `checkout_storefront_id = 6fa12cba8766452cd6390fe23cdadcce` |
+| 2 | Плагин → витрина `wa-dev.loc/shop-2/*` → «Использовать индивидуальные настройки» → Сохранить | **70 строк** под кодом `d2EtZGV2LmxvYy9zaG9wLTIvKg==` |
+| 3 | Настройки раздела → URL `shop-2` → `shop-3` → Сохранить | `url=shop-3/*`, **`checkout_storefront_id` не изменился** |
+| 4 | Плагин → селектор витрин | `⚪ wa-dev.loc/shop-3/*` — «индивидуальных настроек нет». 70 строк живы в БД и не читаются ничем |
+
+Стенд возвращён в исходное: `routing.php` восстановлен из бэкапа, 70 строк удалены, кэш очищен, все три витрины отвечают 200.
+
+### Как решает эту задачу само ядро
+
+Shop-Script свою per-storefront конфигурацию на URL не вешает. `checkout_storefront_id` — непрозрачный md5, выдаётся маршруту один раз при создании ([`app.php:39`](../../../../lib/config/app.php#L39) → [`shopCheckoutConfig::generateStorefrontId()`](../../../../lib/classes/checkout2/shopCheckoutConfig.class.php#L1516), с проверкой уникальности по всем маршрутам), объявлен в форме маршрута как `'type' => 'hidden'` ([`site.php:292`](../../../../lib/config/site.php#L292)) и потому переживает переименование URL. Конфиг чекаута хранится по нему: `$full_config[$this->storefront] = ...` в [`commit()`](../../../../lib/classes/checkout2/shopCheckoutConfig.class.php#L217).
+
+Переведя плагин на тот же ключ, мы не изобретаем схему, а перестаём расходиться с ядром: настройки плагина к чекауту начинают жить и умирать вместе с настройками самого чекаута.
+
+## Что получается
+
+| Сейчас | После |
+|---|---|
+| Код витрины — `base64(domain/url)` | Код витрины — `checkout_storefront_id` маршрута |
+| Переименование URL / «сделать главной» осиротят все настройки витрины | Настройки переживают любые изменения адреса |
+| Код содержит `=`, `+`, `/` — в именах CSS-файлов и в именах POST-полей формы | 32 hex-символа, безопасны везде |
+| Длинный домен может переполнить `varchar(100)` с молчаливой обрезкой | 32 символа при любом домене |
+| Легаси-маршрут без `checkout_storefront_id` | Тот же `base64(domain/url)` — фоллбэк, поведение не меняется |
+
+## Решения, принятые до плана
+
+**Фоллбэк на `base64(domain/url)` обязателен, а не опционален.** `routing_params` применяются только при создании маршрута (`if (!$route && isset($app['routing_params']))` в [`siteConfigureSectionDialog.action.php:86`](../../../../../site/lib/actions/configure/siteConfigureSectionDialog.action.php#L86) и [`siteRoutingEdit.action.php:57`](../../../../../site/lib/actions/legacy/routing/siteRoutingEdit.action.php#L57)). Существующему маршруту id задним числом не дописывается никогда, значит витрина, заведённая до checkout2, останется без него навсегда. Плагин чужой `routing.php` не правит — падаем на старую схему. Следствие: в колонке сосуществуют две схемы кодов. Это безопасно, коды непрозрачны — нигде в плагине нет ни `base64_decode`, ни `atob`/`btoa`.
+
+**Слияние алиасов не делаем.** Два маршрута с одним `checkout_storefront_id` через интерфейс получить нельзя — проверено 07.09.2026, создание раздела выдаёт свежий уникальный id. Единственный путь ядра к дублю — копирование сайта ([`siteDomainsDuplicate::copySiteContents()`](../../../../../site/lib/actions/domains/siteDomainsDuplicate.controller.php) копирует маршруты дословно, обработчиков события `domain_duplicate` нет ни в одном приложении), а это премиум-функция. Если дубль всё же случится, `Collection::add()` схлопнет их в одну витрину — настройки не теряются, а делятся, ровно как делится их общий checkout2-конфиг. Записать в TODO как известное поведение, кода не писать.
+
+**Миграции в `lib/updates/` не делаем** — плагин не выпущен, пострадавших установок снаружи нет. Уборка стенда разовым SQL.
+
+## Ловушки
+
+1. **Глобальная витрина `*` не имеет маршрута.** `getGlobalStorefront()` конструирует объект с `('*', '*')` и пустым `$route` — ветка `*` должна проверяться до обращения к маршруту.
+2. **`findCurrentStorefront()` сегодня пересобирает код из `getDomain()` + `getRoute('url')`.** Это вторая точка вычисления кода ([provider:95](../../lib/classes/storefronts/shopPrefillPluginStorefrontProvider.class.php#L95)); если перевести только конструктор, текущая витрина перестанет находиться в коллекции вообще. Обе точки обязаны звать одну и ту же функцию.
+3. **Пустая строка вместо отсутствующего ключа.** `checkout_storefront_id` может присутствовать как `''` — проверять на непустоту после `trim()`, а не через `isset()`.
+4. **Имена CSS-файлов меняются.** `frontend_{sanitizeCode(code)}.css` — старые файлы осиротеют. Сейчас на диске их нет (только `variables_*.css`), чистить нечего; после миграции файл пересоздастся при первом обращении — в `getCustomCssUrl()` уже есть ветка «файл мог быть удалён — пересоздаём».
+5. **Уникального индекса на `(storefront_code, name)` не добавляем.** Подход отклонён в issue-57#4 (MyISAM/utf8mb3, префиксный индекс на `groups` не влезает) — см. комментарий в [`setBulk()`](../../lib/models/shopPrefillPluginSettings.model.php).
+6. **Строки `storefront_code = '-'` не трогать.** Это не мусор и не баг: `shopPrefillPluginSettingProvider` объявляет `private const CODE = '-'` для общеплагинных настроек, и `lib/config/settings.php` содержит ровно те четыре ключа, что видны в базе (`active`, `logging.level`, `update_time`, `updated_by`).
+
+## Этапы
+
+### Этап 1. Чистая функция кода витрины + тест
+
+Новый класс `lib/classes/storefronts/shopPrefillPluginStorefrontCode.class.php` — без зависимостей, чтобы тестировался обычным `php tests/...`:
+
+```php
+class shopPrefillPluginStorefrontCode
+{
+    public const GLOBAL_CODE = '*';
+
+    public static function fromRoute(string $domain, string $url, array $route = []): string
+    {
+        if ($domain === self::GLOBAL_CODE && $url === self::GLOBAL_CODE) {
+            return self::GLOBAL_CODE;
+        }
+
+        // Никаких хелперов фреймворка (ifset и т.п.): класс обязан грузиться
+        // автономным `php tests/...`, как OrphanedGroupsFilter и BulkWritePlanner
+        $id = trim((string) ($route['checkout_storefront_id'] ?? ''));
+
+        // Легаси-маршруты, заведённые до checkout2, id не получают даже задним числом —
+        // для них остаётся прежняя схема, иначе их настройки осиротеют этим же фиксом
+        return $id !== '' ? $id : base64_encode($domain . '/' . $url);
+    }
+}
+```
+
+`shopPrefillPluginStorefrontProvider::GLOBAL_CODE` переопределить на `shopPrefillPluginStorefrontCode::GLOBAL_CODE`, чтобы константа осталась одна.
+
+Тест `tests/StorefrontCodeTest.php` — по образцу `OrphanedGroupsFilterTest.php`:
+
+1. маршрут с `checkout_storefront_id` → возвращается сам id
+2. маршрут без него → `base64(domain/url)`
+3. `checkout_storefront_id = ''` → фоллбэк, не пустая строка
+4. `('*', '*')` → `'*'`, даже если в `$route` что-то лежит
+5. один id, разные `url` → один и тот же код ← регресс на сам баг
+6. один id, разные домены → один и тот же код
+7. разные id → разные коды
+
+### Этап 2. Перевод витрины и провайдера на новую идентичность
+
+- `shopPrefillPluginStorefront::__construct()` — `$this->code = shopPrefillPluginStorefrontCode::fromRoute($domain, $url, $route);`
+- `shopPrefillPluginStorefrontProvider::findCurrentStorefront()` — брать весь маршрут запроса (`wa()->getRouting()->getRoute()`), `url` из него, и звать ту же `fromRoute()`. Ранний выход при `$url === null` (бэкенд/API/CLI) сохранить.
+
+Больше ничего не трогается: код витрины уже везде непрозрачный токен — `getCode()` уходит в `data-code`/`data-storefront-code` и в `name_prefix` формы, отображение идёт отдельно через `getFullUrl()`, а `saveSettings()` уже переживает «витрины с таким кодом больше нет».
+
+### Этап 3. Уборка стенда
+
+**3.1. Поддомену — собственный id.** Сейчас `shop-1.wa-dev.loc/*` и `wa-dev.loc/shop-1/*` делят `4bed657311d6ac81b8e58fdee33d1a92` — артефакт ручной правки `routing.php`. Штатный способ развести: удалить раздел на `shop-1.wa-dev.loc` в приложении «Сайт» и создать заново (получит свежий сгенерированный id). `wa-dev.loc/shop-1/*` сохраняет `4bed…` и свой checkout2-конфиг. Чтобы поведение чекаута на поддомене не изменилось, скопировать блок `checkout2.php['4bed…']` под новый id. После — `/clear-cache`.
+
+**3.2. Перевесить существующие строки** (бэкап таблицы снят перед началом):
+
+```sql
+UPDATE shop_prefill_settings SET storefront_code = 'ccce8c208c86784e78817b593a93faa5'
+ WHERE storefront_code = 'd2EtZGV2LmxvYy9zaG9wLyo=';        -- 87 строк, мёртвый wa-dev.loc/shop/*
+UPDATE shop_prefill_settings SET storefront_code = '4bed657311d6ac81b8e58fdee33d1a92'
+ WHERE storefront_code = 'd2EtZGV2LmxvYy9zaG9wLTEvKg==';    -- 70 строк, wa-dev.loc/shop-1/*
+```
+
+**3.3. Проектный `CLAUDE.md`** — в инструкции «Добавить ещё одну витрину» убрать `checkout_storefront_id` из списка полей, списываемых с соседнего домена, и добавить, что id обязан быть уникальным. Именно эта строка и создала путаницу.
+
+### Этап 4. Документация
+
+- `docs/bugs/storefront-settings-orphaned-by-url-promotion.md` — статус «исправлено», дописать механизм (`setNewMainPage`, отсутствие события) и протокол воспроизведения от 07.09.2026
+- `docs/bugs/settings-storefront-code-dash-row.md` — закрыть как «не баг, штатный код общеплагинных настроек»
+- `docs/TODO.md` — обе строки снять; добавить строку про поведение при дубле id как известное
+- `CLAUDE.md` плагина — в «Important Notes» описать идентичность витрины и фоллбэк
+- `CHANGELOG.md`
+
+## Проверка
+
+**Юнит:** `for t in tests/*Test.php; do php "$t"; done` — новый `StorefrontCodeTest` плюс 15 существующих без регрессов. Мутационная проверка: откат `fromRoute()` на `base64` должен красить случаи 1, 5, 6.
+
+**Браузер** (остальное покрывается только вручную — тесты плагина держат чистую логику):
+
+| # | Сценарий | Ожидание |
+|---|---|---|
+| S1 | Настроить витрину → переименовать URL раздела → вернуть | Настройки на месте на обоих шагах, маркер в селекторе зелёный |
+| S2 | «Сделать главной страницей» → вернуть обратно | То же; `old_url` в `routing.php` появляется и исчезает, код витрины не меняется |
+| S3 | Три витрины с разными настройками + глобальная | Настройки не путаются; выключение `active` у витрины даёт фоллбэк на `*` (K8), включение — свою настройку (K1). Различить K1 и K8 в прогоне R раньше было нельзя |
+| S4 | Сохранить `styles.custom_css`, переименовать URL | Подключается `frontend_<id>.css`, файл переживает переименование |
+| S5 | Фронтенд: витрина с `active = 1` и отличимой настройкой | Чекаут ведёт себя по настройке витрины, не по глобальной |
+| S6 | Временно убрать `checkout_storefront_id` из одного маршрута | Код падает на `base64(domain/url)`, настройки этой витрины читаются по старой схеме; вернуть id обратно |
+
+**Регресс:** строки `storefront_code = '-'` не затронуты, уровень логирования читается, общеплагинные настройки сохраняются.
+
+**Уборка после прогона** — по правилам проектного `CLAUDE.md`: любое изменённое ради проверки состояние возвращать сразу после сценария, фиксируя исходное значение до правки.
