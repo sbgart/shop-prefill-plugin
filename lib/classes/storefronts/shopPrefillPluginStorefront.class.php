@@ -17,7 +17,7 @@ class shopPrefillPluginStorefront
     ) {
         $this->domain           = $domain;
         $this->url              = $url;
-        $this->code             = $domain === '*' && $url === '*' ? '*' : base64_encode($domain . '/' . $url);
+        $this->code             = shopPrefillPluginStorefrontCode::fromRoute($domain, $url, $route);
         $this->route            = $route;
         $this->setting_provider = $setting_provider;
     }

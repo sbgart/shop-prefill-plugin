@@ -3,7 +3,7 @@
 class shopPrefillPluginStorefrontProvider
 {
     /** Код глобальной витрины: настройки, общие для всех витрин */
-    public const GLOBAL_CODE = '*';
+    public const GLOBAL_CODE = shopPrefillPluginStorefrontCode::GLOBAL_CODE;
 
     /** Единственный экземпляр на весь запрос — читает конфиг и строит схему настроек один раз */
     private ?shopPrefillPluginStorefrontSettingProvider $setting_provider = null;
@@ -86,13 +86,17 @@ class shopPrefillPluginStorefrontProvider
     public function findCurrentStorefront(): ?shopPrefillPluginStorefront
     {
         $routing = wa()->getRouting();
-        $url = $routing->getRoute('url');
+        // Маршрут целиком, а не один url: код витрины считается из его
+        // checkout_storefront_id — той же функцией, что и в конструкторе витрины,
+        // иначе текущая витрина не найдётся в коллекции вообще
+        $route = $routing->getRoute();
+        $url   = $route['url'] ?? null;
 
         if ($url === null) {
             return null;
         }
 
-        $storefront_code = base64_encode($routing->getDomain() . '/' . $url);
+        $storefront_code = shopPrefillPluginStorefrontCode::fromRoute($routing->getDomain(), $url, $route);
 
         return $this->getStorefronts()->getByCode($storefront_code);
     }
