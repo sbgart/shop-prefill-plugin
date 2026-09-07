@@ -11,6 +11,7 @@
 
 ## 🚀 До релиза
 
+- [ ] **Пересмотреть исторические K1-сценарии после миграции настроек витрины (07.09.2026)** — до фикса [storefront-settings-orphaned-by-url-promotion.md](bugs/storefront-settings-orphaned-by-url-promotion.md) витрина `wa-dev.loc/*` не имела своих строк, поэтому ~124 упоминания конфигурации K1 в [TEST-PLAN.md](tests/TEST-PLAN.md) фактически гоняли K8 (фоллбэк на `*`), не отличимо методически. После миграции у `wa-dev.loc/*` впервые есть собственные 87 строк (`active=1`) — K1 и K8 наконец различимы, но исторические результаты в TESTS.md/прогонах под этим не пересматривались. Делать вместе со следующим полным прогоном тестов, не отдельно — вреда от расхождения, вероятно, немного (значения `*` и витрины на стенде почти всегда совпадали), но не подтверждено
 - [ ] 🔴 **Разобрать результаты прогона по [zen-fields-render-test-plan.md](tests/zen-fields-render-test-plan.md)** (29.08.2026) — два новых бага ниже ([zen-delivery-schedule-source-missing.md](bugs/zen-delivery-schedule-source-missing.md), [zen-photos-css-scope-broken.md](bugs/zen-photos-css-scope-broken.md)), решить по каждому отдельно (root cause уже найден в обоих файлах, дизайн фикса — нет). Полный разбор находок и что осталось непроверенным — [zen-fields-render-results-2026-08-29.md](tests/zen-fields-render-results-2026-08-29.md)
 
 ## 🐞 Баги
