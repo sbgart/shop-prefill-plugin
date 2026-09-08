@@ -225,7 +225,7 @@ class shopPrefillPluginZenMode
             return false;
         }
 
-        if (! $this->isGroupMinimumFilled($group)) {
+        if (! $this->isGroupMinimumFilled($group, $state)) {
             $this->last_decision = [
                 'collapsed' => false,
                 'reason' => 'minimum_not_filled',
@@ -256,16 +256,39 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Заполнен ли минимум группы по данным сессии.
+     * Заполнен ли минимум группы.
+     *
+     * Источник зависит от группы, и путать их нельзя:
+     *
+     * - `customer` — **источник сводки** (`$state`), а не сессия. Данные авторизованного
+     *   покупателя в `shop/checkout` не попадают вовсе: предзаполнение auth-секцию для него
+     *   сознательно пропускает, а из POST они приходят только после первого рендера. Проверка
+     *   по сессии отказывала на первом кадре каждой новой сессии при заполненной форме — f01.
+     *   Ветки по авторизации не нужно: у гостя те же поля приходят пустыми.
+     * - `delivery` / `payment` — сессия и эхо-кэш, как и раньше: их `$params` реально пустеет
+     *   при коротком замыкании и `fast_render` (Z5, P9), спрашивать его бессмысленно (R3).
+     *
+     * `isStepSkipped('auth')` — гард на неопределённость, а не на пустоту: `vars.auth === []`
+     * значит «шаг не отработал», и по B2a мы отступаем на прежнюю проверку по сессии, а не
+     * объявляем «данных нет». На хуке `checkout_render_auth` случай недостижим (хук живёт
+     * внутри рендера самого шага), но `shouldCollapseGroup()` публичный.
      *
      * Ошибку чтения сессии трактуем как «заполнено»: молча развернуть все группы
      * из-за сбоя хранилища хуже, чем оставить дзен-режим работать как раньше.
      *
+     * См. docs/plans/zen-customer-gate-source-alignment.md и
+     * docs/bugs/zen-customer-group-never-collapses-f01.md
+     *
      * @param string $group Имя группы
+     * @param shopPrefillCheckoutState $state Состояние текущего рендера
      * @return bool
      */
-    private function isGroupMinimumFilled(string $group): bool
+    private function isGroupMinimumFilled(string $group, shopPrefillCheckoutState $state): bool
     {
+        if ($group === 'customer' && !$state->isStepSkipped('auth')) {
+            return $state->hasCustomerIdentityData();
+        }
+
         try {
             return $this->session_storage->getSectionChecker()->isGroupMinimumFilled(
                 $group,
@@ -667,7 +690,7 @@ class shopPrefillPluginZenMode
             // (Z4 пишет 'expanded' при любом разворачивании, в т.ч. из-за пустоты), которая
             // короткозамыкает shouldCollapseGroup() до проверки данных. По причине признак
             // жил бы ровно один кадр, а потом молча пропадал вместе с починкой.
-            'nothing_to_summarize'            => !$is_collapsed && !$this->isGroupMinimumFilled($group),
+            'nothing_to_summarize'            => !$is_collapsed && !$this->isGroupMinimumFilled($group, $state),
         ];
 
         $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/CollapseBlock.html';
