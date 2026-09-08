@@ -120,6 +120,33 @@ class shopPrefillCheckoutState
     }
 
     /**
+     * Возвращает заголовок блока секции, как он задан в настройках чекаута витрины
+     * («Оплата», «Способ оплаты», что угодно — поле block_name, своё у каждой витрины).
+     *
+     * Тот же источник, из которого его берёт ядро: payment.html выводит
+     * `{$_config.block_name}`, где `$_config = $config.payment`. Хардкодить нельзя —
+     * заголовок настраиваемый, и на витрине с переименованным блоком плагин показал бы
+     * не то, что показывает ядро в обычном рендере.
+     *
+     * @param string $section ID секции (payment, region, auth, …)
+     * @return string Заголовок или '' если задать не удалось
+     */
+    public function getSectionBlockName(string $section): string
+    {
+        $config = $this->params['vars']['config'] ?? null;
+        if ($config === null && class_exists('shopCheckoutConfig')) {
+            try {
+                $config = new shopCheckoutConfig(true);
+            } catch (Exception $e) {
+                return '';
+            }
+        }
+
+        $name = $config[$section]['block_name'] ?? '';
+        return is_string($name) ? $name : '';
+    }
+
+    /**
      * Возвращает кастомные поля контакта (всё, кроме стандартных).
      *
      * @return array<string, mixed>

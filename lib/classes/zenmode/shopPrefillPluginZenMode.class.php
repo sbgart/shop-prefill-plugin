@@ -39,6 +39,23 @@ class shopPrefillPluginZenMode
     ];
 
     /**
+     * Секция, чей заголовок ядро теряет вместе с неотработавшим шагом, — рисуем свой.
+     *
+     * Только payment: там `<header>` стоит внутри `{if !empty($payment.methods)}`
+     * (payment.html:20), а при коротком замыкании методов нет, и хук плагина выводится
+     * из `{else}`-ветки (payment.html:127) — без заголовка и без `.wa-section-body`.
+     * У region и auth заголовок объявлен верхним уровнем секции и замыкание переживает,
+     * у details своего заголовка нет вовсе (видимая «Доставка» приходит из region).
+     *
+     * Без этого свёрнутая карточка оплаты повисала под блоком доставки без своего
+     * названия и читалась как часть доставки — ровно та паника «данные пропали»,
+     * которой Zen и должен не допускать (Z2, R4).
+     */
+    private const GROUP_ORPHANED_HEADER_SECTION = [
+        'payment' => 'payment',
+    ];
+
+    /**
      * Имена cookies для хранения состояния
      */
     const COOKIE_PREFIX = 'prefill_zen_';
@@ -460,6 +477,41 @@ class shopPrefillPluginZenMode
             . '</style>';
     }
 
+    /**
+     * Возвращает заголовок секции, потерянный вместе с неотработавшим шагом.
+     *
+     * Условие то же, что у generateSectionRevealStyles(): шаг пропущен в этом запросе.
+     * Название берём из настроек чекаута витрины — того же поля, что читает ядро
+     * в обычном рендере, — а не из локали плагина: блок переименовывается на витрине.
+     *
+     * @param string $group Имя группы (customer, delivery, payment)
+     * @param shopPrefillCheckoutState $state Данные чекаута
+     * @return string HTML заголовка или пустая строка
+     */
+    private function generateSkippedSectionHeader(string $group, shopPrefillCheckoutState $state): string
+    {
+        $section = self::GROUP_ORPHANED_HEADER_SECTION[$group] ?? null;
+        if ($section === null || !$state->isStepSkipped($section)) {
+            return '';
+        }
+
+        $block_name = $state->getSectionBlockName($section);
+        if ($block_name === '') {
+            return '';
+        }
+
+        $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/SectionHeader.html';
+        $view = $this->view;
+
+        return shopPrefillPluginViewProvider::withScopedVars(
+            $view,
+            ['block_name' => $block_name],
+            static function () use ($view, $template_path) {
+                return $view->fetch('file:' . $template_path);
+            }
+        );
+    }
+
     // ==================== COLLAPSE BLOCK ====================
 
 
@@ -634,6 +686,7 @@ class shopPrefillPluginZenMode
         // со скрывающим CSS, а у развёрнутой группы его нет вовсе.
         return $this->generateSectionRevealStyles($group, $state)
             . $this->generateGroupStyles($group)
+            . $this->generateSkippedSectionHeader($group, $state)
             . $html;
     }
 
