@@ -497,10 +497,13 @@ class shopPrefillPlugin extends shopPlugin
             $view                = wa()->getView();
             $this->zen_mode      = new shopPrefillPluginZenMode(
                 $storefront_settings['zen'] ?? [],
-                wa()->getResponse(),
                 $view,
                 new shopPrefillPluginZenData($view),
-                wa()->getRequest(),
+                new shopPrefillPluginZenLatch(
+                    wa()->getRequest(),
+                    wa()->getResponse(),
+                    $this->getFillParamsProvider()
+                ),
                 $this->getSessionStorageProvider(),
                 new shopPrefillPluginZenSummaryCache(
                     wa()->getStorage(),

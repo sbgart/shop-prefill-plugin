@@ -56,24 +56,14 @@ class shopPrefillPluginZenMode
     ];
 
     /**
-     * Имена cookies для хранения состояния
-     */
-    const COOKIE_PREFIX = 'prefill_zen_';
-
-    /**
      * @var array Настройки zen из storefront settings
      */
     private array $settings;
 
     /**
-     * @var waRequest Request для чтения cookies
+     * @var shopPrefillPluginZenLatch Защёлка «покупатель вмешался в группу» (Z4)
      */
-    private waRequest $request;
-
-    /**
-     * @var waResponse Response объект для записи cookies
-     */
-    private waResponse $response;
+    private shopPrefillPluginZenLatch $latch;
 
     /**
      * @var waView View объект для рендеринга шаблонов
@@ -97,27 +87,24 @@ class shopPrefillPluginZenMode
 
     /**
      * @param array $zen_settings Настройки zen из storefront settings
-     * @param waResponse $response Response для записи cookies
      * @param waView $view View объект для рендеринга
      * @param shopPrefillPluginZenData $zen_data Данные для шаблонов сводки
-     * @param waRequest $request Request для чтения cookies
+     * @param shopPrefillPluginZenLatch $latch Защёлка состояния групп (куки)
      * @param shopPrefillPluginSessionStorageProvider $session_storage Состояние заказа
      * @param shopPrefillPluginZenSummaryCache $summary_cache Кэш данных сводки
      */
     public function __construct(
         array $zen_settings,
-        waResponse $response,
         waView $view,
         shopPrefillPluginZenData $zen_data,
-        waRequest $request,
+        shopPrefillPluginZenLatch $latch,
         shopPrefillPluginSessionStorageProvider $session_storage,
         shopPrefillPluginZenSummaryCache $summary_cache
     ) {
         $this->settings        = $zen_settings;
-        $this->response        = $response;
         $this->view            = $view;
         $this->zen_data        = $zen_data;
-        $this->request         = $request;
+        $this->latch           = $latch;
         $this->session_storage = $session_storage;
         $this->summary_cache   = $summary_cache;
     }
@@ -172,15 +159,17 @@ class shopPrefillPluginZenMode
      * Определяет, нужно ли сворачивать группу.
      *
      * Три условия, и каждое читает свой источник — путать их нельзя:
-     *   1. кука — покупатель сам открыл группу и работает в ней;
+     *   1. защёлка — покупатель сам открыл группу и работает в ней (шире: любой
+     *      предыдущий разворот в рамках визита этой же личности, см. ZenLatch);
      *   2. ошибки — только из $params, они существуют в рамках запроса;
      *   3. минимум данных — только из сессии. $params описывает запрос, а не заказ:
      *      он пуст для всех секций ниже упавшего шага и при fast_render на каждой
      *      загрузке страницы. Спрашивать его «есть ли данные» бессмысленно.
      *
-     * Любой разворот приводит к записи куки `expanded` в syncCollapseCookieState(),
+     * Любой разворот приводит к записи защёлки в shopPrefillPluginZenLatch::sync(),
      * поэтому группа, однажды открытая, не схлопнется под руками у покупателя,
-     * который её как раз заполняет.
+     * который её как раз заполняет. Защёлка принадлежит личности: чужую (записанную
+     * до входа в аккаунт) ZenLatch снимает и до этой ветки не допускает.
      *
      * См. docs/concept/RULES.md (R1–R3, Z1–Z5) и
      * docs/bugs/zen-collapse-on-upstream-checkout-error.md
@@ -201,9 +190,7 @@ class shopPrefillPluginZenMode
             return false;
         }
 
-        $cookie_state = $this->request->cookie(self::COOKIE_PREFIX . $group);
-
-        if ($cookie_state === 'expanded') {
+        if ($this->latch->isExpanded($group)) {
             $this->last_decision = [
                 'collapsed' => false,
                 'reason' => 'expanded_by_user',
@@ -590,30 +577,6 @@ class shopPrefillPluginZenMode
 
 
     /**
-     * Синхронизирует cookie группы с фактическим состоянием при каждом обновлении формы.
-     * При ошибках в секции бэкенд проставит 'expanded'; при сворачивании кука сбрасывается.
-     *
-     * @param string $group Имя группы
-     * @param bool $is_collapsed Свёрнута ли группа (нет ошибок валидации)
-     */
-    protected function syncCollapseCookieState(string $group, bool $is_collapsed): void
-    {
-        if ($is_collapsed) {
-            $this->response->setCookie(self::COOKIE_PREFIX . $group, '', [
-                'expires'  => -1,
-                'path'     => '/',
-                'samesite' => 'Lax',
-            ]);
-        } else {
-            $this->response->setCookie(self::COOKIE_PREFIX . $group, 'expanded', [
-                'expires'  => 0,
-                'path'     => '/',
-                'samesite' => 'Lax',
-            ]);
-        }
-    }
-
-    /**
      * Определяет состояние группы, синхронизирует cookie и рендерит блок.
      * Публичный API для вывода блока (управление состоянием + рендер).
      *
@@ -624,7 +587,7 @@ class shopPrefillPluginZenMode
     public function buildCollapseBlock(string $group, shopPrefillCheckoutState $state): string
     {
         $is_collapsed = $this->shouldCollapseGroup($group, $state);
-        $this->syncCollapseCookieState($group, $is_collapsed);
+        $this->latch->sync($group, $is_collapsed);
         return $this->renderCollapseBlock($group, $state, $is_collapsed);
     }
 
@@ -813,25 +776,8 @@ class shopPrefillPluginZenMode
      */
     public function resetState(): void
     {
-        $this->clearCookies();
+        $this->latch->clearAll();
         $this->summary_cache->clear();
-    }
-
-    /**
-     * Очищает cookies состояния всех групп Zen Mode
-     * Вызывается после создания заказа для сброса состояния форм
-     */
-    public function clearCookies(): void
-    {
-        // Очищаем куки для всех групп (customer, delivery, payment)
-        // Куки: 'expanded' или отсутствовать
-        foreach (array_keys(self::GROUP_SECTIONS) as $group) {
-            $this->response->setCookie(self::COOKIE_PREFIX . $group, '', [
-                'expires'  => -1, // отрицательное время = удаление
-                'path'     => '/',
-                'samesite' => 'Lax',
-            ]);
-        }
 
         shopPrefillPluginLog::info('Zen Mode cookies cleared after order creation');
     }

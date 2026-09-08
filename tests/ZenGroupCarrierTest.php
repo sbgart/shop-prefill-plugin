@@ -21,6 +21,7 @@
 
 require_once dirname(__DIR__) . '/lib/classes/checkout/shopPrefillCheckoutState.class.php';
 require_once dirname(__DIR__) . '/lib/classes/zenmode/shopPrefillPluginZenMode.class.php';
+require_once dirname(__DIR__) . '/lib/classes/zenmode/shopPrefillPluginZenLatch.class.php';
 
 $failures = 0;
 $checks   = 0;
@@ -118,6 +119,16 @@ check(1, substr_count($reveal, 'display: block'), 'generateSectionRevealStyles(d
 check(false, strpos($reveal, '.wa-step-region-section {') !== false, 'generateSectionRevealStyles(delivery): region не раскрывается (там безусловный core-заголовок)');
 check(false, strpos($reveal, '.wa-step-shipping-section {') !== false, 'generateSectionRevealStyles(delivery): shipping не раскрывается');
 check(true, strpos($reveal, '.wa-step-details-section { display: block !important; }') !== false, 'generateSectionRevealStyles(delivery): details (носитель) раскрыт');
+
+// --- 7. Структурный замок: защёлка чистит ровно те же группы -------------------
+// ZenLatch намеренно не ссылается на координатора (иначе низкоуровневое хранилище зависело бы
+// от него), поэтому список групп у него свой — и обязан совпадать: пропущенная группа унесёт
+// чужую защёлку через смену личности, лишняя — потратит Set-Cookie на несуществующую.
+check(
+    array_keys(shopPrefillPluginZenMode::GROUP_SECTIONS),
+    (new ReflectionClass('shopPrefillPluginZenLatch'))->getConstant('GROUPS'),
+    'ZenLatch::GROUPS совпадает с GROUP_SECTIONS'
+);
 
 echo "\n{$checks} проверок, {$failures} провалено\n";
 exit($failures > 0 ? 1 : 0);
