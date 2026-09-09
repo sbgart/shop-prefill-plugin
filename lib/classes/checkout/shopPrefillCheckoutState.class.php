@@ -389,21 +389,48 @@ class shopPrefillCheckoutState
      * Возвращает HTML расписания пункта выдачи.
      *
      * Поддерживает два формата, которые генерирует ядро Shop-Script:
-     * - pickup_schedule.days (массив) — современный формат (CDEK и др.); рендерится в .wa-day-wrapper элементы
+     * - pickup_schedule.days (массив) — современный формат (CDEK и др.); рендерится собственной
+     *   разметкой плагина, см. renderPickupSchedule()
      * - pickup_schedule_html (строка) — устаревший формат от плагинов, возвращается как есть
      *
-     * Возвращает внутреннее содержимое (без внешней обёртки .wa-schedule-wrapper).
+     * Источник — не getSelectedVariant(), в отличие от остальных полей доставки. Структурированное
+     * расписание существует ровно в одном месте: shopCheckoutDetailsStep::process() промотирует
+     * custom_data['pickup']['schedule'] в pickup_schedule/pickup_schedule_html и кладёт результат
+     * только в свой vars ('shipping_rate' => $updated_selected_variant). Шаг shipping этого не делает
+     * вовсе, поэтому ни data.shipping.selected_variant, ни vars.shipping.shipping_rate расписания
+     * не содержат — чтение оттуда давало пустую строку всегда, при любом способе доставки
+     * (docs/bugs/zen-delivery-schedule-source-missing.md). Читаем ровно тот массив, из которого
+     * рисует расписание сам ядровый виджет (details.html), — вывод гарантированно совпадает.
+     *
+     * Готовый HTML стороннего плагина (pickup_schedule_html) в свою сетку не заворачиваем:
+     * его внутренняя структура неизвестна, а grid из css/zenmode.css рассчитан ровно на пары
+     * ячеек, которые отдаёт renderPickupSchedule(). Чужая разметка идёт как есть.
      */
     public function getShippingScheduleHtml(): string
     {
-        $variant = $this->getSelectedVariant();
+        // Второй кандидат — на случай плагина доставки, кладущего готовое расписание прямо в тариф.
+        $candidates = [
+            $this->params['vars']['details']['shipping_rate'] ?? [],
+            $this->getSelectedVariant(),
+        ];
 
-        $schedule = $variant['pickup_schedule'] ?? [];
-        if (!empty($schedule['days']) && is_array($schedule['days'])) {
-            return $this->renderPickupScheduleDays($schedule['days']);
+        foreach ($candidates as $variant) {
+            if (!is_array($variant)) {
+                continue;
+            }
+
+            $schedule = $variant['pickup_schedule'] ?? [];
+            if (is_array($schedule) && !empty($schedule['days']) && is_array($schedule['days'])) {
+                return $this->renderPickupSchedule($schedule);
+            }
+
+            $html = $variant['pickup_schedule_html'] ?? '';
+            if (is_string($html) && $html !== '') {
+                return $html;
+            }
         }
 
-        return (string)($variant['pickup_schedule_html'] ?? '');
+        return '';
     }
 
     /**
@@ -418,18 +445,39 @@ class shopPrefillCheckoutState
     }
 
     /**
-     * Рендерит структурированное расписание (pickup_schedule.days) в HTML.
-     * Формат вывода совпадает с тем, что генерирует details.html для этого же источника.
+     * Рендерит структурированное расписание (pickup_schedule) на собственной разметке плагина.
      *
-     * @param array $days Массив дней из pickup_schedule.days
-     * @return string HTML: набор .wa-day-wrapper элементов
+     * Состав данных повторяет details.html: пометка дня (`additional`, напр. «Обед 13:00–14:00»)
+     * и подсказка с часовым поясом, когда пояс ПВЗ отличается от пояса покупателя. А вот классы
+     * ядра (`.wa-day-wrapper`, `.wa-date`, `.wa-time`) не переиспользуются: правила ядра требуют
+     * предков `.wa-details-rates-section .wa-schedule-wrapper .wa-days-wrapper`, которых в плоской
+     * Zen-карточке нет, и день разъезжался в две строки вместо табличной строки
+     * (docs/bugs/zen-photos-css-scope-broken.md). Две колонки задаёт css/zenmode.css гридом.
+     *
+     * День отдаёт ровно две ячейки-потомка — своей обёртки у дня нет, иначе колонки соседних
+     * дней не выровняются по одной сетке.
+     *
+     * @param array $schedule Массив pickup_schedule (days, timezone, timezone_text, user_timezone)
+     * @return string HTML: .prefill-zen-schedule с парами «дата — часы»
      */
-    private function renderPickupScheduleDays(array $days): string
+    private function renderPickupSchedule(array $schedule): string
     {
         $locale = substr((string)wa()->getLocale(), 0, 2);
         $items = '';
 
-        foreach ($days as $day) {
+        // Ядро показывает пояс ПВЗ только когда он расходится с поясом покупателя: совпадающий
+        // пояс в подсказке — шум. user_timezone проставляет тот же шаг details, что и расписание.
+        $timezone = (string)($schedule['timezone'] ?? '');
+        $user_timezone = (string)($schedule['user_timezone'] ?? '');
+        $timezone_title = '';
+        if ($timezone !== '' && $timezone !== $user_timezone) {
+            $timezone_text = (string)($schedule['timezone_text'] ?? '');
+            if ($timezone_text !== '') {
+                $timezone_title = ' title="' . htmlspecialchars($timezone_text, ENT_QUOTES, 'UTF-8') . '"';
+            }
+        }
+
+        foreach ($schedule['days'] as $day) {
             if (!is_array($day)) {
                 continue;
             }
@@ -444,18 +492,30 @@ class shopPrefillCheckoutState
             if (!empty($day['works'])) {
                 $start = htmlspecialchars((string)($day['time_start'] ?? ''), ENT_QUOTES, 'UTF-8');
                 $end   = htmlspecialchars((string)($day['time_end'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $value = '<span class="wa-time">' . $start . '—' . $end . '</span>';
+                $value = '<span class="prefill-zen-schedule-time"' . $timezone_title . '>' . $start . '—' . $end . '</span>';
             } else {
-                $value = '<span class="wa-text">' . htmlspecialchars(_w('day off'), ENT_QUOTES, 'UTF-8') . '</span>';
+                $value = '<span class="prefill-zen-schedule-off">'
+                    . htmlspecialchars(_w('day off'), ENT_QUOTES, 'UTF-8')
+                    . '</span>';
             }
 
-            $items .= '<div class="wa-day-wrapper">'
-                . '<div class="wa-date">' . $date . ($wday !== '' ? ', ' . $wday : '') . '</div>'
-                . '<div class="wa-value">' . $value . '</div>'
-                . '</div>';
+            // Ядро режет пометку по 64 символа (details.html), длиннее в вёрстку не влезает.
+            $additional = mb_substr((string)($day['additional'] ?? ''), 0, 64);
+            if ($additional !== '') {
+                $value .= '<span class="prefill-zen-schedule-note">'
+                    . htmlspecialchars($additional, ENT_QUOTES, 'UTF-8')
+                    . '</span>';
+            }
+
+            $items .= '<span class="prefill-zen-schedule-date">' . $date . ($wday !== '' ? ', ' . $wday : '') . '</span>'
+                . '<span class="prefill-zen-schedule-hours">' . $value . '</span>';
         }
 
-        return $items;
+        if ($items === '') {
+            return '';
+        }
+
+        return '<span class="prefill-zen-schedule">' . $items . '</span>';
     }
 
     /**

@@ -87,3 +87,66 @@ svg.prefill-zen-icon {
 .prefill-zen-price-free {
   color: #3bb300;
 }
+
+/* ---------------------------------------------------------------------------
+   Фото ПВЗ и расписание в сводке.
+
+   Собственные классы вместо ядровых (.wa-photos-section / .wa-day-wrapper):
+   CSS ядра заскоуплен на .wa-details-rates-section, которой в плоской карточке
+   нет, — фото получали нулевую высоту, день расписания разъезжался в две строки
+   (docs/bugs/zen-photos-css-scope-broken.md).
+
+   Метрика повторяет ядро (4:3, radius 3px), но ни один цвет и ни один кегль
+   здесь не задан в абсолютных единицах: размеры в em, цвет — currentColor с
+   прозрачностью. Так блок подхватывает шрифт и палитру темы витрины (та ставит
+   .wa-order-form-wrapper{font-size:.875em} и свои переменные) и одинаково
+   читается в светлой и тёмной теме — в отличие от ядра с его #333/#888/#aaa.
+   --------------------------------------------------------------------------- */
+
+.prefill-zen-photos {
+  display: flex;
+  gap: 0.5em;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 0.15em; /* место под полосу прокрутки, чтобы она не резала миниатюры */
+  scrollbar-width: thin;
+}
+
+.prefill-zen-photo {
+  flex: 0 0 auto;
+  width: 5.5em;
+  height: 4.125em; /* 4:3 — та же пропорция, что у галереи ядра */
+  border-radius: 3px;
+  /* Нейтральный серый одинаково уместен на светлом и тёмном фоне: подложка видна,
+     пока грузится миниатюра, и не спорит с палитрой темы */
+  background: rgba(127, 127, 127, 0.15);
+  overflow: hidden;
+}
+
+.prefill-zen-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Расписание: две колонки одной сеткой на весь блок — поэтому у дня нет
+   собственной обёртки, он отдаёт сразу две ячейки (см. renderPickupSchedule) */
+.prefill-zen-schedule {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 0.75em;
+  row-gap: 0.15em;
+}
+
+/* Дата приглушена ровно тем же приёмом, каким это делает сама тема витрины
+   для .wa-date в блоке вариантов доставки — opacity, а не свой цвет */
+.prefill-zen-schedule-date,
+.prefill-zen-schedule-off,
+.prefill-zen-schedule-note {
+  opacity: 0.75;
+}
+
+.prefill-zen-schedule-note {
+  margin-left: 0.35em;
+}

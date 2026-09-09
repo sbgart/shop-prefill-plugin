@@ -24,9 +24,21 @@ order/form/details.html` (ядро) | Эталонный вид тех же да
 
 ## 1. Ключевая находка, определяющая приоритет (уже подтверждена в исходниках)
 
-**G3 — Zen-карточка технически не может унаследовать CSS ядра для фото/расписания.** Гипотеза, а не
-факт: подтверждена статически (grep CSS + чтение шаблона), не подтверждена в браузере. Первый шаг
-исполнения (§7, шаг 0) обязан подтвердить/опровергнуть её за 2 минуты в DevTools — вся
+**G3 — Zen-карточка технически не может унаследовать CSS ядра для фото/расписания.**
+
+> **Закрыто 08.09.2026: гипотеза подтверждена в браузере и исправлена.** Оба поля переведены на
+> собственные классы плагина и собственный CSS (`.prefill-zen-photos` / `.prefill-zen-schedule`),
+> разбор и замеры «до/после» — [zen-photos-css-scope-broken.md](../bugs/zen-photos-css-scope-broken.md).
+> Три поправки к тексту ниже, которые всплыли при исполнении: (1) предок `.wa-step-details-section`
+> у карточки **есть** — хук `checkout_render_details` стоит внутри этой секции, не хватало только
+> `.wa-details-rates-section`; (2) у расписания дыра глубже — плагин не отдавал ещё и обёрток
+> `.wa-schedule-wrapper > .wa-days-wrapper`, поэтому одним классом-предком оно бы не починилось;
+> (3) JS ядра не «не вызывается», а вызывается и ломается: `initPhotos()` находит нашу секцию
+> вместе со скрытой ядровой и считает ширину слайдера по невидимой. Пункты §5/§7, опирающиеся на
+> G3, устарели в части «как чинить», но остаются валидны как сценарии проверки вида.
+
+Гипотеза, а не факт: подтверждена статически (grep CSS + чтение шаблона), не подтверждена в браузере.
+Первый шаг исполнения (§7, шаг 0) обязан подтвердить/опровергнуть её за 2 минуты в DevTools — вся
 приоритизация документа строится вокруг результата.
 
 - Ядро (`wa-apps/shop/css/frontend/order/form.css`) стилизует галерею и расписание строго через
@@ -35,7 +47,7 @@ order/form/details.html` (ядро) | Эталонный вид тех же да
   .wa-order-form-wrapper .wa-step-details-section .wa-details-rates-section .wa-photos-section .wa-photos-list .wa-photo-wrapper { width: calc(25% - 15px); ... }
   .wa-order-form-wrapper .wa-step-details-section .wa-details-rates-section .wa-schedule-wrapper .wa-days-wrapper .wa-day-wrapper { display: table; table-layout: fixed; ... }
   ```
-- Плагин (`shopPrefillPluginZenData::buildPhotosHtml()` / `shopPrefillCheckoutState::renderPickupScheduleDays()`)
+- Плагин (`shopPrefillPluginZenData::buildPhotosHtml()` / `shopPrefillCheckoutState::renderPickupSchedule()`)
   генерирует те же самые классы (`.wa-photos-section`, `.wa-photo-wrapper`, `.wa-day-wrapper`),
   явно рассчитывая переиспользовать CSS и JS ядра (лайтбокс `js-show-photo`, скролл `js-scroll-prev/next`).
 - Но сама Zen-карточка (`templates/zenmode/CollapseBlock.html`) — плоская структура

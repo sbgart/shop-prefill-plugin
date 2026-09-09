@@ -426,7 +426,16 @@ class shopPrefillPluginZenData
             $data['address_custom'] = [
                 'metro' => 'Сокольники',
             ];
-            $sample_photos = [['uri' => '#', 'thumb_uri' => '']];
+            // Плейсхолдер вместо файла из каталога: превью не должно зависеть ни от содержимого
+            // магазина, ни от сети, но миниатюра обязана быть видимой — иначе по превью не
+            // оценить вёрстку галереи, ради которой оно и открывается.
+            $sample_photo = 'data:image/svg+xml;base64,' . base64_encode(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 3"><rect width="4" height="3" fill="#c9ccd1"/></svg>'
+            );
+            $sample_photos = [
+                ['uri' => $sample_photo, 'thumb_uri' => $sample_photo],
+                ['uri' => $sample_photo, 'thumb_uri' => $sample_photo],
+            ];
             $data['delivery_photos'] = $sample_photos;
             $data['delivery_photos_html'] = self::buildPhotosHtml($sample_photos, $data['shipping_name']);
         }
@@ -564,52 +573,71 @@ class shopPrefillPluginZenData
     }
 
     /**
-     * Генерирует нативную HTML-структуру `.wa-photos-section` для фотографий ПВЗ.
-     * Совместима с Details.prototype.initPhotos() из shop/js/frontend/order/form.js —
-     * лайтбокс и прокрутка инициализируются автоматически, если блок находится внутри шага details.
+     * Собирает галерею фотографий ПВЗ на собственной разметке плагина.
+     *
+     * Классы ядра (`.wa-photos-section`, `.wa-photo-wrapper`) здесь сознательно не используются:
+     * его CSS заскоуплен на `.wa-details-rates-section`, которой в плоской Zen-карточке нет, —
+     * фотографии получали нулевую высоту (docs/bugs/zen-photos-css-scope-broken.md). Вид задаёт
+     * css/zenmode.css; кегль и цвет наследуются от темы витрины, метрика повторяет ядро (4:3).
+     *
+     * Лайтбокс ядра (`Details.prototype.initPhotos()`) вместе с классами не переиспользуем:
+     * он ищет `.wa-photos-section` по всей секции details и захватил бы заодно скрытую ядровую
+     * галерею — слайдер считал бы ширину по невидимому элементу. Клик открывает фото в новой
+     * вкладке штатной ссылкой, без единой строки JS.
      *
      * @param array  $photos Массив фотографий: [['uri' => ..., 'thumb_uri' => ...], ...]
-     * @param string $name   Имя тарифа (используется как заголовок в диалоге лайтбокса)
+     * @param string $name   Имя тарифа (идёт в alt миниатюры)
      * @return string HTML или '' если photos пуст
      */
     private static function buildPhotosHtml(array $photos, string $name): string
     {
+        $alt = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+
         $items_html = '';
         foreach ($photos as $photo) {
             $uri = isset($photo['uri']) ? trim((string)$photo['uri']) : '';
             if ($uri === '') {
                 continue;
             }
-            $thumb_uri = !empty($photo['thumb_uri']) ? (string)$photo['thumb_uri'] : $uri;
+            $thumb_uri = !empty($photo['thumb_uri']) ? (string)$photo['thumb_uri'] : self::buildThumbUri($uri);
             $uri_esc   = htmlspecialchars($uri, ENT_QUOTES, 'UTF-8');
             $thumb_esc = htmlspecialchars($thumb_uri, ENT_QUOTES, 'UTF-8');
 
-            $items_html .= '<div class="wa-photo-wrapper" data-image-uri="' . $uri_esc . '" data-thumb-uri="' . $thumb_esc . '">'
-                . '<a class="wa-photo js-show-photo" href="' . $uri_esc . '" style="background-image: url(' . $thumb_esc . ');" target="_blank"></a>'
-                . '</div>';
+            $items_html .= '<a class="prefill-zen-photo" href="' . $uri_esc . '" target="_blank" rel="noopener noreferrer">'
+                . '<img src="' . $thumb_esc . '" alt="' . $alt . '" loading="lazy">'
+                . '</a>';
         }
 
         if ($items_html === '') {
             return '';
         }
 
-        $root_url   = wa()->getRootUrl();
-        $version    = wa()->getVersion('shop');
-        $sprite_url = htmlspecialchars(
-            $root_url . 'wa-apps/shop/img/frontend/order/svg/sprite.svg?v=' . $version,
-            ENT_QUOTES,
-            'UTF-8'
-        );
-        $data_name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+        return '<div class="prefill-zen-photos">' . $items_html . '</div>';
+    }
 
-        $arrow_l = '<i class="wa-icon arrow-left"><svg><use xlink:href="' . $sprite_url . '#arrow-left"></use></svg></i>';
-        $arrow_r = '<i class="wa-icon arrow-right"><svg><use xlink:href="' . $sprite_url . '#arrow-right"></use></svg></i>';
-
-        return '<div class="wa-line wa-photos-section" data-name="' . $data_name . '">'
-            . '<div class="wa-action left js-scroll-prev">' . $arrow_l . '</div>'
-            . '<div class="wa-photos-list">' . $items_html . '</div>'
-            . '<div class="wa-action right js-scroll-next">' . $arrow_r . '</div>'
-            . '</div>';
+    /**
+     * Возвращает URL миниатюры фотографии ПВЗ.
+     *
+     * Плагины доставки кладут в `custom_data[...]['photos']` только `uri` оригинала (у `sd`
+     * это буквально то, что администратор загрузил в настройках пункта выдачи), поэтому в
+     * карточку 77×58 иначе уехал бы полноразмерный файл. Ядро в том же месте зовёт
+     * `$wa->shop->imgUrl($uri, '100x75')` (details.html) — зовём ровно его же, чтобы вес
+     * картинок в сводке совпадал с развёрнутым виджетом.
+     *
+     * Внешние ссылки (со схемой) хелпер возвращает как есть — для них миниатюры не существует.
+     * Любая ошибка хелпера не должна стоить галереи целиком: откатываемся на оригинал.
+     *
+     * @param string $uri URI оригинала
+     * @return string
+     */
+    private static function buildThumbUri(string $uri): string
+    {
+        try {
+            $thumb = (new shopViewHelper(wa()->getView()))->imgUrl($uri, '100x75');
+            return is_string($thumb) && $thumb !== '' ? $thumb : $uri;
+        } catch (Throwable $e) {
+            return $uri;
+        }
     }
 
     /**
