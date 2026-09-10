@@ -61,4 +61,36 @@ class shopPrefillPluginSettingGroup
 
         return $field->validate($value);
     }
+
+    /**
+     * Оставляет из входа только ветки, известные схеме, применяя фильтр каждого известного
+     * листа. В отличие от validate() идёт от входа, а не от схемы: не заполняет дефолты за
+     * отсутствующие ключи — иначе частичное сохранение (issue-78) стирало бы остальное дерево
+     * до дефолтов, а не оставляло как было. Незнакомый ключ POST молча отбрасывается вместо
+     * записи в БД как есть (issue-96 §3).
+     *
+     * @param mixed $settings
+     */
+    public function filterKnown($settings): array
+    {
+        if (!is_array($settings)) {
+            return [];
+        }
+
+        $filtered = [];
+
+        foreach ($settings as $name => $value) {
+            $field = $this->schema[$name] ?? null;
+
+            if ($field instanceof shopPrefillPluginSettingGroup) {
+                if (is_array($value)) {
+                    $filtered[$name] = $field->filterKnown($value);
+                }
+            } elseif ($field instanceof shopPrefillPluginSettingField) {
+                $filtered[$name] = $field->validate($value);
+            }
+        }
+
+        return $filtered;
+    }
 }

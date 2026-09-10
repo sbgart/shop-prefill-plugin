@@ -27,6 +27,8 @@ class shopPrefillPluginSettingProvider extends shopPrefillPluginAbstractSettingP
 
     public function saveSettings($settings = []): void
     {
+        $settings = $this->filterKnown($settings);
+
         $entries = [];
         $collect = function ($name, $val, $g) use (&$entries) {
             $entries[] = ['name' => $name, 'value' => $val, 'groups' => $g];

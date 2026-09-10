@@ -5,7 +5,7 @@ require_once dirname(__DIR__) . '/lib/classes/view/shopPrefillPluginStaleFilePru
 /**
  * issue-57 №3: сгенерированные CSS/JS-файлы никогда не удалялись и копились в wa-data годами.
  * Pruner чистит по возрасту (TTL) при каждом появлении нового файла — эти тесты проверяют
- * границы TTL и то, что он не трогает ничего, кроме своих файлов.
+ * границы TTL и то, что он не трогает ничего, кроме своих файлов (issue-94).
  *
  * @param mixed  $expected
  * @param mixed  $actual
@@ -61,7 +61,7 @@ $dir = makeTempDir();
 makeFileAged($dir . 'old.css', TTL + DAY);
 makeFileAged($dir . 'fresh.css', DAY);
 
-$pruner->prune($dir, 'kept.css', TTL);
+$pruner->prune($dir, '*.css', 'kept.css', TTL);
 
 assertSameValue(false, file_exists($dir . 'old.css'), 'файл старше TTL должен быть удалён');
 assertSameValue(true, file_exists($dir . 'fresh.css'), 'файл младше TTL не должен трогаться');
@@ -75,7 +75,7 @@ removeDir($dir);
 $dir = makeTempDir();
 makeFileAged($dir . 'boundary.css', TTL);
 
-$pruner->prune($dir, 'kept.css', TTL);
+$pruner->prune($dir, '*.css', 'kept.css', TTL);
 
 assertSameValue(true, file_exists($dir . 'boundary.css'), 'возраст ровно TTL — ещё не удаляем (safe margin)');
 
@@ -89,7 +89,7 @@ removeDir($dir);
 $dir = makeTempDir();
 makeFileAged($dir . 'current.css', TTL + DAY);
 
-$pruner->prune($dir, 'current.css', TTL);
+$pruner->prune($dir, '*.css', 'current.css', TTL);
 
 assertSameValue(true, file_exists($dir . 'current.css'), 'except_filename защищён от удаления независимо от возраста');
 
@@ -103,7 +103,7 @@ $dir = makeTempDir();
 mkdir($dir . 'subdir');
 touch($dir . 'subdir', time() - TTL - DAY);
 
-$pruner->prune($dir, 'kept.css', TTL);
+$pruner->prune($dir, '*', 'kept.css', TTL);
 
 assertSameValue(true, is_dir($dir . 'subdir'), 'вложенные директории pruner не трогает');
 
@@ -114,7 +114,7 @@ removeDir($dir);
 // ---------------------------------------------------------------------------
 
 $dir = makeTempDir();
-$pruner->prune($dir, 'kept.css', TTL);
+$pruner->prune($dir, '*', 'kept.css', TTL);
 assertSameValue([], glob($dir . '*'), 'пустой каталог остаётся пустым, ошибок нет');
 removeDir($dir);
 
@@ -122,6 +122,31 @@ removeDir($dir);
 // 6. Несуществующий каталог — glob() вернёт [], метод не должен падать
 // ---------------------------------------------------------------------------
 
-$pruner->prune(sys_get_temp_dir() . '/prefill_pruner_does_not_exist_' . uniqid('', true) . '/', 'kept.css', TTL);
+$pruner->prune(sys_get_temp_dir() . '/prefill_pruner_does_not_exist_' . uniqid('', true) . '/', '*', 'kept.css', TTL);
+
+// ---------------------------------------------------------------------------
+// 7. issue-94: чужие файлы в том же каталоге не трогаются, даже если они старше TTL.
+//    В css/ рядом со сгенерированными variables_*.css лежит пер-витринный frontend_{code}.css
+//    менеджера CSS: он пишется однажды при сохранении настроек, поэтому по TTL устаревает
+//    всегда, а пересоздаётся только на следующем рендере — покупатель успевает получить
+//    страницу со ссылкой на уже удалённый файл.
+// ---------------------------------------------------------------------------
+
+$dir = makeTempDir();
+makeFileAged($dir . 'frontend_ccce8c208c86784e78817b593a93faa5.css', TTL + DAY);
+makeFileAged($dir . 'variables_old.css', TTL + DAY);
+makeFileAged($dir . 'variables_new.css', 0);
+
+$pruner->prune($dir, 'variables_*.css', 'variables_new.css', TTL);
+
+assertSameValue(
+    true,
+    file_exists($dir . 'frontend_ccce8c208c86784e78817b593a93faa5.css'),
+    'пер-витринный CSS не принадлежит уборщику и должен пережить уборку'
+);
+assertSameValue(false, file_exists($dir . 'variables_old.css'), 'свой устаревший файл всё так же удаляется');
+assertSameValue(true, file_exists($dir . 'variables_new.css'), 'только что записанный файл на месте');
+
+removeDir($dir);
 
 echo "StaleFilePrunerTest: OK\n";

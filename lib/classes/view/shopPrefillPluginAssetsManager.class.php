@@ -9,6 +9,14 @@ class shopPrefillPluginAssetsManager
     /** Возраст сгенерированного файла (CSS-переменные, JS-инициализатор), после которого он считается мусором */
     private const PRUNE_TTL_SECONDS = 30 * 24 * 60 * 60;
 
+    /**
+     * Маски файлов, которыми владеет уборщик. В каталоге css/ соседствует пер-витринный
+     * frontend_{code}.css (shopPrefillPluginCssManager) — по TTL он устаревает всегда, а
+     * пересоздаётся только на следующем рендере, поэтому под уборку попадать не должен (issue-94).
+     */
+    private const CSS_OWN_FILES_GLOB = 'variables_*.css';
+    private const JS_OWN_FILES_GLOB = '*.js';
+
     private string $plugin_id;
     private bool $assets_initialized = false;
     private ?waResponse $response = null;
@@ -99,7 +107,12 @@ class shopPrefillPluginAssetsManager
 
         if (!file_exists("{$css_public_dir}{$css_variables_filename}")) {
             file_put_contents("{$css_public_dir}{$css_variables_filename}", $css_variables_map);
-            $this->getPruner()->prune($css_public_dir, $css_variables_filename, self::PRUNE_TTL_SECONDS);
+            $this->getPruner()->prune(
+                $css_public_dir,
+                self::CSS_OWN_FILES_GLOB,
+                $css_variables_filename,
+                self::PRUNE_TTL_SECONDS
+            );
         }
 
         return $css_variables_filename;
@@ -132,7 +145,12 @@ JS;
 
         if (!file_exists("{$js_public_dir}{$js_file_name}")) {
             file_put_contents("{$js_public_dir}{$js_file_name}", $inline_script);
-            $this->getPruner()->prune($js_public_dir, $js_file_name, self::PRUNE_TTL_SECONDS);
+            $this->getPruner()->prune(
+                $js_public_dir,
+                self::JS_OWN_FILES_GLOB,
+                $js_file_name,
+                self::PRUNE_TTL_SECONDS
+            );
         }
 
         return $js_file_name;

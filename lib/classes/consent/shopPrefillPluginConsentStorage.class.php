@@ -7,9 +7,16 @@
  * - '1' = согласие дано
  * - отсутствие куки = нет согласия
  *
- * Cookie автоматически продлевается на 1 год при каждой проверке `hasConsent()`.
- * Это сделано намеренно: согласие не должно «внезапно» истечь у активного пользователя,
- * и логика продления не должна размазываться по нескольким местам (единая точка правды).
+ * Cookie продлевается на 1 год явным вызовом `renewConsentIfGranted()` — единственная точка
+ * вызова: `FrontendHooks::handleGuestCookies()`, на каждом посещении витрины гостем. Согласие
+ * не должно «внезапно» истечь у активного пользователя, а логика продления не должна
+ * размазываться по нескольким местам (единая точка правды).
+ *
+ * До 09.09.2026 продление было побочным эффектом самого `hasConsent()`, и её звали в трёх
+ * разных хуках одного запроса (`frontend_head`, `checkout_render_confirm`,
+ * `order_action.create`) — каждый читал согласие и заодно молча продлевал TTL, из-за чего
+ * полная загрузка `/order/` слала два одинаковых `Set-Cookie: prefill_consent` (issue-100 §1).
+ * `hasConsent()` теперь чистое чтение; продление — их общий явный сосед.
  *
  * Используется только для гостей. Авторизованные пользователи
  * идентифицируются по contact_id, согласие не требуется.
@@ -37,25 +44,35 @@ class shopPrefillPluginConsentStorage
     }
 
     /**
-     * Проверяет наличие согласия пользователя (гостя).
-     *
-     * Если согласие было дано ранее (cookie = '1'), метод также продлевает TTL куки.
-     * Это специально сделано побочным эффектом проверки, т.к. `hasConsent()` вызывается
-     * в «естественных» точках жизненного цикла (frontend_head / checkout hooks).
+     * Проверяет наличие согласия пользователя (гостя). Чистое чтение, без побочных эффектов —
+     * продление TTL здесь больше не происходит (issue-100 §1), см. `renewConsentIfGranted()`.
      *
      * @return bool true, если согласие дано
      */
     public function hasConsent(): bool
     {
-        if (waRequest::cookie(self::CONSENT_COOKIE) !== '1') {
-            shopPrefillPluginLog::debug('Guest consent check: no consent');
-            return false;
+        $has_consent = waRequest::cookie(self::CONSENT_COOKIE) === '1';
+
+        shopPrefillPluginLog::debug($has_consent
+            ? 'Guest consent check: consent present'
+            : 'Guest consent check: no consent');
+
+        return $has_consent;
+    }
+
+    /**
+     * Продлевает TTL куки согласия, если оно дано. Единственная точка вызова —
+     * `FrontendHooks::handleGuestCookies()`, на каждом посещении витрины гостем: там она
+     * заменила прежний вызов `hasConsent()`, звавшийся ради этого же побочного эффекта.
+     */
+    public function renewConsentIfGranted(): void
+    {
+        if (!$this->hasConsent()) {
+            return;
         }
 
-        // Согласие есть — продлеваем TTL на этом же запросе.
         $this->renewConsent();
-        shopPrefillPluginLog::debug('Guest consent check: consent present, TTL renewed');
-        return true;
+        shopPrefillPluginLog::debug('Guest consent TTL renewed');
     }
 
     /**

@@ -450,6 +450,9 @@ class shopPrefillPlugin extends shopPlugin
      * Признак «текущий запрос рендерит форму заказа» — общий для checkout-хуков,
      * которые его выставляют, и для frontend_head, который по нему решает,
      * подключать ли CSS/JS плагина.
+     *
+     * Поле экземпляра здесь безопасно: сама отметка о сработавшем хуке лежит в статике
+     * детектора, поэтому переживает пересоздание объекта плагина между событиями (issue-93).
      */
     private function getCheckoutPageDetector(): shopPrefillPluginCheckoutPageDetector
     {
@@ -524,19 +527,49 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
+     * Выполняет обработчик хука под защитой от Throwable.
+     *
+     * waEvent::runPlugins() ловит только Exception: любой Error (TypeError на неожиданном
+     * типе значения в $params, вызов метода на null) ушёл бы наверх и отдал покупателю 500
+     * вместо страницы оформления заказа. Плагин украшает чекаут и ронять его не вправе —
+     * при любой неопределённости отступаем к стоковому виду (B2a, issue-95).
+     *
+     * Отступление безопасно по построению: скрывающий секции CSS уезжает в разметку только
+     * вместе с кнопкой «Изменить» (shopPrefillPluginZenMode::renderCollapseBlock()), поэтому
+     * пустой результат хука — это обычный чекаут, а не свёрнутые блоки без способа развернуть.
+     *
+     * @param string $hook Имя хука для лога
+     * @param callable $handler Тело обработчика
+     * @param string|null $fallback Что вернуть, если обработчик упал
+     * @return string|null
+     */
+    private function guardHook(string $hook, callable $handler, ?string $fallback = '')
+    {
+        try {
+            return $handler();
+        } catch (Throwable $e) {
+            shopPrefillPluginLog::error('Checkout hook failed: ' . $hook, [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile() . ':' . $e->getLine(),
+            ]);
+
+            return $fallback;
+        }
+    }
+
+    /**
      * Хук срабатывает на всех страницах магазина.
      * Предзаполняем параметры сразу при входе на сайт.
-     *
-     * @throws waException
-     * @throws waDbException
      */
     public function frontendHead($params)
     {
-        if (! $this->isActive()) {
-            return '';
-        }
+        return $this->guardHook('frontend_head', function () use ($params) {
+            if (! $this->isActive()) {
+                return '';
+            }
 
-        return $this->getFrontendHooks()->handleFrontendHead($params);
+            return $this->getFrontendHooks()->handleFrontendHead($params);
+        });
     }
 
     /**
@@ -598,11 +631,14 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutBeforeAuth(&$params): void
     {
-        if (! $this->isActive()) {
-            return;
-        }
+        // Отступление здесь — «не предзаполнили», форма ядра остаётся целой.
+        $this->guardHook('checkout_before_auth', function () use (&$params) {
+            if (! $this->isActive()) {
+                return;
+            }
 
-        $this->enterCheckoutHooks()->handleCheckoutBeforeAuth($params);
+            $this->enterCheckoutHooks()->handleCheckoutBeforeAuth($params);
+        }, null);
     }
 
     /**
@@ -615,11 +651,13 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderAuth(&$params)
     {
-        if (! $this->isActive()) {
-            return '';
-        }
+        return $this->guardHook('checkout_render_auth', function () use (&$params) {
+            if (! $this->isActive()) {
+                return '';
+            }
 
-        return $this->enterCheckoutHooks()->handleCheckoutRenderAuth($params);
+            return $this->enterCheckoutHooks()->handleCheckoutRenderAuth($params);
+        });
     }
 
 
@@ -632,28 +670,29 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderRegion(&$params)
     {
-        if (! $this->isActive()) {
-            return '';
-        }
+        return $this->guardHook('checkout_render_region', function () use (&$params) {
+            if (! $this->isActive()) {
+                return '';
+            }
 
-        return $this->enterCheckoutHooks()->handleCheckoutRenderRegion($params);
+            return $this->enterCheckoutHooks()->handleCheckoutRenderRegion($params);
+        });
     }
 
     /**
      * Хук срабатывает перед формированием HTML-кода шага оформления заказа «выбор способа доставки» на странице оформления заказа в корзине.
      * Выполняет предзаполнение параметров формы заказа и показывает информацию об ошибках.
      * Также может выводить блок управления zen-режимом для группы delivery, если details пустой/не существует.
-     *
-     * @throws waException
-     * @throws SmartyException
      */
     public function checkoutRenderShipping(&$params)
     {
-        if (! $this->isActive()) {
-            return '';
-        }
+        return $this->guardHook('checkout_render_shipping', function () use (&$params) {
+            if (! $this->isActive()) {
+                return '';
+            }
 
-        return $this->enterCheckoutHooks()->handleCheckoutRenderShipping($params);
+            return $this->enterCheckoutHooks()->handleCheckoutRenderShipping($params);
+        });
     }
 
     /**
@@ -665,11 +704,13 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderDetails(&$params)
     {
-        if (! $this->isActive()) {
-            return '';
-        }
+        return $this->guardHook('checkout_render_details', function () use (&$params) {
+            if (! $this->isActive()) {
+                return '';
+            }
 
-        return $this->enterCheckoutHooks()->handleCheckoutRenderDetails($params);
+            return $this->enterCheckoutHooks()->handleCheckoutRenderDetails($params);
+        });
     }
 
     /**
@@ -681,11 +722,13 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderPayment(&$params)
     {
-        if (! $this->isActive()) {
-            return '';
-        }
+        return $this->guardHook('checkout_render_payment', function () use (&$params) {
+            if (! $this->isActive()) {
+                return '';
+            }
 
-        return $this->enterCheckoutHooks()->handleCheckoutRenderPayment($params);
+            return $this->enterCheckoutHooks()->handleCheckoutRenderPayment($params);
+        });
     }
 
     /**
@@ -697,11 +740,13 @@ class shopPrefillPlugin extends shopPlugin
      */
     public function checkoutRenderConfirm(&$params)
     {
-        if (! $this->isActive()) {
-            return '';
-        }
+        return $this->guardHook('checkout_render_confirm', function () use (&$params) {
+            if (! $this->isActive()) {
+                return '';
+            }
 
-        return $this->enterCheckoutHooks()->handleCheckoutRenderConfirm($params);
+            return $this->enterCheckoutHooks()->handleCheckoutRenderConfirm($params);
+        });
     }
 
 

@@ -34,6 +34,12 @@
 /** Читает куки ровно так же, как настоящий: из $_COOKIE. */
 class waRequest
 {
+    /** Тестовый стенд — не HTTPS; тесту важно лишь то, что метод вызывается без ошибок. */
+    public static function isHttps(): bool
+    {
+        return false;
+    }
+
     /** @return mixed */
     public function cookie(string $name, $default = null)
     {

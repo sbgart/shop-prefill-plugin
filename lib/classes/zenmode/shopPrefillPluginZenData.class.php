@@ -194,7 +194,7 @@ class shopPrefillPluginZenData
                 'name' => _wp('Business hours'),
                 'description' => _wp('Pickup point business hours (HTML structure)'),
                 'example' => _wp('zen.custom_template.example_value.schedule_fragment'),
-                // HTML собирает renderPickupScheduleDays() — внутри уже экранировано
+                // HTML собирает renderPickupSchedule() — внутри уже экранировано
                 'is_html' => true,
             ],
             'delivery_pickup_address' => [
@@ -227,7 +227,7 @@ class shopPrefillPluginZenData
             'delivery_photos_html' => [
                 'group' => 'delivery',
                 'name' => _wp('Photo gallery'),
-                'description' => _wp('Native photo gallery with lightbox and horizontal scroll (HTML). Works automatically inside the delivery step.'),
+                'description' => _wp('Ready-made photo gallery with horizontal scrolling (HTML). A click opens the original photo in a new tab.'),
                 'example' => _wp('zen.custom_template.example_value.delivery_photos_html'),
                 // HTML собирает buildPhotosHtml() — внутри уже экранировано
                 'is_html' => true,
@@ -424,7 +424,7 @@ class shopPrefillPluginZenData
                 'time_interval' => '10:00–18:00',
             ];
             $data['address_custom'] = [
-                'metro' => 'Сокольники',
+                'metro' => _wp('zen.custom_template.example_value.address_custom_metro'),
             ];
             // Плейсхолдер вместо файла из каталога: превью не должно зависеть ни от содержимого
             // магазина, ни от сети, но миниатюра обязана быть видимой — иначе по превью не
@@ -593,13 +593,17 @@ class shopPrefillPluginZenData
     {
         $alt = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
 
+        // Хелпер резолвим один раз на галерею: каждый imgUrl() — это realpath() + file_exists(),
+        // а на первой отрисовке ещё и генерация файла миниатюры на диске.
+        $helper = self::getShopViewHelper();
+
         $items_html = '';
         foreach ($photos as $photo) {
             $uri = isset($photo['uri']) ? trim((string)$photo['uri']) : '';
             if ($uri === '') {
                 continue;
             }
-            $thumb_uri = !empty($photo['thumb_uri']) ? (string)$photo['thumb_uri'] : self::buildThumbUri($uri);
+            $thumb_uri = !empty($photo['thumb_uri']) ? (string)$photo['thumb_uri'] : self::buildThumbUri($helper, $uri);
             $uri_esc   = htmlspecialchars($uri, ENT_QUOTES, 'UTF-8');
             $thumb_esc = htmlspecialchars($thumb_uri, ENT_QUOTES, 'UTF-8');
 
@@ -616,6 +620,33 @@ class shopPrefillPluginZenData
     }
 
     /**
+     * Хелпер приложения shop — тот же объект, что в шаблонах доступен как `{$wa->shop}`.
+     *
+     * Конструктор `waAppViewHelper` ждёт `waSystem`, а не представление: `wa()->getView()`
+     * отдаёт `waSmarty3View`, у которого нет `getConfig()` (docs/codereview/issue-91). Берём
+     * хелпер штатным путём — ядро кэширует инстанс в `waViewHelper::__get()`, поэтому повторные
+     * обращения бесплатны, а конструктор с чтением domain-конфига под CDN дёргается один раз.
+     *
+     * @return shopViewHelper|null null, если хелпер недоступен — вызывающий откатывается на оригинал
+     */
+    private static function getShopViewHelper(): ?shopViewHelper
+    {
+        try {
+            $helper = wa()->getView()->getHelper()->shop;
+        } catch (Throwable $e) {
+            // Ловим Throwable, а не waException: сломанный хелпер не должен ронять чекаут, но и
+            // молчать нельзя — issue-91 прожила ревью именно потому, что откат был беззвучным.
+            shopPrefillPluginLog::error('Zen photos: shop view helper is unavailable, falling back to full-size images', [
+                'exception' => get_class($e),
+                'message'   => $e->getMessage(),
+            ]);
+            return null;
+        }
+
+        return $helper instanceof shopViewHelper ? $helper : null;
+    }
+
+    /**
      * Возвращает URL миниатюры фотографии ПВЗ.
      *
      * Плагины доставки кладут в `custom_data[...]['photos']` только `uri` оригинала (у `sd`
@@ -627,17 +658,39 @@ class shopPrefillPluginZenData
      * Внешние ссылки (со схемой) хелпер возвращает как есть — для них миниатюры не существует.
      * Любая ошибка хелпера не должна стоить галереи целиком: откатываемся на оригинал.
      *
-     * @param string $uri URI оригинала
+     * @param shopViewHelper|null $helper Хелпер из getShopViewHelper()
+     * @param string              $uri    URI оригинала
      * @return string
      */
-    private static function buildThumbUri(string $uri): string
+    private static function buildThumbUri(?shopViewHelper $helper, string $uri): string
     {
-        try {
-            $thumb = (new shopViewHelper(wa()->getView()))->imgUrl($uri, '100x75');
-            return is_string($thumb) && $thumb !== '' ? $thumb : $uri;
-        } catch (Throwable $e) {
+        if ($helper === null) {
             return $uri;
         }
+
+        try {
+            $thumb = $helper->imgUrl($uri, '100x75');
+        } catch (Throwable $e) {
+            shopPrefillPluginLog::error('Zen photos: thumbnail helper failed, falling back to full-size image', [
+                'uri'       => $uri,
+                'exception' => get_class($e),
+                'message'   => $e->getMessage(),
+            ]);
+            return $uri;
+        }
+
+        // Пустая строка — генерация миниатюры не удалась; корень витрины — файла нет на диске
+        // (imgUrl() на несуществующем пути возвращает getRootUrl(), а не ''), и такой src утянул бы
+        // в <img> целую страницу.
+        if (!is_string($thumb) || $thumb === '' || rtrim($thumb, '/') === rtrim(wa()->getRootUrl(), '/')) {
+            shopPrefillPluginLog::debug('Zen photos: no thumbnail for photo, using full-size image', [
+                'uri'   => $uri,
+                'thumb' => is_string($thumb) ? $thumb : gettype($thumb),
+            ]);
+            return $uri;
+        }
+
+        return $thumb;
     }
 
     /**

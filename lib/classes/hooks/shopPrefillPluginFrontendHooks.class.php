@@ -172,9 +172,10 @@ class shopPrefillPluginFrontendHooks
         // без истории не получает идентификатор за просмотр каталога.
         $this->guest_token_storage->extendToken();
 
-        // Продлеваем cookie согласия (если оно было дано)
-        // Вызов hasConsent() автоматически продлевает cookie
-        $this->consent_storage->hasConsent();
+        // Продлеваем cookie согласия (если оно было дано). Единственная точка продления —
+        // hasConsent() в остальных местах (checkout_render_confirm, order_action.create)
+        // теперь чистое чтение, без этого побочного эффекта (issue-100 §1)
+        $this->consent_storage->renewConsentIfGranted();
     }
 
     /**

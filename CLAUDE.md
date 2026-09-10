@@ -81,15 +81,16 @@ Prefill runs **only on the checkout path** — `checkout_before_auth`, which fir
 
 1. `CheckoutHooks` computes the source key (no DB) and passes a **lazy loader** into
    `SessionStorageProvider::preFillCheckoutParamsFromSource()`
-2. That method: collects prefillable sections → fills what it can from `shop/prefill_snapshot`
-   → only if gaps remain **and** the session marker `shop/prefill_source` does not match,
-   calls the loader → writes `shop/checkout`, snapshot and the marker
+2. That method (`applyPrefill()`): picks sections not yet owned by the customer
+   (`SectionChecker::canPrefillSection()`) → if the session marker `shop/prefill_source`
+   already matches the source key, stops there (no DB hit); otherwise calls the loader once,
+   fills the picked sections, merges the result into `shop/checkout` and writes the marker
 3. `AssetsManager` generates a unique JS initializer file passing params to `PrefillFrontendController`
 4. JS modules manipulate the checkout DOM for Zen Mode and delivery variant cards
 
 Two rules the marker must obey (breaking either causes silent regressions):
 
-- it gates **only** the loader call, never the snapshot restore — snapshot works every request
+- it gates **only** the loader call — section ownership is re-checked fresh on every request
 - it is **not written** for a guest without a cookie, otherwise every anonymous visitor and bot
   gets a PHP session and `Set-Cookie: PHPSESSID`
 

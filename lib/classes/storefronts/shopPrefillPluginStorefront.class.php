@@ -52,14 +52,6 @@ class shopPrefillPluginStorefront
     }
 
     /**
-     * @throws waException
-     */
-    public function getRouteUrl(string $path, array $params = [], bool $absolute = false): ?string
-    {
-        return wa()->getRouting()->getUrl($path, $params, $absolute, $this->getDomain(), $this->getRoute('url'));
-    }
-
-    /**
      * Always returns this storefront's own settings — no fallback to global.
      *
      * @throws waDbException
@@ -67,14 +59,6 @@ class shopPrefillPluginStorefront
     public function getSettings(): array
     {
         return $this->setting_provider->getSettings($this->code);
-    }
-
-    /**
-     * @throws waException
-     */
-    public function setSetting($key, $value, $groups = null): void
-    {
-        $this->setting_provider->setSetting($this->code, $key, $value, $groups);
     }
 
     /**

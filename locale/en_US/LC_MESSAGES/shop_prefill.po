@@ -96,6 +96,9 @@ msgstr "Edit"
 msgid "action.collapse"
 msgstr "Collapse"
 
+msgid "action.close"
+msgstr "Close"
+
 msgid "zen.price.free"
 msgstr "Free"
 
@@ -892,13 +895,13 @@ msgid "zen.custom_template.example_value.delivery_photos"
 msgstr "Pickup point photos (thumbnails in a row)"
 
 msgid "zen.custom_template.example_value.delivery_photos_html"
-msgstr "Gallery with lightbox (HTML)"
+msgstr "Photo gallery (HTML)"
 
 msgid "Photo gallery"
 msgstr "Photo gallery"
 
-msgid "Native photo gallery with lightbox and horizontal scroll (HTML). Works automatically inside the delivery step."
-msgstr "Native photo gallery with lightbox and horizontal scroll (HTML). Works automatically inside the delivery step."
+msgid "Ready-made photo gallery with horizontal scrolling (HTML). A click opens the original photo in a new tab."
+msgstr "Ready-made photo gallery with horizontal scrolling (HTML). A click opens the original photo in a new tab."
 
 msgid "zen.custom_template.example_value.shipping_custom"
 msgstr "time_interval: 14:00–18:00"
@@ -923,6 +926,9 @@ msgstr "12345"
 
 msgid "zen.custom_template.example_value.address_custom"
 msgstr "metro: Central"
+
+msgid "zen.custom_template.example_value.address_custom_metro"
+msgstr "Central"
 
 msgid "zen.custom_template.example_value.payment_name"
 msgstr "Cash on delivery"

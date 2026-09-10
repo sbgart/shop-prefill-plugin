@@ -34,9 +34,11 @@ class shopPrefillCheckoutState
      */
     public function getFirstName(): string
     {
-        return $this->params['vars']['auth']['fields']['firstname']['value']
-            ?? $this->params['data']['input']['auth']['data']['firstname']
-            ?? '';
+        return self::scalarString(
+            $this->params['vars']['auth']['fields']['firstname']['value']
+                ?? $this->params['data']['input']['auth']['data']['firstname']
+                ?? ''
+        );
     }
 
     /**
@@ -44,9 +46,11 @@ class shopPrefillCheckoutState
      */
     public function getLastName(): string
     {
-        return $this->params['vars']['auth']['fields']['lastname']['value']
-            ?? $this->params['data']['input']['auth']['data']['lastname']
-            ?? '';
+        return self::scalarString(
+            $this->params['vars']['auth']['fields']['lastname']['value']
+                ?? $this->params['data']['input']['auth']['data']['lastname']
+                ?? ''
+        );
     }
 
     /**
@@ -54,9 +58,11 @@ class shopPrefillCheckoutState
      */
     public function getPhone(): string
     {
-        return $this->params['vars']['auth']['fields']['phone']['value']
-            ?? $this->params['data']['input']['auth']['data']['phone']
-            ?? '';
+        return self::scalarString(
+            $this->params['vars']['auth']['fields']['phone']['value']
+                ?? $this->params['data']['input']['auth']['data']['phone']
+                ?? ''
+        );
     }
 
     /**
@@ -64,9 +70,11 @@ class shopPrefillCheckoutState
      */
     public function getEmail(): string
     {
-        return $this->params['vars']['auth']['fields']['email']['value']
-            ?? $this->params['data']['input']['auth']['data']['email']
-            ?? '';
+        return self::scalarString(
+            $this->params['vars']['auth']['fields']['email']['value']
+                ?? $this->params['data']['input']['auth']['data']['email']
+                ?? ''
+        );
     }
 
     /**
@@ -103,9 +111,11 @@ class shopPrefillCheckoutState
      */
     public function getCompany(): string
     {
-        return $this->params['vars']['auth']['fields']['company']['value']
-            ?? $this->params['data']['input']['auth']['data']['company']
-            ?? '';
+        return self::scalarString(
+            $this->params['vars']['auth']['fields']['company']['value']
+                ?? $this->params['data']['input']['auth']['data']['company']
+                ?? ''
+        );
     }
 
     /**
@@ -184,8 +194,8 @@ class shopPrefillCheckoutState
     {
         $standard_fields = ['firstname', 'lastname', 'phone', 'email', 'company', 'password', 'confirm_password'];
 
-        $auth_input = $this->params['data']['input']['auth']['data'] ?? [];
-        $auth_fields = $this->params['vars']['auth']['fields'] ?? [];
+        $auth_input = self::arrayValue($this->params['data']['input']['auth']['data'] ?? []);
+        $auth_fields = self::arrayValue($this->params['vars']['auth']['fields'] ?? []);
 
         $custom = [];
 
@@ -216,9 +226,11 @@ class shopPrefillCheckoutState
      */
     public function getSelectedVariant(): array
     {
-        return $this->params['data']['shipping']['selected_variant']
-            ?? $this->params['vars']['shipping']['shipping_rate']
-            ?? [];
+        return self::arrayValue(
+            $this->params['data']['shipping']['selected_variant']
+                ?? $this->params['vars']['shipping']['shipping_rate']
+                ?? []
+        );
     }
 
     /**
@@ -227,8 +239,8 @@ class shopPrefillCheckoutState
     public function getShippingVariantId(): ?string
     {
         $variant = $this->getSelectedVariant();
-        $variant_id = $variant['variant_id'] ?? null;
-        return ($variant_id !== null && $variant_id !== '') ? (string) $variant_id : null;
+        $variant_id = self::scalarString($variant['variant_id'] ?? null);
+        return $variant_id !== '' ? $variant_id : null;
     }
 
     /**
@@ -253,14 +265,14 @@ class shopPrefillCheckoutState
      */
     public function getShippingInstanceId(): ?string
     {
-        $id = $this->params['data']['shipping']['id'] ?? null;
-        if ($id !== null && $id !== '') {
-            return (string) $id;
+        $id = self::scalarString($this->params['data']['shipping']['id'] ?? null);
+        if ($id !== '') {
+            return $id;
         }
 
-        $explicit = $this->params['data']['shipping']['selected_variant']['id'] ?? null;
-        if ($explicit !== null && $explicit !== '') {
-            return (string) $explicit;
+        $explicit = self::scalarString($this->params['data']['shipping']['selected_variant']['id'] ?? null);
+        if ($explicit !== '') {
+            return $explicit;
         }
 
         $from_variant = $this->getShippingServiceId();
@@ -268,9 +280,9 @@ class shopPrefillCheckoutState
             return $from_variant;
         }
 
-        $selected_variant_id = $this->params['vars']['shipping']['selected_variant_id'] ?? null;
-        if ($selected_variant_id !== null && $selected_variant_id !== '') {
-            $parts = explode('.', (string) $selected_variant_id, 2);
+        $selected_variant_id = self::scalarString($this->params['vars']['shipping']['selected_variant_id'] ?? null);
+        if ($selected_variant_id !== '') {
+            $parts = explode('.', $selected_variant_id, 2);
 
             return $parts[0] !== '' ? $parts[0] : null;
         }
@@ -284,7 +296,7 @@ class shopPrefillCheckoutState
     public function getShippingName(): string
     {
         $variant = $this->getSelectedVariant();
-        return $variant['name'] ?? '';
+        return self::scalarString($variant['name'] ?? '');
     }
 
     /**
@@ -294,7 +306,7 @@ class shopPrefillCheckoutState
     {
         $variant = $this->getSelectedVariant();
         $rate = $variant['rate'] ?? null;
-        return ($rate !== null) ? (float) $rate : null;
+        return is_scalar($rate) ? (float) $rate : null;
     }
 
     /**
@@ -303,7 +315,7 @@ class shopPrefillCheckoutState
     public function getShippingType(): string
     {
         $variant = $this->getSelectedVariant();
-        return $variant['type'] ?? '';
+        return self::scalarString($variant['type'] ?? '');
     }
 
     /**
@@ -312,7 +324,7 @@ class shopPrefillCheckoutState
     public function getShippingEstDelivery(): string
     {
         $variant = $this->getSelectedVariant();
-        return $variant['est_delivery'] ?? '';
+        return self::scalarString($variant['est_delivery'] ?? '');
     }
 
     /**
@@ -322,14 +334,15 @@ class shopPrefillCheckoutState
     public function getShippingDescription(): string
     {
         $variant = $this->getSelectedVariant();
-        $description = $variant['description'] ?? '';
+        $description = self::scalarString($variant['description'] ?? '');
 
         if ($description === '') {
-            $custom_data = $variant['custom_data'] ?? [];
-            foreach ($custom_data as $type_data) {
+            foreach (self::arrayValue($variant['custom_data'] ?? []) as $type_data) {
                 if (is_array($type_data) && !empty($type_data['description'])) {
-                    $description = $type_data['description'];
-                    break;
+                    $description = self::scalarString($type_data['description']);
+                    if ($description !== '') {
+                        break;
+                    }
                 }
             }
         }
@@ -343,7 +356,7 @@ class shopPrefillCheckoutState
     public function getShippingPluginName(): string
     {
         $variant = $this->getSelectedVariant();
-        return $variant['plugin_name'] ?? '';
+        return self::scalarString($variant['plugin_name'] ?? '');
     }
 
     /**
@@ -352,7 +365,7 @@ class shopPrefillCheckoutState
     public function getShippingService(): string
     {
         $variant = $this->getSelectedVariant();
-        return $variant['service'] ?? '';
+        return self::scalarString($variant['service'] ?? '');
     }
 
     /**
@@ -361,7 +374,7 @@ class shopPrefillCheckoutState
     public function getShippingWay(): string
     {
         $service_data = $this->getFirstCustomData();
-        return $service_data['way'] ?? '';
+        return self::scalarString($service_data['way'] ?? '');
     }
 
     /**
@@ -370,7 +383,7 @@ class shopPrefillCheckoutState
     public function getShippingStorageDays(): string
     {
         $service_data = $this->getFirstCustomData();
-        return (string) ($service_data['storage']['storage_days'] ?? '');
+        return self::scalarString($service_data['storage']['storage_days'] ?? '');
     }
 
     /**
@@ -441,7 +454,7 @@ class shopPrefillCheckoutState
     public function getShippingPickupAddress(): string
     {
         $service_data = $this->getFirstCustomData();
-        return (string)($service_data['description'] ?? '');
+        return self::scalarString($service_data['description'] ?? '');
     }
 
     /**
@@ -494,6 +507,11 @@ class shopPrefillCheckoutState
                 $end   = htmlspecialchars((string)($day['time_end'] ?? ''), ENT_QUOTES, 'UTF-8');
                 $value = '<span class="prefill-zen-schedule-time"' . $timezone_title . '>' . $start . '—' . $end . '</span>';
             } else {
+                // _w(), а не _wp(): намеренно чужой ключ из локали ядра shop, не своей.
+                // Тот же ключ выводит ядро в этой же секции ("day off" → details.html:253),
+                // и совпадение формулировки со свёрнутой карточкой — ровно цель этой строки.
+                // Ключ принадлежит Shop-Script и может исчезнуть в будущей версии — тогда
+                // покупатель увидит английское "day off" вместо перевода (issue-100 §5).
                 $value = '<span class="prefill-zen-schedule-off">'
                     . htmlspecialchars(_w('day off'), ENT_QUOTES, 'UTF-8')
                     . '</span>';
@@ -525,7 +543,7 @@ class shopPrefillCheckoutState
      */
     public function getShippingCustomFields(): array
     {
-        return $this->params['data']['shipping']['custom'] ?? [];
+        return self::arrayValue($this->params['data']['shipping']['custom'] ?? []);
     }
 
     // -------------------------------------------------------------------------
@@ -545,10 +563,12 @@ class shopPrefillCheckoutState
      */
     public function getRegion(): string
     {
-        return $this->params['data']['shipping']['address']['region']
-            ?? $this->params['data']['input']['region']['region']
-            ?? $this->params['vars']['region']['selected_values']['region_id']
-            ?? '';
+        return self::scalarString(
+            $this->params['data']['shipping']['address']['region']
+                ?? $this->params['data']['input']['region']['region']
+                ?? $this->params['vars']['region']['selected_values']['region_id']
+                ?? ''
+        );
     }
 
     /**
@@ -592,8 +612,8 @@ class shopPrefillCheckoutState
     {
         $standard = ['city', 'region', 'zip', 'street', 'building', 'apartment', 'country', 'lat', 'lng'];
 
-        $shipping_address = $this->params['data']['shipping']['address'] ?? [];
-        $details_address = $this->params['data']['input']['details']['shipping_address'] ?? [];
+        $shipping_address = self::arrayValue($this->params['data']['shipping']['address'] ?? []);
+        $details_address = self::arrayValue($this->params['data']['input']['details']['shipping_address'] ?? []);
 
         $custom = [];
 
@@ -621,7 +641,7 @@ class shopPrefillCheckoutState
      */
     public function getPaymentId(): string
     {
-        return (string) ($this->params['data']['payment']['id'] ?? '');
+        return self::scalarString($this->params['data']['payment']['id'] ?? '');
     }
 
     /**
@@ -635,13 +655,13 @@ class shopPrefillCheckoutState
             return '';
         }
 
-        $payment_methods = $this->params['vars']['payment']['methods'] ?? [];
+        $payment_methods = self::arrayValue($this->params['vars']['payment']['methods'] ?? []);
         if (isset($payment_methods[$payment_id])) {
-            return $payment_methods[$payment_id]['name'] ?? '';
+            return self::scalarString($payment_methods[$payment_id]['name'] ?? '');
         }
 
         $all_payments = shopPrefillPluginPluginsProvider::getPaymentMethods();
-        return $all_payments[$payment_id]['name'] ?? '';
+        return self::scalarString($all_payments[$payment_id]['name'] ?? '');
     }
 
     /**
@@ -654,13 +674,13 @@ class shopPrefillCheckoutState
             return '';
         }
 
-        $payment_methods = $this->params['vars']['payment']['methods'] ?? [];
+        $payment_methods = self::arrayValue($this->params['vars']['payment']['methods'] ?? []);
         if (isset($payment_methods[$payment_id])) {
-            return $payment_methods[$payment_id]['description'] ?? '';
+            return self::scalarString($payment_methods[$payment_id]['description'] ?? '');
         }
 
         $all_payments = shopPrefillPluginPluginsProvider::getPaymentMethods();
-        return $all_payments[$payment_id]['description'] ?? '';
+        return self::scalarString($all_payments[$payment_id]['description'] ?? '');
     }
 
     /**
@@ -678,7 +698,8 @@ class shopPrefillCheckoutState
         }
 
         // logo — кастомный из БД (shop_plugin.logo), img — дефолтный из конфига плагина (= icon[48])
-        return ($variant['logo'] ?? null) ?: ($variant['img'] ?? null) ?: null;
+        $logo = self::scalarString($variant['logo'] ?? null) ?: self::scalarString($variant['img'] ?? null);
+        return $logo !== '' ? $logo : null;
     }
 
     /**
@@ -694,13 +715,14 @@ class shopPrefillCheckoutState
             return null;
         }
 
-        $methods = $this->params['vars']['payment']['methods'] ?? [];
+        $methods = self::arrayValue($this->params['vars']['payment']['methods'] ?? []);
         if (!isset($methods[$payment_id])) {
             return null;
         }
 
-        $method = $methods[$payment_id];
-        return $method['logo'] ?? $method['img'] ?? null;
+        $method = self::arrayValue($methods[$payment_id]);
+        $logo = self::scalarString($method['logo'] ?? $method['img'] ?? null);
+        return $logo !== '' ? $logo : null;
     }
 
     /**
@@ -711,9 +733,11 @@ class shopPrefillCheckoutState
      */
     public function getCustomPaymentFields(): array
     {
-        return $this->params['data']['input']['payment']['custom']
-            ?? $this->params['data']['payment']['custom']
-            ?? [];
+        return self::arrayValue(
+            $this->params['data']['input']['payment']['custom']
+                ?? $this->params['data']['payment']['custom']
+                ?? []
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -728,7 +752,7 @@ class shopPrefillCheckoutState
      */
     public function getDelayedErrors(string $step): array
     {
-        return $this->params['data'][$step]['delayed_errors'] ?? [];
+        return self::arrayValue($this->params['data'][$step]['delayed_errors'] ?? []);
     }
 
     /**
@@ -738,7 +762,7 @@ class shopPrefillCheckoutState
      */
     public function getRegularErrors(): array
     {
-        $errors = $this->params['errors'] ?? [];
+        $errors = self::arrayValue($this->params['errors'] ?? []);
         $real_errors = array_filter($errors, static fn($e) => !self::isFastRenderSentinel($e));
 
         return array_values($real_errors);
@@ -752,7 +776,7 @@ class shopPrefillCheckoutState
      */
     public function isFastRender(): bool
     {
-        $errors = $this->params['errors'] ?? [];
+        $errors = self::arrayValue($this->params['errors'] ?? []);
         foreach ($errors as $error) {
             if (self::isFastRenderSentinel($error)) {
                 return true;
@@ -795,8 +819,8 @@ class shopPrefillCheckoutState
      */
     public function getErrorStepId(): ?string
     {
-        $val = $this->params['error_step_id'] ?? null;
-        return ($val !== null && $val !== '') ? (string) $val : null;
+        $val = self::scalarString($this->params['error_step_id'] ?? null);
+        return $val !== '' ? $val : null;
     }
 
     /**
@@ -991,7 +1015,7 @@ class shopPrefillCheckoutState
      */
     public function getData(): array
     {
-        return $this->params['data'] ?? [];
+        return self::arrayValue($this->params['data'] ?? []);
     }
 
     // -------------------------------------------------------------------------
@@ -1006,7 +1030,9 @@ class shopPrefillCheckoutState
      */
     public function applyPrefillInput(array $filled_order): void
     {
-        if (empty($filled_order) || !isset($this->params['data']['input'])) {
+        // is_array, а не isset: под `input` приезжает POST покупателя, и скаляр там
+        // уронил бы deepMergeArrays(array $base, …) TypeError'ом (issue-95).
+        if (empty($filled_order) || !is_array($this->params['data']['input'] ?? null)) {
             return;
         }
 
@@ -1032,16 +1058,51 @@ class shopPrefillCheckoutState
     // -------------------------------------------------------------------------
 
     /**
+     * Приводит значение из $params к строке.
+     *
+     * Типы в $params ядром не гарантированы: `vars.auth.fields[*].value` и весь `data.input.*`
+     * приезжают из POST покупателя как есть (`formatContactFields()` кастует только значение
+     * из контакта, но не присланное), поэтому под скалярным ключом может оказаться массив —
+     * его отрисует соседний плагин или тема, положившая многозначное поле в пространство имён
+     * `auth[data]` / `details[shipping_address]` / `region`. Без приведения объявленный `: string`
+     * превращает это в TypeError, а его не ловит ни waEvent (только Exception), ни render-хуки:
+     * покупатель получает 500 вместо формы оформления (issue-95).
+     *
+     * Нескалярное значение трактуем как «значения нет»: по B2a при неопределённости плагин
+     * отступает к стоковому чекауту, а не додумывает.
+     *
+     * @param mixed $value
+     */
+    private static function scalarString($value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
+    }
+
+    /**
+     * Приводит значение из $params к массиву — зеркало scalarString() для `: array`-геттеров.
+     * Обратная подстановка так же реальна: `payment[custom]=x` кладёт под массивный ключ строку.
+     *
+     * @param mixed $value
+     * @return array<int|string, mixed>
+     */
+    private static function arrayValue($value): array
+    {
+        return is_array($value) ? $value : [];
+    }
+
+    /**
      * Ищет значение поля адреса по нескольким источникам в порядке приоритета:
      * data.shipping.address → data.input.details.shipping_address → data.input.region → vars.region.selected_values
      */
     private function findAddressField(string $field): string
     {
-        return $this->params['data']['shipping']['address'][$field]
-            ?? $this->params['data']['input']['details']['shipping_address'][$field]
-            ?? $this->params['data']['input']['region'][$field]
-            ?? $this->params['vars']['region']['selected_values'][$field]
-            ?? '';
+        return self::scalarString(
+            $this->params['data']['shipping']['address'][$field]
+                ?? $this->params['data']['input']['details']['shipping_address'][$field]
+                ?? $this->params['data']['input']['region'][$field]
+                ?? $this->params['vars']['region']['selected_values'][$field]
+                ?? ''
+        );
     }
 
     /**
@@ -1053,7 +1114,7 @@ class shopPrefillCheckoutState
     private function getFirstCustomData(): array
     {
         $variant = $this->getSelectedVariant();
-        $custom_data = $variant['custom_data'] ?? [];
+        $custom_data = self::arrayValue($variant['custom_data'] ?? []);
 
         if (!empty($custom_data)) {
             $first = reset($custom_data);

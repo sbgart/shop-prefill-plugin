@@ -11,3 +11,6 @@
 !.vscode/launch.json
 !.vscode/extensions.json
 prefill.tar.gz
+
+# Playwright MCP session artifacts
+.playwright-mcp/

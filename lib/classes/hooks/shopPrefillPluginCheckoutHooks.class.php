@@ -169,8 +169,11 @@ class shopPrefillPluginCheckoutHooks
         }
 
         foreach ($sections as $section_id => $values) {
+            // Секция из POST может приехать скаляром (`payment=x`), а deepMergeArrays()
+            // объявляет `array $base` — без приведения это TypeError и 500 (issue-95).
+            $current = $params['data']['input'][$section_id] ?? [];
             $params['data']['input'][$section_id] = shopPrefillPluginHelper::deepMergeArrays(
-                $params['data']['input'][$section_id] ?? [],
+                is_array($current) ? $current : [],
                 $values
             );
         }
@@ -366,7 +369,7 @@ class shopPrefillPluginCheckoutHooks
                 'payment_id' => $group === 'payment' ? $state->getPaymentId() : null,
             ]));
             return $html;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             shopPrefillPluginLog::error('Zen Mode error in ' . $log_context, [
                 'message' => $e->getMessage()
             ]);
@@ -401,7 +404,7 @@ class shopPrefillPluginCheckoutHooks
                 'checkout/ConsentCheckbox',
                 ['has_consent' => $has_consent]
             );
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             shopPrefillPluginLog::error('Consent checkbox rendering error in checkoutRenderConfirm', [
                 'message' => $e->getMessage()
             ]);

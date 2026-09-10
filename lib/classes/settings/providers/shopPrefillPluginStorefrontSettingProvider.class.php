@@ -2,6 +2,11 @@
 
 class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstractSettingProvider
 {
+    // Ветки zen.groups.{customer,delivery,payment}, чьи листья рендерятся Smarty без
+    // enableSecurity() (RULES.md B4) — исполнение произвольного PHP, а не текстовый шаблон
+    private const TEMPLATE_GROUPS = ['customer', 'delivery', 'payment'];
+    private const TEMPLATE_LEAVES = ['summary_template', 'custom_templates'];
+
     public function __construct()
     {
         parent::__construct(
@@ -19,15 +24,11 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
         );
     }
 
-    public function setSetting(string $storefront_code, $key, $value, $groups = null): void
-    {
-        $this->flattenSettings($key, $value, $groups, function ($name, $val, $g) use ($storefront_code) {
-            $this->model->set($storefront_code, $name, $val, $g);
-        });
-    }
-
     public function saveSettings(string $storefront_code, array $settings = []): void
     {
+        $settings = $this->filterKnown($settings);
+        $settings = $this->stripTemplateWritesForNonAdmin($settings);
+
         $entries = [];
         $collect = function ($name, $val, $g) use (&$entries) {
             $entries[] = ['name' => $name, 'value' => $val, 'groups' => $g];
@@ -53,6 +54,30 @@ class shopPrefillPluginStorefrontSettingProvider extends shopPrefillPluginAbstra
             'storefront_code' => $storefront_code,
             'updated_by'      => wa()->getUser()->getId(),
         ]);
+    }
+
+    /**
+     * Гейт на запись, которого не было (issue-96). Форма плагина сохраняется ядровым
+     * `?module=plugins&action=save` под правом `shop:settings` — гранулярным, не следующим
+     * из isAdmin() и выдаваемым отдельно (shopPluginsActions::preExecute()). Сам редактор
+     * шаблона (SettingsAction/TemplateEditor/TemplatePreview) уже требует isAdmin(APP_ID), но
+     * этот путь сохранения — нет: без проверки здесь владелец только `settings` мог записать
+     * summary_template/custom_templates, не имея доступа даже открыть их форму. Остальные поля
+     * (цвета, тумблеры) не трогаем — их запрет сломал бы штатную работу с правом `settings`.
+     */
+    private function stripTemplateWritesForNonAdmin(array $settings): array
+    {
+        if (wa()->getUser()->isAdmin(shopPrefillPlugin::APP_ID)) {
+            return $settings;
+        }
+
+        foreach (self::TEMPLATE_GROUPS as $group) {
+            foreach (self::TEMPLATE_LEAVES as $leaf) {
+                unset($settings['zen']['groups'][$group][$leaf]);
+            }
+        }
+
+        return $settings;
     }
 
     /**

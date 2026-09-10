@@ -77,6 +77,7 @@ assertSameValue(true, $embedded->isCheckoutPage(), 'форма вставлен�
 $order_page = makeDetector(['frontend', 'order']);
 $order_page->markCheckoutHookFired();
 assertSameValue(true, $order_page->isCheckoutPage(), 'страница заказа: оба признака сходятся');
+shopPrefillPluginCheckoutPageDetector::forgetCheckoutHookForTests();
 
 // Отметка неотзывная: секции чекаута рендерятся по очереди, и последняя не должна
 // отменять решение, принятое на первой
@@ -84,6 +85,21 @@ $sticky = makeDetector(['frontend', 'page']);
 $sticky->markCheckoutHookFired();
 $sticky->markCheckoutHookFired();
 assertSameValue(true, $sticky->isCheckoutPage(), 'повторная отметка не сбрасывает признак');
+shopPrefillPluginCheckoutPageDetector::forgetCheckoutHookForTests();
+
+// Главное про признак 1: пометивший и спрашивающий — РАЗНЫЕ объекты. waEvent пересоздаёт
+// объект плагина (а с ним и детектор) на каждое событие, поэтому checkout_before_auth
+// метит один экземпляр, а frontend_head спрашивает другой. issue-93
+$hook_event = makeDetector(['frontend', 'page']);
+$hook_event->markCheckoutHookFired();
+$head_event = makeDetector(['frontend', 'page']);
+assertSameValue(true, $head_event->isCheckoutPage(), 'отметка переживает границу события: другой экземпляр её видит');
+shopPrefillPluginCheckoutPageDetector::forgetCheckoutHookForTests();
+
+// И обратное: без отметки новый экземпляр не считает страницу чекаутом — иначе статика
+// протекала бы на каталог и вернула бы issue-64
+$clean = makeDetector(['frontend', 'product']);
+assertSameValue(false, $clean->isCheckoutPage(), 'сброшенная отметка не оставляет следа');
 
 // ---------------------------------------------------------------------------
 // 3. Маршрут читается лениво и только когда без него не обойтись
@@ -109,5 +125,6 @@ $marked = new shopPrefillPluginCheckoutPageDetector(static function () use (&$ca
 $marked->markCheckoutHookFired();
 assertSameValue(true, $marked->isCheckoutPage(), 'сработавший хук решает без маршрута');
 assertSameValue(0, $calls_after_hook, 'маршрут не запрашивается, когда хук уже сработал');
+shopPrefillPluginCheckoutPageDetector::forgetCheckoutHookForTests();
 
 echo "CheckoutPageDetectorTest: OK\n";

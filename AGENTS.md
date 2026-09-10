@@ -1,10 +1,10 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to Codex when working with code in this repository.
 
 ## Project Overview
 
-This is a **Webasyst Shop-Script plugin** (`shop/plugins/prefill`) that prefills checkout form fields based on the user's previous orders. It supports both authenticated users (by `contact_id`) and guests (via `prefill_guest_hash` cookie linked to `shop_order_params` DB records).
+This is a **Webasyst Shop-Script plugin** (`shop/plugins/prefill`) that prefills checkout form fields based on the user's previous orders. It supports both authenticated users (by `contact_id` via `shop_customer.last_order_id`) and guests (via a random `prefill_guest_token` cookie whose derived lookup id is stored in the indexed `shop_order_params.name` column).
 
 - **Plugin ID:** `prefill`
 - **App:** `shop` (Shop-Script)
@@ -30,17 +30,17 @@ For locale compilation and cache clearing — use `/compile-plugin-mo`.
 The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as a service locator — it lazily instantiates all providers and hooks via getter methods. It registers Webasyst hooks in `lib/config/plugin.php`.
 
 **Active hooks:**
-- `frontend_head` — runs on every shop page; manages cookies and debug, and attaches CSS/JS **only on the checkout page** (`CheckoutPageDetector`, see `docs/codereview/issue-64-*.md`). Does NOT prefill — see `docs/codereview/issue-63-*.md`
+- `frontend_head` — runs on every shop page; manages cookies and debug, and attaches CSS/JS **only on the checkout page** (`CheckoutPageDetector`, see `docs/codereview/issue-64-*.md`). **Does NOT prefill** — writing the session from the layout cannot affect the current page, and prefilled sections are not read outside checkout (see `docs/codereview/issue-63-*.md`)
 - `checkout_before_auth` — fires on every AJAX calculate/create call during checkout
 - `checkout_render_*` — multiple hooks injecting HTML into checkout sections (auth, region, shipping, details, payment, confirm)
-- `order_action.create` — links the guest token to the order and resets the source marker / Zen state / payment echo. Writes no order params of its own — delivery identity is the core's own `shipping_id` + `shipping_rate_id` (see `docs/plans/delivery-variant-identity.md`)
+- `order_action.create` — links the guest token to the order and resets the source marker / Zen state / payment echo. **Writes no order params of its own** — delivery identity is the core's own `shipping_id` + `shipping_rate_id` (see `docs/plans/delivery-variant-identity.md`)
 
 **Key class groups in `lib/classes/`:**
 
 | Group | Purpose |
 |-------|---------|
 | `hooks/` | `FrontendHooks`, `CheckoutHooks`, `OrderHooks` — delegate plugin hook handling |
-| `fillparams/` | `FillParamsProvider` — fetches prefill data from DB; `FillParams` — data object; `FillParamsStorage` — writes to PHP session (`shop/checkout`); `GuestHashStorage` — manages `prefill_guest_hash` HTTP-only cookie + DB linkage |
+| `fillparams/` | `FillParamsProvider` — fetches prefill data from DB, memoizes statically, computes the source key; `FillParams` — data object; `GuestTokenStorage` — manages the `prefill_guest_token` HTTP-only cookie, derives the lookup id and links orders |
 | `sessionstorage/` | `SessionStorageProvider` — reads/writes checkout params in Webasyst session |
 | `storefronts/` | `StorefrontProvider`, `Storefront`, `StorefrontCollection` — per-storefront settings |
 | `settings/providers/` | `SettingProvider`, `StorefrontSettingProvider` — read/write plugin settings from `shop_prefill_settings` table |
@@ -76,17 +76,34 @@ Located in `lib/actions/frontend/`:
 
 ### Data Flow
 
-1. `frontendHead` hook fires → `FillParamsProvider::getFillParams()` queries last order from DB (by `contact_id` for auth users, by `prefill_guest_hash` cookie for guests)
-2. If `prefill.on_entry = true`, data is written into PHP session (`shop/checkout`) via `SessionStorageProvider::preFillCheckoutParams()`
-3. `checkout_before_auth` hook fires on each AJAX call — reruns prefill logic
-4. `AssetsManager` generates a unique JS initializer file passing params (including translated messages) to `PrefillFrontendController`
-5. JS modules manipulate the checkout DOM to show Zen Mode collapsed sections and delivery variant cards
+Prefill runs **only on the checkout path** — `checkout_before_auth`, which fires on every
+`calculate`/`create` and on the `/order/` form render via `formVars()` → `processAll()`.
+
+1. `CheckoutHooks` computes the source key (no DB) and passes a **lazy loader** into
+   `SessionStorageProvider::preFillCheckoutParamsFromSource()`
+2. That method (`applyPrefill()`): picks sections not yet owned by the customer
+   (`SectionChecker::canPrefillSection()`) → if the session marker `shop/prefill_source`
+   already matches the source key, stops there (no DB hit); otherwise calls the loader once,
+   fills the picked sections, merges the result into `shop/checkout` and writes the marker
+3. `AssetsManager` generates a unique JS initializer file passing params to `PrefillFrontendController`
+4. JS modules manipulate the checkout DOM for Zen Mode and delivery variant cards
+
+Two rules the marker must obey (breaking either causes silent regressions):
+
+- it gates **only** the loader call — section ownership is re-checked fresh on every request
+- it is **not written** for a guest without a cookie, otherwise every anonymous visitor and bot
+  gets a PHP session and `Set-Cookie: PHPSESSID`
 
 ### Guest Data Flow
 
-- First visit: `prefill_guest_hash` cookie (SHA256, HTTP-only, 1 year) is created
-- On order create: if `guest/consent_required = true` and consent cookie set, hash is saved to `shop_order_params` table
-- Next visit: hash read from cookie → last order found by hash in DB → prefill applied
+- Browsing the catalog creates **nothing** — no cookie, no queries
+- On order create: if consent is not required OR granted, a random token
+  `bin2hex(random_bytes(32))` is issued into the `prefill_guest_token` cookie, and the order
+  gets a param `name = 'prefill_guest_' . substr(sha256(token), 0, 48)`, `value = '1'`
+- Next visit: token → lookup id → `WHERE name = ?` on the **existing index** of
+  `shop_order_params` → last order → prefill
+- The raw token never reaches the DB, so leaking order params cannot restore someone's cookie
+- Revoke/clear delete the DB links **before** clearing the cookie — afterwards they are unreachable
 
 ## Localization
 
@@ -112,9 +129,12 @@ Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`. Must be `.tar.gz`
 
 ## Important Notes
 
-- **No test suite** exists for this plugin — test manually in browser against a running Webasyst instance
+- **Read [docs/concept/RULES.md](docs/concept/RULES.md) before touching checkout logic** — plugin invariants in one short file; checks that defend them are in [docs/tests/TESTS.md](docs/tests/TESTS.md)
+- **Tests:** plain PHP scripts in `tests/`, no framework — `for t in tests/*Test.php; do php "$t"; done`. They cover pure logic only; everything touching the checkout render is verified manually in the browser
 - CSS variables and JS initializer are generated dynamically into `wa-data/public/shop/plugins/prefill/` (cached by hash, not versioned)
 - `shopPrefillPlugin::$instance` is a static singleton — use `shopPrefillPlugin::getInstance()` to access it
+- **Storefront identity is `checkout_storefront_id`, never the address.** `shopPrefillPluginStorefrontCode::fromRoute()` is the only place a storefront code is computed — called both by the `Storefront` constructor and by `findCurrentStorefront()`. The address must never become the key again: core rewrites a route's `url` silently on "make home page" (`siteMainPage::setNewMainPage()`, whose caller emits no event), on renaming a section URL, and on renaming a domain — and every settings row and per-storefront CSS file is keyed by that code. Routes created before checkout2 have no `checkout_storefront_id` and never get one retroactively, so they keep the legacy `base64(domain/url)` code as a fallback; both schemes coexist in the column, which is safe because the code is opaque everywhere (no `base64_decode`, no `atob`/`btoa` anywhere in the plugin). Full story: [docs/bugs/storefront-settings-orphaned-by-url-promotion.md](docs/bugs/storefront-settings-orphaned-by-url-promotion.md)
+- **Two settings layers share the table.** `storefront_code = '-'` holds plugin-wide settings (`shopPrefillPluginSettingProvider`, defaults in `lib/config/settings.php`: `active` killswitch, `logging.level`); `'*'` holds defaults for all storefronts and a `checkout_storefront_id` holds one storefront's own (both from `lib/config/storefront.settings.php`). Rows under `'-'` are not junk — see [docs/bugs/settings-storefront-code-dash-row.md](docs/bugs/settings-storefront-code-dash-row.md)
 - **Effective storefront** — the single place where the fallback to the global `'*'` storefront lives. `getEffectiveStorefront()` returns the current storefront, or the global one when there is no current storefront (backend/API/CLI) or it is inactive (`active = false` is the default). Always take both settings and storefront code from that one object — taking the code elsewhere produced a per-storefront CSS file with global content that never refreshed
 - `self::$effective_storefront` / `self::$effective_storefront_settings` are request-scoped caches; call `shopPrefillPlugin::clearEffectiveStorefrontCache()` after saving settings
 - Storefront lookups are nullable by name: `findCurrentStorefront()` / `findStorefront($code)` return `null` (use them in backend actions and report a clear error), while `getGlobalStorefront()` and `getEffectiveStorefront()` always return an object

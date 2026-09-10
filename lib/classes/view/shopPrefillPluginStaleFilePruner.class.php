@@ -16,12 +16,16 @@ class shopPrefillPluginStaleFilePruner
 {
     /**
      * @param string $dir              Каталог с файлами, оканчивающийся на '/'
+     * @param string $own_files_glob   Маска файлов, которыми уборщик владеет (например 'variables_*.css').
+     *                                 Всё, что под неё не подходит, не трогается: в том же каталоге лежит
+     *                                 пер-витринный frontend_{code}.css менеджера CSS, который писался
+     *                                 однажды и по TTL устаревает всегда (issue-94)
      * @param string $except_filename  Файл, который не удалять (только что записанный)
      * @param int    $ttl_seconds      Возраст, после которого файл считается устаревшим
      */
-    public function prune(string $dir, string $except_filename, int $ttl_seconds): void
+    public function prune(string $dir, string $own_files_glob, string $except_filename, int $ttl_seconds): void
     {
-        $paths = glob(rtrim($dir, '/') . '/*');
+        $paths = glob(rtrim($dir, '/') . '/' . $own_files_glob);
         if ($paths === false) {
             return;
         }

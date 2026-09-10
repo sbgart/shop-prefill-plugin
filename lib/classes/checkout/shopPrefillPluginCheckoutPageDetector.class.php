@@ -12,7 +12,7 @@
  *    (правило B3): `checkout_before_*` вызывает ядро из shopCheckoutStep::processAll().
  *    Успевает вовремя, потому что шаблон экшена рендерится до макета, а frontend_head
  *    срабатывает уже в макете. Ловит и нестандартный случай «форма вставлена
- *    в произвольную страницу витрины».
+ *    в произвольную страницу витрины». Отметка живёт в статике — см. $checkout_hook_fired.
  *
  * 2. Маршрут страницы оформления заказа. Подстраховка для темы, которая рендерит форму
  *    из самого макета: там хуки сработают после frontend_head и признак 1 опоздает.
@@ -31,7 +31,16 @@ class shopPrefillPluginCheckoutPageDetector
     /** @var callable(): array Возвращает [module, action] текущего маршрута */
     private $route_resolver;
 
-    private bool $checkout_hook_fired = false;
+    /**
+     * Статический намеренно: waEvent пересоздаёт объект плагина — а с ним и детектор — на
+     * каждое событие (issue-73), а отметку ставят checkout-хуки, тогда как спрашивает о ней
+     * frontend_head, поднятый уже из макета. Поле экземпляра до второго события не доезжало
+     * бы никогда, и признак 1 существовал бы только в тестах (issue-93).
+     *
+     * Область действия — запрос: за один запрос рендерится ровно одна страница, поэтому
+     * сработавший хук всегда относится к той же странице, что и frontend_head.
+     */
+    private static bool $checkout_hook_fired = false;
 
     /**
      * @param callable $route_resolver Возвращает [module, action] текущего маршрута
@@ -47,12 +56,21 @@ class shopPrefillPluginCheckoutPageDetector
      */
     public function markCheckoutHookFired(): void
     {
-        $this->checkout_hook_fired = true;
+        self::$checkout_hook_fired = true;
     }
 
     public function isCheckoutPage(): bool
     {
-        return $this->checkout_hook_fired || $this->isCheckoutRoute();
+        return self::$checkout_hook_fired || $this->isCheckoutRoute();
+    }
+
+    /**
+     * Сбрасывает отметку. Нужно только тестам: в бою статика живёт ровно один запрос
+     * и обнуляется вместе с процессом.
+     */
+    public static function forgetCheckoutHookForTests(): void
+    {
+        self::$checkout_hook_fired = false;
     }
 
     /**

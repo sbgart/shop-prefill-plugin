@@ -19,6 +19,15 @@ abstract class shopPrefillPluginAbstractSettingProvider
     }
 
     /**
+     * Оставляет из входа только известные схеме ключи перед записью — см.
+     * shopPrefillPluginSettingGroup::filterKnown() (issue-96 §3).
+     */
+    protected function filterKnown(array $settings): array
+    {
+        return $this->config->getSchema()->filterKnown($settings);
+    }
+
+    /**
      * Рекурсивно разворачивает дерево настроек в плоский список листьев, вызывая
      * $on_leaf($name, $value, $groups) на каждый скаляр. Общая для setSetting() (пишет каждый
      * лист сразу) и saveSettings() (копит в буфер для SettingsModel::setBulk(), issue-74#5).
