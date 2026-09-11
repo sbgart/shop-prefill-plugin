@@ -238,28 +238,4 @@ class shopPrefillPluginOrderProvider
         return $result ? (int) $result : null;
     }
 
-    /**
-     * ID заказов гостя, от новых к старым. Лимит применяется в БД (issue-68).
-     *
-     * @param string $param_name Имя вида prefill_guest_<48 hex>
-     * @param int    $limit
-     */
-    public function getOrderIdsByGuestParam(string $param_name, int $limit = self::HISTORY_LIMIT): array
-    {
-        if ($param_name === '') {
-            return [];
-        }
-
-        $results = $this->order_params_model
-            ->query(
-                "SELECT order_id FROM shop_order_params
-                 WHERE name = s:name
-                 ORDER BY order_id DESC
-                 LIMIT i:limit",
-                ['name' => $param_name, 'limit' => $limit]
-            )
-            ->fetchAll('order_id');
-
-        return array_keys($results);
-    }
 }

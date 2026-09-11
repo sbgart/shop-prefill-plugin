@@ -19,7 +19,6 @@ class shopPrefillPlugin extends shopPlugin
     private ?shopPrefillPluginFillParams         $prefill_params      = null;
     private ?shopPrefillPluginSettingProvider    $setting_provider    = null;
     private ?shopPrefillPluginStorefrontProvider $storefront_provider = null;
-    private ?shopPrefillPluginPluginsProvider    $plugins_provider    = null;
     private ?shopPrefillPluginUserProvider       $user_provider       = null;
     private ?shopPrefillPluginLocationProvider   $location_provider   = null;
     private ?shopPrefillPluginContactProvider    $contact_provider    = null;
@@ -198,16 +197,6 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
-     * Очищает статический кэш эффективной витрины и её настроек
-     * Используется после сохранения настроек для обновления данных
-     */
-    public static function clearEffectiveStorefrontCache(): void
-    {
-        self::$effective_storefront          = null;
-        self::$effective_storefront_settings = null;
-    }
-
-    /**
      * Пришёл ли запрос с витрины магазина.
      *
      * Плагин работает только с оформлением заказа на витрине: в бэкенде, API и CLI
@@ -218,11 +207,6 @@ class shopPrefillPlugin extends shopPlugin
     private function isStorefrontRequest(): bool
     {
         return $this->getStorefrontProvider()->hasCurrentStorefront();
-    }
-
-    public function getPluginsProvider(): shopPrefillPluginPluginsProvider
-    {
-        return $this->plugins_provider ??= new shopPrefillPluginPluginsProvider();
     }
 
     /**

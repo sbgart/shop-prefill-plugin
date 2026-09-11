@@ -84,11 +84,6 @@ class shopPrefillPluginGuestTokenStorage
         return $token;
     }
 
-    public function hasToken(): bool
-    {
-        return $this->getToken() !== null;
-    }
-
     /**
      * Продлевает куку, если она уже есть. Новую не создаёт.
      *
@@ -236,8 +231,4 @@ class shopPrefillPluginGuestTokenStorage
         );
     }
 
-    public static function getTokenCookieName(): string
-    {
-        return self::TOKEN_COOKIE;
-    }
 }

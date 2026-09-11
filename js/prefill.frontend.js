@@ -111,14 +111,6 @@ class PrefillFrontendController {
   }
 
   /**
-   * Подключает обработчики закрытия диалога
-   * @deprecated Используйте this.dialogManager.attachCloseHandler()
-   */
-  attachDialogCloseHandler(dialog, closeButton) {
-    this.dialogManager.attachCloseHandler(dialog, closeButton);
-  }
-
-  /**
    * Логирование
    * @deprecated Используйте this.logger.log()
    */

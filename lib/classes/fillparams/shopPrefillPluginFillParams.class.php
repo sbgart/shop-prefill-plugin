@@ -44,6 +44,7 @@ class shopPrefillPluginFillParams
      * Есть ли у источника данные для секции — в отличие от SectionChecker (тот же вопрос
      * про сессию), здесь про сам источник предзаполнения. Сейчас без вызовов — оставлен
      * намеренно как примитив для issue-84 §2 (полнота источника по группе delivery).
+     * Резерв зафиксирован в issue-97 — не удалять при следующей чистке мёртвого кода.
      */
     public function hasDataForSection(string $section_id): bool
     {
@@ -178,11 +179,6 @@ class shopPrefillPluginFillParams
         $this->shipping_name = $shipping_name;
     }
 
-    public function getShippingPlugin(): ?string
-    {
-        return $this->shipping_plugin;
-    }
-
     public function setShippingPlugin(?string $shipping_plugin): void
     {
         $this->shipping_plugin = $shipping_plugin;
@@ -236,11 +232,6 @@ class shopPrefillPluginFillParams
     public function setPaymentName(?string $payment_name): void
     {
         $this->payment_name = $payment_name;
-    }
-
-    public function getPaymentPlugin(): ?string
-    {
-        return $this->payment_plugin;
     }
 
     public function setPaymentPlugin(?string $payment_plugin): void

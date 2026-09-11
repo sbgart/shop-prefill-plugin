@@ -291,17 +291,6 @@ class shopPrefillPluginZenMode
     }
 
     /**
-     * Возвращает список секций для группы
-     *
-     * @param string $group Имя группы
-     * @return array
-     */
-    public function getGroupSections(string $group): array
-    {
-        return self::GROUP_SECTIONS[$group] ?? [];
-    }
-
-    /**
      * Возвращает настройки группы
      *
      * @param string $group Имя группы
@@ -419,16 +408,6 @@ class shopPrefillPluginZenMode
         } catch (waException $e) {
             return ['url' => '', 'is_default' => true];
         }
-    }
-
-    /**
-     * Возвращает все доступные группы
-     *
-     * @return array
-     */
-    public function getGroups(): array
-    {
-        return array_keys(self::GROUP_SECTIONS);
     }
 
     // ==================== CSS GENERATION ====================
@@ -685,7 +664,7 @@ class shopPrefillPluginZenMode
      * только там. Удачный набор запоминаем, пустой — достаём из кэша, иначе и сводка,
      * и иконка группы (getGroupPluginLogo()) выйдут наполовину пустыми.
      *
-     * Единственное место, где читаются extractSummaryData()/кэш — renderGroupSummary()
+     * Единственное место, где читаются extractSummaryData()/кэш — renderSummaryFromData()
      * и иконка 'plugin' в renderCollapseBlock() берут отсюда один и тот же результат,
      * а не считают каждый своё.
      *
@@ -708,18 +687,6 @@ class shopPrefillPluginZenMode
         }
 
         return $data;
-    }
-
-    /**
-     * Рендерит сводку данных для группы
-     *
-     * @param string $group Имя группы
-     * @param shopPrefillCheckoutState $state Данные чекаута
-     * @return string HTML
-     */
-    public function renderGroupSummary(string $group, shopPrefillCheckoutState $state): string
-    {
-        return $this->renderSummaryFromData($group, $state, $this->resolveSummaryData($group, $state));
     }
 
     /**
@@ -748,7 +715,7 @@ class shopPrefillPluginZenMode
                 return $view->fetch('string:' . $template);
             });
         } catch (Exception $e) {
-            shopPrefillPluginLog::error('Template rendering failed in shopPrefillPluginZenMode::renderGroupSummary', [
+            shopPrefillPluginLog::error('Template rendering failed in shopPrefillPluginZenMode::renderSummaryFromData', [
                 'group'   => $group,
                 'message' => $e->getMessage()
             ]);
