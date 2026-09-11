@@ -1,0 +1,26 @@
+{* Общий каркас диалогов чекаута (issue-98 #5): DialogManager/ZenModeToggle/ParamsChoiceManager
+   клонируют эти <template> вместо сборки HTML строками в JS. Подписи сюда не зашиваются —
+   один и тот же диалог переиспользуется под разные сообщения, весь текст подставляется в JS
+   из messages (см. handleFrontendHead() в shopPrefillPluginFrontendHooks). *}
+<template id="prefill-dialog-shell-template">
+    <div class="prefill-dialog__header">
+        <h3 class="prefill-dialog__title"></h3>
+        <span class="prefill-dialog__close-button"></span>
+    </div>
+    <div class="prefill-dialog__content"></div>
+</template>
+
+<template id="prefill-dialog-confirm-template">
+    <p class="prefill-dialog__confirm-text"></p>
+    <div class="prefill-dialog__confirm-actions">
+        <button type="button" class="prefill-dialog__cancel-btn"></button>
+        <button type="button" class="prefill-dialog__confirm-btn"></button>
+    </div>
+</template>
+
+<template id="prefill-warning-template">
+    <div class="prefill-warning">
+        <p class="prefill-warning__text"></p>
+        <button class="button prefill-warning__btn"></button>
+    </div>
+</template>

@@ -9,6 +9,21 @@
  * Зависимости: messages (локализованные строки)
  */
 class DialogManager {
+    /** ID шаблона каркаса диалога — templates/checkout/DialogTemplates.html */
+    static get SHELL_TEMPLATE_ID() {
+        return "prefill-dialog-shell-template";
+    }
+
+    /** ID шаблона содержимого confirm-диалога — templates/checkout/DialogTemplates.html */
+    static get CONFIRM_TEMPLATE_ID() {
+        return "prefill-dialog-confirm-template";
+    }
+
+    /** ID общего шаблона блока-предупреждения — templates/checkout/DialogTemplates.html */
+    static get WARNING_TEMPLATE_ID() {
+        return "prefill-warning-template";
+    }
+
     /**
      * @param {Object} messages - Локализованные сообщения
      */
@@ -91,14 +106,14 @@ class DialogManager {
             titleElem.textContent = title || "";
         }
 
-        const content = `
-            <p class="prefill-dialog__confirm-text">${message || ""}</p>
-            <div class="prefill-dialog__confirm-actions">
-                <button type="button" class="prefill-dialog__cancel-btn">${cancelText || ""}</button>
-                <button type="button" class="prefill-dialog__confirm-btn">${confirmText || ""}</button>
-            </div>
-        `;
-        dialog.querySelector(".prefill-dialog__content").innerHTML = content;
+        const fragment = this._cloneTemplate(DialogManager.CONFIRM_TEMPLATE_ID);
+        fragment.querySelector(".prefill-dialog__confirm-text").textContent = message || "";
+        fragment.querySelector(".prefill-dialog__cancel-btn").textContent = cancelText || "";
+        fragment.querySelector(".prefill-dialog__confirm-btn").textContent = confirmText || "";
+
+        const contentDiv = dialog.querySelector(".prefill-dialog__content");
+        contentDiv.textContent = "";
+        contentDiv.appendChild(fragment);
 
         document.body.classList.add("prefill-dialog-open");
         dialog.showModal();
@@ -143,17 +158,44 @@ class DialogManager {
         dialog.id = id;
         dialog.className = "prefill-dialog";
 
-        dialog.innerHTML = `
-            <div class="prefill-dialog__header">
-                <h3 class="prefill-dialog__title"></h3>
-                <span class="prefill-dialog__close-button"></span>
-            </div>
-            <div class="prefill-dialog__content"></div>
-        `;
+        dialog.appendChild(this._cloneTemplate(DialogManager.SHELL_TEMPLATE_ID));
 
         this._attachEvents(dialog);
 
         return dialog;
+    }
+
+    /**
+     * Клонирует содержимое `<template>` по id.
+     *
+     * @param {string} templateId
+     * @returns {DocumentFragment}
+     */
+    _cloneTemplate(templateId) {
+        const template = document.getElementById(templateId);
+        if (!template) {
+            throw new Error(
+                `DialogManager: template #${templateId} not found. Is checkout/DialogTemplates.html included in <head>?`
+            );
+        }
+        return template.content.cloneNode(true);
+    }
+
+    /**
+     * Клонирует общий блок-предупреждение (текст + одна кнопка) — используется
+     * ZenModeToggle.showNoticeDialog() и ParamsChoiceManager.showDeliveryUnavailableDialog().
+     * Класс/id самой кнопки вызывающая сторона выставляет сама через
+     * `.querySelector(".prefill-warning__btn")` на возвращённом фрагменте.
+     *
+     * @param {string} text
+     * @param {string} buttonText
+     * @returns {DocumentFragment}
+     */
+    buildWarningContent(text, buttonText) {
+        const fragment = this._cloneTemplate(DialogManager.WARNING_TEMPLATE_ID);
+        fragment.querySelector(".prefill-warning__text").textContent = text || "";
+        fragment.querySelector(".prefill-warning__btn").textContent = buttonText || "";
+        return fragment;
     }
 
     /**
@@ -200,9 +242,10 @@ class DialogManager {
 
     /**
      * Обрабатывает и рендерит контент внутри диалога
-     * 
+     *
      * @param {HTMLDialogElement} dialog - Dialog элемент
-     * @param {string|Promise<string>} content - HTML контент или Promise
+     * @param {string|Node|Promise<string|Node>} content - HTML-строка (params-choice — серверная
+     *        разметка, см. issue-98), клонированный фрагмент шаблона, либо Promise любого из них
      */
     async _renderContent(dialog, content) {
         const contentDiv = dialog.querySelector(".prefill-dialog__content");
@@ -220,6 +263,11 @@ class DialogManager {
             }
         }
 
-        contentDiv.innerHTML = content;
+        contentDiv.textContent = "";
+        if (content instanceof Node) {
+            contentDiv.appendChild(content);
+        } else {
+            contentDiv.innerHTML = content;
+        }
     }
 }

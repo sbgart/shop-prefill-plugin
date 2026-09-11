@@ -93,6 +93,12 @@ class shopPrefillPluginFrontendHooks
 
         $this->initializeFrontendAssets();
 
+        // Каркас диалогов нужен только там же, где сами ассеты (issue-98 #5):
+        // DialogManager и его вызовы живут в JS-модулях, подключаемых тем же условием.
+        if ($this->page_detector->isCheckoutPage()) {
+            $head_html .= shopPrefillPluginViewProvider::render('checkout/DialogTemplates');
+        }
+
         if ($this->is_debug_panel) {
             $head_html .= shopPrefillPluginDebug::renderDebugPanel();
         }

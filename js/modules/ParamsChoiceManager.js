@@ -168,14 +168,11 @@ class ParamsChoiceManager {
         const text = this.messages.delivery_unavailable_text || 'The selected delivery method is not available.';
         const btnLabel = this.messages.delivery_unavailable_button || 'Choose another method';
 
-        const html = `
-            <div class="prefill-warning">
-                <p class="prefill-warning__text">${text}</p>
-                <button class="button prefill-warning__btn" id="prefill-choose-another-delivery">${btnLabel}</button>
-            </div>`;
+        // Общий шаблон блока-предупреждения — templates/checkout/DialogTemplates.html
+        const content = this.dialogManager.buildWarningContent(text, btnLabel);
+        content.querySelector(".prefill-warning__btn").id = "prefill-choose-another-delivery";
 
-
-        const dialog = await this.dialogManager.showDialog(dialogId, Promise.resolve(html));
+        const dialog = await this.dialogManager.showDialog(dialogId, content);
         this.dialogManager.setHeader(dialogId, title);
 
         // Кнопка «Выбрать другой способ» → закрываем и открываем dialog вариантов

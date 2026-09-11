@@ -240,13 +240,9 @@ class ZenModeToggle {
     // Устанавливаем заголовок
     this.dialogManager.setHeader(dialogId, title);
 
-    // Используем HTML для контента диалога
-    const content = `
-            <div class="prefill-warning">
-                <p class="prefill-warning__text">${message}</p>
-                <button class="button prefill-warning__btn js-close-dialog">${buttonText}</button>
-            </div>
-        `;
+    // Общий шаблон блока-предупреждения — templates/checkout/DialogTemplates.html
+    const content = this.dialogManager.buildWarningContent(message, buttonText);
+    content.querySelector(".prefill-warning__btn").classList.add("js-close-dialog");
 
     this.dialogManager.showDialog(dialogId, content).then((dialog) => {
       // Добавляем обработчик на кнопку OK внутри диалога
