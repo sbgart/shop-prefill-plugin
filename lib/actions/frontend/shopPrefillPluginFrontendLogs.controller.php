@@ -1,15 +1,11 @@
 <?php
 
-class shopPrefillPluginFrontendLogsController extends waJsonController
+class shopPrefillPluginFrontendLogsController extends shopPrefillPluginFrontendDebugBaseController
 {
-    public function execute()
+    protected function handle()
     {
-        if (! shopPrefillPlugin::getInstance()->isDebug() || ! wa()->getUser()->isAdmin('shop')) {
-            $this->errors = 'Access denied';
-            return;
-        }
-
-        $message = waRequest::post('message', null);
+        $message = (string) waRequest::post('message', '', waRequest::TYPE_STRING_TRIM);
+        $message = str_replace(["\r", "\n"], ' ', $message);
         $type = waRequest::post('type', 'log');
 
         switch ($type) {

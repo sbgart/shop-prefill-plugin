@@ -6,15 +6,10 @@
  *
  * Данные предзаполнения хранятся в shop_order_params и очищать их не нужно.
  */
-class shopPrefillPluginFrontendClearStorageController extends waJsonController
+class shopPrefillPluginFrontendClearStorageController extends shopPrefillPluginFrontendDebugBaseController
 {
-    public function execute()
+    protected function handle()
     {
-        if (!$this->isAllowed()) {
-            $this->errors = 'Access denied';
-            return;
-        }
-
         try {
             // Очищаем хранилище checkout (сессия) вместе с эхо-кэшами: иначе следующий
             // же запрос вернёт в «очищенную» форму выбор доставки и оплаты
@@ -36,16 +31,5 @@ class shopPrefillPluginFrontendClearStorageController extends waJsonController
                 'error' => $e->getMessage()
             ];
         }
-    }
-
-    private function isAllowed(): bool
-    {
-        $sent = (string) waRequest::post('_csrf', '', waRequest::TYPE_STRING_TRIM);
-        $cookie = (string) waRequest::cookie('_csrf', '', waRequest::TYPE_STRING_TRIM);
-        return waRequest::method() === 'post'
-            && shopPrefillPlugin::getInstance()->isDebug()
-            && wa()->getUser()->isAdmin('shop')
-            && $sent !== ''
-            && hash_equals($cookie, $sent);
     }
 }

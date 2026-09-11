@@ -44,10 +44,27 @@ class Logger {
             this.httpClient.post(`${this.pluginID}/logs`, {
                 message: message,
                 type: type,
+                _csrf: Logger._getCsrfCookie(),
             }).catch(() => {
                 // Логирование не должно создавать unhandled rejection и ломать checkout.
             });
         }
+    }
+
+    /**
+     * Читает CSRF-токен ядра из куки `_csrf` (её ставит waAuthUser каждому визитёру).
+     * @returns {string}
+     */
+    static _getCsrfCookie() {
+        const prefix = "_csrf=";
+        const parts = document.cookie.split(";");
+        for (const part of parts) {
+            const item = part.trim();
+            if (item.indexOf(prefix) === 0) {
+                return decodeURIComponent(item.substring(prefix.length));
+            }
+        }
+        return "";
     }
 
     /**

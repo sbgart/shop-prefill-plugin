@@ -1,14 +1,9 @@
 <?php
 
-class shopPrefillPluginFrontendForcePrefillController extends waJsonController
+class shopPrefillPluginFrontendForcePrefillController extends shopPrefillPluginFrontendDebugBaseController
 {
-    public function execute()
+    protected function handle()
     {
-        if (!$this->isAllowed()) {
-            $this->errors = 'Access denied';
-            return;
-        }
-
         try {
             $plugin = shopPrefillPlugin::getInstance();
 
@@ -35,16 +30,5 @@ class shopPrefillPluginFrontendForcePrefillController extends waJsonController
                 'error' => $e->getMessage()
             ];
         }
-    }
-
-    private function isAllowed(): bool
-    {
-        $sent = (string) waRequest::post('_csrf', '', waRequest::TYPE_STRING_TRIM);
-        $cookie = (string) waRequest::cookie('_csrf', '', waRequest::TYPE_STRING_TRIM);
-        return waRequest::method() === 'post'
-            && shopPrefillPlugin::getInstance()->isDebug()
-            && wa()->getUser()->isAdmin('shop')
-            && $sent !== ''
-            && hash_equals($cookie, $sent);
     }
 }
