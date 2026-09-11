@@ -351,7 +351,7 @@ var PrefillSettings = (function () {
                         // «полоску», z-index ниже модалки — контент уезжает под блоки.
                         if (typeof $.fn.waTooltip === 'function') {
                             $wrapper.find('.js-prefill-var-tooltip').waTooltip({
-                                allowHTML: true,
+                                // content — Element (issue-98 #7), Tippy вставляет его напрямую, allowHTML не нужен
                                 interactive: true,
                                 // Tippy: [задержка показа, скрытия] — не всплывает при быстром проходе мышью
                                 delay: [450, 80],
@@ -458,9 +458,9 @@ var PrefillSettings = (function () {
                                 lastPreviewTemplate = template;
                                 lastPreviewGroup = group;
 
-                                $preview.html(
-                                    '<span class="hint"><i class="icon16 loading"></i> ' + prefillEscapeHtml(previewLoadingText) + '</span>'
-                                );
+                                var $loadingRoot = prefillCloneTemplate('prefill-ct-preview-loading-template').querySelector('.hint');
+                                $loadingRoot.appendChild(document.createTextNode(' ' + previewLoadingText));
+                                $preview.empty().append($loadingRoot);
 
                                 $.post('?module=prefillPluginSettingsTemplatePreview', {
                                     group: group,
@@ -475,16 +475,15 @@ var PrefillSettings = (function () {
                                     if (!errors || !errors.length) {
                                         errors = [previewErrorTitle];
                                     }
-                                    var errorText = prefillEscapeHtml(errors.join("\n")).replace(/\n/g, '<br />');
-                                    $preview.html(
-                                        '<div class="prefill-ct-preview-error"><strong>' + prefillEscapeHtml(previewErrorTitle) + '</strong><br />' +
-                                        errorText +
-                                        '</div>'
-                                    );
+                                    var $errorRoot = prefillCloneTemplate('prefill-ct-preview-error-template').querySelector('.prefill-ct-preview-error');
+                                    $errorRoot.querySelector('strong').textContent = previewErrorTitle;
+                                    $errorRoot.querySelector('.prefill-ct-preview-error__detail').textContent = errors.join("\n");
+                                    $preview.empty().append($errorRoot);
                                 }).fail(function () {
-                                    $preview.html(
-                                        '<div class="prefill-ct-preview-error"><strong>' + prefillEscapeHtml(previewErrorTitle) + '</strong></div>'
-                                    );
+                                    var $failRoot = prefillCloneTemplate('prefill-ct-preview-error-template').querySelector('.prefill-ct-preview-error');
+                                    $failRoot.querySelector('strong').textContent = previewErrorTitle;
+                                    $failRoot.querySelector('.prefill-ct-preview-error__detail').remove();
+                                    $preview.empty().append($failRoot);
                                 });
                             }
 
@@ -566,9 +565,10 @@ var PrefillSettings = (function () {
                     } else {
                         $panel.find('.js-prefill-css-ace').hide();
                         $ta.show();
-                        $panel.find('.js-prefill-css-ace').before(
-                            '<p class="errormsg">' + prefillEscapeHtml(msgErr) + '</p>'
-                        );
+                        var $cssErrorMsg = document.createElement('p');
+                        $cssErrorMsg.className = 'errormsg';
+                        $cssErrorMsg.textContent = msgErr;
+                        $panel.find('.js-prefill-css-ace').before($cssErrorMsg);
                     }
                 })
                 .fail(function () {
@@ -640,56 +640,89 @@ var PrefillSettings = (function () {
 
         var LEVEL_BADGE_COLOR = { debug: 'gray', info: 'blue', warning: 'orange', error: 'red' };
 
+        // Простая state-строка (пусто/загрузка/ошибка) — один div, шаблон для него избыточен
+        function prefillLogStateNode(text, isError) {
+            var node = document.createElement('div');
+            node.className = isError ? 'prefill-log-state prefill-log-state--error' : 'prefill-log-state';
+            node.textContent = text;
+            return node;
+        }
+
         function renderEntry(entry) {
             var level = entry.level || 'debug';
             var time  = entry.datetime ? entry.datetime.substring(11, 19) : '';
             var date  = entry.datetime ? prefillFormatDate(entry.datetime.substring(0, 10)) : '';
+            var badgeColor = LEVEL_BADGE_COLOR[level] || 'gray';
 
-            var msg = prefillEscapeHtml(entry.message);
+            var root = prefillCloneTemplate('prefill-log-entry-template').querySelector('.prefill-log-entry');
+            root.classList.add('prefill-log-entry--' + level);
 
-            // Вторичная строка: IP · user · JS-тег
-            var metaParts = [];
-            if (entry.ip) { metaParts.push('<span class="prefill-log-entry__ip">' + prefillEscapeHtml(entry.ip) + '</span>'); }
-            if (entry.user_id) { metaParts.push('<span class="prefill-log-entry__user">#' + parseInt(entry.user_id, 10) + '</span>'); }
-            if (entry.source === 'frontend') {
-                metaParts.push('<span class="badge squared prefill-js-tag prefill-log-entry__src-js">JS</span>');
+            var $badge = root.querySelector('.prefill-log-entry__badge');
+            $badge.classList.add(badgeColor);
+            $badge.textContent = level.toUpperCase();
+            root.querySelector('.prefill-log-entry__time').textContent = time;
+
+            var $date = root.querySelector('.prefill-log-entry__date');
+            if (date) { $date.textContent = date; } else { $date.remove(); }
+
+            root.querySelector('.prefill-log-entry__message').textContent = entry.message;
+
+            // Вторичная строка: IP · user · JS-тег — раздельные узлы вместо строки с join(),
+            // разделитель ставится только между реально присутствующими частями
+            var $meta = root.querySelector('.prefill-log-entry__meta');
+            var metaChildren = [];
+            if (entry.ip) {
+                var ipEl = document.createElement('span');
+                ipEl.className = 'prefill-log-entry__ip';
+                ipEl.textContent = entry.ip;
+                metaChildren.push(ipEl);
             }
-            var sep = '<span class="prefill-log-entry__meta-sep">·</span>';
-            var meta = metaParts.length
-                ? '<div class="prefill-log-entry__meta">' + metaParts.join(sep) + '</div>'
-                : '';
+            if (entry.user_id) {
+                var userEl = document.createElement('span');
+                userEl.className = 'prefill-log-entry__user';
+                userEl.textContent = '#' + parseInt(entry.user_id, 10);
+                metaChildren.push(userEl);
+            }
+            if (entry.source === 'frontend') {
+                var jsEl = document.createElement('span');
+                jsEl.className = 'badge squared prefill-js-tag prefill-log-entry__src-js';
+                jsEl.textContent = 'JS';
+                metaChildren.push(jsEl);
+            }
+            if (metaChildren.length) {
+                metaChildren.forEach(function (child, i) {
+                    if (i > 0) {
+                        var sep = document.createElement('span');
+                        sep.className = 'prefill-log-entry__meta-sep';
+                        sep.textContent = '·';
+                        $meta.appendChild(sep);
+                    }
+                    $meta.appendChild(child);
+                });
+            } else {
+                $meta.remove();
+            }
 
-            var ctx = '';
+            var $context = root.querySelector('.prefill-log-entry__context');
             if (entry.context !== null && entry.context !== undefined) {
-                var ctxStr = typeof entry.context === 'object'
+                $context.textContent = typeof entry.context === 'object'
                     ? JSON.stringify(entry.context, null, 2)
                     : String(entry.context);
-                ctx = '<pre class="prefill-log-entry__context">' + prefillEscapeHtml(ctxStr) + '</pre>';
+            } else {
+                $context.remove();
             }
 
-            var dateHtml = date ? '<span class="prefill-log-entry__date">' + prefillEscapeHtml(date) + '</span>' : '';
-            var badgeColor = LEVEL_BADGE_COLOR[level] || 'gray';
-            return '<div class="prefill-log-entry prefill-log-entry--' + prefillEscapeHtml(level) + '">'
-                + '<div class="prefill-log-entry__rail">'
-                +   '<span class="badge squared ' + badgeColor + ' prefill-log-entry__badge">' + prefillEscapeHtml(level.toUpperCase()) + '</span>'
-                +   '<span class="prefill-log-entry__time">' + prefillEscapeHtml(time) + '</span>'
-                +   dateHtml
-                + '</div>'
-                + '<div class="prefill-log-entry__body">'
-                +   '<div class="prefill-log-entry__message">' + msg + '</div>'
-                +   meta
-                +   ctx
-                + '</div>'
-                + '</div>';
+            return root;
         }
 
         function renderLoadMoreButton() {
-            return '<div class="prefill-log-load-more-row">'
-                + '<a href="#" class="button light-gray js-prefill-log-load-more">'
-                + '<i class="fas fa-angle-down"></i> '
-                + prefillEscapeHtml(msgLoadMore)
-                + '</a>'
-                + '</div>';
+            var root = prefillCloneTemplate('prefill-log-load-more-template').querySelector('.prefill-log-load-more-row');
+            root.querySelector('a').appendChild(document.createTextNode(' ' + msgLoadMore));
+            return root;
+        }
+
+        function renderLoadMoreLoading() {
+            return prefillCloneTemplate('prefill-log-load-more-loading-template').querySelector('.prefill-log-load-more-row--loading');
         }
 
         function updateStatus() {
@@ -706,19 +739,18 @@ var PrefillSettings = (function () {
             var $entries = self.$wrapper.find('#prefill-log-entries');
 
             if (!allEntries.length) {
-                $entries.html('<div class="prefill-log-state">' + prefillEscapeHtml(msgEmpty) + '</div>');
+                $entries.empty().append(prefillLogStateNode(msgEmpty, false));
                 updateStatus();
                 return;
             }
 
-            var html = '';
+            $entries.empty();
             for (var i = 0; i < allEntries.length; i++) {
-                html += renderEntry(allEntries[i]);
+                $entries.append(renderEntry(allEntries[i]));
             }
             if (hasMore) {
-                html += renderLoadMoreButton();
+                $entries.append(renderLoadMoreButton());
             }
-            $entries.html(html);
             updateStatus();
         }
 
@@ -732,14 +764,10 @@ var PrefillSettings = (function () {
                 currentOffset = 0;
                 hasMore       = false;
                 totalInFile   = 0;
-                $entries.html('<div class="prefill-log-state">' + prefillEscapeHtml(msgLoading) + '</div>');
+                $entries.empty().append(prefillLogStateNode(msgLoading, false));
             } else {
                 // Кнопка заменяется спиннером на месте — записи не перерисовываются
-                $entries.find('.prefill-log-load-more-row').replaceWith(
-                    '<div class="prefill-log-load-more-row prefill-log-load-more-row--loading">'
-                    + '<i class="fas fa-spinner fa-spin"></i>'
-                    + '</div>'
-                );
+                $entries.find('.prefill-log-load-more-row').replaceWith(renderLoadMoreLoading());
             }
 
             var scrollTop = reset ? 0 : $entries.scrollTop();
@@ -764,25 +792,18 @@ var PrefillSettings = (function () {
                         } else {
                             // Дорисовываем только новые записи вместо спиннера
                             var $spinner = $entries.find('.prefill-log-load-more-row--loading');
-                            var html = '';
-                            for (var i = 0; i < batch.length; i++) {
-                                html += renderEntry(batch[i]);
-                            }
-                            if (hasMore) { html += renderLoadMoreButton(); }
-                            $spinner.replaceWith(html);
+                            var nodes = batch.map(renderEntry);
+                            if (hasMore) { nodes.push(renderLoadMoreButton()); }
+                            $spinner.replaceWith(nodes);
                             updateStatus();
                             $entries.scrollTop(scrollTop);
                         }
                     } else {
-                        $entries.html(
-                            '<div class="prefill-log-state prefill-log-state--error">' + prefillEscapeHtml(msgError) + '</div>'
-                        );
+                        $entries.empty().append(prefillLogStateNode(msgError, true));
                     }
                 })
                 .fail(function () {
-                    $entries.html(
-                        '<div class="prefill-log-state prefill-log-state--error">' + prefillEscapeHtml(msgError) + '</div>'
-                    );
+                    $entries.empty().append(prefillLogStateNode(msgError, true));
                 });
         }
 
@@ -1023,29 +1044,27 @@ function prefillZenTemplateAceInsert($wrapper, text) {
 }
 
 /**
- * Экранирование для безопасного вывода в HTML тултипа.
+ * Клонирует содержимое `<template>` по id — templates/actions/settings/blocks/JsTemplates.html.
+ * @param {string} templateId
+ * @returns {DocumentFragment}
  */
-function prefillEscapeHtml(s) {
-    if (s === null || s === undefined) {
-        return '';
+function prefillCloneTemplate(templateId) {
+    var template = document.getElementById(templateId);
+    if (!template) {
+        throw new Error('prefillCloneTemplate: template #' + templateId + ' not found. Is JsTemplates.html included in Settings.html?');
     }
-    return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    return template.content.cloneNode(true);
 }
 
 /**
- * Разметка HTML-подсказки для waTooltip (переменные редактора Zen).
+ * Содержимое тултипа переменной (waTooltip/Tippy принимает Element напрямую — allowHTML
+ * тут не нужен, см. content-опцию ниже).
+ * @param {jQuery} $el
+ * @returns {Element}
  */
 function prefillBuildVarTooltipHtml($el) {
     var code = $el.data('snippet');
-    if (code === undefined || code === null) {
-        code = '';
-    } else {
-        code = String(code);
-    }
+    code = code !== undefined && code !== null ? String(code) : '';
     var desc = $el.data('description');
     desc = desc !== undefined && desc !== null ? String(desc) : '';
     var example = $el.data('example');
@@ -1055,23 +1074,33 @@ function prefillBuildVarTooltipHtml($el) {
     var exLabel = $el.data('tooltipExampleLabel');
     exLabel = exLabel !== undefined && exLabel !== null ? String(exLabel) : '';
 
-    var parts = [];
-    parts.push('<div class="prefill-var-tooltip">');
-    parts.push('<div class="prefill-var-tooltip__code"><code>' + prefillEscapeHtml(code) + '</code></div>');
-    if (desc) {
-        parts.push('<div class="prefill-var-tooltip__desc">' + prefillEscapeHtml(desc) + '</div>');
-    }
+    var root = prefillCloneTemplate('prefill-var-tooltip-template').querySelector('.prefill-var-tooltip');
+    root.querySelector('.prefill-var-tooltip__code code').textContent = code;
+
+    var $desc = root.querySelector('.prefill-var-tooltip__desc');
+    if (desc) { $desc.textContent = desc; } else { $desc.remove(); }
+
+    var $exHead = root.querySelector('.prefill-var-tooltip__ex-head');
+    var $ex = root.querySelector('.prefill-var-tooltip__ex');
     if (example && exLabel) {
-        parts.push('<div class="prefill-var-tooltip__ex-head">' + prefillEscapeHtml(exLabel) + '</div>');
-        parts.push('<div class="prefill-var-tooltip__ex">' + prefillEscapeHtml(example) + '</div>');
+        $exHead.textContent = exLabel;
+        $ex.textContent = example;
     } else if (example) {
-        parts.push('<div class="prefill-var-tooltip__ex">' + prefillEscapeHtml(example) + '</div>');
+        $exHead.remove();
+        $ex.textContent = example;
+    } else {
+        $exHead.remove();
+        $ex.remove();
     }
+
+    var $exCodeWrap = root.querySelector('.prefill-var-tooltip__ex-code');
     if (exampleCode) {
-        parts.push('<div class="prefill-var-tooltip__ex-code"><code>' + prefillEscapeHtml(exampleCode) + '</code></div>');
+        $exCodeWrap.querySelector('code').textContent = exampleCode;
+    } else {
+        $exCodeWrap.remove();
     }
-    parts.push('</div>');
-    return parts.join('');
+
+    return root;
 }
 
 /**

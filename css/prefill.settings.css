@@ -232,6 +232,11 @@
     color: var(--text-color, #1f1f1f);
 }
 
+/* Переносы строк из текста ошибки — не HTML (issue-98 #7), рендерятся через white-space */
+.prefill-ct-preview-error__detail {
+    white-space: pre-line;
+}
+
 .prefill-ct-placeholder {
     display: inline-block;
     padding: 0 6px;

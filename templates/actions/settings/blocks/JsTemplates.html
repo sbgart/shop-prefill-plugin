@@ -1,0 +1,64 @@
+{* Шаблоны динамических блоков настроек (issue-98 #7), клонируются в js/prefill.settings.js.
+   Простые одноэлементные контейнеры без вложенной структуры (state-строки лога, ошибка CSS-
+   редактора) собираются прямо в JS через document.createElement — на них правило не про
+   структуру, а про экранирование, а textContent не нуждается в нём вовсе без всякого шаблона. *}
+
+{* Debug-лог: одна запись — templates/actions/settings/blocks/JsTemplates.html, рендерится в
+   PrefillSettings.prototype.debugLogs() (renderEntry). Опциональные части (дата, meta, context)
+   удаляются в JS, если соответствующих данных нет — не просто пустые. *}
+<template id="prefill-log-entry-template">
+    <div class="prefill-log-entry">
+        <div class="prefill-log-entry__rail">
+            <span class="badge squared prefill-log-entry__badge"></span>
+            <span class="prefill-log-entry__time"></span>
+            <span class="prefill-log-entry__date"></span>
+        </div>
+        <div class="prefill-log-entry__body">
+            <div class="prefill-log-entry__message"></div>
+            <div class="prefill-log-entry__meta"></div>
+            <pre class="prefill-log-entry__context"></pre>
+        </div>
+    </div>
+</template>
+
+{* Debug-лог: кнопка "Загрузить ещё" *}
+<template id="prefill-log-load-more-template">
+    <div class="prefill-log-load-more-row">
+        <a href="#" class="button light-gray js-prefill-log-load-more"><i class="fas fa-angle-down"></i></a>
+    </div>
+</template>
+
+{* Debug-лог: та же строка в состоянии загрузки (подменяет кнопку на время AJAX) *}
+<template id="prefill-log-load-more-loading-template">
+    <div class="prefill-log-load-more-row prefill-log-load-more-row--loading">
+        <i class="fas fa-spinner fa-spin"></i>
+    </div>
+</template>
+
+{* Редактор Zen-шаблона: состояние загрузки превью *}
+<template id="prefill-ct-preview-loading-template">
+    <span class="hint"><i class="icon16 loading"></i></span>
+</template>
+
+{* Редактор Zen-шаблона: ошибка превью (заголовок обязателен, детали — опционально,
+   удаляются в JS если сервер не прислал текст ошибки) *}
+<template id="prefill-ct-preview-error-template">
+    <div class="prefill-ct-preview-error">
+        <strong></strong>
+        <div class="prefill-ct-preview-error__detail"></div>
+    </div>
+</template>
+
+{* Тултип переменной в редакторе Zen-шаблона (waTooltip/Tippy — content принимает Element
+   напрямую, см. wa-content/js/tippy/wa.tooltip.js: l(e.content) => t.appendChild(e.content)).
+   Опциональные части (desc/ex-head/ex/ex-code) удаляются в JS, если соответствующих
+   data-атрибутов нет. *}
+<template id="prefill-var-tooltip-template">
+    <div class="prefill-var-tooltip">
+        <div class="prefill-var-tooltip__code"><code></code></div>
+        <div class="prefill-var-tooltip__desc"></div>
+        <div class="prefill-var-tooltip__ex-head"></div>
+        <div class="prefill-var-tooltip__ex"></div>
+        <div class="prefill-var-tooltip__ex-code"><code></code></div>
+    </div>
+</template>
