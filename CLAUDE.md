@@ -23,6 +23,10 @@ php wa.php compress shop/plugins/prefill -style false
 
 For locale compilation and cache clearing — use `/compile-plugin-mo`.
 
+## Git Workflow
+
+Commit any pending changes **before** starting new work (clean checkpoint to diff against), and commit again **after** the fix — don't bundle unrelated work into one commit.
+
 ## Architecture
 
 ### PHP Backend
@@ -136,7 +140,7 @@ Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`. Must be `.tar.gz`
 - **Storefront identity is `checkout_storefront_id`, never the address.** `shopPrefillPluginStorefrontCode::fromRoute()` is the only place a storefront code is computed — called both by the `Storefront` constructor and by `findCurrentStorefront()`. The address must never become the key again: core rewrites a route's `url` silently on "make home page" (`siteMainPage::setNewMainPage()`, whose caller emits no event), on renaming a section URL, and on renaming a domain — and every settings row and per-storefront CSS file is keyed by that code. Routes created before checkout2 have no `checkout_storefront_id` and never get one retroactively, so they keep the legacy `base64(domain/url)` code as a fallback; both schemes coexist in the column, which is safe because the code is opaque everywhere (no `base64_decode`, no `atob`/`btoa` anywhere in the plugin). Full story: [docs/bugs/storefront-settings-orphaned-by-url-promotion.md](docs/bugs/storefront-settings-orphaned-by-url-promotion.md)
 - **Two settings layers share the table.** `storefront_code = '-'` holds plugin-wide settings (`shopPrefillPluginSettingProvider`, defaults in `lib/config/settings.php`: `active` killswitch, `logging.level`); `'*'` holds defaults for all storefronts and a `checkout_storefront_id` holds one storefront's own (both from `lib/config/storefront.settings.php`). Rows under `'-'` are not junk — see [docs/bugs/settings-storefront-code-dash-row.md](docs/bugs/settings-storefront-code-dash-row.md)
 - **Effective storefront** — the single place where the fallback to the global `'*'` storefront lives. `getEffectiveStorefront()` returns the current storefront, or the global one when there is no current storefront (backend/API/CLI) or it is inactive (`active = false` is the default). Always take both settings and storefront code from that one object — taking the code elsewhere produced a per-storefront CSS file with global content that never refreshed
-- `self::$effective_storefront` / `self::$effective_storefront_settings` are request-scoped caches; call `shopPrefillPlugin::clearEffectiveStorefrontCache()` after saving settings
+- `self::$effective_storefront` / `self::$effective_storefront_settings` are request-scoped caches (PHP resets statics between requests anyway, so no explicit invalidation is needed)
 - Storefront lookups are nullable by name: `findCurrentStorefront()` / `findStorefront($code)` return `null` (use them in backend actions and report a clear error), while `getGlobalStorefront()` and `getEffectiveStorefront()` always return an object
 - `order_action.create` fires outside the storefront too (backend, API, CLI, import). The hook exits early via `isStorefrontRequest()`: there is no checkout session there, and the admin's guest cookie would otherwise be attached to a customer's order
 - Debug mode is tied to `waSystemConfig::isDebug()` (Webasyst global debug flag)
