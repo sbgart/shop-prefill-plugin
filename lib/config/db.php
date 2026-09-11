@@ -8,7 +8,8 @@ return [
         'value'           => array('mediumtext'),
         'groups'          => array('text'),
         ':keys'           => array(
-            'PRIMARY' => 'id',
+            'PRIMARY'         => 'id',
+            'storefront_code' => 'storefront_code',
         ),
     ),
 ]; 
