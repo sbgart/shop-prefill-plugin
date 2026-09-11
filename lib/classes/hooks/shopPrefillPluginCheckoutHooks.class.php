@@ -69,13 +69,19 @@ class shopPrefillPluginCheckoutHooks
         // если пробелы остались — обращение к БД, не чаще раза на источник за сессию.
         $provider     = $this->fill_params_provider;
         $source_key   = $provider->getSourceKey();
-        $source_before = $this->session_storage->getAppliedSource();
-        $storage_before = $this->session_storage->getCheckoutParams();
-        $checker = $this->session_storage->getSectionChecker();
+
+        // Снапшот "до", разбор секций и обход дерева параметров нужны только debug-событию
+        // ниже — при выключенной панели recordEvent() всё равно не запишет их.
+        $storage_before = $this->is_debug_panel ? $this->session_storage->getCheckoutParams() : null;
+        $source_before  = $this->is_debug_panel ? $this->session_storage->getAppliedSource() : null;
         $section_decisions = [];
-        foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
-            $section_decisions[$section_id] = $checker->inspectPrefillSection($section_id, $storage_before);
+        if ($this->is_debug_panel) {
+            $checker = $this->session_storage->getSectionChecker();
+            foreach (['auth', 'region', 'shipping', 'details', 'payment', 'confirm'] as $section_id) {
+                $section_decisions[$section_id] = $checker->inspectPrefillSection($section_id, $storage_before);
+            }
         }
+
         $source_loaded = false;
         $source_order_id = null;
         $filled_order = $this->session_storage->preFillCheckoutParamsFromSource(
@@ -88,35 +94,37 @@ class shopPrefillPluginCheckoutHooks
             }
         );
 
-        foreach ($section_decisions as $section_id => &$decision) {
-            if (!$decision['available']) {
-                continue;
+        if ($this->is_debug_panel) {
+            foreach ($section_decisions as $section_id => &$decision) {
+                if (!$decision['available']) {
+                    continue;
+                }
+                if ($source_key === null) {
+                    $decision['reason'] = 'source_absent';
+                } elseif ($source_before === $source_key) {
+                    $decision['reason'] = 'source_already_applied';
+                } elseif (array_key_exists($section_id, $filled_order)) {
+                    $decision['reason'] = 'applied';
+                } else {
+                    $decision['reason'] = $source_loaded ? 'no_source_data' : 'not_observed';
+                }
             }
-            if ($source_key === null) {
-                $decision['reason'] = 'source_absent';
-            } elseif ($source_before === $source_key) {
-                $decision['reason'] = 'source_already_applied';
-            } elseif (array_key_exists($section_id, $filled_order)) {
-                $decision['reason'] = 'applied';
-            } else {
-                $decision['reason'] = $source_loaded ? 'no_source_data' : 'not_observed';
-            }
-        }
-        unset($decision);
+            unset($decision);
 
-        shopPrefillPluginDebug::recordEvent('prefill', 'checkout_before_auth', [
-            'source_key' => $source_key,
-            'applied_source_before' => $source_before,
-            'source_loaded' => $source_loaded,
-            'source_order_id' => $source_order_id,
-            'sections' => $section_decisions,
-            'applied_sections' => array_keys($filled_order),
-            'session_changed_paths' => $this->findChangedPaths(
-                $storage_before,
-                $this->session_storage->getCheckoutParams()
-            ),
-            'input_changed_paths' => $this->listLeafPaths($filled_order),
-        ]);
+            shopPrefillPluginDebug::recordEvent('prefill', 'checkout_before_auth', [
+                'source_key' => $source_key,
+                'applied_source_before' => $source_before,
+                'source_loaded' => $source_loaded,
+                'source_order_id' => $source_order_id,
+                'sections' => $section_decisions,
+                'applied_sections' => array_keys($filled_order),
+                'session_changed_paths' => $this->findChangedPaths(
+                    $storage_before,
+                    $this->session_storage->getCheckoutParams()
+                ),
+                'input_changed_paths' => $this->listLeafPaths($filled_order),
+            ]);
+        }
 
         if (!empty($filled_order)) {
             $state = new shopPrefillCheckoutState($params);
@@ -136,20 +144,24 @@ class shopPrefillPluginCheckoutHooks
             $this->applyEchoToInput($params, ['payment' => $payment_echo]);
         }
 
-        shopPrefillPluginDebug::recordEvent('echo', 'payment', [
-            'result' => $payment_echo === null ? 'not_restored' : 'restored',
-            'payment_id' => $payment_echo['id'] ?? null,
-        ]);
+        if ($this->is_debug_panel) {
+            shopPrefillPluginDebug::recordEvent('echo', 'payment', [
+                'result' => $payment_echo === null ? 'not_restored' : 'restored',
+                'payment_id' => $payment_echo['id'] ?? null,
+            ]);
+        }
 
         // Эхо-кэш группы доставки — по той же причине мимо applyPrefillInput()
         $delivery_echo = $this->session_storage->syncDeliveryEcho();
         $this->applyEchoToInput($params, $delivery_echo);
-        shopPrefillPluginDebug::recordEvent('echo', 'delivery', [
-            'result' => empty($delivery_echo) ? 'not_restored' : 'restored',
-            'shipping_type_id' => $delivery_echo['shipping']['type_id'] ?? null,
-            'shipping_id' => $delivery_echo['shipping']['id'] ?? null,
-            'variant_id' => $delivery_echo['shipping']['variant_id'] ?? null,
-        ]);
+        if ($this->is_debug_panel) {
+            shopPrefillPluginDebug::recordEvent('echo', 'delivery', [
+                'result' => empty($delivery_echo) ? 'not_restored' : 'restored',
+                'shipping_type_id' => $delivery_echo['shipping']['type_id'] ?? null,
+                'shipping_id' => $delivery_echo['shipping']['id'] ?? null,
+                'variant_id' => $delivery_echo['shipping']['variant_id'] ?? null,
+            ]);
+        }
     }
 
     /**
