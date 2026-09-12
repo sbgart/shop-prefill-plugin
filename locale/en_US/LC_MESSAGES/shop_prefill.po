@@ -90,6 +90,9 @@ msgstr "History cleared"
 msgid "error.unknown_action"
 msgstr "Unknown action"
 
+msgid "error.access_denied"
+msgstr "Access denied"
+
 msgid "action.edit"
 msgstr "Edit"
 

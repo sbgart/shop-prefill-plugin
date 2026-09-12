@@ -90,6 +90,9 @@ msgstr "История очищена"
 msgid "error.unknown_action"
 msgstr "Неизвестное действие"
 
+msgid "error.access_denied"
+msgstr "Доступ запрещён"
+
 msgid "zen.group.customer"
 msgstr "Покупатель"
 

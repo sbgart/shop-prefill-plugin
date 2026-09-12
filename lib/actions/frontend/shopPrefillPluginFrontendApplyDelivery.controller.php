@@ -7,6 +7,12 @@ class shopPrefillPluginFrontendApplyDeliveryController extends waJsonController
      */
     public function execute()
     {
+        if (!shopPrefillPluginCsrfGuard::isSameOriginRequest()) {
+            wa()->getResponse()->setStatus(403);
+            $this->errors = 'Access denied';
+            return;
+        }
+
         $instance = shopPrefillPlugin::getInstance();
         $settings = $instance->getEffectiveStorefrontSettings();
 

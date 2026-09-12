@@ -19,6 +19,13 @@ class shopPrefillPluginFrontendConsentController extends waJsonController
      */
     public function execute()
     {
+        if (!shopPrefillPluginCsrfGuard::isSameOriginRequest()) {
+            wa()->getResponse()->setStatus(403);
+            shopPrefillPluginLog::debug('Rejected consent action: request is not same-origin');
+            $this->errors[] = _wp('error.access_denied');
+            return;
+        }
+
         $action = waRequest::post('action', 'grant', waRequest::TYPE_STRING);
 
         if (!in_array($action, self::ACTIONS, true)) {

@@ -42,7 +42,7 @@ class shopPrefillPluginZenData
     private waView $view;
     private string $currency;
 
-    public function __construct(waView $view = null)
+    public function __construct(?waView $view = null)
     {
         $this->view = $view ?? wa()->getView();
         $this->currency = wa('shop')->getConfig()->getCurrency();
