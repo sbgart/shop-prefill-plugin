@@ -157,7 +157,7 @@ shop_prefill[storefront][*][zen][groups][payment][summary_template]={$x|shell_ex
 
 ## Связанное
 
-[issue-54](done/issue-54-backend-actions-no-rights-check.md) — тогда закрыли собственные экшены
+[issue-54](issue-54-backend-actions-no-rights-check.md) — тогда закрыли собственные экшены
 плагина; ядровый путь сохранения в тот разбор не попал.
 [issue-74](issue-74-minor-findings-pass-2.md) §6 — исходный разбор редактора шаблона.
-Правило B4 в [RULES.md](../concept/RULES.md).
+Правило B4 в [RULES.md](../../concept/RULES.md).

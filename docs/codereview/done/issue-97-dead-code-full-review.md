@@ -19,10 +19,10 @@
 | `lib/classes/zenmode/shopPrefillPluginZenMode.class.php` | `renderGroupSummary()` | Публичный; после разделения на `resolveSummaryData()` + `renderSummaryFromData()` вызывающих не осталось. Упоминается только в собственном сообщении лога и в `docs/bugs/zen-collapse-on-upstream-checkout-error.md` как описание архитектуры |
 | `lib/classes/fillparams/shopPrefillPluginGuestTokenStorage.class.php` | `hasToken()` | Все вызывающие спрашивают `getToken() !== null` или `getParamName()` |
 | `lib/classes/fillparams/shopPrefillPluginGuestTokenStorage.class.php` | `getTokenCookieName()` | Статический геттер приватной константы, ни одного вызова |
-| `lib/classes/fillparams/shopPrefillPluginFillParams.class.php` | `getShippingPlugin()` | Сеттера-пары нет по [замыслу](../plans/delivery-variant-identity.md) — поле не заполняется намеренно, значит и геттер бессмыслен |
+| `lib/classes/fillparams/shopPrefillPluginFillParams.class.php` | `getShippingPlugin()` | Сеттера-пары нет по [замыслу](../../plans/done/delivery-variant-identity.md) — поле не заполняется намеренно, значит и геттер бессмыслен |
 | `lib/classes/fillparams/shopPrefillPluginFillParams.class.php` | `getPaymentPlugin()` | Поле заполняется (`setPaymentPlugin()` в `FillParamsProvider`), но никто не читает |
 | `lib/classes/orders/shopPrefillPluginOrderProvider.class.php` | `getOrderIdsByGuestParam()` | Гостевая история исключена из «Моих вариантов» в [issue-55](issue-55-guest-apply-delivery-ignores-order-id.md) — метод остался от неё |
-| `lib/classes/fillparams/shopPrefillPluginFillParams.class.php` | `hasDataForSection()` | **Оставить.** Явно зарезервирован в [плане](../plans/delivery-variant-identity.md) как примитив для issue-84 §2 |
+| `lib/classes/fillparams/shopPrefillPluginFillParams.class.php` | `hasDataForSection()` | **Оставить.** Явно зарезервирован в [плане](../../plans/done/delivery-variant-identity.md) как примитив для issue-84 §2 |
 
 Отдельно — не мёртвый, а сломанный вызов:
 
@@ -147,5 +147,5 @@ issue-99…101.
 ## Связанное
 
 [issue-71](issue-71-dead-code-in-release-archive.md) — предыдущая уборка мёртвого кода перед релизом.
-[issue-55](issue-55-guest-apply-delivery-ignores-order-id.md), [issue-83](done/issue-83-fillparams-payment-fields-never-set.md) —
+[issue-55](issue-55-guest-apply-delivery-ignores-order-id.md), [issue-83](issue-83-fillparams-payment-fields-never-set.md) —
 откуда взялась часть остатков.

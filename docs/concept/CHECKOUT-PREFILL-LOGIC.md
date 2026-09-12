@@ -256,7 +256,7 @@ wa()->getStorage()->set('shop/checkout', $session_checkout);
 | `auth`, `region`, `details`, `confirm` | ✅ есть | секция с полями свободного ввода. Клиент прислал `html` → секция живёт в DOM → её пустота осознанная, предзаполнять нельзя |
 | `shipping`, `payment` | ❌ нет | секция выбора из вариантов. Пустой выбор — это отсутствие выбора, его можно предзаполнить |
 
-Отсюда наблюдаемое поведение: очищенный комментарий не вернётся, а сброшенный `shipping[type_id]` вернётся из снапшота (в логе — `Shipping section restored from snapshot`). Это осознанный компромисс, см. [issue-65](../codereview/issue-65-prefill-overrides-current-input.md) и [issue-72](../codereview/issue-72-snapshot-overwritten-by-empty-branch.md).
+Отсюда наблюдаемое поведение: очищенный комментарий не вернётся, а сброшенный `shipping[type_id]` вернётся из снапшота (в логе — `Shipping section restored from snapshot`). Это осознанный компромисс, см. [issue-65](../codereview/done/issue-65-prefill-overrides-current-input.md) и [issue-72](../codereview/done/issue-72-snapshot-overwritten-by-empty-branch.md).
 
 ---
 

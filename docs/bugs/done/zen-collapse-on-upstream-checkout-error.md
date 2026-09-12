@@ -3,9 +3,9 @@
 **Статус:** ✅ Закрыт 19.08.2026. Пункты 1–5 реализованы и проверены (браузер + гостевой прогон), пункт 7 (документация) сделан. Посев кэша из `FillParams` отклонён — см. «Отвергнутые варианты», п. 6. ⚠️ 24.08.2026: сценарии 1, 1a и 2 **переоткрыты**. Снятие снапшота (23.08.2026) показало, что устойчивость `shipping.variant_id`/`payment.id` к короткому замыканию держалась на снапшоте, а не на «состоянии JS-контроллера», как предполагалось здесь и в Z5 (ядро пересоздаёт контроллер секции на каждом рендере — `form.js:3739`). Выбор доставки и оплаты теперь стирается безвозвратно: после починки email он **не возвращается**. См. [отдельный баг](shipping-payment-identity-lost-after-snapshot-removal.md). **Повторно закрыт 24.08.2026** — эхо доставки (правка B) и гард сворачивания (правка C) из связанного бага восстановили устойчивость; сценарии 1/1a/2 повторно пройдены в браузере в его таблице «Отдельный прогон со свёрнутыми группами» (обе группы остаются свёрнутыми и со сломанным, и с починенным email). ⚠️ При повторной проверке 24.08.2026 найден смежный, отдельный дефект той же карточки оплаты — [payment-zen-card-vanishes-on-shortcircuit.md](payment-zen-card-vanishes-on-shortcircuit.md): карточка «Оплата» (в отличие от «Доставки») на секунду пропадает с экрана целиком, пока держится ошибка `auth`.
 **Приоритет:** 🟠 важно до продажи — покупатель видит «готовую» доставку, которой в форме нет
 **Сложность фикса:** 🔧 средний — трогает `ZenMode`, `ZenData` и `CheckoutHooks`
-**Подготовка:** ✅ [issue-59](../codereview/issue-59-html-key-marks-section-filled.md) закрыта 19.08.2026 — `SECTION_DATA_FIELDS` готов, блокеров не осталось
-**Связано:** [issue-75](../codereview/issue-75-zen-collapse-without-toggle-button.md), [issue-72](../codereview/issue-72-snapshot-overwritten-by-empty-branch.md), [issue-56](../codereview/done/issue-56-zen-summary-no-escaping.md)
-**Правила:** [RULES.md](../concept/RULES.md) — R1–R4, Z1–Z5
+**Подготовка:** ✅ [issue-59](../../codereview/done/issue-59-html-key-marks-section-filled.md) закрыта 19.08.2026 — `SECTION_DATA_FIELDS` готов, блокеров не осталось
+**Связано:** [issue-75](../../codereview/done/issue-75-zen-collapse-without-toggle-button.md), [issue-72](../../codereview/done/issue-72-snapshot-overwritten-by-empty-branch.md), [issue-56](../../codereview/done/issue-56-zen-summary-no-escaping.md)
+**Правила:** [RULES.md](../../concept/RULES.md) — R1–R4, Z1–Z5
 
 ## Симптом
 
@@ -49,7 +49,7 @@ Prefill was evaluated but no params were filled (empty final_params)
 
 ## Тот же пустой рендер бывает и без ошибок: `fast_render`
 
-**Первая загрузка `/order/` устроена ровно так же.** [`formVars()`](../../../../lib/classes/checkout2/shopCheckoutViewHelper.class.php#L432) ставит `fast_render = true`, а [`shopCheckoutShippingStep::process()`](../../../../lib/classes/checkout2/shopCheckoutShippingStep.class.php#L22-L27) на этот флаг немедленно выходит:
+**Первая загрузка `/order/` устроена ровно так же.** [`formVars()`](../../../../../lib/classes/checkout2/shopCheckoutViewHelper.class.php#L432) ставит `fast_render = true`, а [`shopCheckoutShippingStep::process()`](../../../../../lib/classes/checkout2/shopCheckoutShippingStep.class.php#L22-L27) на этот флаг немедленно выходит:
 
 ```php
 } elseif (!empty($data['input']['fast_render'])) {
@@ -81,18 +81,18 @@ auth: 6 | region: 6 | shipping: 2 | details: 2 | payment: 6
 
 ## Механизм
 
-1. `shopCheckoutAuthStep::getConfirmationErrors()` ([shopCheckoutAuthStep.class.php:208-215](../../../../lib/classes/checkout2/shopCheckoutAuthStep.class.php#L208-L215)) прогоняет `waEmailValidator` → `errors[]` → `can_continue = false`.
-2. В [`shopCheckoutStep::processAll()`](../../../../lib/classes/checkout2/shopCheckoutStep.class.php#L245-L280) выставляется `error_step_id = 'auth'`, и у **всех последующих шагов `process()` больше не вызывается** — только `prepare()`.
+1. `shopCheckoutAuthStep::getConfirmationErrors()` ([shopCheckoutAuthStep.class.php:208-215](../../../../../lib/classes/checkout2/shopCheckoutAuthStep.class.php#L208-L215)) прогоняет `waEmailValidator` → `errors[]` → `can_continue = false`.
+2. В [`shopCheckoutStep::processAll()`](../../../../../lib/classes/checkout2/shopCheckoutStep.class.php#L245-L280) выставляется `error_step_id = 'auth'`, и у **всех последующих шагов `process()` больше не вызывается** — только `prepare()`.
 3. Базовый `prepare()` при выставленном `error_step_id` делает `addRenderedHtml([], ...)` — рендерит шаблон секции с пустым результатом. Поэтому shipping / details / payment приезжают пустыми.
    Исключение — `shopCheckoutRegionStep::prepare()`: он делает всю работу в `prepare()`, поэтому регион рендерится нормально. Отсюда «половина сводки».
-4. В [form.js](../../../../js/frontend/order/form.js#L2013) флаг `reload` каждой секции после любого апдейта сбрасывается обратно в `true`, поэтому на следующем `update()` все секции запрашивают свой `[html]` и получают пустой.
-5. Наш [`shouldCollapseGroup()`](../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L131-L147) решает сворачивать по правилу «в группе нет ошибок». Ошибка лежит в `auth`, значит в `delivery` и `payment` «ошибок нет» — и группы сворачиваются.
+4. В [form.js](../../../../../js/frontend/order/form.js#L2013) флаг `reload` каждой секции после любого апдейта сбрасывается обратно в `true`, поэтому на следующем `update()` все секции запрашивают свой `[html]` и получают пустой.
+5. Наш [`shouldCollapseGroup()`](../../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L131-L147) решает сворачивать по правилу «в группе нет ошибок». Ошибка лежит в `auth`, значит в `delivery` и `payment` «ошибок нет» — и группы сворачиваются.
 
 **Корень:** мы читаем молчание как «всё хорошо». У группы ниже упавшего шага ошибок нет не потому, что там порядок, а потому что её **вообще не валидировали**. Состояний три, а правило знает два.
 
 ## Наблюдение по куке
 
-[`syncCollapseCookieState()`](../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L384-L399) пишет `prefill_zen_{group}=expanded` при любом разворачивании, включая системное. Проверено: после починки email группа «Покупатель» осталась развёрнутой.
+[`syncCollapseCookieState()`](../../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L384-L399) пишет `prefill_zen_{group}=expanded` при любом разворачивании, включая системное. Проверено: после починки email группа «Покупатель» осталась развёрнутой.
 
 Это **не баг, а намеренное поведение** — иначе секция схлопывалась бы под руками у покупателя, который её как раз правит. Но с новым правилом сворачивания оно даёт побочный эффект на пустых группах, разбор — в пункте 6 плана.
 
@@ -111,13 +111,13 @@ Section 'payment'  skipped: already filled
 
 Это работало корректно даже в тот момент, когда доставка на экране была пуста.
 
-> **Зачем вообще нужен снапшот** — уточнение 19.08.2026, прежняя формулировка в [issue-72](../codereview/issue-72-snapshot-overwritten-by-empty-branch.md) («покупатель случайно очистил секцию — снапшот вернёт что было») сбивает с толку.
+> **Зачем вообще нужен снапшот** — уточнение 19.08.2026, прежняя формулировка в [issue-72](../../codereview/done/issue-72-snapshot-overwritten-by-empty-branch.md) («покупатель случайно очистил секцию — снапшот вернёт что было») сбивает с толку.
 >
-> Сессия чекаута не аддитивна: [`calculateAction()`](../../../../lib/actions/frontend/order/shopFrontendOrder.actions.php#L35-L38) кладёт `$session_checkout['order'] = $input` — **целиком заменяет** блок содержимым POST. А POST после короткозамкнутого рендера обеднён: секции приехали пустыми, браузер сериализовал пустоту и отправил обратно. Снапшот — теневая копия, переживающая такую перезапись.
+> Сессия чекаута не аддитивна: [`calculateAction()`](../../../../../lib/actions/frontend/order/shopFrontendOrder.actions.php#L35-L38) кладёт `$session_checkout['order'] = $input` — **целиком заменяет** блок содержимым POST. А POST после короткозамкнутого рендера обеднён: секции приехали пустыми, браузер сериализовал пустоту и отправил обратно. Снапшот — теневая копия, переживающая такую перезапись.
 >
 > То есть он чинит **машинную** потерю данных, а не отменяет осознанную правку покупателя. Осознанную правку защищает `html` в ключевых полях (пункт 6), и эти два механизма не конфликтуют, а дополняют друг друга.
 
-Правила, которые здесь применяются, живут в [concept/RULES.md](../concept/RULES.md): R1–R3 (рендер и состояние), Z1–Z4 (дзен-режим).
+Правила, которые здесь применяются, живут в [concept/RULES.md](../../concept/RULES.md): R1–R3 (рендер и состояние), Z1–Z4 (дзен-режим).
 
 ### Разделение источников
 
@@ -148,7 +148,7 @@ Section 'payment'  skipped: already filled
 - в `$params` есть данные группы → рендерим из них и **записываем** массив в кэш;
 - в `$params` данных нет → рендерим из кэша.
 
-Кэшируем **массив, а не HTML**: смена шаблона или настроек витрины применяется сразу, в сессии не лежит разметка, и открытый [issue-56](../codereview/done/issue-56-zen-summary-no-escaping.md) про экранирование не расползается в хранилище.
+Кэшируем **массив, а не HTML**: смена шаблона или настроек витрины применяется сразу, в сессии не лежит разметка, и открытый [issue-56](../../codereview/done/issue-56-zen-summary-no-escaping.md) про экранирование не расползается в хранилище.
 
 Устаревание не опасно: кэш подставляется только когда в текущем рендере данных нет, а решение сворачивать в этот момент уже принято по сессии. Если покупатель очистил доставку — сессия скажет «пусто», группа развернётся, и кэш не понадобится.
 
@@ -238,24 +238,24 @@ return true;
 
 ### 6. Зависимости от других issue
 
-**[issue-59](../codereview/issue-59-html-key-marks-section-filled.md) — ✅ сделана 19.08.2026, подготовка завершена.** Константа разделена на две:
+**[issue-59](../../codereview/done/issue-59-html-key-marks-section-filled.md) — ✅ сделана 19.08.2026, подготовка завершена.** Константа разделена на две:
 
 - `SECTION_OWNERSHIP_FIELDS` — с `html`, для `canPrefillSection()` («можно ли сюда писать?»);
 - `SECTION_DATA_FIELDS` — без `html`, для `getSnapshotSection()` и решения Zen («есть ли тут данные?»).
 
 Zen в пункте 1 берёт **`SECTION_DATA_FIELDS`** через `shopPrefillPluginSectionChecker::isSectionFilled()` — метод уже существует и покрыт `tests/SectionCheckerOwnershipVsDataTest.php` (132 проверки).
 
-**[issue-72](../codereview/issue-72-snapshot-overwritten-by-empty-branch.md) — не блокер.** В первой редакции снапшот назначался источником сводки, отсюда и зависимость. Теперь решение читает сессию, а сводка — свой кэш; снапшот остаётся инструментом восстановления prefill. Приоритет вернулся к 🟢.
+**[issue-72](../../codereview/done/issue-72-snapshot-overwritten-by-empty-branch.md) — не блокер.** В первой редакции снапшот назначался источником сводки, отсюда и зависимость. Теперь решение читает сессию, а сводка — свой кэш; снапшот остаётся инструментом восстановления prefill. Приоритет вернулся к 🟢.
 
-**[issue-65](../codereview/issue-65-prefill-overrides-current-input.md) — не блокер.** Эскалация «🔴 после фикса issue-59» не сработала: страховка сохранена и закреплена тестом.
+**[issue-65](../../codereview/done/issue-65-prefill-overrides-current-input.md) — не блокер.** Эскалация «🔴 после фикса issue-59» не сработала: страховка сохранена и закреплена тестом.
 
 **Фолбэк delivery-блока на `checkout_render_shipping` не нужен** — разобрано ниже в «Отвергнутых вариантах».
 
 ### 7. Документация — ✅ сделано 19.08.2026
 
-- [ZEN-MODE.md](../concept/ZEN-MODE.md): «хук `checkout_render_details` может не вызываться» заменено на правду (хук вызывается всегда, риск — что ядро выбросит его вывод, закрыто issue-75).
+- [ZEN-MODE.md](../../concept/ZEN-MODE.md): «хук `checkout_render_details` может не вызываться» заменено на правду (хук вызывается всегда, риск — что ядро выбросит его вывод, закрыто issue-75).
 - Туда же: раздел «Разделение источников» и переписанный «Условия сворачивания секций» — приоритет проверок, таблица минимума группы, актуальный код `shouldCollapseGroup()`, таблица сценариев. Выброшено описание несуществующего состояния куки `collapsing`.
-- [CHECKOUT-PREFILL-LOGIC.md](../concept/CHECKOUT-PREFILL-LOGIC.md): новый раздел «Снапшот: зачем он есть» — проблема замены секции целиком, два правила, и чего снапшот **не** делает (границу проводит список владения, а не он).
+- [CHECKOUT-PREFILL-LOGIC.md](../../concept/CHECKOUT-PREFILL-LOGIC.md): новый раздел «Снапшот: зачем он есть» — проблема замены секции целиком, два правила, и чего снапшот **не** делает (границу проводит список владения, а не он).
 
 ## Отвергнутые варианты
 
@@ -265,9 +265,9 @@ Zen в пункте 1 берёт **`SECTION_DATA_FIELDS`** через `shopPrefi
 
 **3. Чинить на клиенте: JS видит свёрнутую группу без полей и разворачивает её.** Гонки с перерисовкой секций ядром, зависимость от работоспособности JS в вещи, влияющей на возможность оформить заказ. Отказ.
 
-**4. Фолбэк блока delivery на `checkout_render_shipping` (как обещано в ZEN-MODE.md).** Не нужен. Список шагов в [`getCheckoutSteps()`](../../../../lib/classes/checkout2/shopCheckoutConfig.class.php#L410-L435) захардкожен и безусловен — все шесть создаются всегда, настройки на состав не влияют. Хук `checkout_render_details` срабатывает либо через [`prepareFormVars()`](../../../../lib/classes/checkout2/shopCheckoutViewHelper.class.php#L465-L477) (безусловно по всем шагам, на рендерах `response=html`), либо через [`addRenderedHtml()`](../../../../lib/classes/checkout2/shopCheckoutStep.class.php#L360) (посекционно, если клиент запросил `[html]`). Эмпирически подтверждено: в замерах выше `details` отрендерился пустым, но тег `prefill-zen-styles-delivery` оказался внутри `.wa-step-details-section`.
+**4. Фолбэк блока delivery на `checkout_render_shipping` (как обещано в ZEN-MODE.md).** Не нужен. Список шагов в [`getCheckoutSteps()`](../../../../../lib/classes/checkout2/shopCheckoutConfig.class.php#L410-L435) захардкожен и безусловен — все шесть создаются всегда, настройки на состав не влияют. Хук `checkout_render_details` срабатывает либо через [`prepareFormVars()`](../../../../../lib/classes/checkout2/shopCheckoutViewHelper.class.php#L465-L477) (безусловно по всем шагам, на рендерах `response=html`), либо через [`addRenderedHtml()`](../../../../../lib/classes/checkout2/shopCheckoutStep.class.php#L360) (посекционно, если клиент запросил `[html]`). Эмпирически подтверждено: в замерах выше `details` отрендерился пустым, но тег `prefill-zen-styles-delivery` оказался внутри `.wa-step-details-section`.
 
-Задумывался фолбэк на самом деле против другого: ядро **выбрасывает** вывод хука при `$details.disabled` или если кастомная тема потеряла `{foreach $event_hook.details}`. Это разобрано и закрыто в [issue-75](../codereview/issue-75-zen-collapse-without-toggle-button.md) — CSS теперь едет вместе с кнопкой. Плюс построить фолбэк и нельзя: в момент `checkout_render_shipping` неизвестно, отрендерится ли `details` дальше.
+Задумывался фолбэк на самом деле против другого: ядро **выбрасывает** вывод хука при `$details.disabled` или если кастомная тема потеряла `{foreach $event_hook.details}`. Это разобрано и закрыто в [issue-75](../../codereview/done/issue-75-zen-collapse-without-toggle-button.md) — CSS теперь едет вместе с кнопкой. Плюс построить фолбэк и нельзя: в момент `checkout_render_shipping` неизвестно, отрендерится ли `details` дальше.
 
 **5. Мешать ядру замыкать конвейер (подкладывать данные в `$data`, гасить `error_step_id`).** Это борьба с задокументированным поведением ядра на чужих инсталляциях. Проглотит настоящие ошибки валидации. Отказ.
 
@@ -275,7 +275,7 @@ Zen в пункте 1 берёт **`SECTION_DATA_FIELDS`** через `shopPrefi
 
 - окно жизни проблемы — **один запрос**: дальше приходит первый `calculate`, секции перерисовываются, и работает реальный кэш;
 - цену (`shipping_rate`), срок, адрес ПВЗ, описание оплаты и логотипы посеять нельзя в принципе — их считает плагин доставки от корзины, в прошлом заказе их нет. Дефолтный шаблон доставки в это окно дал бы «**Название** • » с висящим разделителем;
-- `FillParams::getPaymentName()` в проде был всегда `null` (сеттер не вызывался ниоткуда, кроме теста), хотя `payment_name` в `shop_order_params` лежит — то есть посев группы payment потребовал бы ещё и правки провайдера. **Обновление 19.08.2026:** провайдер починен в [issue-83](../codereview/done/issue-83-fillparams-payment-fields-never-set.md), `payment_name` и `payment_plugin` теперь заполняются. Этот довод против варианта 6 отпал; остальные (цена, срок, логотипы, окно в один запрос) в силе.
+- `FillParams::getPaymentName()` в проде был всегда `null` (сеттер не вызывался ниоткуда, кроме теста), хотя `payment_name` в `shop_order_params` лежит — то есть посев группы payment потребовал бы ещё и правки провайдера. **Обновление 19.08.2026:** провайдер починен в [issue-83](../../codereview/done/issue-83-fillparams-payment-fields-never-set.md), `payment_name` и `payment_plugin` теперь заполняются. Этот довод против варианта 6 отпал; остальные (цена, срок, логотипы, окно в один запрос) в силе.
 
 Цена — маппер, метод кэша, проводка в хук, тесты — против одного кадра. Не окупается.
 
@@ -295,7 +295,7 @@ window.waOrder.form.update({});
 
 ## Проверять после фикса
 
-Список ведётся в [TESTS.md](../tests/TESTS.md), раздел «Дзен-режим» — там же статус прогона.
+Список ведётся в [TESTS.md](../../tests/TESTS.md), раздел «Дзен-режим» — там же статус прогона.
 
 | # | Сценарий | Ожидание | Правило | Итог 19.08.2026 |
 |---|---|---|---|---|
@@ -308,7 +308,7 @@ window.waOrder.form.update({});
 | 4b | Нажал «Свернуть» | Свернулась и осталась свёрнутой | Z4 | ✅ в браузере; повторено на curl: убрал `prefill_zen_delivery` (это и делает JS) → доставка свернулась, оплата со своей кукой осталась открытой — группы изолированы |
 | 5 | `config['shipping']['used'] = false` | Группа не остаётся развёрнутой навсегда, регресс issue-75 не вернулся | Z3 | ⬜ |
 | 6 | Самовывоз без адресных полей | Группа сворачивается (минимум — `type_id`) | Z2 | ✅ логика покрыта автотестом; в браузере проверено до правки |
-| 7 | Покупатель очистил доставку вручную | Группа разворачивается, кэш сводки не подставляется | P2, Z2 | 🟡 не воспроизводится: пустой `shipping[type_id]` возвращает снапшот (лог `Shipping section restored from snapshot`), сессия снова заполнена и группа сворачивается — корректно, доставка действительно выбрана. Приоритет ввода покупателя здесь — [issue-65](../codereview/issue-65-prefill-overrides-current-input.md), не этот баг |
+| 7 | Покупатель очистил доставку вручную | Группа разворачивается, кэш сводки не подставляется | P2, Z2 | 🟡 не воспроизводится: пустой `shipping[type_id]` возвращает снапшот (лог `Shipping section restored from snapshot`), сессия снова заполнена и группа сворачивается — корректно, доставка действительно выбрана. Приоритет ввода покупателя здесь — [issue-65](../../codereview/done/issue-65-prefill-overrides-current-input.md), не этот баг |
 | 8 | Ошибка в группе доставки | Группа развёрнута | Z1 | ✅ смена страны на Австралию: лог `expanded: validation errors` |
 
 **Стенд для гостевых сценариев (4, 4a, 4b, 7).** Выход из бэкенда сессию чекаута не обнуляет, а файлы PHP-сессий недоступны — поэтому «чистый гость» делается curl-ом с пустой банкой кук:

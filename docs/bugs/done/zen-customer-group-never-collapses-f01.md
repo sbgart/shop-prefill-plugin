@@ -1,6 +1,6 @@
 # Группа «Покупатель» (customer) не сворачивается в Zen-режиме на первом кадре
 
-**Статус:** ✅ Исправлено и полностью проверено 08.09.2026 по [плану](../plans/zen-customer-gate-source-alignment.md) — гейт группы `customer` читает источник сводки (`$state`), а не сессию чекаута. Проверено curl-ом и в живом браузере (все три прогона ниже), автотест `tests/ZenCustomerGateSourceTest.php` (13 проверок), все 18 тестов плагина зелёные.
+**Статус:** ✅ Исправлено и полностью проверено 08.09.2026 по [плану](../../plans/done/zen-customer-gate-source-alignment.md) — гейт группы `customer` читает источник сводки (`$state`), а не сессию чекаута. Проверено curl-ом и в живом браузере (все три прогона ниже), автотест `tests/ZenCustomerGateSourceTest.php` (13 проверок), все 18 тестов плагина зелёные.
 
 ## Проверка фикса (08.09.2026, curl)
 
@@ -66,7 +66,7 @@
    переопределений в `shop_prefill_settings` нет).
 3. Товар добавлен в корзину (`POST /cart/add/`), `GET /order/`.
 
-**Ожидание (правило Z2, [TEST-PLAN.md](../tests/TEST-PLAN.md) F-01):** группы `customer`, `delivery`,
+**Ожидание (правило Z2, [TEST-PLAN.md](../../tests/TEST-PLAN.md) F-01):** группы `customer`, `delivery`,
 `payment` свёрнуты с первого кадра — все поля заполнены, свёртывать есть что.
 
 **Факт:** группы `delivery` и `payment` свёрнуты корректно (`data-action="expand"`, показана сводка).
@@ -151,7 +151,7 @@ GET#2 (та же сессия):     customer:collapse  delivery:expand  payment:
   сессии чекаута;
 - предзаполнение для авторизованного покупателя auth-секцию в сессию **сознательно не пишет** —
   `prepareAuthSectionParams()`
-  ([SessionStorageProvider:627-630](../../lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php)):
+  ([SessionStorageProvider:627-630](../../../lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php)):
 
   ```php
   // Для авторизованных пользователей auth данные берутся из контакта автоматически
@@ -164,7 +164,7 @@ GET#2 (та же сессия):     customer:collapse  delivery:expand  payment:
   POST целиком), то есть **после** первого серверного рендера — по определению никогда не раньше.
 
 При этом сводка читает совсем другой источник — `$state`, то есть `vars.auth.fields.*.value`
-([shopPrefillCheckoutState:37-70](../../lib/classes/checkout/shopPrefillCheckoutState.class.php)),
+([shopPrefillCheckoutState:37-70](../../../lib/classes/checkout/shopPrefillCheckoutState.class.php)),
 и на этом же первом кадре он заполнен. Проверено по HTML того же ответа:
 
 ```html

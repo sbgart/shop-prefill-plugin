@@ -1,9 +1,11 @@
 # Issue 52 — Публичные фронтовые эндпоинты: флуд лога и отсутствие CSRF
 
-**Статус:** ⬜ Открыта
+**Статус:** ✅ Закрыта — Проблема 1 исправлена ранее (белый список действий, уровень `debug`, ротация лога); Проблема 2 (CSRF) закрыта 11.09.2026, см. [issue-79](issue-79-issue-52-csrf-half-done.md)
 **Приоритет:** 🟠 Высокий
 **Сложность фикса:** 🔧 Небольшой
-**Файлы:** `lib/actions/frontend/shopPrefillPluginFrontendConsent.controller.php`, `...FillCheckoutParams`, `...ApplyDelivery`, `lib/classes/log/shopPrefillPluginLog.class.php`
+**Файлы:** `lib/actions/frontend/shopPrefillPluginFrontendConsent.controller.php`, `...ApplyDelivery`, `lib/classes/frontend/shopPrefillPluginCsrfGuard.class.php`, `lib/classes/log/shopPrefillPluginLog.class.php`
+
+> `...FillCheckoutParams` из исходного списка файлов удалён отдельно (см. [issue-62](issue-62-dead-unguarded-fill-checkout-endpoint.md)) — к моменту фикса CSRF в этом файле уже не было.
 
 ## Проблема 1 — неограниченный рост лог-файла из анонимного запроса
 
@@ -35,3 +37,7 @@ SameSite=Lax по умолчанию в браузерах снимает бол
 2. Ввести простой rate-limit или писать «неизвестное действие» не чаще N раз за сессию.
 3. Добавить ротацию/ограничение размера лог-файлов плагина (или писать через `waLog` с его правилами).
 4. Для `grant`/`revoke` использовать CSRF-токен (`wa()->getStorage()`/`waRequest::post('_csrf')`), проверять `Sec-Fetch-Site`/origin.
+
+## Как закрыт пункт 4 (11.09.2026)
+
+`_csrf`-кука не подходила как единственная проверка: её ставит ядро (`waAuthUser::init()`) только уже авторизованным контактам, а `consent`/`grant` — ровно тот случай, когда его вызывает совсем анонимный гость до какой-либо авторизации. Поэтому основной барьер — `Sec-Fetch-Site`/`Origin`/`Referer` (не зависят от наличия куки), `_csrf` — дополнительно, если кука уже есть. Реализация — `shopPrefillPluginCsrfGuard::isSameOriginRequest()`, подключена в начале `execute()` у `Consent` и `ApplyDelivery`. Подробности и результаты проверки — в [issue-79](issue-79-issue-52-csrf-half-done.md).

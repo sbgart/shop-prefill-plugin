@@ -2,14 +2,14 @@
 
 **Статус:** ✅ Опровергнуто в браузере 25.08.2026 — бага нет, поля не конфликтуют
 **Приоритет:** —
-**Связано:** найдено при браузерной проверке батчинга сохранения ([issue-74#5](../codereview/issue-74-minor-findings-pass-2.md#5-сохранение-настроек--по-select--update-на-каждый-лист-дерева---✅-закрыто))
+**Связано:** найдено при браузерной проверке батчинга сохранения ([issue-74#5](../../codereview/done/issue-74-minor-findings-pass-2.md#5-сохранение-настроек--по-select--update-на-каждый-лист-дерева---✅-закрыто))
 
 ## Опровержение (25.08.2026)
 
 Исходный анализ смотрел только на статичный текст шаблонов и предположил, что `{$name_prefix}`
 в `Header.html` и в `General.html` — одно и то же значение. Это не так: `General.html` рендерится
 не статичным `{include}` из `Settings.html`, а отдельным AJAX-экшеном
-[`shopPrefillPluginSettingsStorefrontAction`](../../lib/actions/shopPrefillPluginSettingsStorefront.action.php#L37),
+[`shopPrefillPluginSettingsStorefrontAction`](../../../lib/actions/shopPrefillPluginSettingsStorefront.action.php#L37),
 который переопределяет `name_prefix` на `shop_prefill[storefront][{$storefront_code}]`. В реальном DOM
 поля называются **по-разному**:
 

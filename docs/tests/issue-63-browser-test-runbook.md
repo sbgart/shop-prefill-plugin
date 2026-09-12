@@ -1,7 +1,7 @@
 # Runbook: браузерное тестирование issue-63
 
 **Для кого:** исполняет Claude при выданном доступе к браузеру.
-**Что проверяем:** [issue-63](../codereview/issue-63-guest-hash-lookup-full-scan.md) — источник предзаполнения читается не чаще одного раза на личность за сессию, полный перебор `shop_order_params` исчез, каталог к заказам не обращается.
+**Что проверяем:** [issue-63](../codereview/done/issue-63-guest-hash-lookup-full-scan.md) — источник предзаполнения читается не чаще одного раза на личность за сессию, полный перебор `shop_order_params` исчез, каталог к заказам не обращается.
 **Когда:** Фаза 0 исполняется **до** реализации (снимает baseline). Фазы 1-4 — после.
 
 ## Среда и доступы
@@ -207,7 +207,7 @@ MY -e "SELECT MAX(id) AS max_order FROM shop_order; SELECT MAX(id) AS max_contac
 | 4.2 | **Гость без куки не поднимает сессию.** Полностью очистить куки, пройти 3 страницы каталога | В ответах **нет** `Set-Cookie: PHPSESSID`, `session_is_alive` остаётся `false`. Провал = маркер пишется для `guest:none` |
 | 4.3 | Явный выбор варианта в «Моих вариантах» и apply delivery у авторизованного | Обходят маркер, применяют выбранный заказ |
 | 4.4 | Reset & refill, force prefill (debug) | Источник действительно перечитывается |
-| 4.5 | Ручной ввод не перетирается повторным prefill | Отдельно сверить с [issue-65](../codereview/issue-65-prefill-overrides-current-input.md) — в **свежей** сессии |
+| 4.5 | Ручной ввод не перетирается повторным prefill | Отдельно сверить с [issue-65](../codereview/done/issue-65-prefill-overrides-current-input.md) — в **свежей** сессии |
 | 4.6 | Гость с token-cookie открывает checkout и напрямую запрашивает `params-choice` / `apply-delivery` | Ссылки «Мои варианты» нет; оба endpoint отказывают в доступе; история адресов не выводится |
 | 4.7 | `cityselect`: выбрать город виджетом, затем открыть `/order/` | Регион из виджета не конфликтует с предзаполнением (см. бэклог TODO.md) |
 
@@ -225,7 +225,7 @@ MY -e "SELECT MAX(id) AS max_order FROM shop_order; SELECT MAX(id) AS max_contac
 | 4.3 | `params-choice` / `apply-delivery` у авторизованного | При стоящем маркере (источник — заказ 85) `apply-delivery(82)` прочитал заказ 82 и применил его; в DOM доставка сменилась на «ПВЗ Новосибирск, Вокзальная магистраль». Маркер обойдён | PASS |
 | 4.4 | `force-prefill` и `reset-and-refill` | Оба при стоящем маркере заново выполнили `SELECT last_order_id FROM shop_customer WHERE contact_id = 1` + гидратацию заказа 85 | PASS |
 | 4.6 | Гость с токеном лезет в историю | Ссылки «Мои варианты» нет в DOM; `params-choice` → **403**, 0 карточек; `apply-delivery(89)` → **403 Access denied** — при том что заказ 89 привязан к его же токену | PASS |
-| 4.7 (05.09.2026) | `cityselect`: `user:1` (Новосибирск, Самовывоз+ПВЗ NSK2 свёрнуто) → виджет города → «Пермь» → `/order/` без перезагрузки | Регион/город в форме реально сменились на «Пермский край»/«Пермь» (виджет не проигнорирован); `delivery`-группа корректно **развернулась** без старого варианта (не подставила Новосибирский ПВЗ на пермский адрес). Лог: `Delivery echo dropped: region changed` — тот же код-путь, что уже описан для сценария 6 в [shipping-payment-identity-lost-after-snapshot-removal.md](../bugs/shipping-payment-identity-lost-after-snapshot-removal.md). Конфликта нет: prefill не пытался переписать город виджета историей заказов (`Section 'region' skipped: belongs to customer`). Город возвращён на «Новосибирск», доставка выбрана заново (Самовывоз+ПВЗ NSK2) | PASS |
+| 4.7 (05.09.2026) | `cityselect`: `user:1` (Новосибирск, Самовывоз+ПВЗ NSK2 свёрнуто) → виджет города → «Пермь» → `/order/` без перезагрузки | Регион/город в форме реально сменились на «Пермский край»/«Пермь» (виджет не проигнорирован); `delivery`-группа корректно **развернулась** без старого варианта (не подставила Новосибирский ПВЗ на пермский адрес). Лог: `Delivery echo dropped: region changed` — тот же код-путь, что уже описан для сценария 6 в [shipping-payment-identity-lost-after-snapshot-removal.md](../bugs/done/shipping-payment-identity-lost-after-snapshot-removal.md). Конфликта нет: prefill не пытался переписать город виджета историей заказов (`Section 'region' skipped: belongs to customer`). Город возвращён на «Новосибирск», доставка выбрана заново (Самовывоз+ПВЗ NSK2) | PASS |
 
 Побочно подтверждено на этом же прогоне:
 

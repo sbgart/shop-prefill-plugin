@@ -66,7 +66,7 @@ sprite-URL стрелок. Прогон по этому пункту сейча�
 
 ## Связанное
 
-[zen-photos-css-scope-broken.md](../bugs/zen-photos-css-scope-broken.md) — фикс, породивший
+[zen-photos-css-scope-broken.md](../../bugs/done/zen-photos-css-scope-broken.md) — фикс, породивший
 расхождение. [issue-91](issue-91-thumb-helper-constructed-with-view.md) — дефект в том же коммите.
 
 

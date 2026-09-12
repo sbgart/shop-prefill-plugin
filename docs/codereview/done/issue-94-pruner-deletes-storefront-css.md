@@ -137,5 +137,5 @@ public function prune(string $dir, string $own_files_glob, string $except_filena
 [issue-57](issue-57-minor-robustness-findings.md) §3 — ради чего уборщик появился.
 [issue-76](issue-76-custom-css-replaces-plugin-stylesheet.md) — откуда взялся пер-витринный файл
 переопределений.
-Правило B3 в [RULES.md](../concept/RULES.md) — витрина берётся из одного объекта; здесь нарушена не
+Правило B3 в [RULES.md](../../concept/RULES.md) — витрина берётся из одного объекта; здесь нарушена не
 она, а изоляция двух механизмов, делящих каталог.

@@ -47,7 +47,7 @@ Zen-сводки — оба смотрят на один и тот же реал
 
 ## Разбор находок
 
-### G3 (подтверждено) — см. [zen-photos-css-scope-broken.md](../bugs/zen-photos-css-scope-broken.md)
+### G3 (подтверждено) — см. [zen-photos-css-scope-broken.md](../bugs/done/zen-photos-css-scope-broken.md)
 
 Компьютед-стиль `.wa-photo-wrapper` внутри реальной свёрнутой карточки: `display: block` (ожидается
 `inline-block`), `width: 489px` (ожидается `calc(25% - 15px)`), `position: static` (ожидается
@@ -56,7 +56,7 @@ Zen-сводки — оба смотрят на один и тот же реал
 ноль. Стрелки прокрутки (`.wa-action.left/right`) вместо позиционирования по бокам растянуты на всю
 ширину карточки и садятся друг под другом.
 
-### Часы работы (подтверждено, отдельная причина) — см. [zen-delivery-schedule-source-missing.md](../bugs/zen-delivery-schedule-source-missing.md)
+### Часы работы (подтверждено, отдельная причина) — см. [zen-delivery-schedule-source-missing.md](../bugs/done/zen-delivery-schedule-source-missing.md)
 
 Это не гипотеза плана — обнаружено по ходу, потому что поле молчало даже там, где я его специально
 поставил на видное место в шаблоне. Причина не в CSS: `shopPrefillCheckoutState::getShippingScheduleHtml()`

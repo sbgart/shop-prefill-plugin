@@ -4,15 +4,15 @@
 
 ## Реализовано — 23.08.2026
 
-Рекомендация ниже («передать `.js-variant-field` отдельным полем `variant_id`») оказалась недостаточной ещё до релиза: при отладке нашёлся **второй, независимый способ**, которым `shop/checkout` врёт об адресе — `details.shipping_address.street` (и с ним весь адрес) пропадает из сессии при коротком замыкании валидации шага `shipping` (см. Z5/B2a в [RULES.md](../concept/RULES.md)), а `isSameDeliveryOption()` сравнивает не только вариант доставки, но и весь `region_params` (`country`/`region`/`city`/`zip`/`street`). Точечный фикс под один параметр эту дыру не закрывал — и не закрыл бы следующую, обнаружься она после релиза.
+Рекомендация ниже («передать `.js-variant-field` отдельным полем `variant_id`») оказалась недостаточной ещё до релиза: при отладке нашёлся **второй, независимый способ**, которым `shop/checkout` врёт об адресе — `details.shipping_address.street` (и с ним весь адрес) пропадает из сессии при коротком замыкании валидации шага `shipping` (см. Z5/B2a в [RULES.md](../../concept/RULES.md)), а `isSameDeliveryOption()` сравнивает не только вариант доставки, но и весь `region_params` (`country`/`region`/`city`/`zip`/`street`). Точечный фикс под один параметр эту дыру не закрывал — и не закрыл бы следующую, обнаружься она после релиза.
 
 **Итоговое решение — не поле, а вся форма.** Ядро уже умеет собирать себя целиком: `Form.prototype.getFormData()` в `form.js` — тот же метод, которым чекаут сериализует себя перед `/order/calculate/`. Экземпляр контроллера ядро само кладёт в DOM (`$('#js-order-form').data('controller')`). `ParamsChoiceManager.getFormSnapshot()` берёт его и вызывает `getFormData()` — получает **все** поля (`region[...]`, `shipping[...]`, `details[...]`, `payment[...]`, `auth[...]`, `confirm[...]`) в актуальном на данный момент виде, без точечного знания о каждом из них. На сервере `FrontendParamsChoiceAction` при получении структуры `order[...]` передаёт её как есть в существующий `getFillParamsByCheckoutParams()` — тот же метод, что раньше разбирал сессию, просто источник другой; любое поле, которое этот метод научится читать в будущем, подхватится сам, без правок в этом экшене.
 
 Файлы:
 
-- [`js/modules/ParamsChoiceManager.js`](../../js/modules/ParamsChoiceManager.js) — `getFormSnapshot()`, вызывается из `displayDialog()`
-- [`js/modules/HttpClient.js`](../../js/modules/HttpClient.js) — `fetchView()` строит тело через `new URLSearchParams(data)` (принимает и объект, и массив пар)
-- [`lib/actions/frontend/shopPrefillPluginFrontendParamsChoice.action.php`](../../lib/actions/frontend/shopPrefillPluginFrontendParamsChoice.action.php) — при `order[...]`-структуре в POST строит `$current` из неё; при её отсутствии или `TypeError` (некорректная форма POST) — откат на сессию, как было
+- [`js/modules/ParamsChoiceManager.js`](../../../js/modules/ParamsChoiceManager.js) — `getFormSnapshot()`, вызывается из `displayDialog()`
+- [`js/modules/HttpClient.js`](../../../js/modules/HttpClient.js) — `fetchView()` строит тело через `new URLSearchParams(data)` (принимает и объект, и массив пар)
+- [`lib/actions/frontend/shopPrefillPluginFrontendParamsChoice.action.php`](../../../lib/actions/frontend/shopPrefillPluginFrontendParamsChoice.action.php) — при `order[...]`-структуре в POST строит `$current` из неё; при её отсутствии или `TypeError` (некорректная форма POST) — откат на сессию, как было
 
 **Проверено вживую в браузере (23.08.2026), оба сценария подтверждены и через `is-active` в DOM:**
 
@@ -31,7 +31,7 @@
 
 ## Симптом меняется 23.08.2026 — сравнение по типу больше недоступно
 
-`shopPrefillPluginFillParams::$shipping_params` (см. «Где искать» ниже) до 23.08.2026 включал `shipping_type_id` — именно несовпадение типа в окне рассинхрона давало сегодняшний симптом «ничего не подсвечено». План [delivery-variant-identity.md](../plans/delivery-variant-identity.md) убрал `shipping_type_id` из плагина целиком: `isSameDeliveryOption()` сравнивает только `shipping_id`+`shipping_rate_id`. В том же окне (новый `type_id`, старый `variant_id` в сессии) эти поля **совпадают** с ранее выбранным вариантом — вместо «ничего не подсвечено» подсветится **карточка, с которой покупатель только что ушёл**. Тихое «не знаю» (соответствует B2a) превращается в уверенную неправду.
+`shopPrefillPluginFillParams::$shipping_params` (см. «Где искать» ниже) до 23.08.2026 включал `shipping_type_id` — именно несовпадение типа в окне рассинхрона давало сегодняшний симптом «ничего не подсвечено». План [delivery-variant-identity.md](../../plans/done/delivery-variant-identity.md) убрал `shipping_type_id` из плагина целиком: `isSameDeliveryOption()` сравнивает только `shipping_id`+`shipping_rate_id`. В том же окне (новый `type_id`, старый `variant_id` в сессии) эти поля **совпадают** с ранее выбранным вариантом — вместо «ничего не подсвечено» подсветится **карточка, с которой покупатель только что ушёл**. Тихое «не знаю» (соответствует B2a) превращается в уверенную неправду.
 
 Не регресс данной задачи как таковой — восстановленный симптом был случайно правильным побочным эффектом поля, которого больше нет по независимой причине. Но релиз `delivery-variant-identity.md` без фикса этого бага ухудшает поведение, поэтому оба должны выйти в одном релизе.
 
@@ -57,7 +57,7 @@
 
 ## Где искать (гипотеза, не подтверждена по коду/сети)
 
-Подсветка считается в [`shopPrefillPluginFrontendParamsChoiceAction::execute()`](../../lib/actions/frontend/shopPrefillPluginFrontendParamsChoice.action.php):
+Подсветка считается в [`shopPrefillPluginFrontendParamsChoiceAction::execute()`](../../../lib/actions/frontend/shopPrefillPluginFrontendParamsChoice.action.php):
 
 ```php
 $checkout_params = $instance->getSessionStorageProvider()->getCheckoutParams(); // shop/checkout из сессии
@@ -66,7 +66,7 @@ $current         = $instance->getFillParamsProvider()->getFillParamsByCheckoutPa
 $item_array['is_current'] = $item_obj->isSameDeliveryOption($current);
 ```
 
-`getCheckoutParams()` читает сырой `shop/checkout` — это структура **ядра** Shop-Script (`waCheckout`), плагин её не пишет и не кэширует, только читает. Сравнение идёт по `shipping.type_id` + `shipping.variant_id` (см. `shopPrefillPluginFillParams::isSameDeliveryOption()` и `getFillParamsByCheckoutParams()` в [`shopPrefillPluginFillParamsProvider`](../../lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php)).
+`getCheckoutParams()` читает сырой `shop/checkout` — это структура **ядра** Shop-Script (`waCheckout`), плагин её не пишет и не кэширует, только читает. Сравнение идёт по `shipping.type_id` + `shipping.variant_id` (см. `shopPrefillPluginFillParams::isSameDeliveryOption()` и `getFillParamsByCheckoutParams()` в [`shopPrefillPluginFillParamsProvider`](../../../lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php)).
 
 При ручной проверке в браузере (шаг 2 выше): после смены типа на «Курьер» (тип с несколькими вариантами) дропдаун «Варианты доставки» остаётся **не выбранным** («Выберите вариант доставки») до отдельного клика пользователя — то есть само переключение типа не отправляет `variant_id` на сервер. Похоже, что при переключении типа core-JS чекаута шлёт в `/order/calculate/` только `shipping[type_id]`, а `shipping[variant_id]` в сессию `shop/checkout` не попадает, пока не случится следующий AJAX-запрос с уже выбранным (в т.ч. автоматически, если вариант единственный) значением из формы. До этого момента `getCheckoutParams()` отдаёт **устаревший `variant_id`** — от типа доставки, который был активен до переключения — и `isSameDeliveryOption()` закономерно не находит совпадения. Любой следующий пересчёт (не обязательно связанный с доставкой) отправляет полный снимок формы, включая уже актуальный `variant_id`, и подсветка появляется.
 
@@ -74,7 +74,7 @@ $item_array['is_current'] = $item_obj->isSameDeliveryOption($current);
 
 ## Гипотеза подтверждена по коду — 22.08.2026
 
-Проверять POST в DevTools больше не нужно: механика видна в исходнике ядра. [`form.js:1646-1655`](../../../../js/frontend/order/form.js#L1646):
+Проверять POST в DevTools больше не нужно: механика видна в исходнике ядра. [`form.js:1646-1655`](../../../../../js/frontend/order/form.js#L1646):
 
 ```js
 if (that.variants_count === 1) {
@@ -99,9 +99,9 @@ if (that.variants_count === 1) {
 
 Окно между шагами 2 и 5 и есть баг. Для типов с несколькими вариантами автовыбора нет вообще, поэтому расхождение живёт до ручного выбора варианта — что совпадает с наблюдением в разделе «Где искать».
 
-**Причина в ядре, не в плагине.** `FrontendParamsChoice` читает сессию честно; сессия в этот момент действительно содержит несогласованную пару. Это третий известный способ, которым сессия чекаута врёт о текущем выборе покупателя (первые два — вымывание при `region_change` и обеднение при коротком замыкании), и он же — обоснование правила **B2a** в [RULES.md](../concept/RULES.md).
+**Причина в ядре, не в плагине.** `FrontendParamsChoice` читает сессию честно; сессия в этот момент действительно содержит несогласованную пару. Это третий известный способ, которым сессия чекаута врёт о текущем выборе покупателя (первые два — вымывание при `region_change` и обеднение при коротком замыкании), и он же — обоснование правила **B2a** в [RULES.md](../../concept/RULES.md).
 
-Связь с [issue-65](../codereview/issue-65-prefill-overrides-current-input.md): общая тема (разорванная связная группа `shipping`), но **другая причина** — здесь несогласованную пару шлёт ядро, наше слияние не участвует. Отдельный баг; целевая архитектура issue-65 его не чинит.
+Связь с [issue-65](../../codereview/done/issue-65-prefill-overrides-current-input.md): общая тема (разорванная связная группа `shipping`), но **другая причина** — здесь несогласованную пару шлёт ядро, наше слияние не участвует. Отдельный баг; целевая архитектура issue-65 его не чинит.
 
 ## Возможные направления решения
 

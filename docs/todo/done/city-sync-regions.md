@@ -1,7 +1,7 @@
 # Синхронизация города → regions (SEO-регионы)
 
 **Создан:** 25.08.2026
-**Общая часть:** [city-sync-model.md](city-sync-model.md) — правила G1-G3, порядок событий, этапность. Здесь только специфика regions
+**Общая часть:** [city-sync-model.md](../city-sync-model.md) — правила G1-G3, порядок событий, этапность. Здесь только специфика regions
 **Разобранная версия плагина:** «SEO-регионы» 3.2.10
 **Статус:** этап 1 (26.08.2026) и этап 2 (27.08.2026) написаны и **проверены вживую** — см. «Стенд», «Что проверено вживую» и «Этап 2 — предложение перехода»
 
@@ -10,12 +10,12 @@
 Масштабирование магазина по городам: свой SEO-текст, свои переменные, свои настройки витрины на каждый город.
 
 - Города — таблица `shop_regions_city`, у каждого поле `storefront` вида `домен/префикс` и флаг `is_default_for_storefront`.
-- **Текущий город = витрина из URL + выбор в сессии.** `getCurrentCity()` ([:70-104](../../../regions/lib/classes/shopRegionsRouting.class.php#L70-L104)) берёт витрину по текущему адресу, ищет для неё запись в сессии (`shop/plugins/regions/location_by_storefront`), и если её нет — отдаёт дефолтный город витрины. Города, привязанного к чужой витрине, `getCurrentCity()` не примет: он сверяет `$city->getStorefront() === $storefront`.
-- IP-детект — ленивый и **не автоматический**: `getDetectedLocation()` ([:201](../../../regions/lib/classes/shopRegionsRouting.class.php#L201)) вызывается только из шаблона кнопки и только пока пуст `confirmed_location` ([plugin.regions.button.html:8](../../../regions/templates/default_theme/shop/plugin.regions.button.html#L8)). Результат — «предложенный город» в окошке «Ваш город Москва? Да / Выбрать другой».
+- **Текущий город = витрина из URL + выбор в сессии.** `getCurrentCity()` ([:70-104](../../../../regions/lib/classes/shopRegionsRouting.class.php#L70-L104)) берёт витрину по текущему адресу, ищет для неё запись в сессии (`shop/plugins/regions/location_by_storefront`), и если её нет — отдаёт дефолтный город витрины. Города, привязанного к чужой витрине, `getCurrentCity()` не примет: он сверяет `$city->getStorefront() === $storefront`.
+- IP-детект — ленивый и **не автоматический**: `getDetectedLocation()` ([:201](../../../../regions/lib/classes/shopRegionsRouting.class.php#L201)) вызывается только из шаблона кнопки и только пока пуст `confirmed_location` ([plugin.regions.button.html:8](../../../../regions/templates/default_theme/shop/plugin.regions.button.html#L8)). Результат — «предложенный город» в окошке «Ваш город Москва? Да / Выбрать другой».
 
 ## Где здесь редирект
 
-**Автоматических редиректов у плагина нет.** Единственный, кто редиректит — `changeCity()` ([:257-370](../../../regions/lib/classes/shopRegionsRouting.class.php#L257-L370)), и запускается он исключительно из `handleRequest()` ([:111-144](../../../regions/lib/shopRegionsViewHelper.class.php#L111-L144)) по явному GET-параметру `?shop_plugins_regions[city_id|fias_id|proposed]`. В JS эти параметры ставятся только по клику (`changeCityByCityId`, `changeCityToProposed`, `changeCityByFiasId` в `js/regions.js`).
+**Автоматических редиректов у плагина нет.** Единственный, кто редиректит — `changeCity()` ([:257-370](../../../../regions/lib/classes/shopRegionsRouting.class.php#L257-L370)), и запускается он исключительно из `handleRequest()` ([:111-144](../../../../regions/lib/shopRegionsViewHelper.class.php#L111-L144)) по явному GET-параметру `?shop_plugins_regions[city_id|fias_id|proposed]`. В JS эти параметры ставятся только по клику (`changeCityByCityId`, `changeCityToProposed`, `changeCityByFiasId` в `js/regions.js`).
 
 Важно: у плагина есть и **тихий путь** — `confirmCity()` в том же `regions.js` шлёт `?shop_plugins_regions[confirm]=1` обычным AJAX и только выставляет `confirmed_location`, без перехода. То есть прецедент «подтвердить город без редиректа» в плагине уже заложен, мы его не изобретаем.
 
@@ -25,8 +25,8 @@
 
 На событии `routing` плагин ставит два обработчика, и второй меняет постановку задачи:
 
-- [shopRegionsAddressPatcher](../../../regions/lib/classes/shopRegionsAddressPatcher.class.php) пишет в `order.region` и в адрес контакта город витрины — но **только в пустоту** (`hasContactAddress()` / `isAddressFill()`). Наши данные он не перетирает. Побочно: авторизованному без адреса он этот адрес ещё и `save()`-ит в профиль.
-- [shopRegionsUpdateCurrentRouteParamsHandlerAction](../../../regions/lib/classes/event_handler/handler_actions/shopRegionsUpdateCurrentRouteParamsHandlerAction.class.php) переопределяет через `waRequest::setParam()` параметры маршрута из настроек города — среди них **`payment_id`, `shipping_id`, `currency`**.
+- [shopRegionsAddressPatcher](../../../../regions/lib/classes/shopRegionsAddressPatcher.class.php) пишет в `order.region` и в адрес контакта город витрины — но **только в пустоту** (`hasContactAddress()` / `isAddressFill()`). Наши данные он не перетирает. Побочно: авторизованному без адреса он этот адрес ещё и `save()`-ит в профиль.
+- [shopRegionsUpdateCurrentRouteParamsHandlerAction](../../../../regions/lib/classes/event_handler/handler_actions/shopRegionsUpdateCurrentRouteParamsHandlerAction.class.php) переопределяет через `waRequest::setParam()` параметры маршрута из настроек города — среди них **`payment_id`, `shipping_id`, `currency`**.
 
 Отсюда два следствия, которых нет в мире без `regions`:
 
@@ -35,18 +35,18 @@
 
 ## Что писать
 
-В вакуум (правило [G1](city-sync-model.md#три-правила)) и только когда город из истории принадлежит **текущей** витрине:
+В вакуум (правило [G1](../city-sync-model.md#три-правила)) и только когда город из истории принадлежит **текущей** витрине:
 
 ```
 shopRegionsSessionStorage::setLocation($storefront, ['city_id' => N])   // :34
 shopRegionsSessionStorage::setConfirmedLocation(true)                   // :74
 ```
 
-Поиск города — по названию: `shopRegionsCityService::getExactCityByLocation()` ищет `withName()` в пределах кластера витрин ([:25-47](../../../regions/lib/classes/shopRegionsCityService.class.php#L25-L47)), а `cityselect` для той же задачи ходит в `shopRegionsCityModel` по тройке `country_iso3` + `region_code` + `name` ([shopCityselectHelper:84-97](../../../cityselect/lib/classes/shopCityselectHelper.class.php#L84-L97)) — тройка надёжнее, тёзок городов в РФ хватает.
+Поиск города — по названию: `shopRegionsCityService::getExactCityByLocation()` ищет `withName()` в пределах кластера витрин ([:25-47](../../../../regions/lib/classes/shopRegionsCityService.class.php#L25-L47)), а `cityselect` для той же задачи ходит в `shopRegionsCityModel` по тройке `country_iso3` + `region_code` + `name` ([shopCityselectHelper:84-97](../../../../cityselect/lib/classes/shopCityselectHelper.class.php#L84-L97)) — тройка надёжнее, тёзок городов в РФ хватает.
 
 Побочная выгода от `setConfirmedLocation(true)`: шаблон кнопки перестаёт звать `getProposedCity()`, а значит **IP-детект не выполняется вовсе** — минус один внешний HTTP-запрос к DaData на сессию.
 
-Если город найден, но привязан к другой витрине — по [G2](city-sync-model.md#три-правила) не делаем ничего и максимум показываем предложение со ссылкой на штатный `?shop_plugins_regions[city_id]=N`. Обходных путей нет и искать не надо: «виртуальную» локацию `getCurrentCity()` пропускает только для города, которого в базе плагина нет вовсе (`!$city->getID()`), — зарегистрированный чужой город всё равно будет отвергнут в пользу дефолтного.
+Если город найден, но привязан к другой витрине — по [G2](../city-sync-model.md#три-правила) не делаем ничего и максимум показываем предложение со ссылкой на штатный `?shop_plugins_regions[city_id]=N`. Обходных путей нет и искать не надо: «виртуальную» локацию `getCurrentCity()` пропускает только для города, которого в базе плагина нет вовсе (`!$city->getID()`), — зарегистрированный чужой город всё равно будет отвергнут в пользу дефолтного.
 
 ## Грабли
 
@@ -54,7 +54,7 @@ shopRegionsSessionStorage::setConfirmedLocation(true)                   // :74
 - **Профиль контакта могут записать раньше нас.** `patchAuthContactAddress()` на первом же запросе сессии сохранит авторизованному без адреса дефолтный город витрины прямо в контакт. По времени мы это не перебьём — просто знать, что «пустого адреса» после первого захода уже не бывает.
 - **Город из URL сильнее истории.** Если человек пришёл на `kazan.example.ru` из поиска — это явная навигация, и она достовернее прошлого заказа. Ещё один аргумент, почему в `regions` мы пишем только в вакуум, а не «перекрываем», как в чекауте.
 - **Самовывоз**: у pickup-заказа в истории `shipping_address.*` — адрес пункта выдачи.
-- **Плагин поднимает PHP-сессию анониму.** С установленными «SEO-регионами» первая же страница каталога отдаёт `Set-Cookie: PHPSESSID` даже пустой банке кук. Проверено выключением: `regions => false` → только `landing`. К нашему P5 это отношения не имеет, но ломает критерий проверки «гость не создаёт следов» в [TESTS.md](../tests/TESTS.md) — там теперь смотрим только на `prefill_*`.
+- **Плагин поднимает PHP-сессию анониму.** С установленными «SEO-регионами» первая же страница каталога отдаёт `Set-Cookie: PHPSESSID` даже пустой банке кук. Проверено выключением: `regions => false` → только `landing`. К нашему P5 это отношения не имеет, но ломает критерий проверки «гость не создаёт следов» в [TESTS.md](../../tests/TESTS.md) — там теперь смотрим только на `prefill_*`.
 
 ## Стенд
 
@@ -120,7 +120,7 @@ shopRegionsSessionStorage::setConfirmedLocation(true)                   // :74
 
 ### Пункт 2.3 (починка `prefill_geo` при переносе между поддоменами) — проверено 27.08.2026 на настоящем поддомене
 
-Стенд расширен вторым поддоменом `shop-1.wa-dev.loc` (та же вторая витрина, `checkout_storefront_id` тот же, что у пути `shop-1/*`; заведён через `update_website` в ServBay MCP — см. [CLAUDE.md](../../../../../../CLAUDE.md#несколько-витрин-на-стенде) фреймворка). Казань перепривязана в `shop_regions_city.storefront` на `shop-1.wa-dev.loc/*`. Сценарий повторён на настоящем чужом домене, а не пути — теперь `env`-трансфер `changeCity()` реально задействован.
+Стенд расширен вторым поддоменом `shop-1.wa-dev.loc` (та же вторая витрина, `checkout_storefront_id` тот же, что у пути `shop-1/*`; заведён через `update_website` в ServBay MCP — см. [CLAUDE.md](../../../../../../../CLAUDE.md#несколько-витрин-на-стенде) фреймворка). Казань перепривязана в `shop_regions_city.storefront` на `shop-1.wa-dev.loc/*`. Сценарий повторён на настоящем чужом домене, а не пути — теперь `env`-трансфер `changeCity()` реально задействован.
 
 | Шаг | Ожидание | Факт |
 |---|---|---|

@@ -27,7 +27,7 @@ shipping_name  Бесплатная доставка курьером
 
 ## Когда выстрелит
 
-Любая попытка показать название способа оплаты **до** первого удачного расчёта чекаута. Ровно на это наткнулся разбор посева кэша сводки в [баге zen-collapse](../../bugs/zen-collapse-on-upstream-checkout-error.md) (отвергнутый вариант 6): `payment_name` — признак «данные группы есть» в `shopPrefillPluginZenSummaryCache::PRESENCE_FIELDS`, и посев группы `payment` без него не заработал бы вовсе.
+Любая попытка показать название способа оплаты **до** первого удачного расчёта чекаута. Ровно на это наткнулся разбор посева кэша сводки в [баге zen-collapse](../../bugs/done/zen-collapse-on-upstream-checkout-error.md) (отвергнутый вариант 6): `payment_name` — признак «данные группы есть» в `shopPrefillPluginZenSummaryCache::PRESENCE_FIELDS`, и посев группы `payment` без него не заработал бы вовсе.
 
 ## Решение
 

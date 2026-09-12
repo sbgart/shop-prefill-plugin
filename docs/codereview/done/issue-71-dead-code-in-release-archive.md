@@ -35,7 +35,7 @@ case 'details':
 
 ## Побочный эффект для API
 
-`FillParams::toArray()` — это `get_object_vars($this)` из контекста класса, то есть в JSON диалога «Мои варианты» уезжают и всегда-null контактные поля, и служебные списки `region_params` / `auth_params` / `contact_params` / `payment_params` / `shipping_params`. Формально это уже отмечено в [issue-33](done/issue-33-to-array-leaks-private-props.md) как «вопрос чистоты контракта» и закрыто; при чистке мёртвых полей проблема уходит сама.
+`FillParams::toArray()` — это `get_object_vars($this)` из контекста класса, то есть в JSON диалога «Мои варианты» уезжают и всегда-null контактные поля, и служебные списки `region_params` / `auth_params` / `contact_params` / `payment_params` / `shipping_params`. Формально это уже отмечено в [issue-33](issue-33-to-array-leaks-private-props.md) как «вопрос чистоты контракта» и закрыто; при чистке мёртвых полей проблема уходит сама.
 
 ## Рекомендация
 

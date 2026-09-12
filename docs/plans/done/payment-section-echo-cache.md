@@ -1,13 +1,13 @@
 # План: эхо-кэш секции `payment`
 
 **Создан:** 22.08.2026
-**Источник:** обсуждение после этапов 0-3 плана [снятия снапшота](snapshot-removal-and-html-ownership.md) — регресс, найденный и подтверждён в браузере 22.08.2026
-**Создаёт правило:** P9 в [RULES.md](../concept/RULES.md), узкое исключение из B2a
+**Источник:** обсуждение после этапов 0-3 плана [снятия снапшота](../snapshot-removal-and-html-ownership.md) — регресс, найденный и подтверждён в браузере 22.08.2026
+**Создаёт правило:** P9 в [RULES.md](../../concept/RULES.md), узкое исключение из B2a
 **Статус:** ✅ Реализовано, протестировано в браузере и закоммичено 23.08.2026 (этапы 0-8). Контакт Иван (user:1), лог `prefill.plugin.log`, полный прогон описан в Этапе 8
 
 ## Зачем
 
-После снятия снапшота владение секцией `payment` держится только на `html` ([SectionChecker.class.php:48-55](../../lib/classes/sections/shopPrefillPluginSectionChecker.class.php#L48-L55)). Это верно останавливает предзаполнение из истории заказов, но как побочный эффект убрало и то, что снапшот когда-то чинил бесплатно: способ оплаты больше не переживает смену типа/варианта доставки.
+После снятия снапшота владение секцией `payment` держится только на `html` ([SectionChecker.class.php:48-55](../../../lib/classes/sections/shopPrefillPluginSectionChecker.class.php#L48-L55)). Это верно останавливает предзаполнение из истории заказов, но как побочный эффект убрало и то, что снапшот когда-то чинил бесплатно: способ оплаты больше не переживает смену типа/варианта доставки.
 
 Подтверждено в браузере 22.08.2026 на контакте Ивана (`user:1`), способ оплаты T-Касса уже выбран:
 
@@ -53,7 +53,7 @@ if (that.disabled) {
 
 ## Согласование с B2a и отклонённым «мини-снапшотом»
 
-Прямая цитата [B2a](../concept/RULES.md):
+Прямая цитата [B2a](../../concept/RULES.md):
 
 > Восстанавливать эти данные записью в `shop/checkout` — лечить симптом: правильный ответ на «не знаю» — развернуть, а не додумать.
 
@@ -72,13 +72,13 @@ if (that.disabled) {
 
 ## Дизайн
 
-Один новый ключ сессии, по образцу уже существующих (`SOURCE_KEY`, `PENDING_AUTH_KEY` в [SessionStorageProvider.class.php:14-21](../../lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php#L14-L21)):
+Один новый ключ сессии, по образцу уже существующих (`SOURCE_KEY`, `PENDING_AUTH_KEY` в [SessionStorageProvider.class.php:14-21](../../../lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php#L14-L21)):
 
 ```php
 private const PAYMENT_ECHO_KEY = 'shop/prefill_payment_echo';
 ```
 
-Хранит весь «лист» секции без `html` — `id` и, если есть, `custom` ([SessionStorageProvider.class.php:399-404](../../lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php#L399-L404) показывает, что у `payment` оба поля, не только `id`).
+Хранит весь «лист» секции без `html` — `id` и, если есть, `custom` ([SessionStorageProvider.class.php:399-404](../../../lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php#L399-L404) показывает, что у `payment` оба поля, не только `id`).
 
 Алгоритм на каждый `checkout_before_auth` (псевдокод, метод условно `syncPaymentEcho()`):
 
@@ -101,15 +101,15 @@ $id      = $payment['id']   ?? null;
     если $id пуст — чистим эхо-кэш: покупатель сам оставил секцию пустой
 ```
 
-**Куда встраивается.** Не через `applyPrefill()` — `payment` там никогда не попадёт в `$available` (владение = `html`, а `html` держится вечно после первого рендера), и это правильно, трогать этот путь не нужно. Отдельный вызов из [`CheckoutHooks::handleCheckoutBeforeAuth()`](../../lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php#L57-L83), рядом с существующим вызовом `preFillCheckoutParamsFromSource()`, а не внутри него. Никакой проверки совместимости перед восстановлением не требуется (см. «Довешено 22.08.2026» выше) — подставляем безусловно, дальше решает ядро на `/order/create/`, как решало бы и без плагина.
+**Куда встраивается.** Не через `applyPrefill()` — `payment` там никогда не попадёт в `$available` (владение = `html`, а `html` держится вечно после первого рендера), и это правильно, трогать этот путь не нужно. Отдельный вызов из [`CheckoutHooks::handleCheckoutBeforeAuth()`](../../../lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php#L57-L83), рядом с существующим вызовом `preFillCheckoutParamsFromSource()`, а не внутри него. Никакой проверки совместимости перед восстановлением не требуется (см. «Довешено 22.08.2026» выше) — подставляем безусловно, дальше решает ядро на `/order/create/`, как решало бы и без плагина.
 
 **Отражение в текущий рендер.** Восстановленные данные нужно не только сохранить в сессию, но и подставить в `$params['data']['input']['payment']` **этого же запроса** — иначе `checkout_render_payment` в этом же цикле нарисует пустую секцию, хотя в сессии уже есть значение (ровно тот разнобой, который тестировался и был честным в Этапе 3 плана снятия снапшота, но здесь стал бы просто новым багом).
 
-Готовый путь для этого есть — `shopPrefillCheckoutState::applyPrefillInput()` ([shopPrefillCheckoutState.class.php:813-825](../../lib/classes/checkout/shopPrefillCheckoutState.class.php#L813-L825)) делает ровно такой merge. **Но переиспользовать его не стоит**: он попутно выставляет `$this->is_prefilled = true`, а этот флаг уже отмечен как ненадёжный (план снятия снапшота, Этап 5: «починить врущий флаг `is_prefilled`»). Подмешивать в него ещё и «восстановлено эхом» — не то же самое, что «предзаполнено из истории заказов», и без явного решения только усложнит будущий фикс. Проще слить `deepMergeArrays()` напрямую в `handleCheckoutBeforeAuth()`, в обход `applyPrefillInput()`, до отдельного решения по Этапу 5 того плана.
+Готовый путь для этого есть — `shopPrefillCheckoutState::applyPrefillInput()` ([shopPrefillCheckoutState.class.php:813-825](../../../lib/classes/checkout/shopPrefillCheckoutState.class.php#L813-L825)) делает ровно такой merge. **Но переиспользовать его не стоит**: он попутно выставляет `$this->is_prefilled = true`, а этот флаг уже отмечен как ненадёжный (план снятия снапшота, Этап 5: «починить врущий флаг `is_prefilled`»). Подмешивать в него ещё и «восстановлено эхом» — не то же самое, что «предзаполнено из истории заказов», и без явного решения только усложнит будущий фикс. Проще слить `deepMergeArrays()` напрямую в `handleCheckoutBeforeAuth()`, в обход `applyPrefillInput()`, до отдельного решения по Этапу 5 того плана.
 
 **Где чистится кэш целиком** (не только «одиночная» чистка при пустой отправке из алгоритма выше):
-- при создании заказа — [`OrderHooks::handleOrderActionCreate()`](../../lib/classes/hooks/shopPrefillPluginOrderHooks.class.php#L44), рядом с уже существующим `$this->zen_mode->resetState()` (строка 72) и `clearSourceMarker()`;
-- при явной очистке формы — [`FrontendConsent`, case `clear_form`](../../lib/actions/frontend/shopPrefillPluginFrontendConsent.controller.php#L53-L58), рядом с `wa()->getStorage()->remove('shop/checkout')`.
+- при создании заказа — [`OrderHooks::handleOrderActionCreate()`](../../../lib/classes/hooks/shopPrefillPluginOrderHooks.class.php#L44), рядом с уже существующим `$this->zen_mode->resetState()` (строка 72) и `clearSourceMarker()`;
+- при явной очистке формы — [`FrontendConsent`, case `clear_form`](../../../lib/actions/frontend/shopPrefillPluginFrontendConsent.controller.php#L53-L58), рядом с `wa()->getStorage()->remove('shop/checkout')`.
 
 Оба места — там же, где сегодня чистится всё остальное состояние чекаута; отдельного нового жизненного цикла не заводим.
 
@@ -141,7 +141,7 @@ $id      = $payment['id']   ?? null;
 
 Оставлено как есть, зачёркнуто, а не удалено — сам ход рассуждения был обоснованным на момент написания и может пригодиться, если когда-нибудь понадобится **реальная** проверка совместимости для другого сценария. Но применительно к этому плану — не нужен: как показал раздел «Довешено 22.08.2026» выше, ядро само является достаточным и единственно верным судьёй совместимости на шаге `/order/create/`, а на рядовом пересчёте вопрос вообще не встаёт (несовместимое эхо рендерится так же нейтрально, как и отсутствие эха). Специально проверять что-либо в `checkout_before_auth` до восстановления — не нужно.
 
-Список актуально доступных методов (`data.payment.methods`, с которым сверялся Этап 0) — это `$params['vars']['payment']['methods']` в терминах плагина (тем же путём уже читают `shopPrefillCheckoutState::getPaymentMethodName()/getPaymentLogoUrl()`, [shopPrefillCheckoutState.class.php:522,541,581](../../lib/classes/checkout/shopPrefillCheckoutState.class.php#L522)). Ядро вычисляет его **во время обработки шага `payment`** в `processAll()` — то есть он существует к моменту хука `checkout_render_payment`, но не раньше.
+Список актуально доступных методов (`data.payment.methods`, с которым сверялся Этап 0) — это `$params['vars']['payment']['methods']` в терминах плагина (тем же путём уже читают `shopPrefillCheckoutState::getPaymentMethodName()/getPaymentLogoUrl()`, [shopPrefillCheckoutState.class.php:522,541,581](../../../lib/classes/checkout/shopPrefillCheckoutState.class.php#L522)). Ядро вычисляет его **во время обработки шага `payment`** в `processAll()` — то есть он существует к моменту хука `checkout_render_payment`, но не раньше.
 
 А `CheckoutHooks::handleCheckoutBeforeAuth()` — единственное место, где восстановление может повлиять на **сам выбор** (записать `payment.id` в `$params['data']['input']` до того, как ядро отрисует радиокнопки) — срабатывает **перед обработкой шага `auth`**, то есть до шагов `shipping` и `payment` в этом же запросе. На этой стадии `vars.payment.methods` ещё не существует.
 
@@ -149,7 +149,7 @@ $id      = $payment['id']   ?? null;
 
 Старый (снапшот-эры) префилл этой проблемы не имел: `shipping` и `payment` восстанавливались **из одного и того же исторического заказа одновременно**, поэтому пара была по построению совместима — валидировать было нечего. Эхо-кэш восстанавливает `payment` отдельно от **свежего** выбора `shipping`, поэтому совместимость пары никем не гарантирована, и это первый случай в проекте, где она реально нужна.
 
-Рабочая гипотеза (не проверена вживую, проверить первым делом в Этапе 2): `shopPrefillPluginPluginsProvider::getPaymentMethods()` ([shopPrefillPluginPluginsProvider.class.php:32-44](../../lib/classes/fillparams/shopPrefillPluginPluginsProvider.class.php#L32-L44)) читает **статическую конфигурацию** инстансов способов оплаты (`shop_payment_plugin`), включая `options.shipping_type`, — то же самое поле, что и в `vars.payment.methods[id].options.shipping_type`, только не привязанное к текущему рендеру. Если это так, доступность можно проверить **в `checkout_before_auth`**, не дожидаясь рендера: взять `shipping[type_id]` из текущего запроса (он там уже есть — это ровно то, что поменял покупатель) и свериться со статическим `shipping_type` кэшированного способа оплаты, без обращения к вычисляемым на рендере `vars`.
+Рабочая гипотеза (не проверена вживую, проверить первым делом в Этапе 2): `shopPrefillPluginPluginsProvider::getPaymentMethods()` ([shopPrefillPluginPluginsProvider.class.php:32-44](../../../lib/classes/fillparams/shopPrefillPluginPluginsProvider.class.php#L32-L44)) читает **статическую конфигурацию** инстансов способов оплаты (`shop_payment_plugin`), включая `options.shipping_type`, — то же самое поле, что и в `vars.payment.methods[id].options.shipping_type`, только не привязанное к текущему рендеру. Если это так, доступность можно проверить **в `checkout_before_auth`**, не дожидаясь рендера: взять `shipping[type_id]` из текущего запроса (он там уже есть — это ровно то, что поменял покупатель) и свериться со статическим `shipping_type` кэшированного способа оплаты, без обращения к вычисляемым на рендере `vars`.
 
 Если гипотеза не подтвердится — придётся либо отказаться от точного восстановления в тот же рендер (и решать проблему на уровне «предложить заново после следующего пересчёта», что хуже и, вероятно, не стоит усилий), либо искать другую точку данных. Это главный технический риск плана — весомее, чем то, что описывалось на момент написания черновика.
 
@@ -217,6 +217,6 @@ public function isSectionMechanicallyClean(string $section_id, array $checkout_p
 
 ## Чего этот план не касается
 
-- Залипающая кука `prefill_zen_payment=expanded` (`ZenMode::syncCollapseCookieState()`, [ZenMode.class.php:440-447](../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L440-L447)) — отдельный, уже обсуждённый и намеренно принятый как есть механизм (Z4). Этот план решает проблему на уровне данных (способ оплаты не теряется вовсе), поэтому куке в сценарии из «Зачем» и не придётся залипать — но это следствие, не цель, и если эхо-кэш не покроет какой-то другой сценарий, залипание там всё ещё возможно.
+- Залипающая кука `prefill_zen_payment=expanded` (`ZenMode::syncCollapseCookieState()`, [ZenMode.class.php:440-447](../../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L440-L447)) — отдельный, уже обсуждённый и намеренно принятый как есть механизм (Z4). Этот план решает проблему на уровне данных (способ оплаты не теряется вовсе), поэтому куке в сценарии из «Зачем» и не придётся залипать — но это следствие, не цель, и если эхо-кэш не покроет какой-то другой сценарий, залипание там всё ещё возможно.
 - Аналогичное поведение `shipping`/`region` — см. «Согласование», пункт 3, и «Открытые вопросы».
-- issue-81 (уровень логирования не инициализировался в собственных эндпоинтах плагина) — не связано с этим планом по существу, исправлено отдельно 22.08.2026 в тот же день, см. [TODO.md](../TODO.md).
+- issue-81 (уровень логирования не инициализировался в собственных эндпоинтах плагина) — не связано с этим планом по существу, исправлено отдельно 22.08.2026 в тот же день, см. [TODO.md](../../TODO.md).

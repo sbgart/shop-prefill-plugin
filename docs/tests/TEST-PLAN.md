@@ -162,25 +162,27 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 
 Приоритет по тому, насколько дорого ловить регресс в браузере. Все кандидаты — классы без зависимости от поднятого Webasyst либо с одной подменяемой зависимостью (как `GeoSyncDecisionTest` подменяет логгер).
 
+A1–A8, A11, A12 реализованы 11.09.2026 — см. [tests/TESTS.md](TESTS.md) за описанием каждого файла и числом проверок, [TODO.md](../TODO.md) за итогом закрытия пункта. Ниже — то, что осталось открытым (🟢, вне текущего релизного блокера).
+
 | # | Предлагаемый тест | Что закрывает | Правило | Приор. |
 |---|---|---|---|---|
-| A1 | `HelperDeepMergeTest` | `deepMergeArrays()` не мутирует вход (регресс issue-40); `stripEmptyLeaves()` не съедает `'0'` и `false` | P9 | 🔴 |
-| A2 | `GuestTokenFormatTest` | токен — 48 hex; `getLookupId()` детерминирован и **не равен** токену; `getParamName()` ≤ 64 символов; мусорная кука (`abc`, пустая, 65 символов, не-hex) считается отсутствующей | P6 | 🔴 |
-| A3 | `ZenSummaryCacheTest` | `hasFreshData()` / `set()` / `get()` / `clear()` на подменённом `waSessionStorage`; ключевой инвариант R4 — кэш возвращает данные, но не участвует в решении о сворачивании | R4 | 🔴 |
-| A4 | `ZenFieldContractTest` | структурный замок: каждое поле с `is_html` в `ZenData::getAvailableFields()` присутствует в белом списке `ZenSummaryEscaper`, и наоборот. Сегодня список продублирован в тесте вручную — расхождение никто не поймает | Z7 | 🔴 |
-| A5 | `SettingsSchemaTest` | `storefront.settings.php`: у каждого листа есть `value`; opt-in по умолчанию выключен (`guest.enabled`, `remember_me.on_order`, все три `integration.*`); `my_delivery_variants_limit` в пределах 1–10 | — | 🟠 |
-| A6 | `StorefrontCollectionTest` | `getByCode()`, `getTree()`, сортировка при отсутствующем ключе (регресс issue-41), `toJson()` с глобальной витриной | B3 | 🟠 |
-| A7 | `CssManagerPathTest` | `getPublicUrl()` меняется при смене `update_time` (cache busting, issue-82); `getFilePath()` не выходит за каталог при мусорном коде витрины | A1 | 🟠 |
-| A8 | `LocaleCompletenessTest` | все ключи `_wp()` из `lib/` и `templates/` есть в `ru_RU.po` и `en_US.po`; нет пустых `msgstr` | — | 🟠 |
 | A9 | `LogReaderTest` | `read()` уважает `max_entries`; `readMerged()` не падает на битой строке и на отсутствующем файле | — | 🟢 |
 | A10 | `RoutingContractTest` | каждый роут в `routing.php` оканчивается на `/?` и указывает на существующий класс экшена | — | 🟢 |
 
-Плюс инфраструктура:
+Реализованные (справочно, детали в TESTS.md):
 
-| # | Что | Зачем |
-|---|---|---|
-| A11 | `tests/run.sh` — прогон всех тестов с суммарным кодом возврата и итоговой строкой «N файлов, M проверок, K провалов» | Один вызов в L0/L1 и в CI вместо цикла в шелле |
-| A12 | Мутационная проверка новых тестов | Правило из TESTS.md: «тест обязан уметь падать». Внести регресс → убедиться, что краснеет → откатить |
+| # | Тест | Правило | Приор. |
+|---|---|---|---|
+| A1 | `HelperDeepMergeTest` | P9 | 🔴 |
+| A2 | `GuestTokenFormatTest` | P6 | 🔴 |
+| A3 | `ZenSummaryCacheTest` | R4 | 🔴 |
+| A4 | `ZenFieldContractTest` | Z7 | 🔴 |
+| A5 | `SettingsSchemaTest` | — | 🟠 |
+| A6 | `StorefrontCollectionTest` | B3 | 🟠 |
+| A7 | `CssManagerPathTest` | A1 | 🟠 |
+| A8 | `LocaleCompletenessTest` | — | 🟠 |
+| A11 | `tests/run.sh` — суммарный код возврата, «N файлов, M проверок, K провалов» | — | — |
+| A12 | Мутационная проверка каждого из A1–A8 | — | — |
 
 **Тест обязан уметь падать.** Каждый новый файл из списка принимается только после мутационной проверки.
 
@@ -408,7 +410,7 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 | N-02 | Прямой доступ к чужому заказу через `apply-delivery` | 403 | P6 | K2 |
 | N-03 | Подбор гостевого токена | Промах безопасен; сырой токен в БД не лежит | P6 | K2 |
 | N-04 | SQL-инъекция в параметрах эндпоинтов | Параметризация `waModel`, ошибок нет | — | K2 |
-| N-05 | **CSRF на публичных эндпоинтах** (`consent`, `apply-delivery`) | ⚠️ Известный долг [issue-79](../codereview/issue-79-issue-52-csrf-half-done.md), сознательно отложен. В отчёте фиксировать как принятый риск, не как «пройдено» | — | K2 |
+| N-05 | **CSRF на публичных эндпоинтах** (`consent`, `apply-delivery`) | ⚠️ Известный долг [issue-79](../codereview/done/issue-79-issue-52-csrf-half-done.md), сознательно отложен. В отчёте фиксировать как принятый риск, не как «пройдено» | — | K2 |
 | N-06 | Редактор шаблонов = исполнение PHP | Доступ строго `isAdmin('shop')` + CSRF ядра; эквивалент штатного редактора тем | B4 | K1 |
 | N-07 | Логи | Не содержат сырых токенов, паролей, полных данных контактов | — | K16 |
 
@@ -419,7 +421,7 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 | ID | Шаг | Критерий |
 |---|---|---|
 | R-01 | `php wa.php compress shop/plugins/prefill -style false` | Собирается без ошибок валидации |
-| R-02 | Состав архива | `docs/`, `tests/`, `.git/`, `*.tar.gz` исключены (`lib/config/exclude.php`); мёртвого кода нет ([issue-71](../codereview/issue-71-dead-code-in-release-archive.md)) |
+| R-02 | Состав архива | `docs/`, `tests/`, `.git/`, `*.tar.gz` исключены (`lib/config/exclude.php`); мёртвого кода нет ([issue-71](../codereview/done/issue-71-dead-code-in-release-archive.md)) |
 | R-03 | Версия | `plugin.php`, `CHANGELOG.md`, `RELEASE-NOTES.md` согласованы |
 | R-04 | Установка на **чистую** инсталляцию | Таблица `shop_prefill_settings` создана, дефолты применены, чекаут работает сразу |
 | R-05 | Обновление с предыдущей версии | `lib/updates/*` отработали, настройки сохранились, новых дефолтов не потеряно |
@@ -440,8 +442,8 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 | S-04 | «SEO-регионы» 3.2.10 | ✅ 26.08.2026 |
 | S-05 | **Плагин `bnpblocks`** («Свои блоки доставки», студия bodysite.ru) | ✅ закрыто 09.09.2026 разбором кода (лицензия истекла на стенде, бэкенд плагина недоступен) — коллизий с Zen Mode нет ни в одном из трёх хуков, см. [bnpblocks-compat-test-plan.md](bnpblocks-compat-test-plan.md) |
 | S-06 | Плагин «Фильтр доставки и оплаты» (delpayfilter) | ⬜ backlog |
-| S-07 | Тема, отличная от `default` | 🟡 частично — 08.09.2026 тема `kmfast` (Webasyst Store, бесплатная) прогнана целиком под фикс [zen-photos-css-scope-broken.md](../bugs/zen-photos-css-scope-broken.md): свои классы `.prefill-zen-photos`/`.prefill-zen-schedule` наследуют кегль/цвет темы корректно (12.25px/14px, обе читаемы). Не проверено на других темах и на широком наборе сценариев (F-01 и т.п.), не только Zen-полей |
-| S-08 | Легаси-вёрстка чекаута UI 1.3 и `is_minimal_mode` | ❌ снято 30.08.2026 — плагин требует дизайн-систему Webasyst 2.0, UI 1.3 не заявлен как поддерживаемый (см. [settings-waswitch-missing-legacy-ui.md](../bugs/settings-waswitch-missing-legacy-ui.md)) |
+| S-07 | Тема, отличная от `default` | 🟡 частично — 08.09.2026 тема `kmfast` (Webasyst Store, бесплатная) прогнана целиком под фикс [zen-photos-css-scope-broken.md](../bugs/done/zen-photos-css-scope-broken.md): свои классы `.prefill-zen-photos`/`.prefill-zen-schedule` наследуют кегль/цвет темы корректно (12.25px/14px, обе читаемы). Не проверено на других темах и на широком наборе сценариев (F-01 и т.п.), не только Zen-полей |
+| S-08 | Легаси-вёрстка чекаута UI 1.3 и `is_minimal_mode` | ❌ снято 30.08.2026 — плагин требует дизайн-систему Webasyst 2.0, UI 1.3 не заявлен как поддерживаемый (см. [settings-waswitch-missing-legacy-ui.md](../bugs/done/settings-waswitch-missing-legacy-ui.md)) |
 | S-09 | **Несколько тестовых магазинов с разными корзинами** (доставка/оплата/кастомные поля) — прогнать предзаполнение | ⬜ |
 
 ---

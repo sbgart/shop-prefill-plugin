@@ -7,7 +7,7 @@
 
 ## Суть
 
-`shopPrefillCheckoutState::getShippingLogoUrl()`, [строка 565](../../lib/classes/checkout/shopPrefillCheckoutState.class.php):
+`shopPrefillCheckoutState::getShippingLogoUrl()`, [строка 565](../../../lib/classes/checkout/shopPrefillCheckoutState.class.php):
 
 ```php
 $variant = $this->getSelectedVariant();
@@ -49,7 +49,7 @@ $r = ($variant["logo"] ?: $variant["img"]) ?: null;
 
 ## Фикс
 
-Применено в [shopPrefillCheckoutState.class.php:565](../../lib/classes/checkout/shopPrefillCheckoutState.class.php#L565):
+Применено в [shopPrefillCheckoutState.class.php:565](../../../lib/classes/checkout/shopPrefillCheckoutState.class.php#L565):
 
 ```php
 return ($variant['logo'] ?? null) ?: ($variant['img'] ?? null) ?: null;

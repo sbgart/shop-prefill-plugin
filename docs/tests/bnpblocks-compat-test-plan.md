@@ -37,7 +37,7 @@
 
 В бэкенде плагина (`?action=settings#/bnpblocks/`) создать блок типа `pickup`, привязать к способу
 доставки id 37 (`sd`, «Пункт выдачи заказов») — та же фикстура с адресом/координатами/расписанием/
-фото, что уже настроена для [zen-photos-css-scope-broken.md](../bugs/zen-photos-css-scope-broken.md).
+фото, что уже настроена для [zen-photos-css-scope-broken.md](../bugs/done/zen-photos-css-scope-broken.md).
 Один прогон закрывает два долга сразу. Включить в блоке опцию «Скрыть срок» ИЛИ «Скрыть стоимость» —
 без неё сценарий 1 ниже не воспроизводится вовсе (см. §2).
 
@@ -111,7 +111,7 @@ HTML, который вернул бы `checkoutRenderDetails()` при `hide_es
 ## 5. Уборка
 
 - Тестовый bnp-блок — удалить или деактивировать после прогона.
-- Настройки способа доставки `sd` (id 37) — общая фикстура с [zen-photos-css-scope-broken.md](../bugs/zen-photos-css-scope-broken.md),
+- Настройки способа доставки `sd` (id 37) — общая фикстура с [zen-photos-css-scope-broken.md](../bugs/done/zen-photos-css-scope-broken.md),
   не удалять в рамках этого прогона, она нужна и там.
 - Тема на `wa-dev.loc/*` должна остаться `default`.
 

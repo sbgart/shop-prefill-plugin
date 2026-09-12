@@ -54,7 +54,7 @@ $result['session_is_alive'] = !empty($session_checkout['order']);
 
 Сценарий: гость заполнил чекаут, но **не оформил заказ** (значит `FillParams` пуст всегда) → PHP-сессия истекла, localStorage жив → он заходит на любую страницу → мы пишем `order` из семи `null` → `!empty($order)` = `true` → `use_storage: false` → JS **не восстанавливает** localStorage. Пользователь видит пустую форму, хотя браузер помнил его данные.
 
-Связано с [session_is_alive не прокидывается в AJAX-рендере](../bugs/session-is-alive-storage-overwrite.md), но подход с другой стороны: там переменная не доезжает, здесь — доезжает с враньём.
+Связано с [session_is_alive не прокидывается в AJAX-рендере](../../bugs/done/session-is-alive-storage-overwrite.md), но подход с другой стороны: там переменная не доезжает, здесь — доезжает с враньём.
 
 ### 2. Region-шаг отбрасывает адрес из профиля контакта
 

@@ -1,6 +1,6 @@
 # Issue 65 — единица предзаполнения мельче связанной группы полей
 
-**Статус:** ✅ Закрыта 23.08.2026 — недостижима в текущем ядре, архитектура заменена: план [snapshot-removal-and-html-ownership.md](../plans/snapshot-removal-and-html-ownership.md), этапы 0-3 закоммичены, этап 5 (флаг `is_prefilled`) исправлен той же датой
+**Статус:** ✅ Закрыта 23.08.2026 — недостижима в текущем ядре, архитектура заменена: план [snapshot-removal-and-html-ownership.md](../../plans/snapshot-removal-and-html-ownership.md), этапы 0-3 закоммичены, этап 5 (флаг `is_prefilled`) исправлен той же датой
 **Приоритет:** 🟢 Низкий — понижен 22.08.2026 после проверки в коде: сценарий недостижим в текущем ядре, см. «Ревизия 4»
 **Сложность фикса:** Фактическая — свести `SECTION_OWNERSHIP_FIELDS` к `['html']` на всех секциях и снять снапшот (детали в плане). Прежняя оценка сложности (расширение списка + сравнение `country`/`payment.id` с дефолтом) была для отменённой рекомендации №1, не реализовывалась
 **Файлы:** `lib/classes/sections/shopPrefillPluginSectionChecker.class.php` (`SECTION_OWNERSHIP_FIELDS`), `lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php` (снапшот убран целиком), плюс debug-панель и `RULES.md` — полный список файлов в плане
@@ -28,7 +28,7 @@
 
 Владение четырёх секций держится на служебном `html`, и вся issue исходила из того, что он приходит не всегда (`!options.only_api && that.reload`). Разобраны оба условия:
 
-**`only_api: true`** встречается ровно в одном месте — [`Form.prototype.reload()`](../../../../js/frontend/order/form.js#L4325). У него единственный вызывающий: обработчик события `wa_auth_contact_logout` ([form.js:3625](../../../../js/frontend/order/form.js#L3625)). А это событие **никто не генерирует**: поиск по всему проекту, включая минифицированные файлы, legacy и шаблоны, даёт 8 упоминаний, и все до одного — подписки (`$document.on` / `.off`), ни одного `trigger`. Реальная кнопка выхода шлёт другое событие:
+**`only_api: true`** встречается ровно в одном месте — [`Form.prototype.reload()`](../../../../../js/frontend/order/form.js#L4325). У него единственный вызывающий: обработчик события `wa_auth_contact_logout` ([form.js:3625](../../../../../js/frontend/order/form.js#L3625)). А это событие **никто не генерирует**: поиск по всему проекту, включая минифицированные файлы, legacy и шаблоны, даёт 8 упоминаний, и все до одного — подписки (`$document.on` / `.off`), ни одного `trigger`. Реальная кнопка выхода шлёт другое событие:
 
 ```js
 // form.js:3610-3613 — "These code were used to update the block. Now used reload page"
@@ -55,7 +55,7 @@ if (reload) { that.update({ reload: true }); }   // ← else-ветки нет
 
 ### 2. Все шесть секций отправляют `html`
 
-Вопреки формулировке в комментарии к `SECTION_OWNERSHIP_FIELDS` («`html` стоит ровно у четырёх секций… и отсутствует у двух»), браузер шлёт его у **всех шести**, включая `shipping[html]` ([form.js:1854, 1860, 1873](../../../../js/frontend/order/form.js#L1854)) и `payment[html]` ([2643, 2649, 2662](../../../../js/frontend/order/form.js#L2643)). Различаются не отправка, а **наши списки владения**. Почему они различаются — пункт 4.
+Вопреки формулировке в комментарии к `SECTION_OWNERSHIP_FIELDS` («`html` стоит ровно у четырёх секций… и отсутствует у двух»), браузер шлёт его у **всех шести**, включая `shipping[html]` ([form.js:1854, 1860, 1873](../../../../../js/frontend/order/form.js#L1854)) и `payment[html]` ([2643, 2649, 2662](../../../../../js/frontend/order/form.js#L2643)). Различаются не отправка, а **наши списки владения**. Почему они различаются — пункт 4.
 
 ### 3. Полный список событий, вымывающих секцию из сессии
 
@@ -63,14 +63,14 @@ if (reload) { that.update({ reload: true }); }   // ← else-ветки нет
 
 | Где | Событие | Что теряется |
 |---|---|---|
-| [form.js:3603](../../../../js/frontend/order/form.js#L3603) | `region_change` | `shipping` **и** `payment` |
-| [form.js:2010](../../../../js/frontend/order/form.js#L2010) | смена способа доставки | `payment` |
+| [form.js:3603](../../../../../js/frontend/order/form.js#L3603) | `region_change` | `shipping` **и** `payment` |
+| [form.js:2010](../../../../../js/frontend/order/form.js#L2010) | смена способа доставки | `payment` |
 
 Плюс третий путь другой природы — короткое замыкание по ошибке валидации (секции ниже упавшего шага рендерятся пустыми, следующий POST обеднён).
 
-Существенное: `region_change` триггерит не только ядро, но и **cityselect** ([frontend.js:640](../../../cityselect/js/frontend.js#L640)) — то есть выбор города через него тоже вымывает доставку и оплату.
+Существенное: `region_change` триггерит не только ядро, но и **cityselect** ([frontend.js:640](../../../../cityselect/js/frontend.js#L640)) — то есть выбор города через него тоже вымывает доставку и оплату.
 
-`fast_render` в этот список **не входит**: ядро закрывает его само ветвью `use_session_input` в [`calculateAction()`](../../../../lib/actions/frontend/order/shopFrontendOrder.actions.php#L19-L32), которая берёт вход из сессии и сессию не перезаписывает.
+`fast_render` в этот список **не входит**: ядро закрывает его само ветвью `use_session_input` в [`calculateAction()`](../../../../../lib/actions/frontend/order/shopFrontendOrder.actions.php#L19-L32), которая берёт вход из сессии и сессию не перезаписывает.
 
 ### 4. Владение гейтит и восстановление из снапшота — отсюда асимметрия списков
 
@@ -93,13 +93,13 @@ foreach ($available as $section_id) {
 
 ### 5. Единственный потребитель снапшота — Zen Mode, и то косвенно
 
-Снапшот читают только `SessionStorageProvider` (путь предзаполнения) и `Debug` (показ). `ZenMode` берёт `getCheckoutParams()` — сессию, не снапшот ([shopPrefillPluginZenMode.class.php:195](../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L195)).
+Снапшот читают только `SessionStorageProvider` (путь предзаполнения) и `Debug` (показ). `ZenMode` берёт `getCheckoutParams()` — сессию, не снапшот ([shopPrefillPluginZenMode.class.php:195](../../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L195)).
 
 То есть снапшот **не защищает данные покупателя от ядра** — он держит сессию полной, чтобы по ней корректно считался вердикт сворачивания. Для самого предзаполнения он не нужен: браузер дошлёт значения следующим полным POST-ом, они остались в DOM. Для создания заказа тоже — `createAction()` работает с POST.
 
 ### 6. Отменённые «дефекты» ревизии 3
 
-- **`payment.id` при единственном способе оплаты — не дефект.** [Авто-выбор](../../../../lib/classes/checkout2/shopCheckoutPaymentStep.class.php#L117) срабатывает только при `1 == count($methods)`, и тогда этот способ — единственный правильный ответ; то, что мы не предзаполняем, ничего не стоит. При двух и более авто-выбора нет, `payment.id` пуст, предзаполнение работает штатно.
+- **`payment.id` при единственном способе оплаты — не дефект.** [Авто-выбор](../../../../../lib/classes/checkout2/shopCheckoutPaymentStep.class.php#L117) срабатывает только при `1 == count($methods)`, и тогда этот способ — единственный правильный ответ; то, что мы не предзаполняем, ничего не стоит. При двух и более авто-выбора нет, `payment.id` пуст, предзаполнение работает штатно.
 - **`region.country` — не дефект.** Его нет в списке владения, он никогда ничего не блокирует. На первой отрисовке хук срабатывает **до** `RegionStep::prepare()`, где подставляется дефолт. Случай 3 — аргумент **против** запланированного расширения списка, а не дефект текущего кода.
 - **Куки cityselect и каталог — формулировка была преувеличена.** `cityselect__*` задают отображаемый город, блок региона в чекауте, контент-переменные и редирект между витринами (`detectRedirect`). На цены и остатки они влияют только вместе с плагином `regions`, которого на этой инсталляции **нет**.
 
@@ -115,9 +115,9 @@ foreach ($available as $section_id) {
 
 ## Целевая архитектура
 
-> **План реализации:** [plans/snapshot-removal-and-html-ownership.md](../plans/snapshot-removal-and-html-ownership.md) — этапы, риск с кукой Zen и браузерные проверки.
+> **План реализации:** [plans/snapshot-removal-and-html-ownership.md](../../plans/snapshot-removal-and-html-ownership.md) — этапы, риск с кукой Zen и браузерные проверки.
 >
-> **Отменено 22.08.2026:** идея «кэшировать вердикт группы вместо снапшота» (обсуждалась как замена восстановлению). Кэш заставил бы устаревшие данные **решать**, что прямо запрещено R4, и после смены региона свёрнутая группа соврала бы о выбранной доставке (Z2). Правильный ответ на неопределённость — развернуть группу, а не додумать состояние: правило [B2a](../concept/RULES.md).
+> **Отменено 22.08.2026:** идея «кэшировать вердикт группы вместо снапшота» (обсуждалась как замена восстановлению). Кэш заставил бы устаревшие данные **решать**, что прямо запрещено R4, и после смены региона свёрнутая группа соврала бы о выбранной доставке (Z2). Правильный ответ на неопределённость — развернуть группу, а не додумать состояние: правило [B2a](../../concept/RULES.md).
 >
 > **Поправка там же:** формулировка «сессия лишается секций на один запрос» неверна. Автоматического дослеживающего POST-а после `region_change` нет — сессия остаётся обеднённой до следующего действия покупателя, а вред приходится на рендер **того же** запроса, когда наши `checkout_render_*` хуки уже отработали и покупатель смотрит на экран.
 
@@ -181,7 +181,7 @@ wa()->getStorage()->set('shop/checkout', $session_checkout);
 
 ### №3. JS не даёт POST'у на `create` разойтись с сессией
 
-Именно она закрывает сценарий ревизии 0. [`wa-apps/shop/js/frontend/order/form.js:2843-2853`](../../../../js/frontend/order/form.js):
+Именно она закрывает сценарий ревизии 0. [`wa-apps/shop/js/frontend/order/form.js:2843-2853`](../../../../../js/frontend/order/form.js):
 
 ```js
 var finish_form_data_json = JSON.stringify(that.scope.getFormData()),
@@ -193,26 +193,26 @@ else             { promise = that.scope.update({ render_errors: true }); }  // �
 
 `start_form_data_json` перезаписывается на каждом `ready`/`changed`, то есть после каждого рендера. Любое расхождение уводит клик в `calculate`, а не в `create`. Значит POST, доехавший до `createAction()`, равен последнему calculate-POST, который ядро уже положило в сессию, — и то, что `createAction()` сессию не пишет, само по себе ничего не ломает.
 
-**Граница.** Неточность предыдущей редакции: `form.js` — не тема, а ядро. Файл лежит в `wa-apps/shop/js/frontend/order/form.js`, подключается через core-экшен `FrontendOrderForm` (`wa-apps/shop/templates/actions/frontend/FrontendOrderForm.html`) и классы checkout2 (`shopCheckoutConfig`, `shopCheckoutStep`) — ни в одном `wa-apps/shop/themes/*/` его нет, и тема физически не может его «заменить». Тема вызывает стандартный чекаут фреймворковым хелпером (`{$wa->shop->checkout()->cart(...)}` в своём `order.html`) — и тогда страховка на месте автоматически, — либо вообще не подключает этот путь и постит форму мимо него собственным кодом. Второе не гипотетично: в `cityselect` уже есть готовая ветка под план-плагин «Заказ в 1 шаг» — [`shopCityselectPluginFrontendSetCity.controller.php:143`](../../../cityselect/lib/actions/shopCityselectPluginFrontendSetCity.controller.php), `$params['plugin'] == 'buy1step'` — такие плагины типично уходят в `/order/create/` одним POST в обход calculate-цикла. `buy1step` в этой инсталляции не установлен, но класс риска реальный: не «кастомная тема», а любой альтернативный путь оформления, не проходящий через `form.js`.
+**Граница.** Неточность предыдущей редакции: `form.js` — не тема, а ядро. Файл лежит в `wa-apps/shop/js/frontend/order/form.js`, подключается через core-экшен `FrontendOrderForm` (`wa-apps/shop/templates/actions/frontend/FrontendOrderForm.html`) и классы checkout2 (`shopCheckoutConfig`, `shopCheckoutStep`) — ни в одном `wa-apps/shop/themes/*/` его нет, и тема физически не может его «заменить». Тема вызывает стандартный чекаут фреймворковым хелпером (`{$wa->shop->checkout()->cart(...)}` в своём `order.html`) — и тогда страховка на месте автоматически, — либо вообще не подключает этот путь и постит форму мимо него собственным кодом. Второе не гипотетично: в `cityselect` уже есть готовая ветка под план-плагин «Заказ в 1 шаг» — [`shopCityselectPluginFrontendSetCity.controller.php:143`](../../../../cityselect/lib/actions/shopCityselectPluginFrontendSetCity.controller.php), `$params['plugin'] == 'buy1step'` — такие плагины типично уходят в `/order/create/` одним POST в обход calculate-цикла. `buy1step` в этой инсталляции не установлен, но класс риска реальный: не «кастомная тема», а любой альтернативный путь оформления, не проходящий через `form.js`.
 
 ### Снапшот не переживает сессию — но форму восстанавливает ядро из localStorage
 
 Снапшот плагина смерть сессии действительно не переживает: `shop/checkout`, `shop/prefill_snapshot` и `shop/prefill_source` лежат в одном `waSessionStorage` (`wa-system/storage/waSessionStorage.class.php` — нативная PHP-сессия) и умирают вместе. Персистентный `shopCart` (БД) хранит позиции корзины, а не секции формы. Так что «снапшот пережил сессию и вернул данные без `html`» — невозможно.
 
-**Но у ядра есть собственное восстановление, и плагин о нём не знает.** [`form.js:4405-4448`](../../../../js/frontend/order/form.js) — состояние формы пишется в `localStorage` под ключом `webasyst/shop/order/form`:
+**Но у ядра есть собственное восстановление, и плагин о нём не знает.** [`form.js:4405-4448`](../../../../../js/frontend/order/form.js) — состояние формы пишется в `localStorage` под ключом `webasyst/shop/order/form`:
 
 ```js
 function save(form_data) { window.localStorage.setItem(storage_name, JSON.stringify(form_data)); }
 function load()          { /* ... */ that.update({ data: form_data }).then(); }
 ```
 
-Асимметрия важна: `save` вызывается **безусловно** после каждого пересчёта ([строка 4140](../../../../js/frontend/order/form.js), в `.always()`), а `load` — только под флагом `use_storage`, и флаг включается **ровно тогда, когда сессия мертва** ([`FrontendOrderForm.html:246`](../../../../templates/actions/frontend/FrontendOrderForm.html)):
+Асимметрия важна: `save` вызывается **безусловно** после каждого пересчёта ([строка 4140](../../../../../js/frontend/order/form.js), в `.always()`), а `load` — только под флагом `use_storage`, и флаг включается **ровно тогда, когда сессия мертва** ([`FrontendOrderForm.html:246`](../../../../../templates/actions/frontend/FrontendOrderForm.html)):
 
 ```smarty
 use_storage: {if $session_is_alive}false{else}true{/if},
 ```
 
-`$session_is_alive` — это [`shopCheckoutViewHelper.class.php:439`](../../../../lib/classes/checkout2/shopCheckoutViewHelper.class.php#L439): `!empty($session_checkout['order'])`.
+`$session_is_alive` — это [`shopCheckoutViewHelper.class.php:439`](../../../../../lib/classes/checkout2/shopCheckoutViewHelper.class.php#L439): `!empty($session_checkout['order'])`.
 
 **Плагин это не подавляет** — и это надо было проверить, потому что мы пишем ровно в `$session_checkout['order']`. В `formVars()` переменная `$session_checkout` читается из хранилища **до** `processAll()`, внутри которого срабатывает наш хук, а `session_is_alive` вычисляется из этой ранее снятой копии. То есть флаг отражает состояние сессии **до** предзаполнения, и наша запись восстановление из localStorage не отключает.
 
@@ -228,7 +228,7 @@ use_storage: {if $session_is_alive}false{else}true{/if},
 - POST: `region[country] = 'kaz'`, город пуст → дозаполняем `region`, `city`, `zip` из российского заказа → Казахстан с областью 77;
 - POST: подъезд свой, улица пуста → улица от одного адреса, подъезд от другого.
 
-Плюс сторонние плагины. **cityselect** установлен на этой инсталляции и пишет прямо в сессию чекаута — [`shopCityselectHelper.class.php:155-172`](../../../cityselect/lib/classes/shopCityselectHelper.class.php):
+Плюс сторонние плагины. **cityselect** установлен на этой инсталляции и пишет прямо в сессию чекаута — [`shopCityselectHelper.class.php:155-172`](../../../../cityselect/lib/classes/shopCityselectHelper.class.php):
 
 ```php
 $input['country'] = $country;  $input['region'] = $region;
@@ -256,7 +256,7 @@ $details['shipping_address']['zip'] = $zip;
 
 ### Cityselect: пишет раньше и по другому поводу
 
-`cityselect` не висит на `checkout_before_auth` — гонки хуков в одном запросе с prefill нет. Он пишет в `shop/checkout` из отдельных AJAX-контроллеров — `SetCityController`, `SaveAddressController` ([`shopCityselectHelper::setCity()`](../../../cityselect/lib/classes/shopCityselectHelper.class.php)) — которые срабатывают по явному действию покупателя («да, это мой город» либо выбор из автокомплита DaData), но **на любой странице сайта**, необязательно на чекауте, и в любой момент сессии, необязательно перед самим оформлением заказа.
+`cityselect` не висит на `checkout_before_auth` — гонки хуков в одном запросе с prefill нет. Он пишет в `shop/checkout` из отдельных AJAX-контроллеров — `SetCityController`, `SaveAddressController` ([`shopCityselectHelper::setCity()`](../../../../cityselect/lib/classes/shopCityselectHelper.class.php)) — которые срабатывают по явному действию покупателя («да, это мой город» либо выбор из автокомплита DaData), но **на любой странице сайта**, необязательно на чекауте, и в любой момент сессии, необязательно перед самим оформлением заказа.
 
 Следствие: если покупатель хоть раз подтвердил город — обычно ради цен и наличия товара в каталоге, на главной или в карточке товара — до того, как дошёл до `/order/`, поле `region.city` в сессии занято этим значением. Дальше предзаполнение из **истории реальных заказов** для `region` не сработает уже никогда в этой сессии, даже если у покупателя есть точный адрес из прошлого заказа. Это не гонка «кто раньше в хуке», а конфликт по смыслу: cityselect считает «город для каталога» и «город для доставки» одним и тем же полем, а это не всегда так.
 
@@ -264,7 +264,7 @@ $details['shipping_address']['zip'] = $zip;
 
 ### Системные дефолты: country и payment.id
 
-**`region.country`.** [`shopCheckoutRegionStep::prepare()`](../../../../lib/classes/checkout2/shopCheckoutRegionStep.class.php#L148-L150):
+**`region.country`.** [`shopCheckoutRegionStep::prepare()`](../../../../../lib/classes/checkout2/shopCheckoutRegionStep.class.php#L148-L150):
 
 ```php
 if (empty($selected_values['country_id'])) {
@@ -272,7 +272,7 @@ if (empty($selected_values['country_id'])) {
 }
 ```
 
-`getDefaultCountryID()` ([строка 406-420](../../../../lib/classes/checkout2/shopCheckoutRegionStep.class.php#L406-L420)) читает `shopConfig::getGeneralSettings('country')` — настройку магазина «страна по умолчанию» — и подставляет её на **каждом** `prepare()`, если поле пусто. Значение уходит в рендер формы, оттуда эхом в следующий POST, оттуда в сессию (`calculateAction()` пишет POST целиком). Проверено в БД этой инсталляции:
+`getDefaultCountryID()` ([строка 406-420](../../../../../lib/classes/checkout2/shopCheckoutRegionStep.class.php#L406-L420)) читает `shopConfig::getGeneralSettings('country')` — настройку магазина «страна по умолчанию» — и подставляет её на **каждом** `prepare()`, если поле пусто. Значение уходит в рендер формы, оттуда эхом в следующий POST, оттуда в сессию (`calculateAction()` пишет POST целиком). Проверено в БД этой инсталляции:
 
 ```sql
 SELECT value FROM wa_app_settings WHERE app_id='shop' AND name='country';  -- 'rus'
@@ -280,7 +280,7 @@ SELECT value FROM wa_app_settings WHERE app_id='shop' AND name='country';  -- 'r
 
 Дефолт реально задан — сценарий не гипотетичен.
 
-**`payment.id`.** Тот же паттерн уже существует **сегодня**, без всякого фикса issue-65 — `'payment' => ['id']` уже в текущем `SECTION_OWNERSHIP_FIELDS`. [`shopCheckoutPaymentStep::prepare()`, строка 117](../../../../lib/classes/checkout2/shopCheckoutPaymentStep.class.php#L117):
+**`payment.id`.** Тот же паттерн уже существует **сегодня**, без всякого фикса issue-65 — `'payment' => ['id']` уже в текущем `SECTION_OWNERSHIP_FIELDS`. [`shopCheckoutPaymentStep::prepare()`, строка 117](../../../../../lib/classes/checkout2/shopCheckoutPaymentStep.class.php#L117):
 
 ```php
 if (1 == count($methods) && !$selected_method_id) {
@@ -467,7 +467,7 @@ $this->params['data']['input'] = shopPrefillPluginHelper::deepMergeArrays($befor
 $this->is_prefilled = ($this->params['data']['input'] !== $before);
 ```
 
-### 3. Дописать правило в [RULES.md](../concept/RULES.md)
+### 3. Дописать правило в [RULES.md](../../concept/RULES.md)
 
 **P1a. Единица предзаполнения — связанная группа полей, а не поле.** Группа заполняется целиком из одного источника или не заполняется вовсе; непустое поле в группе делает её собственностью покупателя.
 

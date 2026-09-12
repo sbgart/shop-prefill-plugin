@@ -47,7 +47,7 @@ helper(waSystem) OK -> imgUrl('http://x/y.jpg') = 'http://x/y.jpg'
 
 1. **Миниатюра не строится ни разу.** В свёрнутую карточку 77×58 px уезжает полноразмерный файл —
    ровно то, что метод должен предотвращать. Его же docblock и
-   [zen-photos-css-scope-broken.md:107](../bugs/zen-photos-css-scope-broken.md) утверждают обратное:
+   [zen-photos-css-scope-broken.md:107](../../bugs/done/zen-photos-css-scope-broken.md) утверждают обратное:
    «`buildThumbUri()` зовёт тот же `$wa->shop->imgUrl($uri, '100x75')`, что и `details.html`».
    Фактически не зовёт.
 2. **Сценарий отказа.** Администратор загружает в настройках пункта выдачи фото с телефона
@@ -90,11 +90,11 @@ helper(waSystem) OK -> imgUrl('http://x/y.jpg') = 'http://x/y.jpg'
    целиком маскирует и ошибки программиста, как эта.
 4. Проверить после фикса: ПВЗ с фото, свёрнутая карточка Zen → в `<img src>` путь вида
    `*.100x75.jpg`, файл physически создан рядом с оригиналом в `wa-data/public/shop/`. Живой прогон
-   возможен после починки способа доставки `sd` на стенде (открытый пункт в [TODO.md](../TODO.md)),
+   возможен после починки способа доставки `sd` на стенде (открытый пункт в [TODO.md](../../TODO.md)),
    либо на любом ПВЗ СДЭК с фотографиями.
 
 ## Связанное
 
-[zen-photos-css-scope-broken.md](../bugs/zen-photos-css-scope-broken.md) — фикс, в котором появился
+[zen-photos-css-scope-broken.md](../../bugs/done/zen-photos-css-scope-broken.md) — фикс, в котором появился
 `buildThumbUri()`. [issue-88](issue-88-shipping-logo-undefined-index.md) — соседняя правка того же
 поля карточки.

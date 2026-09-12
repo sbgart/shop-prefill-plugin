@@ -26,5 +26,5 @@
 4. При снятии галочки `active` кастомный шаблон применяться не будет, даже если текстовое поле заполнено. Применяться будет дефолтный `summary_template`.
 
 ## Ссылки
-- План реализации: [implementation_plan.md](../../../../../.gemini/antigravity/brain/127c3bc6-6a5a-4505-ae54-877eaca569af/implementation_plan.md)
-- Отчет о внедрении бэкенд логики: [walkthrough.md](../../../../../.gemini/antigravity/brain/127c3bc6-6a5a-4505-ae54-877eaca569af/walkthrough.md)
+- План реализации: [implementation_plan.md](../../../../../../.gemini/antigravity/brain/127c3bc6-6a5a-4505-ae54-877eaca569af/implementation_plan.md)
+- Отчет о внедрении бэкенд логики: [walkthrough.md](../../../../../../.gemini/antigravity/brain/127c3bc6-6a5a-4505-ae54-877eaca569af/walkthrough.md)

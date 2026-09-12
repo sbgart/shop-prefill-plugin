@@ -96,7 +96,7 @@ $ php -r 'for($i=1;$i<=2000000;$i++) substr(md5("user:".$i),0,12);'
 
 Проверка: `curl -sk -D - https://wa-dev.loc/order/ -o /dev/null | grep -i 'set-cookie:.*zen_owner'` —
 в заголовке должны появиться `secure` и `HttpOnly`; сценарии защёлки из
-[плана](../plans/zen-collapse-latch-identity-scope.md) (репро, Z4 кликом «Изменить», логаут,
+[плана](../../plans/done/zen-collapse-latch-identity-scope.md) (репро, Z4 кликом «Изменить», логаут,
 оформление заказа) прогнать заново — они не должны измениться, `tests/ZenLatchIdentityTest.php`
 остаётся зелёным.
 
@@ -162,8 +162,8 @@ OK: в лог ушло «Zen latches dropped: identity changed» — хотя л
 
 ## Связанное
 
-Правило [Z4](../concept/RULES.md) — защёлка принадлежит личности и визиту.
-[План привязки защёлки к личности](../plans/zen-collapse-latch-identity-scope.md),
-[баг](../bugs/zen-collapse-latch-outlives-php-session.md) — откуда взялась кука.
-[issue-32](done/issue-32-cookie-secure-false.md) — прошлый заход на атрибуты кук плагина.
+Правило [Z4](../../concept/RULES.md) — защёлка принадлежит личности и визиту.
+[План привязки защёлки к личности](../../plans/done/zen-collapse-latch-identity-scope.md),
+[баг](../../bugs/done/zen-collapse-latch-outlives-php-session.md) — откуда взялась кука.
+[issue-32](issue-32-cookie-secure-false.md) — прошлый заход на атрибуты кук плагина.
 [issue-100 §1](issue-100-minor-findings-pass-5.md) — соседняя находка про ту же кучу `Set-Cookie`.

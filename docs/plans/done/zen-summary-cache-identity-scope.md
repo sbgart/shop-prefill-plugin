@@ -1,8 +1,8 @@
 # План: кэш сводки Zen принадлежит личности, а не сессии
 
 **Создан:** 07.09.2026
-**Источник:** [баг утечки кэша сводки](../bugs/zen-summary-cache-leaks-across-identity-change.md) — найден 28.08.2026 при прогоне R (ФО-05), причина найдена и репро воспроизведено заново 07.09.2026
-**Уточняет правило:** R4 в [RULES.md](../concept/RULES.md)
+**Источник:** [баг утечки кэша сводки](../../bugs/done/zen-summary-cache-leaks-across-identity-change.md) — найден 28.08.2026 при прогоне R (ФО-05), причина найдена и репро воспроизведено заново 07.09.2026
+**Уточняет правило:** R4 в [RULES.md](../../concept/RULES.md)
 **Статус:** ✅ Реализовано и проверено в браузере 07.09.2026 (этапы 1-5). Оба прогона из раздела «Проверка» пройдены, результаты — в файле бага; автотест `tests/ZenSummaryCacheIdentityTest.php`, 13 проверок
 
 ## Зачем
@@ -36,7 +36,7 @@
 ## Решение
 
 Штамповать в записи владельца — отпечаток источника из
-[`FillParamsProvider::getSourceKey()`](../../lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php#L91)
+[`FillParamsProvider::getSourceKey()`](../../../lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php#L91)
 (`user:<id>` / `guest:<lookup_id>` / `null`, без единого запроса к БД) — и на чтении отдавать
 пустой массив, если штамп не совпал с текущим.
 
@@ -63,7 +63,7 @@
 
 Промах деградирует ровно в состояние «первая отрисовка первого визита» (кэш пуст + `fast_render`),
 которое разобрано и осознанно оставлено в
-[zen-collapse-on-upstream-checkout-error.md](../bugs/zen-collapse-on-upstream-checkout-error.md)
+[zen-collapse-on-upstream-checkout-error.md](../../bugs/done/zen-collapse-on-upstream-checkout-error.md)
 («🟡 воспроизведён… закрывать посевом не стали», отвергнутый вариант 6). Новой дырки фикс не
 открывает — он лишь распространяет уже принятое поведение на смену личности.
 
@@ -102,7 +102,7 @@
 **1. Чистить кэш по событию логина/логаута.** Событий смены личности несколько (логин, логаут,
 выдача гостевой куки при `order_action.create`), ловить каждое по отдельности — тот самый подход,
 который уже отвергнут для похожей задачи в
-[zen-collapse-on-upstream-checkout-error.md](../bugs/zen-collapse-on-upstream-checkout-error.md).
+[zen-collapse-on-upstream-checkout-error.md](../../bugs/done/zen-collapse-on-upstream-checkout-error.md).
 Штамп не требует ловить ничего: смена личности сама делает запись нечитаемой.
 
 **2. Сверять с маркером `shop/prefill_source` вместо своего штампа.** Маркер намеренно **не
@@ -120,7 +120,7 @@
 создании заказа и через `/prefill/clear-storage`. Расширять этим текущий фикс не стоит: у эха другая
 семантика — восстановление выбора покупателя (P9), а не показ данных, — и своя цена ошибки.
 
-**Разобрано отдельно 07.09.2026 и закрыто как неприменимое** — [issue-90](../codereview/done/issue-90-echo-cache-identity-scope.md). Здесь тот же фикс не работает
+**Разобрано отдельно 07.09.2026 и закрыто как неприменимое** — [issue-90](../../codereview/done/issue-90-echo-cache-identity-scope.md). Здесь тот же фикс не работает
 в принципе: логин в чекауте делает `location.reload()`, ядро кормит `processAll()` прямо из
 `shop/checkout`, и эхо перезаписывается данными прошлой личности под новым штампом раньше, чем
 ветка восстановления получит управление. Zen-кэша это не касается — он пишется только в

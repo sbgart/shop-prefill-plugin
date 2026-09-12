@@ -5,7 +5,7 @@
 ## Воспроизведение (06.09.2026)
 
 Чистый гость, curl с пустой банкой кук (без переиспользования браузерных кук — см. приём в
-[CLAUDE.md](../../../../../CLAUDE.md#авторизация)):
+[CLAUDE.md](../../../../../../../CLAUDE.md#авторизация)):
 
 ```bash
 J=guest.jar; rm -f $J
@@ -48,7 +48,7 @@ curl -sk -c $J -b $J https://wa-dev.loc/order/ -o order1.html
    `lib/classes/zenmode/shopPrefillPluginZenMode.class.php:196`) сворачивает группу только если
    `isGroupMinimumFilled()` (`shopPrefillPluginSectionChecker.class.php:237`) видит хотя бы одно из
    `data.email` / `data.phone` / `data.firstname` в параметрах сессии — правило Z2
-   ([RULES.md:70](../concept/RULES.md)): «не сворачиваем то, где нет данных».
+   ([RULES.md:70](../../concept/RULES.md)): «не сворачиваем то, где нет данных».
 
 На витрине без обязательных полей auth эти две проверки расходятся: клиентская валидация всегда
 проходит (ошибок формата/обязательности нет — полям просто нечего проверять), а серверная

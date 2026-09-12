@@ -17,16 +17,16 @@
 пишет — собственный лог плагина за срабатывание №3 подтверждает: `no params were filled`.
 
 **1. Сессия чекаута не привязана к личности и не чистится логаутом.**
-[`shopFrontendOrder.actions.php:33-38`](../../../../../lib/actions/frontend/order/shopFrontendOrder.actions.php#L33-L38) —
+[`shopFrontendOrder.actions.php:33-38`](../../../../../../lib/actions/frontend/order/shopFrontendOrder.actions.php#L33-L38) —
 на каждый нефинальный (не `fast_render`) запрос чекаута сырой `$input` целиком (включая
 `auth[data][firstname/phone/email]`) пишется в ключ сессии `shop/checkout`. Единственное место, где
-ключ удаляется — [`строка 233`](../../../../../lib/actions/frontend/order/shopFrontendOrder.actions.php#L233),
+ключ удаляется — [`строка 233`](../../../../../../lib/actions/frontend/order/shopFrontendOrder.actions.php#L233),
 при успешном создании заказа. `?action=logout` этот ключ не трогает: чистит только `waAuth`,
 `PHPSESSID` при логауте/логине бэкенда не меняется. Отсюда — гостевые значения переживают
 `логаут → гостевой чекаут → логин` в одной вкладке, что и наблюдалось.
 
 **2. Гард на чужой ввод в `shopCheckoutAuthStep` сломан.**
-[`shopCheckoutAuthStep.class.php:125-128`](../../../../../lib/classes/checkout2/shopCheckoutAuthStep.class.php#L125-L128):
+[`shopCheckoutAuthStep.class.php:125-128`](../../../../../../lib/classes/checkout2/shopCheckoutAuthStep.class.php#L125-L128):
 
 ```php
 if ($contact_id && $user_id_from_input != $contact_id) {
@@ -43,7 +43,7 @@ falsy — непустые гостевые `"TestGuest Runner"`, `"9990001122"`
 авторизованного контакта.
 
 **3. При оформлении заказа объект контакта из шага 2 пишется в БД.**
-[`shopOrder.class.php:1710-1792`](../../../../../lib/classes/shopOrder.class.php#L1710-L1792),
+[`shopOrder.class.php:1710-1792`](../../../../../../lib/classes/shopOrder.class.php#L1710-L1792),
 `saveCustomer()`: `$this->data['customer']` (та же протухшая `auth.data`) применяется прямо на
 `$this->contact[$fld_id] = $fld_data`, и следом `$this->contact->save()` — прямая запись в
 `wa_contact`/`wa_contact_emails` авторизованного контакта.

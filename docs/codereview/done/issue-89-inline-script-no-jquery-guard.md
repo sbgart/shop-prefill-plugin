@@ -7,7 +7,7 @@
 
 ## Суть
 
-`shopPrefillPluginCheckoutHooks::renderDeliveryUnavailableScript()`, [строка 277](../../lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php):
+`shopPrefillPluginCheckoutHooks::renderDeliveryUnavailableScript()`, [строка 277](../../../lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php):
 
 ```php
 return '<script>$(document).trigger("prefill_delivery_unavailable");</script>';
@@ -35,7 +35,7 @@ if (typeof $ === "undefined") {
 
 ## Фикс
 
-Применено в [shopPrefillPluginCheckoutHooks.class.php:277](../../lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php#L277) — та же проверка, что и в `PrefillFrontendController::init()` (issue-80 §1):
+Применено в [shopPrefillPluginCheckoutHooks.class.php:277](../../../lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php#L277) — та же проверка, что и в `PrefillFrontendController::init()` (issue-80 §1):
 
 ```php
 return '<script>if(typeof $!=="undefined"){$(document).trigger("prefill_delivery_unavailable");}</script>';

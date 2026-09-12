@@ -1,8 +1,8 @@
 # План фикса issue-98 (мелочи полного ревью, шесть штук) + `prefill.settings.js`
 
 **Статус:** 📋 План составлен 11.09.2026, ни один пункт ещё не реализован (проверено по коду в этот день).
-**Источник:** [issue-98](../codereview/issue-98-minor-findings-pass-4.md). Пункт 7 добавлен отдельно —
-строка backlog про `prefill.setting.js` в [TODO.md](../TODO.md) относится к тому же анти-паттерну.
+**Источник:** [issue-98](../../codereview/done/issue-98-minor-findings-pass-4.md). Пункт 7 добавлен отдельно —
+строка backlog про `prefill.setting.js` в [TODO.md](../../TODO.md) относится к тому же анти-паттерну.
 
 Плагин ещё не выходил в релиз — миграции в `lib/updates/` не обязательны, правки схемы идут прямо в
 `lib/config/db.php`.
@@ -38,7 +38,7 @@
 
 **Файл:** `lib/config/db.php`
 
-Проверено по истории: в [issue-57#4](../codereview/issue-57-minor-robustness-findings.md) (закрыт
+Проверено по истории: в [issue-57#4](../../codereview/done/issue-57-minor-robustness-findings.md) (закрыт
 21.08.2026, статус «⛔ не делаем») уже обсуждали индекс на этой таблице — но другой. Там отклонили
 составной `UNIQUE (storefront_code, name, groups(191))` с переходом `set()`/`setBulk()` на
 `INSERT ... ON DUPLICATE KEY UPDATE`. Причины отказа к нашему предложению не переносятся:
@@ -114,7 +114,7 @@ me», admin заполняет сам, зная свои домены), а не 
 **Статус:** ✅ реализовано 11.09.2026.
 
 Перед реализацией искал прошлые обсуждения CSRF в проекте — нашёлся прямо релевантный
-[issue-79](../codereview/issue-79-issue-52-csrf-half-done.md) (открыта, статус «сознательно
+[issue-79](../../codereview/done/issue-79-issue-52-csrf-half-done.md) (открыта, статус «сознательно
 отложено» от 21.08.2026), но он про **другой** набор эндпоинтов: публичные `consent`,
 `apply-delivery`, `fill-checkout-params`, доступные гостю. Там решили не добавлять токен именно
 потому, что это требовало бы правок JS ради риска без эксплойта. Отложенное решение не
@@ -226,7 +226,7 @@ pop` и тот же сценарий на новом — скриншоты ви
 
 ## 6. `collectUniqueDeliveryOrderIds()` без потолка — ОТКЛОНЕНО
 
-**Статус:** ❌ не делать. Проверено по [issue-68](../codereview/issue-68-params-choice-collection-n-plus-1.md)
+**Статус:** ❌ не делать. Проверено по [issue-68](../../codereview/done/issue-68-params-choice-collection-n-plus-1.md)
 (закрыта 19.08.2026) — предложение issue-98 воспроизводит баг, который там сознательно убрали.
 
 До фикса issue-68 `getUserOrdersId()` шла с `LIMIT 50` — потолок по **заказам**. Это оказалось

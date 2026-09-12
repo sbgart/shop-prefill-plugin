@@ -19,8 +19,8 @@
 Ваши данные сохранены и вернутся сами», разворота в пустоту нет, осиротевшей кнопки «Свернуть» нет.
 **Приоритет:** 🔴 был блокером релиза — любая жёсткая ошибка шага `auth` стоила покупателю выбора доставки и оплаты, без единого сообщения о потере
 **Сложность фикса:** 🔧 средний — `SectionChecker`, `SessionStorageProvider`, `CheckoutHooks`, `ZenModeToggle`, правила Z5/P9
-**Связано:** [баг zen-collapse](zen-collapse-on-upstream-checkout-error.md) (сценарии 1/1a/2 переоткрыты), [план снятия снапшота](../plans/snapshot-removal-and-html-ownership.md) (регрессия появилась здесь), [план эхо-кэша payment](../plans/payment-section-echo-cache.md) (механизм обобщается), [issue-86](../codereview/issue-86-delivery-group-source-completeness.md)
-**Правила:** [RULES.md](../concept/RULES.md) — Z1, Z2, Z3, Z5, P1, P2, P9, B2a
+**Связано:** [баг zen-collapse](zen-collapse-on-upstream-checkout-error.md) (сценарии 1/1a/2 переоткрыты), [план снятия снапшота](../../plans/snapshot-removal-and-html-ownership.md) (регрессия появилась здесь), [план эхо-кэша payment](../../plans/done/payment-section-echo-cache.md) (механизм обобщается), [issue-86](../../codereview/done/issue-86-delivery-group-source-completeness.md)
+**Правила:** [RULES.md](../../concept/RULES.md) — Z1, Z2, Z3, Z5, P1, P2, P9, B2a
 
 ## Симптом
 
@@ -51,7 +51,7 @@ Zen до этого успевает соврать: на запросе с ош
 
 **Одного сломанного запроса достаточно.** Полная перезагрузка `/order/` после этого: `type_id: ""`, вариантов нет, оплата не выбрана.
 
-Утверждение этапа 3 [плана снятия снапшота](../plans/snapshot-removal-and-html-ownership.md) («Самовывоз остаётся выбранным до и после ошибки») этим замером **опровергнуто**; вероятнее всего, тогда починка проверялась перезагрузкой страницы, а не тем же `update()`.
+Утверждение этапа 3 [плана снятия снапшота](../../plans/snapshot-removal-and-html-ownership.md) («Самовывоз остаётся выбранным до и после ошибки») этим замером **опровергнуто**; вероятнее всего, тогда починка проверялась перезагрузкой страницы, а не тем же `update()`.
 
 ### Лог того же прогона
 
@@ -71,20 +71,20 @@ shipping.html: 1254 символа, inputCount: 0, selectCount: 0, buttonCount: 
 
 ## Когда это срабатывает — не только опечатка в email
 
-Потерю вызывает **любая** жёсткая ошибка шага `auth`: она кладётся в `$errors`, даёт `can_continue = false`, и [`shopCheckoutStep::processAll()`](wa-apps/shop/lib/classes/checkout2/shopCheckoutStep.class.php#L288) после этого **не вызывает `process()` ни у одного следующего шага** — только `prepare()`, который рендерит пустой шаблон.
+Потерю вызывает **любая** жёсткая ошибка шага `auth`: она кладётся в `$errors`, даёт `can_continue = false`, и [`shopCheckoutStep::processAll()`](../wa-apps/shop/lib/classes/checkout2/shopCheckoutStep.class.php#L288) после этого **не вызывает `process()` ни у одного следующего шага** — только `prepare()`, который рендерит пустой шаблон.
 
 | # | Ошибка | Источник | Насколько реально |
 |---|---|---|---|
-| 1 | Невалидный email (`waEmailValidator`) | [строка 209](wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L209) | ✅ **измерено**, опечатка |
-| 2 | Email или телефон **принадлежат другому покупателю** (режим `order_without_auth = create_contact`) | `getForbiddenAddress()`, [строка 226](wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L226) | ✅ **измерено** 24.08.2026, `id: forbidden_error`; 🔥 рутина для гостя, который уже заказывал |
-| 3 | Email или телефон принадлежат **сотруднику бэкенда** | `getAdminErrorFields()`, [строка 221](wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L221) | ✅ **измерено** 24.08.2026, `id: admin_error`; владелец магазина заказывает у себя |
-| 4 | Email или телефон **забанены** | `getBannedErrorFields()`, [строка 219](wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L219) | ✅ **измерено** 24.08.2026, `id: banned_error`; редко |
-| 5 | **Товар кончился** (`cart_invalid`) | `getCartErrors()`, [строка 245](wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L245) | ✅ **измерено** 24.08.2026 (товар снят с публикации); 🔥 обычное дело; к `auth` отношения не имеет, но отдаётся его шагом |
-| 6 | Тип покупателя не выбран / вход как компания при выключенном режиме компаний | [строки 43, 50, 142](wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L43) | ✅ **измерено** 24.08.2026 (ранний `return`, отдельная ветка кода); конфигурационный |
+| 1 | Невалидный email (`waEmailValidator`) | [строка 209](../wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L209) | ✅ **измерено**, опечатка |
+| 2 | Email или телефон **принадлежат другому покупателю** (режим `order_without_auth = create_contact`) | `getForbiddenAddress()`, [строка 226](../wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L226) | ✅ **измерено** 24.08.2026, `id: forbidden_error`; 🔥 рутина для гостя, который уже заказывал |
+| 3 | Email или телефон принадлежат **сотруднику бэкенда** | `getAdminErrorFields()`, [строка 221](../wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L221) | ✅ **измерено** 24.08.2026, `id: admin_error`; владелец магазина заказывает у себя |
+| 4 | Email или телефон **забанены** | `getBannedErrorFields()`, [строка 219](../wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L219) | ✅ **измерено** 24.08.2026, `id: banned_error`; редко |
+| 5 | **Товар кончился** (`cart_invalid`) | `getCartErrors()`, [строка 245](../wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L245) | ✅ **измерено** 24.08.2026 (товар снят с публикации); 🔥 обычное дело; к `auth` отношения не имеет, но отдаётся его шагом |
+| 6 | Тип покупателя не выбран / вход как компания при выключенном режиме компаний | [строки 43, 50, 142](../wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L43) | ✅ **измерено** 24.08.2026 (ранний `return`, отдельная ветка кода); конфигурационный |
 
 Все шесть пунктов измерены 24.08.2026 в браузере (контакты `PrefillTestBuyer`/`PrefillTestOwner`/`PrefillTestBanned`, удалены после прогона) — детали в «Прогон остальных ошибок шага `auth`» ниже. Механизм у всех один, кроме пункта 6 — там отдельная ветка кода (см. там же).
 
-**Граница, которая радует:** пустое обязательное поле сюда **не попадает** — оно кладётся в `delayed_errors` ([строка 134](wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L134)), а те `can_continue` не трогают.
+**Граница, которая радует:** пустое обязательное поле сюда **не попадает** — оно кладётся в `delayed_errors` ([строка 134](../wa-apps/shop/lib/classes/checkout2/shopCheckoutAuthStep.class.php#L134)), а те `can_continue` не трогают.
 
 ## Полная опись: что теряет группа доставки
 
@@ -93,11 +93,11 @@ shipping.html: 1254 символа, inputCount: 0, selectCount: 0, buttonCount: 
 | Данные | Теряется | Кто возвращает |
 |---|---|---|
 | `region.country/region/city/zip` | нет | region-шаг делает работу в `prepare()`, а тот вызывается всегда. Замерено: 6 инпутов целы |
-| `region.possible_address.*` | **да** | никто: скрытые инпуты живут в форме **shipping** ([shipping.html:83-87](wa-apps/shop/templates/actions/frontend/order/form/shipping.html#L83)), хотя пишут в `order.region`. **Принято как известная потеря** — ниша (подсказки адресов у части плагинов доставки), последствие косметическое: дропдаун вернётся в «Укажите адрес» |
-| `shipping.type_id` | да, но не нужен | ядро выводит тип из варианта: [ShippingStep:251](wa-apps/shop/lib/classes/checkout2/shopCheckoutShippingStep.class.php#L251) `$selected_type_id = $type['id']`; вход `type_id` читается только при пустом `variant_id` ([:227](wa-apps/shop/lib/classes/checkout2/shopCheckoutShippingStep.class.php#L227)) |
+| `region.possible_address.*` | **да** | никто: скрытые инпуты живут в форме **shipping** ([shipping.html:83-87](../wa-apps/shop/templates/actions/frontend/order/form/shipping.html#L83)), хотя пишут в `order.region`. **Принято как известная потеря** — ниша (подсказки адресов у части плагинов доставки), последствие косметическое: дропдаун вернётся в «Укажите адрес» |
+| `shipping.type_id` | да, но не нужен | ядро выводит тип из варианта: [ShippingStep:251](../wa-apps/shop/lib/classes/checkout2/shopCheckoutShippingStep.class.php#L251) `$selected_type_id = $type['id']`; вход `type_id` читается только при пустом `variant_id` ([:227](../wa-apps/shop/lib/classes/checkout2/shopCheckoutShippingStep.class.php#L227)) |
 | `shipping.variant_id` | **да** | **эхо** |
-| `details.shipping_address.*` | из POST — да | ядро, `details_address` ([DetailsStep:26](wa-apps/shop/lib/classes/checkout2/shopCheckoutDetailsStep.class.php#L26)), аддитивно: `array_filter($input) + $stored`. Подставляется не только в форму, но и в расчёт — [:134](wa-apps/shop/lib/classes/checkout2/shopCheckoutDetailsStep.class.php#L134) `$base_values = $prepare_result['stored_address'] + $base_values` |
-| `details.custom.*` — дата и интервал доставки, поля плагина | **да** | **эхо**. Значения берутся только из POST ([DetailsStep:168](wa-apps/shop/lib/classes/checkout2/shopCheckoutDetailsStep.class.php#L168)) и нигде не хранятся; поля с `affects-rate` обязательны, без них тариф не пересчитается |
+| `details.shipping_address.*` | из POST — да | ядро, `details_address` ([DetailsStep:26](../wa-apps/shop/lib/classes/checkout2/shopCheckoutDetailsStep.class.php#L26)), аддитивно: `array_filter($input) + $stored`. Подставляется не только в форму, но и в расчёт — [:134](../wa-apps/shop/lib/classes/checkout2/shopCheckoutDetailsStep.class.php#L134) `$base_values = $prepare_result['stored_address'] + $base_values` |
+| `details.custom.*` — дата и интервал доставки, поля плагина | **да** | **эхо**. Значения берутся только из POST ([DetailsStep:168](../wa-apps/shop/lib/classes/checkout2/shopCheckoutDetailsStep.class.php#L168)) и нигде не хранятся; поля с `affects-rate` обязательны, без них тариф не пересчитается |
 | `confirm.comment` | нет | замерено (текстарея с «1» пережила) |
 | `payment.id` + `custom` | **да** | существующее эхо P9 — после починки критерия (правка B1) |
 
@@ -112,7 +112,7 @@ shipping.html: 1254 символа, inputCount: 0, selectCount: 0, buttonCount: 
 
 ### D2 — регрессия против пред-релизного поведения, а не «как в стоке»
 
-Формально это поведение ядра, и B2 («не бороться с ядром») мог бы закрыть вопрос. Но до 23.08.2026 плагин потерю **чинил** — снапшотом, и собственный замер плана снятия снапшота ([этап 0, п.4](../plans/snapshot-removal-and-html-ownership.md)) это фиксирует: *«Снапшот включается только на следующем запросе... там наблюдались оба `restored from snapshot`»*. Коммит `0ba2315` снял снапшот, обосновав это недостижимостью сценария issue-65 — верно само по себе, но снапшот попутно закрывал **другую** дыру, и связь никто не сверил.
+Формально это поведение ядра, и B2 («не бороться с ядром») мог бы закрыть вопрос. Но до 23.08.2026 плагин потерю **чинил** — снапшотом, и собственный замер плана снятия снапшота ([этап 0, п.4](../../plans/snapshot-removal-and-html-ownership.md)) это фиксирует: *«Снапшот включается только на следующем запросе... там наблюдались оба `restored from snapshot`»*. Коммит `0ba2315` снял снапшот, обосновав это недостижимостью сценария issue-65 — верно само по себе, но снапшот попутно закрывал **другую** дыру, и связь никто не сверил.
 
 ## Почему не спас существующий эхо-кэш payment (P9)
 
@@ -122,7 +122,7 @@ shipping.html: 1254 символа, inputCount: 0, selectCount: 0, buttonCount: 
 |---|---|---|---|
 | `disabled` | `'only'` | `'only'` | `'only'` |
 | `options.clean` | `'only'` | `'only'` | `'only'` |
-| обычный перерендер (`that.reload`) | `'only'` ([1871](wa-apps/shop/js/frontend/order/form.js#L1871)) | `'only'` ([2429](wa-apps/shop/js/frontend/order/form.js#L2429)) | **`1`** ([2660](wa-apps/shop/js/frontend/order/form.js#L2660)) |
+| обычный перерендер (`that.reload`) | `'only'` ([1871](../wa-apps/shop/js/frontend/order/form.js#L1871)) | `'only'` ([2429](../wa-apps/shop/js/frontend/order/form.js#L2429)) | **`1`** ([2660](../wa-apps/shop/js/frontend/order/form.js#L2660)) |
 
 `isSectionMechanicallyClean()` проверяет только `=== 'only'`, поэтому для `payment` при коротком замыкании условие ложно → код падает в ветку «покупатель сам оставил пустым» и **стирает** эхо. Это и есть `Payment echo cache cleared` в логе.
 
@@ -232,7 +232,7 @@ public function syncDeliveryEcho(): array
 
 Отпечаток — четыре скаляра из `order.region`, сравнение после `trim()`. `region` **никогда** не приходит секцией `clean` (проверено, см. «Что перепроверено», п. 4), так что сравнивать всегда есть с чем.
 
-**B3. Два письма, а не одно.** Записи в `shop/checkout` **недостаточно** — `calculateAction()` строит `$input` из POST, сессию не читает. Восстановленное надо ещё и влить в живой `$data['input']`, как это уже делает payment-эхо ([CheckoutHooks:89-95](wa-apps/shop/plugins/prefill/lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php#L89)):
+**B3. Два письма, а не одно.** Записи в `shop/checkout` **недостаточно** — `calculateAction()` строит `$input` из POST, сессию не читает. Восстановленное надо ещё и влить в живой `$data['input']`, как это уже делает payment-эхо ([CheckoutHooks:89-95](../wa-apps/shop/plugins/prefill/lib/classes/hooks/shopPrefillPluginCheckoutHooks.class.php#L89)):
 
 ```php
 // handleCheckoutBeforeAuth(), рядом с syncPaymentEcho()
@@ -250,9 +250,9 @@ foreach ($this->session_storage->syncDeliveryEcho() as $section => $values) {
 
 | Путь | Откуда берётся `$input` | Что срабатывает |
 |---|---|---|
-| `POST /order/calculate/` | `waRequest::post()` ([:17](wa-apps/shop/lib/actions/frontend/order/shopFrontendOrder.actions.php#L17)) | инъекция в `$data['input']` |
-| Загрузка `/order/` | сессия ([`formVars():429`](wa-apps/shop/lib/classes/checkout2/shopCheckoutViewHelper.class.php#L429)) | запись в сессию |
-| `use_session_input` после `fast_render` | сессия ([:22](wa-apps/shop/lib/actions/frontend/order/shopFrontendOrder.actions.php#L22)) | запись в сессию |
+| `POST /order/calculate/` | `waRequest::post()` ([:17](../wa-apps/shop/lib/actions/frontend/order/shopFrontendOrder.actions.php#L17)) | инъекция в `$data['input']` |
+| Загрузка `/order/` | сессия ([`formVars():429`](../wa-apps/shop/lib/classes/checkout2/shopCheckoutViewHelper.class.php#L429)) | запись в сессию |
+| `use_session_input` после `fast_render` | сессия ([:22](../wa-apps/shop/lib/actions/frontend/order/shopFrontendOrder.actions.php#L22)) | запись в сессию |
 
 Побочно это чинит и «перезагрузка не помогает»: на загрузке страницы `$input` берётся из сессии, эхо успевает её долить.
 
@@ -260,7 +260,7 @@ foreach ($this->session_storage->syncDeliveryEcho() as $section => $values) {
 
 ### Правка C (🟠). Гард сворачивания должен знать про серверные ошибки
 
-Сегодня [`ZenModeToggle.collapseGroup()`](wa-apps/shop/plugins/prefill/js/modules/ZenModeToggle.js#L92) спрашивает только клиентскую валидацию своей группы:
+Сегодня [`ZenModeToggle.collapseGroup()`](../wa-apps/shop/plugins/prefill/js/modules/ZenModeToggle.js#L92) спрашивает только клиентскую валидацию своей группы:
 
 ```js
 var hasErrors = this.validateSections(form, sections);   // только JS-валидаторы, только своя группа
@@ -271,7 +271,7 @@ var hasErrors = this.validateSections(form, sections);   // только JS-ва
 - **Серверные ошибки невидимы.** `ivan@test.123` проходит JS-регулярку и падает на `waEmailValidator`. Гард ошибок не видит → сворачивает **поверх живого сообщения об ошибке** (оно внутри формы, наш CSS его прячет) → `form.update()` → сервер отвечает ошибкой → Z1 разворачивает обратно. Покупатель видит мигание без объяснения. То же со всеми шестью ошибками из таблицы выше.
 - **Про чужую группу не сказано ничего.** Ошибка в «Покупателе», покупатель сворачивает «Доставку» — гард смотрит только секции доставки, там чисто, сворачивает молча.
 
-Правка минимальная: плагин уже знает обе вещи серверно (`getErrorStepId()` + `getRegularErrors()` в [`shopPrefillCheckoutState`](wa-apps/shop/plugins/prefill/lib/classes/checkout/shopPrefillCheckoutState.class.php#L623), `getRegularErrors()` уже отфильтровывает маркер `fast_render`). Достаточно прокинуть в JS-инициализатор флаг «оформление сейчас заблокировано» + id группы с ошибкой, и в `collapseGroup()` показать **существующий** диалог (`showValidationErrorDialog`) с честной причиной вместо молчаливого сворачивания. Цена: один флаг в генерируемом инициализаторе, одна ветка в JS, одна строка локали.
+Правка минимальная: плагин уже знает обе вещи серверно (`getErrorStepId()` + `getRegularErrors()` в [`shopPrefillCheckoutState`](../wa-apps/shop/plugins/prefill/lib/classes/checkout/shopPrefillCheckoutState.class.php#L623), `getRegularErrors()` уже отфильтровывает маркер `fast_render`). Достаточно прокинуть в JS-инициализатор флаг «оформление сейчас заблокировано» + id группы с ошибкой, и в `collapseGroup()` показать **существующий** диалог (`showValidationErrorDialog`) с честной причиной вместо молчаливого сворачивания. Цена: один флаг в генерируемом инициализаторе, одна ветка в JS, одна строка локали.
 
 **Направление «Изменить» — пересмотрено 24.08.2026 после прогона.** Планировалось не трогать: данные целы (правка B), покупатель увидит пустую секцию, после починки всё вернётся. Вживую это оказалось ровно той паникой «данные пропали», которой мы избегаем: клик по «Изменить» при активной ошибке разворачивает группу, где ядро не отрисовало **ни типов доставки, ни адресных полей** — вместо своей заполненной доставки покупатель видит пустоту. Плюс кука `expanded` залипает до конца сессии из-за действия, которое ничего не дало.
 
@@ -279,11 +279,11 @@ var hasErrors = this.validateSections(form, sections);   // только JS-ва
 
 ### Правка D. Документация
 
-- **Z5** — убрать «устойчивость установлена замером, а не выведена из кода»: выведена. Записать правду: `variant_id` и `payment.id` короткое замыкание **не переживают** (ядро пересоздаёт JS-контроллер секции на каждом рендере, [form.js:3739](wa-apps/shop/js/frontend/order/form.js#L3739)); устойчивость обеспечивает эхо, а не природа полей.
+- **Z5** — убрать «устойчивость установлена замером, а не выведена из кода»: выведена. Записать правду: `variant_id` и `payment.id` короткое замыкание **не переживают** (ядро пересоздаёт JS-контроллер секции на каждом рендере, [form.js:3739](../wa-apps/shop/js/frontend/order/form.js#L3739)); устойчивость обеспечивает эхо, а не природа полей.
 - **Z2** — дополнить: «данных нет» и «данные не спрашивали» — разные ответы, и различает их только состав POST секции.
 - **P9** — расширить на группу доставки, исправить описание протокола (`'only'` **и** `1`), добавить условие отпечатка региона как обязательное для доставки (у оплаты его нет намеренно — там совместимость проверяет ядро на `/order/create/`).
 - [zen-collapse](zen-collapse-on-upstream-checkout-error.md) — сценарии 1/1a/2 переоткрыть со ссылкой сюда.
-- [план снятия снапшота](../plans/snapshot-removal-and-html-ownership.md) — пометка стоит.
+- [план снятия снапшота](../../plans/snapshot-removal-and-html-ownership.md) — пометка стоит.
 
 ## Как эхо соотносится со снапшотом
 
@@ -309,7 +309,7 @@ var hasErrors = this.validateSections(form, sections);   // только JS-ва
 "shipping": {"service_agreement": "1", "html": "only"}
 ```
 
-Секция `shipping` приходит **не пустой** даже когда её на странице нет. Поле `shipping[service_agreement]` рендерит **форма секции `region`** — [region.html:476-484](wa-apps/shop/templates/actions/frontend/order/form/region.html#L476):
+Секция `shipping` приходит **не пустой** даже когда её на странице нет. Поле `shipping[service_agreement]` рендерит **форма секции `region`** — [region.html:476-484](../wa-apps/shop/templates/actions/frontend/order/form/region.html#L476):
 
 ```smarty
 <input type="hidden" name="shipping[service_agreement]" value="0">
@@ -340,11 +340,11 @@ var hasErrors = this.validateSections(form, sections);   // только JS-ва
 
 **3. Одного `variant_id` мало — ошибка редакции 3.** `details.custom` (дата и интервал доставки) не восстанавливается ничем: значения берутся только из POST, `details_address` покрывает исключительно подмассив `shipping_address`.
 
-**4. `region` никогда не приходит секцией `clean`.** Проверены все вызовы `scope.update()`: сокращённый список секций есть ровно в двух местах — `Shipping.prototype.update` ([:2010](wa-apps/shop/js/frontend/order/form.js#L2010), исключает `payment`) и `onRegionChange` ([:3601](wa-apps/shop/js/frontend/order/form.js#L3601), исключает `shipping` и `payment`). Остальные (`Auth`, `Region`, `Details`, `Payment`, `Confirm`) зовут `scope.update()` без опций → все секции сериализуются полностью. Значит отпечаток всегда есть с чем сравнить, ложных срабатываний «регион пуст» не будет.
+**4. `region` никогда не приходит секцией `clean`.** Проверены все вызовы `scope.update()`: сокращённый список секций есть ровно в двух местах — `Shipping.prototype.update` ([:2010](../wa-apps/shop/js/frontend/order/form.js#L2010), исключает `payment`) и `onRegionChange` ([:3601](../wa-apps/shop/js/frontend/order/form.js#L3601), исключает `shipping` и `payment`). Остальные (`Auth`, `Region`, `Details`, `Payment`, `Confirm`) зовут `scope.update()` без опций → все секции сериализуются полностью. Значит отпечаток всегда есть с чем сравнить, ложных срабатываний «регион пуст» не будет.
 
-**5. Ядро выводит тип из варианта — подтверждено у источника,** а не по ссылке на issue-86: [ShippingStep:251](wa-apps/shop/lib/classes/checkout2/shopCheckoutShippingStep.class.php#L251). Там же видно самокоррекцию: `is_selected` считается сопоставлением с заново рассчитанным для текущего адреса списком, не нашлось → вариант не выбран. То есть даже при промахе отпечатка ядро уронит вариант, которого нет в новом городе; отпечаток нужен для случая, когда id совпадает в обоих городах.
+**5. Ядро выводит тип из варианта — подтверждено у источника,** а не по ссылке на issue-86: [ShippingStep:251](../wa-apps/shop/lib/classes/checkout2/shopCheckoutShippingStep.class.php#L251). Там же видно самокоррекцию: `is_selected` считается сопоставлением с заново рассчитанным для текущего адреса списком, не нашлось → вариант не выбран. То есть даже при промахе отпечатка ядро уронит вариант, которого нет в новом городе; отпечаток нужен для случая, когда id совпадает в обоих городах.
 
-**6. Адрес восстанавливается в расчёт, а не только в форму:** [DetailsStep:134](wa-apps/shop/lib/classes/checkout2/shopCheckoutDetailsStep.class.php#L134).
+**6. Адрес восстанавливается в расчёт, а не только в форму:** [DetailsStep:134](../wa-apps/shop/lib/classes/checkout2/shopCheckoutDetailsStep.class.php#L134).
 
 **7. Порядок с предзаполнением безопасен.** На запросе с молчащей секцией `order.shipping = {html:'only'}` — ключ `html` присутствует, значит `canPrefillSection('shipping')` считает секцию занятой и `applyPrefill()` её не трогает. Эхо и предзаполнение не конкурируют; эхо вызывается после, как и payment-эхо.
 

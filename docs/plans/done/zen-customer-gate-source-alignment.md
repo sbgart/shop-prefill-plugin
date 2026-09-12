@@ -1,18 +1,18 @@
 # План: гейт группы `customer` спрашивает источник сводки, а не сессию
 
 **Создан:** 08.09.2026
-**Источник:** [f01 — группа «Покупатель» не сворачивается](../bugs/zen-customer-group-never-collapses-f01.md) — найдено 28.08.2026 при прогоне R (ФО-06), корень найден 08.09.2026
-**Уточняет правило:** Z2 в [RULES.md](../concept/RULES.md), с оговоркой к R3
+**Источник:** [f01 — группа «Покупатель» не сворачивается](../../bugs/done/zen-customer-group-never-collapses-f01.md) — найдено 28.08.2026 при прогоне R (ФО-06), корень найден 08.09.2026
+**Уточняет правило:** Z2 в [RULES.md](../../concept/RULES.md), с оговоркой к R3
 **Статус:** ✅ Реализовано и полностью проверено 08.09.2026 (этапы 1-5). Три прогона из раздела «Проверка» пройдены дважды — curl-ом и в живом браузере, результаты обоих — в файле бага; автотест `tests/ZenCustomerGateSourceTest.php`, 13 проверок; все 18 тестов плагина зелёные.
 
 ## Зачем
 
 `shouldCollapseGroup('customer')` спрашивает `isGroupMinimumFilled()`, а тот — параметры сессии
 чекаута: `order.auth.data.{firstname|phone|email}`
-([SectionChecker:237](../../lib/classes/sections/shopPrefillPluginSectionChecker.class.php)).
+([SectionChecker:237](../../../lib/classes/sections/shopPrefillPluginSectionChecker.class.php)).
 Для **авторизованного** покупателя этих данных в сессии нет и не будет: предзаполнение auth-секцию
 для него сознательно не пишет —
-[SessionStorageProvider:627-630](../../lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php):
+[SessionStorageProvider:627-630](../../../lib/classes/sessionstorage/shopPrefillPluginSessionStorageProvider.class.php):
 
 ```php
 // Для авторизованных пользователей auth данные берутся из контакта автоматически
@@ -25,7 +25,7 @@ if ($this->isUserAuthenticated()) {
 целиком), то есть **после** первого серверного рендера. Гейт отказывает всегда на первом кадре.
 
 Сводка при этом читает совсем другое — `$state`, то есть `vars.auth.fields.*.value`
-([CheckoutState:37-70](../../lib/classes/checkout/shopPrefillCheckoutState.class.php)), — и на том
+([CheckoutState:37-70](../../../lib/classes/checkout/shopPrefillCheckoutState.class.php)), — и на том
 же кадре он заполнен.
 
 **Это не гонка.** Замер 08.09.2026: холодная curl-банка, авторизованный admin, `GET /order/`,
@@ -128,7 +128,7 @@ R2 говорит про **состояние заказа**. «Есть ли ч
 ### Что фикс не трогает
 
 - **Z4 (защёлка) не меняется.** Кука пишется и читается как сейчас; область её действия — отдельная
-  задача, [zen-collapse-latch-outlives-php-session.md](../bugs/zen-collapse-latch-outlives-php-session.md).
+  задача, [zen-collapse-latch-outlives-php-session.md](../../bugs/done/zen-collapse-latch-outlives-php-session.md).
 - **`delivery` и `payment` остаются на сессии и эхо-кэше** — у них `$params` действительно пустеет
   (Z5, P9), и для них R3 работает ровно как написан.
 - **R4 в силе:** кэш сводки по-прежнему только показывает. Предикат читает **свежий** `$state`,
@@ -170,7 +170,7 @@ R2 говорит про **состояние заказа**. «Есть ли ч
   видит, смотреть `data-action`, а не наличие `data-group`.
 - **Негативный, гость.** Чистая гостевая банка → `GET /order/`: группа развёрнута, в логе
   `nothing to summarize yet`, атрибут `data-nothing-to-summarize` на месте (не сломать фикс
-  [соседнего бага](../bugs/zen-collapse-noop-when-section-empty.md)).
+  [соседнего бага](../../bugs/done/zen-collapse-noop-when-section-empty.md)).
 - **Негативный, Z4 посреди ввода.** Гость вводит имя → группа **не** схлопывается под руками
   (держит защёлка). Без этой проверки легко «починить» f01, сломав Z4.
 
@@ -211,13 +211,13 @@ R2 говорит про **состояние заказа**. «Есть ли ч
 
 ## Смежное, вне этой задачи
 
-- **Область действия защёлки** — [zen-collapse-latch-outlives-php-session.md](../bugs/zen-collapse-latch-outlives-php-session.md).
+- **Область действия защёлки** — [zen-collapse-latch-outlives-php-session.md](../../bugs/done/zen-collapse-latch-outlives-php-session.md).
   Делать **после** этого фикса, отдельной правкой и отдельным прогоном: иначе не отличить, какой из
   двух дал результат. После f01 у авторизованного покупателя промах перестаёт возникать вовсе, так
   что защёлке будет нечего продлевать — но гостевой сценарий она закрывает независимо.
 - **`use_storage` гасится собственной записью плагина** (см. отвергнутый вариант 3). Для f01 это не
   корень, но следствие шире: у витрин с prefill восстановление формы ядром из `localStorage`
-  практически не работает никогда. В [issue-65](../codereview/issue-65-prefill-overrides-current-input.md)
+  практически не работает никогда. В [issue-65](../../codereview/done/issue-65-prefill-overrides-current-input.md)
   разобран «случай 11» — влияние на предзаполнение, — но не то, что флаг оказывается выключен
   всегда. Отдельной задачей, не здесь.
 - **Витрина, где обязательное поле auth пусто у контакта.** Предикат срабатывает по любому одному

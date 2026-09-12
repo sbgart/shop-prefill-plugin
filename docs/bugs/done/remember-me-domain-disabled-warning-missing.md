@@ -82,7 +82,7 @@ if (! $this->user_provider->isDomainRememberMeEnabled()) {
 
 `shopPrefillPluginLog` пишет разные уровни в разные файлы
 (`lib/classes/log/shopPrefillPluginLog.class.php:5-6`, см. также
-[LOGGING.md](../guides/LOGGING.md)):
+[LOGGING.md](../../guides/LOGGING.md)):
 
 - `info()`/`debug()` → `wa-log/prefill.plugin.log` (только при включённом debug-режиме Webasyst);
 - `warning()`/`error()` → `wa-log/prefill.plugin.error.log` (всегда).

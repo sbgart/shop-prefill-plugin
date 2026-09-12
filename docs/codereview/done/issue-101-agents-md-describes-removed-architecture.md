@@ -30,7 +30,7 @@ Codex, другая для Claude Code. Копия для Codex отстала �
 | Утверждение `AGENTS.md` | Факт |
 |---|---|
 | Предзаполнение идёт из `frontend_head` | Прямое нарушение **P7**: предзаполнение живёт только на `checkout_before_auth` (issue-63). `handleFrontendHead()` предзаполнением не занимается вовсе и говорит об этом отдельным абзацем |
-| Настройка `prefill.on_entry` | `grep -rn "on_entry" lib` — 0 совпадений. Вырезана из v1.0, лежит в [бэклоге](../todo/on-entry-early-prefill.md) |
+| Настройка `prefill.on_entry` | `grep -rn "on_entry" lib` — 0 совпадений. Вырезана из v1.0, лежит в [бэклоге](../../todo/on-entry-early-prefill.md) |
 | Класс `FillParamsStorage` | Не существует (0 файлов) |
 | Класс `GuestHashStorage` | Не существует (0 файлов); есть `shopPrefillPluginGuestTokenStorage` |
 | Кука `prefill_guest_hash`, «SHA256 создаётся при первом визите» | Кука называется `prefill_guest_token`, значение — `bin2hex(random_bytes(32))`, и выдаётся она **только при оформлении заказа**, а не при первом визите. «Просмотр каталога не создаёт ничего» — это правило **P5**, и оно ровно про обратное |
@@ -45,7 +45,7 @@ Codex, другая для Claude Code. Копия для Codex отстала �
 - it gates **only** the loader call, never the snapshot restore — snapshot works every request
 ```
 
-`shop/prefill_snapshot` снят 22.08.2026 ([план](../plans/snapshot-removal-and-html-ownership.md)),
+`shop/prefill_snapshot` снят 22.08.2026 ([план](../../plans/snapshot-removal-and-html-ownership.md)),
 в `lib/` его нет; вторая строка описывает инвариант несуществующего механизма.
 
 ## Что из этого следует
@@ -78,7 +78,7 @@ Codex, другая для Claude Code. Копия для Codex отстала �
 4. Чтобы не расходились снова — держать один файл, а второй сделать симлинком на него, как
    сделано со слэш-командами в `.claude/commands/`. Расхождение шапки при этом теряется; если
    она нужна, оставить копию, но перегенерацию `AGENTS.md` внести пунктом в
-   [RELEASE-PROCESS.md](../guides/RELEASE-PROCESS.md).
+   [RELEASE-PROCESS.md](../../guides/RELEASE-PROCESS.md).
 
 Проверка: `diff CLAUDE.md AGENTS.md` должен показывать только шапку и раздел Cowork;
 `grep -n "prefill_guest_hash\|on_entry\|FillParamsStorage\|GuestHashStorage\|prefill_snapshot\|No test suite" CLAUDE.md AGENTS.md`
@@ -105,9 +105,9 @@ exists» — всё убрано вместе с остальным тексто
 
 ## Связанное
 
-Правила [P5, P6, P7](../concept/RULES.md) — то, чему противоречит текущий текст.
+Правила [P5, P6, P7](../../concept/RULES.md) — то, чему противоречит текущий текст.
 [issue-63](issue-63-guest-hash-lookup-full-scan.md) — переход на токен и lookup id, вынос
 предзаполнения из `frontend_head`.
-[План снятия снапшота](../plans/snapshot-removal-and-html-ownership.md).
+[План снятия снапшота](../../plans/snapshot-removal-and-html-ownership.md).
 [issue-92](issue-92-minor-findings-pass-3.md), [issue-62](issue-62-dead-unguarded-fill-checkout-endpoint.md)
 — прошлые синхронизации этих же двух файлов с кодом.

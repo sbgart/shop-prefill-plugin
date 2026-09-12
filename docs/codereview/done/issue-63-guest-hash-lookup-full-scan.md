@@ -1,7 +1,7 @@
 # Issue 63 — Поиск источника предзаполнения выполняется на каждом запросе
 
 **Статус:** ✅ Закрыта 18.08.2026 — реализовано и проверено в браузере
-(прогон и цифры: [runbook](../tests/issue-63-browser-test-runbook.md#результаты-прогона-18082026))
+(прогон и цифры: [runbook](../../tests/issue-63-browser-test-runbook.md#результаты-прогона-18082026))
 **Приоритет:** 🔴 Высокий (стоимость запроса растёт вместе с числом заказов магазина — выстрелит у крупного клиента)
 **Сложность фикса:** 🔨 Средняя (меняется гостевой идентификатор и порядок загрузки источника)
 
@@ -31,7 +31,7 @@
 
 Отдельная таблица, список `order_id` в куке, индекс в таблице ядра, свой TTL-кэш и `hash_equals` не нужны.
 
-Дизайн вырезанного `on_entry` сохранён в [todo/on-entry-early-prefill.md](../todo/on-entry-early-prefill.md) — с обоснованием удаления и планом возврата, если у покупателя плагина найдётся сторонний потребитель сессии на каталоге.
+Дизайн вырезанного `on_entry` сохранён в [todo/on-entry-early-prefill.md](../../todo/on-entry-early-prefill.md) — с обоснованием удаления и планом возврата, если у покупателя плагина найдётся сторонний потребитель сессии на каталоге.
 
 ## Проблема
 
@@ -78,7 +78,7 @@ ORDER BY order_id DESC LIMIT 1
 
 ### 1. Предзаполнение уходит с каталога: `on_entry` вырезается
 
-Настройка удаляется целиком, а не выключается по умолчанию. Обоснование — в [todo/on-entry-early-prefill.md](../todo/on-entry-early-prefill.md); коротко:
+Настройка удаляется целиком, а не выключается по умолчанию. Обоснование — в [todo/on-entry-early-prefill.md](../../todo/on-entry-early-prefill.md); коротко:
 
 - обещанный сценарий «цена в корзине зависит от доставки» закрыт без неё: корзина — это `/order/`, где `checkout_before_auth` срабатывает при отрисовке формы через `formVars()` → `processAll()`;
 - обещанный сценарий «цены в каталоге» не работал физически: `frontend_head` вызывается из лэйаута, после сборки `$content`;
@@ -269,7 +269,7 @@ SELECT last_order_id FROM shop_customer WHERE contact_id = :contact_id LIMIT 1
 
 ## Тесты
 
-Браузерный runbook с точными командами, критериями и подсчётом SQL — [tests/issue-63-browser-test-runbook.md](../tests/issue-63-browser-test-runbook.md). Ниже — приёмочные критерии.
+Браузерный runbook с точными командами, критериями и подсчётом SQL — [tests/issue-63-browser-test-runbook.md](../../tests/issue-63-browser-test-runbook.md). Ниже — приёмочные критерии.
 
 ### Каталог и хуки
 
@@ -327,4 +327,4 @@ SELECT last_order_id FROM shop_customer WHERE contact_id = :contact_id LIMIT 1
 - [issue-68](issue-68-params-choice-collection-n-plus-1.md) — лимит и гидратация коллекции «Мои варианты» только для авторизованных.
 - [issue-73](issue-73-stale-plugin-singleton.md) — мемоизация обязана быть статической, маркер живёт в сессии.
 - [issue-57](issue-57-minor-robustness-findings.md), [issue-74](issue-74-minor-findings-pass-2.md) — `Secure` и `SameSite` для куки.
-- [todo/on-entry-early-prefill.md](../todo/on-entry-early-prefill.md) — вырезанный `on_entry`: обоснование и план возврата.
+- [todo/on-entry-early-prefill.md](../../todo/on-entry-early-prefill.md) — вырезанный `on_entry`: обоснование и план возврата.

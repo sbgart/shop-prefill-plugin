@@ -1,8 +1,8 @@
 # План: защёлка Zen принадлежит личности, а не браузеру
 
 **Создан:** 08.09.2026
-**Источник:** [кука-защёлка переживает смену PHP-сессии](../bugs/zen-collapse-latch-outlives-php-session.md) — найдено 08.09.2026 при перепроверке [f01](../bugs/zen-customer-group-never-collapses-f01.md) в браузере
-**Уточняет правило:** Z4 в [RULES.md](../concept/RULES.md)
+**Источник:** [кука-защёлка переживает смену PHP-сессии](../../bugs/done/zen-collapse-latch-outlives-php-session.md) — найдено 08.09.2026 при перепроверке [f01](../../bugs/done/zen-customer-group-never-collapses-f01.md) в браузере
+**Уточняет правило:** Z4 в [RULES.md](../../concept/RULES.md)
 **Статус:** ✅ Реализовано и полностью проверено 08.09.2026 (этапы 1-4). Curl-ом и в живом браузере
 (репро, Z4 настоящим кликом «Изменить», логаут, оформление заказа со сбросом) — результаты в файле
 бага; `tests/ZenLatchIdentityTest.php` (26 проверок), все тесты плагина зелёные
@@ -14,16 +14,16 @@
 сессионная (`expires => 0`) и не связана ни с PHP-сессией, ни с личностью. Поэтому промах,
 записанный гостем, продолжает действовать после входа в аккаунт: авторизованный покупатель с
 полным профилем получает стоковый чекаут без единой проверки данных — все три решения
-принимаются на кука-ветке [`shouldCollapseGroup()`:204](../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L204),
+принимаются на кука-ветке [`shouldCollapseGroup()`:204](../../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L204),
 до захода в проверку данных, и в логе на такой запрос нет ни одной строки `Zen group '...' expanded`.
 
-Замеры репро — в файле бага. Ни фикс f01, ни фикс [соседнего бага](../bugs/zen-collapse-noop-when-section-empty.md)
+Замеры репро — в файле бага. Ни фикс f01, ни фикс [соседнего бага](../../bugs/done/zen-collapse-noop-when-section-empty.md)
 этот сценарий не закрывают: там источник данных и клиентский диалог, здесь — область действия защёлки.
 
 ## Решение
 
 **Отдельная кука-владелец `prefill_zen_owner`, которую пишет только сервер.** Значение — короткий
-хеш отпечатка личности из [`FillParamsProvider::getSourceKey()`](../../lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php#L91)
+хеш отпечатка личности из [`FillParamsProvider::getSourceKey()`](../../../lib/classes/fillparams/shopPrefillPluginFillParamsProvider.class.php#L91)
 (`user:<id>` / `guest:<lookup_id>` / `null`, без единого запроса к БД). Перед первым чтением
 защёлки за запрос сверяем куку-владельца с текущим отпечатком:
 
@@ -35,7 +35,7 @@
 `shouldCollapseGroup()` доходит до проверки данных → группы сворачиваются штатно.
 
 **Почему именно отдельная кука, а не штамп внутри значения каждой защёлки.** Защёлку пишет не
-только сервер: [`ZenModeToggle.js`:92-95](../../js/modules/ZenModeToggle.js#L92) на клике «Изменить»
+только сервер: [`ZenModeToggle.js`:92-95](../../../js/modules/ZenModeToggle.js#L92) на клике «Изменить»
 ставит `prefill_zen_{group}=expanded` сам. Любой штамп **внутри** значения обязан быть известен
 клиенту — значит отпечаток пришлось бы рендерить в `data`-атрибут кнопки в двух шаблонах и учить
 JS его подставлять, иначе клик «Изменить» перестал бы работать вообще (сервер не узнал бы
@@ -50,9 +50,9 @@ urlencode-ит, и серверное `expanded:hash` приехало бы ка
 ### Куда это ложится в коде
 
 `request` и `response` в `shopPrefillPluginZenMode` используются **только** в трёх точках протокола
-куки — чтение [:204](../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L204), запись
-[`syncCollapseCookieState()`:596](../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L596),
-сброс [`clearCookies()`:824](../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L824).
+куки — чтение [:204](../../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L204), запись
+[`syncCollapseCookieState()`:596](../../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L596),
+сброс [`clearCookies()`:824](../../../lib/classes/zenmode/shopPrefillPluginZenMode.class.php#L824).
 Значит протокол выносится целиком, и координатор при этом теряет две зависимости, а не приобретает
 новую (SRP: ZenMode решает «сворачивать ли», защёлка хранит «покупатель уже вмешался»).
 
@@ -66,7 +66,7 @@ clearAll(): void                                   // бывший clearCookies
 ```
 
 Конструктор `ZenMode` становится 6-аргументным вместо 7 (`response` и `request` уходят, приходит
-`latch`), сборка — [shopPrefill.plugin.php:493-508](../../lib/shopPrefill.plugin.php#L493).
+`latch`), сборка — [shopPrefill.plugin.php:493-508](../../../lib/shopPrefill.plugin.php#L493).
 Отпечаток берётся у того же провайдера, что уже штампует `ZenSummaryCache` и `GeoStorage`, — это
 приведение к принятому паттерну, а не новое понятие.
 
@@ -111,8 +111,8 @@ clearAll(): void                                   // бывший clearCookies
    `getSourceKey()` сменит сигнатуру). Проверки: защёлка гостя не действует под `user:1`; своя
    действует; при промахе удаляются все три, а не только читаемая; сверка один раз за запрос;
    `null`-владелец отличим от отсутствия куки; сбой провайдера = защёлки нет.
-4. Прогон (ниже), затем доки: Z4 в [RULES.md](../concept/RULES.md) («защёлка принадлежит личности
-   и визиту, а не браузеру»), статус в файле бага, строка в [TODO.md](../TODO.md), статус здесь.
+4. Прогон (ниже), затем доки: Z4 в [RULES.md](../../concept/RULES.md) («защёлка принадлежит личности
+   и визиту, а не браузеру»), статус в файле бага, строка в [TODO.md](../../TODO.md), статус здесь.
 
 ## Проверка
 
@@ -142,7 +142,7 @@ clearAll(): void                                   // бывший clearCookies
 - **Эпоха PHP-сессии в куке.** Не закрывает смену личности **внутри** одной сессии, а по R4 это
   реальный сценарий. Отвергнуто ещё в файле бага.
 - **Не писать защёлку при `minimum_not_filled`.** Ломает Z4 — блок схлопывается посреди ввода.
-  Отвергнуто 06.09.2026 в [соседнем баге](../bugs/zen-collapse-noop-when-section-empty.md).
+  Отвергнуто 06.09.2026 в [соседнем баге](../../bugs/done/zen-collapse-noop-when-section-empty.md).
 - **Перенести защёлку в сессию** и штамповать её там, как `ZenSummaryCache`. Сессия переживает
   смену личности точно так же (R4), то есть штамп всё равно нужен — простоты нет. Зато клиент
   теряет возможность ставить и снимать защёлку сам, и каждый клик «Изменить» становится круговым
