@@ -81,6 +81,13 @@ class ParamsChoiceManager {
                     // shipping[type_id] и при необходимости вызовет предупреждение.
                     document.cookie = 'prefill_user_selected=1; path=/; SameSite=Lax';
 
+                    // Снимаем защёлку Zen Mode группы delivery (см. ZenModeToggle.js) — apply-delivery
+                    // заменяет адрес+способ+тариф целиком, а не дополняет открытую форму, поэтому
+                    // «не схлопывать под руками у покупателя» (Z4) тут неприменимо. На перезагрузке
+                    // shopPrefillPluginZenMode::shouldCollapseGroup() сам решит: применим вариант —
+                    // группа свернётся, нет — сервер тем же sync() снова проставит cookie expanded.
+                    document.cookie = 'prefill_zen_delivery=; path=/; SameSite=Lax; max-age=0';
+
                     // Используем официальный паттерн ядра Shop-Script для перезагрузки чекаута.
                     // waOrder.form.update() не подходит: он сериализует текущие DOM-инпуты
                     // и перезаписывает сессию, сводя на нет изменения от apply-delivery.
