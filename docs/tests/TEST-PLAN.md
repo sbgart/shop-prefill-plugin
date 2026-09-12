@@ -418,6 +418,15 @@ A1–A8, A11, A12 реализованы 11.09.2026 — см. [tests/TESTS.md](T
 
 ## 7. Релизная приёмка (L5)
 
+**Docker-стенд для R-04/R-05/R-07 и S-02 не одноразовый — оставлен на будущее.** `~/Project/shop-fresh-docker`
+(движок — OrbStack, `docker`/`docker compose` CLI: `brew install --cask orbstack`), контейнеры
+`shop-fresh-docker-{php,db}-1`, framework 4.2.0 + shop-script 12.7.0, порт `localhost:8091`, admin/
+`DockerTest123!`. Поднять: `cd ~/Project/shop-fresh-docker && docker compose up -d`. Остановить без удаления
+данных: `docker compose stop`. Снести совсем: `docker compose down -v && rm -rf ~/Project/shop-fresh-docker`.
+**Грабли:** если пересобирать стенд заново клонированием (`git clone` вместо `git archive`) — сразу удалить
+`.git` из корня и из `wa-apps/shop/`, иначе `installerHelper::isDeveloper()` блокирует удаление любого
+плагина через UI (см. [runs/1.0.0-2026-09-12-docker-r04-r07.md](runs/1.0.0-2026-09-12-docker-r04-r07.md)).
+
 | ID | Шаг | Критерий |
 |---|---|---|
 | R-01 | `php wa.php compress shop/plugins/prefill -style false` | Собирается без ошибок валидации |
