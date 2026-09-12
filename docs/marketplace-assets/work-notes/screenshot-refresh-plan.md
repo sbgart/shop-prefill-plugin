@@ -44,7 +44,7 @@
 2. Получить и сохранить четыре исходных PNG: `checkout-filled-closeup.png`, `checkout-zen-focus.png`, `delivery-variants-focus.png`, `account-orders-focus.png`.
 3. В checkout-кадрах показать Елену, выбранный ПВЗ СДЭК, ЮKassa и итог. Для диалога оставить видимыми заголовок и крестик, а также 1–2 карточки СДЭК.
 4. В личном кабинете показать имя «Елена» рядом с аватаром и заказ #100130. Не включать в кадр технические пункты навигации `Пустышка`/`Dummy` — кадрировать шапку или предварительно подготовить осмысленное меню.
-5. Подменить только эти четыре используемых ассета в `docs/assets/store/`, затем открыть `docs/store-description-preview-rounded.html` и проверить светлую и тёмную темы.
+5. Подменить только эти четыре используемых ассета в `docs/marketplace-assets/screenshots/current/`, затем открыть `docs/marketplace-assets/description/previews/store-description-preview-rounded.html` и проверить светлую и тёмную темы.
 
 ### Не делать
 

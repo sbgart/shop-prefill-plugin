@@ -661,6 +661,63 @@
     margin-top: 2px;
     color: var(--ap-mint);
   }
+  .aplp .ap-support {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: clamp(16px, 2.8cqi, 34px);
+    align-items: center;
+    padding: clamp(22px, 3.5cqi, 38px);
+    border: 1px solid var(--ap-line);
+    border-radius: var(--ap-radius);
+    background: linear-gradient(125deg, var(--ap-brand-soft), var(--ap-paper) 62%, var(--ap-mint-soft));
+    box-shadow: var(--ap-shadow);
+  }
+  .aplp .ap-support__icon {
+    display: grid;
+    width: 66px;
+    height: 66px;
+    place-items: center;
+    border-radius: 20px;
+    background: var(--ap-paper);
+    box-shadow: 0 8px 20px rgba(35, 60, 120, 0.1);
+    color: var(--ap-brand);
+  }
+  .aplp .ap-support__icon svg {
+    width: 30px;
+    height: 30px;
+  }
+  .aplp .ap-support__title {
+    color: var(--ap-ink);
+    font-size: clamp(21px, 2.4cqi, 28px);
+    font-weight: 780;
+    letter-spacing: -0.03em;
+    line-height: 1.18;
+  }
+  .aplp .ap-support__text {
+    margin-top: 6px;
+    color: var(--ap-text);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .aplp .ap-support__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 12px 20px;
+    border-radius: 14px;
+    background: var(--ap-brand);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 740;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .aplp .ap-support__link:hover {
+    background: var(--ap-brand-deep);
+    color: #fff;
+  }
   html[data-theme="dark"] .aplp {
     --ap-brand: #7f99ff;
     --ap-brand-deep: #a4b6ff;
@@ -687,6 +744,9 @@
   html[data-theme="dark"] .aplp .ap-info__card--brand {
     background: #506bd9;
     border-color: #506bd9;
+  }
+  html[data-theme="dark"] .aplp .ap-support {
+    background: linear-gradient(125deg, rgba(80, 107, 217, 0.28), var(--ap-paper) 62%, rgba(46, 202, 139, 0.16));
   }
   @container (max-width:760px) {
     .aplp .ap-hero {
@@ -758,6 +818,13 @@
     .aplp .ap-features,
     .aplp .ap-info {
       grid-template-columns: 1fr;
+    }
+    .aplp .ap-support {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .aplp .ap-support__link {
+      grid-column: 1 / -1;
+      width: 100%;
     }
     .aplp .ap-showcase {
       padding: 20px;
@@ -1077,7 +1144,7 @@
     <figure class="ap-hero__shot ap-product-shot ap-product-shot--zen">
       <div class="ap-product-shot__crop">
         <img
-          src="assets/store/checkout-zen-focus.png?v=20260910"
+          src="../../screenshots/current/checkout-zen-focus.png?v=20260910"
           alt="Дзен-режим в реальном оформлении заказа Shop-Script"
         />
       </div>
@@ -1130,7 +1197,7 @@
       <figure class="ap-product-shot ap-product-shot--form">
         <div class="ap-product-shot__crop">
           <img
-            src="assets/store/checkout-filled-closeup.png?v=20260910"
+            src="../../screenshots/current/checkout-filled-closeup.png?v=20260910"
             alt="Крупный фрагмент заполненной формы оформления заказа без корзины и товаров"
           />
         </div>
@@ -1161,7 +1228,7 @@
       </div>
       <figure class="ap-product-shot ap-product-shot--zen">
         <div class="ap-product-shot__crop">
-          <img src="assets/store/checkout-zen-focus.png?v=20260910" alt="Компактная сводка заказа в Дзен-режиме" />
+          <img src="../../screenshots/current/checkout-zen-focus.png?v=20260910" alt="Компактная сводка заказа в Дзен-режиме" />
         </div>
       </figure>
     </article>
@@ -1177,7 +1244,7 @@
       <figure class="ap-product-shot ap-product-shot--delivery">
         <div class="ap-product-shot__crop">
           <img
-            src="assets/store/delivery-variants-focus.png?v=20260910"
+            src="../../screenshots/current/delivery-variants-focus.png?v=20260910"
             alt="Сохранённые адреса и варианты доставки из прошлых заказов"
           />
         </div>
@@ -1199,7 +1266,7 @@
       <figure class="ap-product-shot ap-product-shot--account">
         <div class="ap-product-shot__crop">
           <img
-            src="assets/store/account-orders-focus.png?v=20260910"
+            src="../../screenshots/current/account-orders-focus.png?v=20260910"
             alt="Личный кабинет авторизованного покупателя с историей заказов"
           />
         </div>
@@ -1451,6 +1518,22 @@
           и не затрагивает каталог.
         </p>
       </article>
+    </div>
+  </section>
+  <section class="ap-section">
+    <div class="ap-support">
+      <span class="ap-support__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M4 13v-1a8 8 0 0 1 16 0v1" />
+          <path d="M4 13h3v5H5a1 1 0 0 1-1-1v-4Zm16 0h-3v5h2a1 1 0 0 0 1-1v-4Z" />
+          <path d="M17 18c0 1.1-.9 2-2 2h-2" />
+        </svg>
+      </span>
+      <div>
+        <h3 class="ap-support__title">Вопросы по работе плагина?</h3>
+        <p class="ap-support__text">Напишите нам — поможем с настройкой, ответим на вопрос или разберём ошибку.</p>
+      </div>
+      <a class="ap-support__link" href="mailto:support@appark.ru">support@appark.ru</a>
     </div>
   </section>
 </div>
