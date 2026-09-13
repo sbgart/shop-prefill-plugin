@@ -412,9 +412,9 @@ jQuery(function() {
 3. ✅ Prefill получает данные из cookie/session/заказов — источник не привязан к `code`
 4. ✅ Предзаполнение работает **независимо** от содержимого корзины
 
-### Совместимость с Compact Mode
+### Совместимость с Zen Mode
 
-Если включен **Компактный режим** (COLLAPSIBLE-SECTIONS):
+Если включен **[Zen Mode](ZEN-MODE.md)**:
 
 ```
 Checkout при one-click покупке:
@@ -684,7 +684,7 @@ wa('shop')->event('prefill_oneclick_initiated', [
 ## Связанные документы
 
 - [CONCEPT.md](CONCEPT.md) — основная концепция плагина
-- [COLLAPSIBLE-SECTIONS.md](COLLAPSIBLE-SECTIONS.md) — компактный режим checkout
+- [ZEN-MODE.md](ZEN-MODE.md) — компактный режим checkout (Zen Mode)
 - [TODO.md](../TODO.md) — задачи для реализации
 
 ---

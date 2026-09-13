@@ -13,7 +13,7 @@
 | Файл | Метод | Комментарий |
 |---|---|---|
 | `lib/shopPrefill.plugin.php` | `clearEffectiveStorefrontCache()` | Задумывался для сброса после сохранения настроек — не зовётся ниоткуда |
-| `lib/shopPrefill.plugin.php` | `getPluginsProvider()` | Единственный вызов был в `ParamsChoiceAction` и удалён (см. `docs/concept/checkout_address_selection.md:259`). Провайдер везде используется статически |
+| `lib/shopPrefill.plugin.php` | `getPluginsProvider()` | Единственный вызов был в `ParamsChoiceAction` и удалён (см. `docs/concept/CHECKOUT-ADDRESS-SELECTION.md:259`). Провайдер везде используется статически |
 | `lib/classes/zenmode/shopPrefillPluginZenMode.class.php` | `getGroupSections()` | Карта читается напрямую из константы `GROUP_SECTIONS` |
 | `lib/classes/zenmode/shopPrefillPluginZenMode.class.php` | `getGroups()` | То же |
 | `lib/classes/zenmode/shopPrefillPluginZenMode.class.php` | `renderGroupSummary()` | Публичный; после разделения на `resolveSummaryData()` + `renderSummaryFromData()` вызывающих не осталось. Упоминается только в собственном сообщении лога и в `docs/bugs/zen-collapse-on-upstream-checkout-error.md` как описание архитектуры |
