@@ -1,6 +1,6 @@
-# AGENTS.md
+# Prefill Plugin — Agent Guidance
 
-This file provides guidance to Codex when working with code in this repository.
+> Единый источник инструкций для всех агентов (Codex, Claude Code и т.д.). `CLAUDE.md` — симлинк на этот файл (`ln -s AGENTS.md CLAUDE.md`), править только здесь.
 
 ## Project Overview
 
@@ -23,19 +23,25 @@ php wa.php compress shop/plugins/prefill -style false
 
 For locale compilation and cache clearing — use `/compile-plugin-mo`.
 
+## Git Workflow
+
+Commit any pending changes **before** starting new work (clean checkpoint to diff against), and commit again **after** the fix — don't bundle unrelated work into one commit.
+
 ## Architecture
 
 ### PHP Backend
 
 The main plugin class `shopPrefillPlugin` (`lib/shopPrefill.plugin.php`) acts as a service locator — it lazily instantiates all providers and hooks via getter methods. It registers Webasyst hooks in `lib/config/plugin.php`.
 
-**Active hooks:**
-- `frontend_head` — runs on every shop page; manages cookies and debug, and attaches CSS/JS **only on the checkout page** (`CheckoutPageDetector`, see `docs/codereview/issue-64-*.md`). **Does NOT prefill** — writing the session from the layout cannot affect the current page, and prefilled sections are not read outside checkout (see `docs/codereview/issue-63-*.md`)
-- `checkout_before_auth` — fires on every AJAX calculate/create call during checkout
-- `checkout_render_*` — multiple hooks injecting HTML into checkout sections (auth, region, shipping, details, payment, confirm)
-- `order_action.create` — links the guest token to the order and resets the source marker / Zen state / payment echo. **Writes no order params of its own** — delivery identity is the core's own `shipping_id` + `shipping_rate_id` (see `docs/plans/delivery-variant-identity.md`)
+**Active hooks** (`lib/config/plugin.php`):
 
-**Key class groups in `lib/classes/`:**
+- `frontend_head` — runs on every shop page; manages cookies and debug, and attaches CSS/JS **only on the checkout page** (`CheckoutPageDetector`, see `docs/codereview/done/issue-64-*.md`). **Does NOT prefill** — writing the session from the layout cannot affect the current page, and prefilled sections are not read outside checkout (see `docs/codereview/done/issue-63-*.md`)
+- `controller_before.*` — hands the customer's city to third-party city-selection plugins before their own IP-based detection runs; must return `null` or the core skips the controller entirely
+- `checkout_before_auth` — fires on every AJAX calculate/create call during checkout
+- `checkout_render_*` — one hook per checkout section (auth, region, shipping, details, payment, confirm) injecting Zen Mode / prefill HTML
+- `order_action.create` — links the guest token to the order and resets the source marker / Zen state / payment echo. **Writes no order params of its own** — delivery identity is the core's own `shipping_id` + `shipping_rate_id` (see `docs/plans/done/delivery-variant-identity.md`)
+
+**`lib/classes/` is organized by feature area**, one folder per concern (`fillparams/`, `sessionstorage/`, `storefronts/`, `settings/`, `zenmode/`, `view/`, `checkout/`, `consent/`, `geosync/`, `debug/`, `frontend/`, `hooks/`, `orders/`, `sections/`, `location/`, `contact/`, `user/`, `css/`, `log/`, `helpers/`, `plugins/`) — browse a folder rather than expecting an exhaustive map here. The ones a change is most likely to touch:
 
 | Group | Purpose |
 |-------|---------|
@@ -70,9 +76,9 @@ Main controller: `js/prefill.frontend.js` (minified: `prefill.frontend.min.js`) 
 Located in `lib/actions/frontend/`:
 - `FrontendParamsChoice` — returns available delivery options for selection UI
 - `FrontendApplyDelivery` — applies selected delivery option
-- `FrontendRefreshDebug`, `FrontendDebugSource` — refresh the diagnostic snapshot and explicitly inspect the order-history source
 - `FrontendConsent` — saves guest consent
-- `FrontendLogs` — receives frontend debug logs
+- `FrontendLogs`, `FrontendForcePrefill`, `FrontendResetAndRefill`, `FrontendClearStorage` — debug/dev-only endpoints extending `shopPrefillPluginFrontendDebugBaseController` (gated by `isAdmin('shop')`, except `FrontendLogs` which is intentionally public)
+- `FrontendRefreshDebug`, `FrontendDebugSource` — refresh/inspect the diagnostic snapshot; extend `waJsonController` directly, **not** the debug base, and gate only on `isDebugPanelEnabled()` — no `isAdmin`/CSRF check (known open gap for `FrontendRefreshDebug`, [docs/bugs/refresh-debug-missing-admin-csrf-gate.md](docs/bugs/refresh-debug-missing-admin-csrf-gate.md); `FrontendDebugSource` has the same shape but no filed issue yet)
 
 ### Data Flow
 
@@ -122,7 +128,7 @@ Use the skills — they handle all steps including edge cases:
 
 - `/release-start` — bump version, create branch, update CHANGELOG
 - `/compile-plugin-mo` — recompile locale after any `.po` changes
-- `/release-pack` — create archive (`prefill.tar.gz`, excludes `docs/` and `*.md` via `lib/config/exclude.php`)
+- `/release-pack` — create archive (`prefill.tar.gz`, excludes `docs/`, `tests/` and `*.md` via `lib/config/exclude.php`)
 - `/release-publish` — git tag, push, `gh release create`
 
 Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`. Must be `.tar.gz` — Webasyst store rejects other formats.
@@ -136,11 +142,7 @@ Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`. Must be `.tar.gz`
 - **Storefront identity is `checkout_storefront_id`, never the address.** `shopPrefillPluginStorefrontCode::fromRoute()` is the only place a storefront code is computed — called both by the `Storefront` constructor and by `findCurrentStorefront()`. The address must never become the key again: core rewrites a route's `url` silently on "make home page" (`siteMainPage::setNewMainPage()`, whose caller emits no event), on renaming a section URL, and on renaming a domain — and every settings row and per-storefront CSS file is keyed by that code. Routes created before checkout2 have no `checkout_storefront_id` and never get one retroactively, so they keep the legacy `base64(domain/url)` code as a fallback; both schemes coexist in the column, which is safe because the code is opaque everywhere (no `base64_decode`, no `atob`/`btoa` anywhere in the plugin). Full story: [docs/bugs/storefront-settings-orphaned-by-url-promotion.md](docs/bugs/done/storefront-settings-orphaned-by-url-promotion.md)
 - **Two settings layers share the table.** `storefront_code = '-'` holds plugin-wide settings (`shopPrefillPluginSettingProvider`, defaults in `lib/config/settings.php`: `active` killswitch, `logging.level`); `'*'` holds defaults for all storefronts and a `checkout_storefront_id` holds one storefront's own (both from `lib/config/storefront.settings.php`). Rows under `'-'` are not junk — see [docs/bugs/settings-storefront-code-dash-row.md](docs/bugs/done/settings-storefront-code-dash-row.md)
 - **Effective storefront** — the single place where the fallback to the global `'*'` storefront lives. `getEffectiveStorefront()` returns the current storefront, or the global one when there is no current storefront (backend/API/CLI) or it is inactive (`active = false` is the default). Always take both settings and storefront code from that one object — taking the code elsewhere produced a per-storefront CSS file with global content that never refreshed
-- `self::$effective_storefront` / `self::$effective_storefront_settings` are request-scoped caches; call `shopPrefillPlugin::clearEffectiveStorefrontCache()` after saving settings
+- `self::$effective_storefront` / `self::$effective_storefront_settings` are request-scoped caches (PHP resets statics between requests anyway, so no explicit invalidation is needed)
 - Storefront lookups are nullable by name: `findCurrentStorefront()` / `findStorefront($code)` return `null` (use them in backend actions and report a clear error), while `getGlobalStorefront()` and `getEffectiveStorefront()` always return an object
 - `order_action.create` fires outside the storefront too (backend, API, CLI, import). The hook exits early via `isStorefrontRequest()`: there is no checkout session there, and the admin's guest cookie would otherwise be attached to a customer's order
 - Debug mode is tied to `waSystemConfig::isDebug()` (Webasyst global debug flag)
-
-## Imported Claude Cowork project instructions
-
-Я занимаюсь разработкой плагинов для Webasyst Shop Script. Данный плагин заполняет чекаут страницы корзины на основе данных прошлого заказа, так же скрывает уже заполненные поля и формирует сводку - Дзен режим.
