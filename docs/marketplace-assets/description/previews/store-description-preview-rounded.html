@@ -88,7 +88,7 @@
     align-items: center;
     isolation: isolate;
     overflow: hidden;
-    min-height: 430px;
+    min-height: 600px;
     padding: clamp(27px, 5cqi, 58px);
     border: 1px solid var(--ap-line);
     border-radius: 32px;
@@ -187,40 +187,35 @@
     place-items: center;
     width: 100%;
     aspect-ratio: 16/10;
-    padding: clamp(12px, 1.8cqi, 22px);
+    padding: 0;
     border-radius: 22px;
-    background: linear-gradient(135deg, var(--ap-brand-soft), transparent 58%), var(--ap-canvas);
+    background: transparent;
   }
   .aplp .ap-product-shot__crop {
     position: relative;
-    top: auto;
-    left: auto;
     display: grid;
     place-items: center;
     width: 100%;
-    height: 100%;
-    overflow: hidden;
-    border: 1px solid var(--ap-line);
-    border-radius: 18px;
-    background: var(--ap-paper);
-    box-shadow: 0 18px 35px rgba(35, 60, 120, 0.14);
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     transform: none;
   }
   .aplp .ap-product-shot__crop img {
+    display: block;
     width: 100%;
-    height: 100%;
-    border-radius: inherit;
-    object-fit: contain;
-    transform: none;
-  }
-  .aplp .ap-product-shot--form .ap-product-shot__crop {
-    width: 100%;
-  }
-  .aplp .ap-product-shot--form .ap-product-shot__crop img {
-    height: 100%;
+    height: auto;
+    max-width: none;
+    min-width: 0;
     min-height: 0;
-    object-fit: cover;
-    object-position: top;
+    border-radius: 22px;
+    object-fit: initial;
+    transform: none;
   }
   .aplp .ap-product-shot--form .ap-product-shot__crop::after {
     content: "";
@@ -231,38 +226,6 @@
     height: 20%;
     background: linear-gradient(to bottom, rgba(247, 249, 252, 0), var(--ap-canvas));
     pointer-events: none;
-  }
-  .aplp .ap-product-shot--zen .ap-product-shot__crop,
-  .aplp .ap-product-shot--delivery .ap-product-shot__crop,
-  .aplp .ap-product-shot--account .ap-product-shot__crop {
-    width: 100%;
-  }
-  /* Первый экран показывает весь Дзен-сценарий: без обрезания рамкой или перспективой. */
-  .aplp .ap-product-shot__crop,
-  .aplp .ap-product-shot__crop img {
-    min-width: 0;
-    min-height: 0;
-  }
-  .aplp .ap-hero__shot {
-    min-height: 390px;
-    margin: 0;
-    padding: 18px;
-  }
-  .aplp .ap-hero .ap-product-shot__crop {
-    top: auto;
-    left: auto;
-    width: 100%;
-    height: 100%;
-    border: 1px solid var(--ap-line);
-    border-radius: 20px;
-    background: var(--ap-paper);
-    box-shadow: 0 24px 46px rgba(35, 60, 120, 0.16);
-    transform: none;
-  }
-  .aplp .ap-hero .ap-product-shot__crop img {
-    max-width: 155%;
-    object-fit: contain;
-    transform: none;
   }
   /* Короткие результаты и понятный маршрут. */
   .aplp .ap-results {
@@ -313,11 +276,15 @@
   }
   /* Пары «текст + продукт»: структурно и мягко, без сложных эффектов. */
   .aplp .ap-showcase {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(220px, 0.74fr) minmax(0, 1.26fr);
     gap: clamp(23px, 4cqi, 52px);
     align-items: center;
-    padding: clamp(23px, 4cqi, 45px);
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 470px;
+    padding: clamp(34px, 5cqi, 58px);
     background: var(--ap-canvas);
     border-radius: var(--ap-radius);
   }
@@ -330,7 +297,13 @@
     border: 1px solid var(--ap-line);
   }
   .aplp .ap-showcase--reverse .ap-showcase__copy {
+    grid-column: 2;
     order: 2;
+  }
+  .aplp .ap-showcase__copy {
+    position: relative;
+    z-index: 2;
+    grid-column: 1;
   }
   .aplp .ap-showcase__eyebrow {
     color: var(--ap-brand);
@@ -377,60 +350,6 @@
     height: 15px;
     margin-top: 1px;
     color: var(--ap-mint);
-  }
-  /* В функциональных блоках каждый кадр живёт в собственной рамке с безопасным полем. */
-  .aplp .ap-showcase {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    min-height: 345px;
-  }
-  .aplp .ap-showcase__copy {
-    position: relative;
-    z-index: 2;
-  }
-  .aplp .ap-showcase .ap-product-shot,
-  .aplp .ap-showcase--reverse .ap-product-shot {
-    z-index: 1;
-    min-height: 330px;
-    margin: 0;
-    padding: 18px;
-  }
-  .aplp .ap-showcase .ap-product-shot__crop {
-    top: auto;
-    left: auto;
-    width: 100%;
-    height: 100%;
-    border: 1px solid var(--ap-line);
-    border-radius: 18px;
-    background: var(--ap-paper);
-    box-shadow: 0 18px 36px rgba(35, 60, 120, 0.14);
-    transform: none;
-  }
-  .aplp .ap-showcase .ap-product-shot__crop img {
-    max-width: 100%;
-    object-fit: contain;
-    transform: none;
-  }
-  .aplp .ap-showcase .ap-product-shot--form .ap-product-shot__crop {
-    width: 100%;
-  }
-  .aplp .ap-showcase .ap-product-shot--form .ap-product-shot__crop img {
-    height: 100%;
-    min-height: 0;
-    object-fit: cover;
-    object-position: top;
-  }
-  .aplp .ap-showcase .ap-product-shot--zen .ap-product-shot__crop,
-  .aplp .ap-showcase .ap-product-shot--delivery .ap-product-shot__crop,
-  .aplp .ap-showcase .ap-product-shot--account .ap-product-shot__crop {
-    top: auto;
-    width: 100%;
-    height: 100%;
-  }
-  .aplp .ap-showcase .ap-product-shot--account .ap-product-shot__crop img {
-    object-position: top;
-    transform: none;
   }
   /* Два прозрачных сценария: отдельно работа плагина и штатного конвейера Shop-Script. */
   .aplp .ap-how {
@@ -748,6 +667,82 @@
   html[data-theme="dark"] .aplp .ap-support {
     background: linear-gradient(125deg, rgba(80, 107, 217, 0.28), var(--ap-paper) 62%, rgba(46, 202, 139, 0.16));
   }
+  /* Скриншоты — не карточки рядом с текстом, а большие листы интерфейса под углом. */
+  .aplp .ap-hero__shot {
+    min-height: 540px;
+    margin: 0 18px 0 10px;
+    padding: 0;
+  }
+  .aplp .ap-hero .ap-product-shot__crop {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(430px, 68cqi);
+    transform: translate(-50%, -50%) perspective(1450px) rotateY(-8deg) rotateX(2deg) rotateZ(1.8deg);
+    transform-origin: 62% 50%;
+  }
+  .aplp .ap-hero .ap-product-shot__crop img {
+    width: 155%;
+    border-radius: 20px;
+    box-shadow: 0 30px 62px rgba(35, 60, 120, 0.2);
+  }
+  .aplp .ap-showcase .ap-product-shot,
+  .aplp .ap-showcase--reverse .ap-product-shot {
+    position: absolute;
+    z-index: 1;
+    display: block;
+    min-height: 0;
+    margin: 0;
+    aspect-ratio: auto;
+  }
+  .aplp .ap-showcase .ap-product-shot__crop {
+    transform-origin: 64% 50%;
+  }
+  .aplp .ap-showcase--reverse .ap-product-shot__crop {
+    transform-origin: 36% 50%;
+  }
+  .aplp .ap-showcase .ap-product-shot__crop img {
+    box-shadow: 0 30px 70px rgba(30, 54, 105, 0.18);
+  }
+  .aplp .ap-showcase .ap-product-shot--form {
+    top: -24px;
+    right: 86px;
+    width: 560px;
+    height: 760px;
+  }
+  .aplp .ap-showcase .ap-product-shot--form .ap-product-shot__crop {
+    height: 760px;
+    overflow: hidden;
+    border-radius: 24px;
+    box-shadow: 0 24px 52px rgba(35, 60, 120, 0.18);
+  }
+  .aplp .ap-showcase .ap-product-shot--form .ap-product-shot__crop img {
+    border-radius: inherit;
+    object-position: initial;
+  }
+  .aplp .ap-showcase .ap-product-shot--zen {
+    top: -70px;
+    left: 100px;
+    width: 560px;
+  }
+  /* Скрин доставки: самостоятельное позиционирование, без «карточки» вокруг кадра.
+     Меняйте top/right/width только здесь, если нужно сдвинуть этот экран. */
+  .aplp .ap-showcase .ap-product-shot--delivery {
+    top: -50px;
+    right: 86px;
+    width: 540px;
+  }
+ 
+  .aplp .ap-showcase .ap-product-shot--delivery .ap-product-shot__crop img {
+    border-radius: 0;
+  }
+
+  .aplp .ap-showcase .ap-product-shot--account {
+    top: 58px;
+    left: 86px;
+    width: 760px;
+    height: auto;
+  }
   @container (max-width:760px) {
     .aplp .ap-hero {
       grid-template-columns: 1fr;
@@ -755,51 +750,59 @@
     }
     .aplp .ap-hero__shot {
       max-width: 590px;
-      min-height: 360px;
-      margin: 8px auto -55px;
+      min-height: 500px;
+      margin: 18px 10px 0;
     }
     .aplp .ap-hero .ap-product-shot__crop {
-      top: -45px;
-      width: min(530px, 88cqi);
-      height: calc(100% + 90px);
-      border-radius: 0;
-      transform: translateX(-50%) perspective(1100px) rotateY(-5deg) rotateZ(2deg);
+      width: min(410px, 78cqi);
+      transform: translate(-50%, -50%) perspective(1150px) rotateY(-5deg) rotateZ(1.2deg);
     }
-    .aplp .ap-results {
+    .aplp .ap-showcase,
+    .aplp .ap-showcase--reverse {
       grid-template-columns: 1fr;
+      min-height: 500px;
+      padding: 32px 24px;
     }
+    .aplp .ap-showcase .ap-showcase__copy {
+      max-width: 100%;
+    }
+    .aplp .ap-showcase .ap-product-shot--form {
+      top: 190px;
+      right: 86px;
+      width: 570px;
+    }
+    .aplp .ap-showcase .ap-product-shot--zen {
+      top: 180px;
+      left: -70px;
+      width: 480px;
+    }
+    .aplp .ap-showcase .ap-product-shot--delivery {
+      top: 200px;
+      right: -35px;
+      width: min(500px, 96cqi);
+    }
+    .aplp .ap-showcase .ap-product-shot--delivery .ap-product-shot__crop {
+      top: 12px;
+      width: min(460px, 92cqi);
+    }
+    .aplp .ap-showcase .ap-product-shot--account {
+      top: 230px;
+      left: -40px;
+      width: min(720px, 118cqi);
+    }
+    .aplp .ap-showcase--reverse .ap-product-shot__crop {
+      transform: perspective(1000px) rotateY(4deg) rotateZ(-1deg);
+    }
+    .aplp .ap-showcase--reverse .ap-showcase__copy {
+      order: 0;
+    }
+    .aplp .ap-results,
     .aplp .ap-how {
       grid-template-columns: 1fr;
     }
     .aplp .ap-result {
       min-height: 0;
     }
-    .aplp .ap-showcase,
-    .aplp .ap-showcase--reverse {
-      grid-template-columns: 1fr;
-    }
-    .aplp .ap-showcase--reverse .ap-showcase__copy {
-      order: 0;
-    }
-  }
-  @container (max-width:760px) {
-    .aplp .ap-showcase {
-      min-height: 0;
-    }
-    .aplp .ap-showcase .ap-product-shot,
-    .aplp .ap-showcase--reverse .ap-product-shot {
-      min-height: 300px;
-      margin: 6px auto -45px;
-    }
-    .aplp .ap-showcase .ap-product-shot__crop {
-      top: -38px;
-      height: calc(100% + 76px);
-    }
-    .aplp .ap-showcase .ap-product-shot--delivery .ap-product-shot__crop {
-      top: 12px;
-      width: 54%;
-    }
-  
   }
   @container (max-width:560px) {
     .aplp .ap-section {
@@ -824,296 +827,7 @@
       width: 100%;
     }
     .aplp .ap-showcase {
-      padding: 20px;
       border-radius: 20px;
-    }
-    .aplp .ap-product-shot--form .ap-product-shot__crop {
-      width: 57%;
-    }
-    .aplp .ap-product-shot--zen .ap-product-shot__crop {
-      width: 69%;
-    }
-    .aplp .ap-product-shot--delivery .ap-product-shot__crop {
-      width: 47%;
-    }
-  }
-  /* Кадры остаются крупными и объёмными, но важные границы больше не режутся. */
-  .aplp .ap-product-shot {
-    padding: 0;
-    background: transparent;
-  }
-  .aplp .ap-product-shot__crop {
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-  .aplp .ap-product-shot__crop img {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 18px;
-    object-fit: initial;
-  }
-  .aplp .ap-hero {
-    min-height: 540px;
-  }
-  .aplp .ap-hero__shot {
-    min-height: 520px;
-    margin: 0 -28px 0 -6px;
-    padding: 0;
-  }
-  .aplp .ap-hero .ap-product-shot__crop {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: min(460px, 72cqi);
-    height: auto;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-    transform: translate(-50%, -50%) perspective(1450px) rotateY(-8deg) rotateX(2deg) rotateZ(1.8deg);
-    transform-origin: 62% 50%;
-  }
-  .aplp .ap-hero .ap-product-shot__crop img {
-    width: 155%;
-    height: auto;
-    max-width: none;
-    border-radius: 20px;
-    box-shadow: 0 30px 62px rgba(35, 60, 120, 0.2);
-  }
-  .aplp .ap-showcase .ap-product-shot,
-  .aplp .ap-showcase--reverse .ap-product-shot {
-    min-height: 390px;
-    margin: 0 -34px 0 0;
-    padding: 0;
-    background: transparent;
-  }
-  .aplp .ap-showcase--reverse .ap-product-shot {
-    margin: 0 0 0 -34px;
-  }
-  .aplp .ap-showcase .ap-product-shot__crop {
-    position: relative;
-    top: auto;
-    left: auto;
-    width: 440px;
-    height: auto;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-    transform-origin: 64% 50%;
-  }
-  .aplp .ap-showcase--reverse .ap-product-shot__crop {
-
-    transform-origin: 36% 50%;
-  }
-  .aplp .ap-showcase .ap-product-shot--form .ap-product-shot__crop {
-    width: 480px;
-    height: 390px;
-    overflow: hidden;
-    border-radius: 18px;
-    box-shadow: 0 24px 52px rgba(35, 60, 120, 0.18);
-  }
-  .aplp .ap-showcase .ap-product-shot--form .ap-product-shot__crop img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: top;
-    border-radius: inherit;
-  }
-
-  .aplp .ap-showcase .ap-product-shot--delivery .ap-product-shot__crop {
-    width: 100%;
-  }
-
-  .aplp .ap-showcase .ap-product-shot--account .ap-product-shot__crop {
-    width: 580px;
-    height: 310px;
-    overflow: hidden;
-  }
-  .aplp .ap-showcase .ap-product-shot--account .ap-product-shot__crop img {
-    width: 100%;
-    height: auto;
-    max-width: none;
-    transform: scale(1.6);
-    transform-origin: left top;
-  }
-  @container (max-width:760px) {
-    .aplp .ap-hero {
-      min-height: 0;
-    }
-    .aplp .ap-hero__shot {
-      min-height: 460px;
-      margin: 12px 0 0;
-    }
-    .aplp .ap-hero .ap-product-shot__crop {
-      width: min(430px, 82cqi);
-      transform: translate(-50%, -50%) perspective(1150px) rotateY(-5deg) rotateZ(1.2deg);
-    }
-    .aplp .ap-showcase .ap-product-shot,
-    .aplp .ap-showcase--reverse .ap-product-shot {
-      min-height: 370px;
-      margin: 10px 0 0;
-    }
-    .aplp .ap-showcase .ap-product-shot__crop {
-
-    }
-    .aplp .ap-showcase--reverse .ap-product-shot__crop {
-      transform: perspective(1000px) rotateY(4deg) rotateZ(-1deg);
-    }
-    .aplp .ap-showcase .ap-product-shot--delivery .ap-product-shot__crop {
-      width: min(460px, 92cqi);
-    }
-  }
-  /* Скриншоты — не карточки рядом с текстом, а большие листы интерфейса под углом. */
-  .aplp .ap-hero {
-    min-height: 600px;
-  }
-  .aplp .ap-hero__shot {
-    min-height: 540px;
-    margin: 0 18px 0 10px;
-  }
-  .aplp .ap-hero .ap-product-shot__crop {
-    width: min(430px, 68cqi);
-  }
-  .aplp .ap-showcase,
-  .aplp .ap-showcase--reverse {
-    min-height: 470px;
-    padding: clamp(34px, 5cqi, 58px);
-    overflow: hidden;
-  }
-  .aplp .ap-showcase__copy {
-    grid-column: 1;
-  }
-  .aplp .ap-showcase--reverse .ap-showcase__copy {
-    grid-column: 2;
-  }
-  .aplp .ap-showcase .ap-product-shot,
-  .aplp .ap-showcase--reverse .ap-product-shot {
-    position: absolute;
-    z-index: 1;
-    display: block;
-    min-height: 0;
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    aspect-ratio: auto;
-  }
-  .aplp .ap-showcase .ap-product-shot__crop {
-    width: 100%;
-    height: auto;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-
-  }
- 
-  .aplp .ap-showcase .ap-product-shot__crop img {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-width: none;
-    border-radius: 22px;
-    object-fit: initial;
-    box-shadow: 0 30px 70px rgba(30, 54, 105, 0.18);
-  }
-  .aplp .ap-showcase .ap-product-shot--form {
-    top: -24px;
-    right: 86px;
-    width: 560px;
-    height: 760px;
-  }
-  .aplp .ap-showcase .ap-product-shot--form .ap-product-shot__crop {
-    height: 760px;
-    overflow: hidden;
-    border-radius: 24px;
-    width: 100%;
-  }
-  .aplp .ap-showcase .ap-product-shot--form .ap-product-shot__crop img {
-    width: 100%;
-    height: auto;
-    object-fit: initial;
-    object-position: initial;
-  }
-  .aplp .ap-showcase .ap-product-shot--zen {
-    top: -70px;
-    left: 100px;
-    width: 560px;
-  }
-  /* Скрин доставки: самостоятельное позиционирование, без «карточки» вокруг кадра.
-     Меняйте top/right/width только здесь, если нужно сдвинуть этот экран. */
-  .aplp .ap-showcase .ap-product-shot--delivery {
-    top: -50px;
-    right: 86px;
-    width: 540px;
-  }
- 
-  .aplp .ap-showcase .ap-product-shot--delivery .ap-product-shot__crop,
-  .aplp .ap-showcase .ap-product-shot--delivery .ap-product-shot__crop img {
-    border-radius: 0;
-  }
-  .aplp .ap-showcase .ap-product-shot--delivery .ap-product-shot__crop img {
-    box-shadow: 0 30px 70px rgba(30, 54, 105, 0.18);
-  }
-
-  .aplp .ap-showcase .ap-product-shot--account {
-    top: 58px;
-    left: 86px;
-    width: 760px;
-    height: auto;
-  }
-  .aplp .ap-showcase .ap-product-shot--account .ap-product-shot__crop {
-    width: 100%;
-    height: auto;
-    overflow: visible;
-  }
-  .aplp .ap-showcase .ap-product-shot--account .ap-product-shot__crop img {
-    width: 100%;
-    height: auto;
-    transform: none;
-    transform-origin: center;
-  }
-  @container (max-width:760px) {
-    .aplp .ap-hero {
-      min-height: 0;
-    }
-    .aplp .ap-hero__shot {
-      min-height: 500px;
-      margin: 18px 10px 0;
-    }
-    .aplp .ap-hero .ap-product-shot__crop {
-      width: min(410px, 78cqi);
-    }
-    .aplp .ap-showcase,
-    .aplp .ap-showcase--reverse {
-      min-height: 500px;
-      padding: 32px 24px;
-    }
-    .aplp .ap-showcase .ap-showcase__copy {
-      max-width: 100%;
-    }
-    .aplp .ap-showcase .ap-product-shot--form {
-      top: 190px;
-      right: 86px;
-      width: 570px;
-    }
-    .aplp .ap-showcase .ap-product-shot--zen {
-      top: 180px;
-      left: -70px;
-      width: 480px;
-    }
-    .aplp .ap-showcase .ap-product-shot--delivery {
-      top: 200px;
-      right: -35px;
-      width: min(500px, 96cqi);
-    }
-    .aplp .ap-showcase .ap-product-shot--account {
-      top: 230px;
-      left: -40px;
-      width: min(720px, 118cqi);
     }
   }
 </style>
