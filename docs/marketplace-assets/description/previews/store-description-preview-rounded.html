@@ -276,7 +276,6 @@
   }
   /* Пары «текст + продукт»: структурно и мягко, без сложных эффектов. */
   .aplp .ap-showcase {
-    --ap-showcase-surface: var(--ap-canvas);
     position: relative;
     display: grid;
     grid-template-columns: minmax(220px, 0.74fr) minmax(0, 1.26fr);
@@ -293,7 +292,6 @@
     margin-top: 16px;
   }
   .aplp .ap-showcase--reverse {
-    --ap-showcase-surface: var(--ap-paper);
     grid-template-columns: minmax(0, 1.26fr) minmax(220px, 0.74fr);
     background: var(--ap-paper);
     border: 1px solid var(--ap-line);
@@ -306,22 +304,6 @@
     position: relative;
     z-index: 2;
     grid-column: 1;
-  }
-  .aplp .ap-showcase__copy::before {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    top: -30px;
-    right: -96px;
-    bottom: -30px;
-    left: -42px;
-    background: linear-gradient(90deg, var(--ap-showcase-surface) 0 calc(100% - 96px), transparent 100%);
-    pointer-events: none;
-  }
-  .aplp .ap-showcase--reverse .ap-showcase__copy::before {
-    right: -42px;
-    left: -96px;
-    background: linear-gradient(90deg, transparent 0, var(--ap-showcase-surface) 96px 100%);
   }
   .aplp .ap-showcase__eyebrow {
     color: var(--ap-brand);
