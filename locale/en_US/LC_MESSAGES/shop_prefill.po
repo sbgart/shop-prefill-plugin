@@ -541,7 +541,7 @@ msgid "zen.delivery.type.post"
 msgstr "Post"
 
 msgid "zen.validation.error.title"
-msgstr "Oops! Looks like some fields are not filled in"
+msgstr "Oops! Looks like some fields are not filled in correctly"
 
 msgid "zen.validation.error.message"
 msgstr "Check the form — some fields have tips below."
@@ -549,17 +549,11 @@ msgstr "Check the form — some fields have tips below."
 msgid "zen.validation.error.button"
 msgstr "Got it"
 
-msgid "zen.blocked.title"
-msgstr "There is an error to fix first"
-
-msgid "zen.blocked.message"
-msgstr "The “%s” section has an error. Please fix it first — other order blocks cannot be changed meanwhile. Your data is saved and will come back on its own."
-
 msgid "zen.nothing_to_summarize.title"
 msgstr "Nothing to collapse"
 
 msgid "zen.nothing_to_summarize.message"
-msgstr "A block can be collapsed once it has data. Fill in the fields and the button will work."
+msgstr "You can collapse what is already filled in. Fill in the fields and the button will work."
 
 msgid "zen.nothing_to_summarize.button"
 msgstr "Got it"

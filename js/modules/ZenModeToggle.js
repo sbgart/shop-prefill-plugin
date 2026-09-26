@@ -57,11 +57,9 @@ class ZenModeToggle {
     var group = btn.dataset.group;
     var action = btn.dataset.action;
 
-    // data-blocked-by ставит сервер на каждом рендере: клиентская валидация не видит
-    // серверных ошибок (waEmailValidator, забаненный адрес, чужой контакт, кончившийся
-    // товар). Пока оформление ими заблокировано, бессмысленны оба направления: свернуть
-    // значит спрятать сообщение об ошибке, развернуть — показать пустоту, потому что
-    // секцию ядро в этом запросе не отрисовало.
+    // data-blocked-by ставит сервер на каждом рендере и только тем группам, чьих секций
+    // в ответе нет вовсе: конвейер остановила ошибка выше. Переключать такую группу нечем —
+    // ядро её не отрисовало, — поэтому клик уходит не в отказ, а в блок, где работа.
     var blockedBy = btn.dataset.blockedBy;
 
     if (action === "expand") {
@@ -80,12 +78,13 @@ class ZenModeToggle {
   expandGroup(group, blockedBy) {
     // Разворачивать нечего: ядро короткозамкнуло конвейер и секции этой группы не
     // отрисовало. Покупатель увидел бы пустоту вместо своих данных — а они целы,
-    // их вернёт эхо-кэш, как только ошибка выше будет исправлена.
+    // их вернёт эхо-кэш, как только причина выше будет устранена. Ведём его туда,
+    // а куку не трогаем: иначе группа развернулась бы в пустоту на следующем рендере.
     if (blockedBy) {
       if (this.logger) {
         this.logger.info("User attempted to expand the " + group + " group section while checkout is blocked by " + blockedBy);
       }
-      this.showCheckoutBlockedDialog(blockedBy);
+      this.guideToBlockingGroup(blockedBy);
       return;
     }
 
@@ -114,14 +113,14 @@ class ZenModeToggle {
       return;
     }
 
-    // Оформление заблокировано ошибкой, которую увидел только сервер. Сворачивать нечего
-    // и незачем: секции ниже упавшего шага ядро в этом запросе не отрисовало, а в самой
-    // упавшей группе блок скрыл бы сообщение об ошибке.
+    // Сворачивать нечего: секций этой группы ядро в этом запросе не отрисовало. На экране
+    // такая кнопка обычно и не видна (секция осталась скрытой), но ветка симметрична
+    // разворачиванию — ведём в блок, где работа, а не отказываем.
     if (blockedBy) {
       if (this.logger) {
         this.logger.info("User attempted to collapse the " + group + " group section while checkout is blocked by " + blockedBy);
       }
-      this.showCheckoutBlockedDialog(blockedBy);
+      this.guideToBlockingGroup(blockedBy);
       return;
     }
 
@@ -156,13 +155,20 @@ class ZenModeToggle {
       if (this.logger) {
         this.logger.info("User attempted to collapse the " + group + " group section, but validation failed");
       }
-      // Валидация не прошла → показываем модальное окно с warning
+      // Валидация не прошла: ядро уже нарисовало подсказки (render_errors) — подводим
+      // покупателя к ним, иначе подсказка под полем в начале блока остаётся за экраном,
+      // а кнопка «Свернуть» находится в его конце.
+      this.scrollToReason(sections);
       this.showValidationErrorDialog();
     }
   }
 
   /**
-   * Показывает диалог с ошибкой валидации
+   * Диалог для обеих веток: клик по «Свернуть» при незаполненной группе и клик по
+   * заблокированной кнопке (guideToBlockingGroup()).
+   *
+   * Текст общий сознательно: он верен, каким бы ни был повод — пустое поле, неверное
+   * значение, невыбранный способ, серверная проверка. Конкретику несёт подсвеченное поле.
    */
   showValidationErrorDialog() {
     this.showNoticeDialog(
@@ -209,19 +215,71 @@ class ZenModeToggle {
   }
 
   /**
-   * Сообщает, что оформление заблокировано ошибкой в другом (или в этом же) разделе.
+   * Уводит покупателя туда, где работа: просит ядро подсветить проблему в блокирующей
+   * группе, прокручивает к ней и отвечает на клик тем же диалогом, что и валидация.
    *
-   * @param {string} blockedBy - Имя группы с ошибкой (customer, delivery, payment)
+   * Почему не отказ диалогом «исправьте ошибку». Ошибки на экране не видно: ядро рисует
+   * свой текст («Выберите вариант доставки», «Выберите способ оплаты») только когда кто-то
+   * зовёт валидацию с render_errors, а в заблокированном состоянии её не звал никто.
+   * Конкретику покупателю даёт само подсвеченное поле, слова в нём — ядра.
+   *
+   * Почему диалог без причин. Пробовали перечислять тексты ядра в диалоге, отказались:
+   * ошибка поля приходит голой («Обязательное поле»), и её подпись пришлось бы доставать
+   * из вёрстки темы; клиентский и серверный тексты одной ошибки различаются («Неправильное
+   * значение» и «Почта введена неправильно»); ошибки плагинов доставки и оплаты приходят
+   * их собственными строками, вплоть до английских. Общий текст верен всегда.
+   *
+   * @param {string} blockingGroup - Группа, из-за которой ядро остановило конвейер
    */
-  showCheckoutBlockedDialog(blockedBy) {
-    const groupNames = this.messages.group_names || {};
-    const template = this.messages.checkout_blocked_message || 'Fix the error in the "%s" section first.';
+  guideToBlockingGroup(blockingGroup) {
+    var form = window.waOrder && window.waOrder.form;
+    if (!form || !form.sections) {
+      return;
+    }
 
-    this.showNoticeDialog(
-      "zen-checkout-blocked",
-      this.messages.checkout_blocked_title || "",
-      template.replace("%s", groupNames[blockedBy] || blockedBy)
-    );
+    var sections = this.getSectionsForGroup(blockingGroup);
+
+    // Только ради отрисовки: результат не нужен, значения покупателя не трогаем (clean: false)
+    this.validateSections(form, sections);
+
+    this.scrollToReason(sections);
+    this.showValidationErrorDialog();
+  }
+
+  /**
+   * Прокручивает к причине: к сообщению ядра, если оно есть, иначе к первой видимой
+   * секции группы — там причина показана самим сервером (забаненный контакт, чужой email).
+   *
+   * @param {Array<string>} sections - Секции блокирующей группы, в порядке шагов
+   */
+  scrollToReason(sections) {
+    var firstVisibleSection = null;
+    var reason = null;
+
+    sections.forEach(function (sectionName) {
+      var wrapper = document.getElementById("wa-step-" + sectionName + "-section");
+      if (!wrapper || wrapper.offsetParent === null) {
+        return;
+      }
+
+      if (!firstVisibleSection) {
+        firstVisibleSection = wrapper;
+      }
+
+      if (!reason) {
+        reason = Array.prototype.find.call(wrapper.querySelectorAll(".wa-error-text"), function (el) {
+          return el.offsetParent !== null;
+        });
+      }
+    });
+
+    var target = reason || firstVisibleSection;
+    if (target) {
+      // behavior: "instant" обязателен: тема ставит на html `scroll-behavior: smooth`, и без
+      // явного значения прокрутка идёт плавно, а диалог, открывающийся следом, обрывает её
+      // на первом же кадре — покупатель остаётся там, где стоял (проверено 19.09.2026).
+      target.scrollIntoView({ block: "center", behavior: "instant" });
+    }
   }
 
   /**

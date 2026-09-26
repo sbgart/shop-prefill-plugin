@@ -130,7 +130,7 @@ msgid "zen.price.free"
 msgstr "Бесплатно"
 
 msgid "zen.validation.error.title"
-msgstr "Ой! Кажется, не все поля заполнены"
+msgstr "Ой! Кажется, не все поля заполнены верно"
 
 msgid "zen.validation.error.message"
 msgstr "Проверьте форму — под некоторыми полями есть подсказки."
@@ -138,17 +138,11 @@ msgstr "Проверьте форму — под некоторыми полям
 msgid "zen.validation.error.button"
 msgstr "Сейчас проверю"
 
-msgid "zen.blocked.title"
-msgstr "Сначала нужно исправить ошибку"
-
-msgid "zen.blocked.message"
-msgstr "В разделе «%s» есть ошибка. Сначала исправьте её — остальные блоки заказа пока изменить нельзя. Ваши данные сохранены и вернутся сами."
-
 msgid "zen.nothing_to_summarize.title"
 msgstr "Нечего сворачивать"
 
 msgid "zen.nothing_to_summarize.message"
-msgstr "Свернуть можно блок, в котором уже есть данные. Заполните поля — и кнопка сработает."
+msgstr "Свернуть можно то, что уже заполнено. Заполните поля — и кнопка сработает."
 
 msgid "zen.nothing_to_summarize.button"
 msgstr "Понятно"
