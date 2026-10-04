@@ -41,6 +41,23 @@ class ZenModeToggle {
 
     // Делегирование событий на document для обработки динамически добавленных элементов
     document.addEventListener("click", this.handleClick.bind(this));
+
+    // Событие шлёт сервер в ответе пересчёта, где выбранный вариант доставки пропал
+    // (shopPrefillPluginCheckoutHooks::renderLostDeliveryChoiceScript)
+    $(document).on("prefill_delivery_lost", () => this.showLostChoiceDialog());
+  }
+
+  /**
+   * Сообщает, что выбранный покупателем вариант доставки пропал при пересчёте.
+   * Только факт, без причины: вес, адрес или количество — мы не знаем и гадать не должны.
+   */
+  showLostChoiceDialog() {
+    this.showNoticeDialog(
+      "prefill-lost-delivery-choice",
+      this.messages.lost_choice_title || "",
+      this.messages.lost_choice_text || "The delivery method you selected is not available right now.",
+      this.messages.lost_choice_button
+    );
   }
 
   /**

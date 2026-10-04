@@ -6,7 +6,8 @@
  * Мутации, каждая обязана дать провал:
  *   1. убрать ветку step_skipped — на каждой загрузке /order/ (fast_render) пойдёт «потеряно»;
  *   2. убрать ветку «нет эха» — «потеряно» у покупателя, который ничего не выбирал;
- *   3. считать потерей смену варианта на другой, а не пропажу.
+ *   3. считать потерей смену варианта на другой, а не пропажу;
+ *   4. убрать ветку already_notified — предупреждение повторится на каждой перезагрузке.
  *
  * См. docs/todo/zen-lost-variant-silent-expand.md
  *
@@ -41,13 +42,19 @@ $cases = [
     'эхо есть, вариант пропал (пусто)' => ['33.c',  false, '',      true,  'variant_missing_in_response'],
     'эхо есть, вариант на месте'       => ['33.c',  false, '33.c',  false, 'variant_kept'],
     'эхо есть, выбран другой'          => ['33.c',  false, '34.d',  false, 'variant_kept'],
+    // Предупреждали о другом варианте — о новой потере предупреждаем заново
+    'предупреждали о другом'           => ['33.c',  false, null,    true,  'variant_missing_in_response', '34.d'],
+    // Мёртвый вариант шлётся заново на каждой загрузке: второй раз молчим
+    'уже предупреждали об этом'        => ['33.c',  false, null,    false, 'already_notified', '33.c'],
+    'предупреждали, но шаг не считался' => ['33.c',  true,  null,    false, 'step_skipped', '33.c'],
 ];
 
-foreach ($cases as $name => [$echo, $skipped, $selected, $lost, $reason]) {
+foreach ($cases as $name => [$echo, $skipped, $selected, $lost, $reason, $notified]) {
     $r = shopPrefillPluginLostChoiceDetector::decide([
         'echo_variant_id'     => $echo,
         'step_skipped'        => $skipped,
         'selected_variant_id' => $selected,
+        'notified_variant_id' => $notified ?? null,
     ]);
     check($r['lost'] === $lost, "{$name}: lost=" . var_export($lost, true));
     check($r['reason'] === $reason, "{$name}: reason={$reason}");

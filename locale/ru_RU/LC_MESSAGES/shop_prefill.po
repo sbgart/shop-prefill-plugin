@@ -1283,3 +1283,12 @@ msgstr "Группу нельзя скрывать: покупатель дол�
 
 msgid "debug.error_step"
 msgstr "Шаг с ошибкой"
+
+msgid "dialog.lost_choice.title"
+msgstr "Способ доставки недоступен"
+
+msgid "dialog.lost_choice.text"
+msgstr "Способ доставки, который вы выбрали, сейчас недоступен. Выберите другой."
+
+msgid "dialog.lost_choice.button"
+msgstr "Понятно"

@@ -18,11 +18,12 @@
 class shopPrefillPluginLostChoiceDetector
 {
     /**
-     * @param array{echo_variant_id: ?string, step_skipped: bool, selected_variant_id: ?string} $facts
+     * @param array{echo_variant_id: ?string, step_skipped: bool, selected_variant_id: ?string, notified_variant_id?: ?string} $facts
      *        echo_variant_id     — вариант из эхо-кэша на момент рендера (null — эха нет);
      *        step_skipped        — шаг не считался (fast_render, короткое замыкание): список
      *                              пуст не потому, что вариант пропал, а потому что считать не стали;
-     *        selected_variant_id — вариант, который ядро оставило выбранным в ответе.
+     *        selected_variant_id — вариант, который ядро оставило выбранным в ответе;
+     *        notified_variant_id — вариант, о потере которого покупателя уже предупредили.
      * @return array{lost: bool, reason: string}
      */
     public static function decide(array $facts): array
@@ -39,6 +40,13 @@ class shopPrefillPluginLostChoiceDetector
         }
 
         if (($facts['selected_variant_id'] ?? null) === null || $facts['selected_variant_id'] === '') {
+            // Мёртвый вариант остаётся в сессии, и форма шлёт его заново на каждой загрузке
+            // страницы: без этой ветки предупреждение повторялось бы до первого касания
+            // покупателем доставки, а оно должно быть разовым.
+            if (($facts['notified_variant_id'] ?? null) === $facts['echo_variant_id']) {
+                return ['lost' => false, 'reason' => 'already_notified'];
+            }
+
             return ['lost' => true, 'reason' => 'variant_missing_in_response'];
         }
 

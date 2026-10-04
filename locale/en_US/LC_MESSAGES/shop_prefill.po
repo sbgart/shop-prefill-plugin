@@ -1283,3 +1283,12 @@ msgstr "The group cannot be hidden because the customer must correct these field
 
 msgid "debug.error_step"
 msgstr "Error step"
+
+msgid "dialog.lost_choice.title"
+msgstr "Delivery method unavailable"
+
+msgid "dialog.lost_choice.text"
+msgstr "The delivery method you selected is not available right now. Please choose another one."
+
+msgid "dialog.lost_choice.button"
+msgstr "Got it"

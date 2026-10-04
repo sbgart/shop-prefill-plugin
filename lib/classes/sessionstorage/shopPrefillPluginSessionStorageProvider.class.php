@@ -52,6 +52,12 @@ class shopPrefillPluginSessionStorageProvider
     private const DELIVERY_ECHO_KEY = 'shop/prefill_delivery_echo';
 
     /**
+     * Вариант доставки, о потере которого покупателя уже предупредили.
+     * Живёт и сбрасывается вместе с эхо-кэшем доставки (clearDeliveryEcho()).
+     */
+    private const LOST_NOTIFIED_KEY = 'shop/prefill_delivery_lost_notified';
+
+    /**
      * Поля адреса, образующие отпечаток: по ним ядро считает список вариантов, тариф и срок.
      */
     private const REGION_FINGERPRINT_FIELDS = ['country', 'region', 'city', 'zip'];
@@ -484,6 +490,34 @@ class shopPrefillPluginSessionStorageProvider
     public function clearDeliveryEcho(): void
     {
         $this->getStorage()->remove(self::DELIVERY_ECHO_KEY);
+        // Новый выбор — новый цикл: о его потере предупреждаем заново
+        $this->forgetLostChoiceNotified();
+    }
+
+    public function getLostChoiceNotified(): ?string
+    {
+        $value = $this->getStorage()->get(self::LOST_NOTIFIED_KEY);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    public function markLostChoiceNotified(string $variant_id): void
+    {
+        try {
+            $this->getStorage()->set(self::LOST_NOTIFIED_KEY, $variant_id);
+        } catch (waException $e) {
+            shopPrefillPluginLog::warning('Failed setting lost delivery choice mark', [
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /** Пишем в сессию, только если есть что стирать: лишняя запись поднимает Set-Cookie: PHPSESSID (P5) */
+    public function forgetLostChoiceNotified(): void
+    {
+        if ($this->getLostChoiceNotified() !== null) {
+            $this->getStorage()->remove(self::LOST_NOTIFIED_KEY);
+        }
     }
 
     /**
