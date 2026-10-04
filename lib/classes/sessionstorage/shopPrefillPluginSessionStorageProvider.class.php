@@ -457,7 +457,7 @@ class shopPrefillPluginSessionStorageProvider
      *
      * @return array{variant_id: string, custom: array, region: array}|null
      */
-    private function getDeliveryEcho(): ?array
+    public function getDeliveryEcho(): ?array
     {
         $value = $this->getStorage()->get(self::DELIVERY_ECHO_KEY);
 

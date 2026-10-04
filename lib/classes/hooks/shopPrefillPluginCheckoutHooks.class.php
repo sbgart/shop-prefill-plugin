@@ -244,7 +244,36 @@ class shopPrefillPluginCheckoutHooks
         }
 
         $state = new shopPrefillCheckoutState($params);
+        $this->observeLostDeliveryChoice($state);
         return $this->renderSectionErrorsAndDebug($state, 'checkoutRenderShipping', 'SHIPPING SECTION');
+    }
+
+    /**
+     * Наблюдает потерю выбранного варианта доставки — пока только пишет в лог.
+     *
+     * Сообщение покупателю не показываем, пока живьём не проверено, что критерий не даёт
+     * ложных срабатываний (docs/todo/zen-lost-variant-silent-expand.md, «Не проверено»).
+     */
+    private function observeLostDeliveryChoice(shopPrefillCheckoutState $state): void
+    {
+        $echo     = $this->session_storage->getDeliveryEcho();
+        $decision = shopPrefillPluginLostChoiceDetector::decide([
+            'echo_variant_id'     => $echo['variant_id'] ?? null,
+            'step_skipped'        => $state->isFastRender() || $state->isStepSkipped('shipping'),
+            'selected_variant_id' => $state->getShippingVariantId(),
+        ]);
+
+        // Молчание при «нет эха» — норма почти каждого рендера, в лог его не тащим
+        if ($decision['reason'] === 'nothing_chosen') {
+            return;
+        }
+
+        shopPrefillPluginLog::debug('Lost delivery choice check', [
+            'lost'                => $decision['lost'],
+            'reason'              => $decision['reason'],
+            'echo_variant_id'     => $echo['variant_id'] ?? null,
+            'selected_variant_id' => $state->getShippingVariantId(),
+        ]);
     }
 
     /**
