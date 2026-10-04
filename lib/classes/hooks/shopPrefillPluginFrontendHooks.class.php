@@ -241,6 +241,14 @@ class shopPrefillPluginFrontendHooks
                 'validation_error_title'      => _wp('zen.validation.error.title'),
                 'validation_error_message'    => _wp('zen.validation.error.message'),
                 'validation_error_button'     => _wp('zen.validation.error.button'),
+                // Точные поводы: ключ — опознаватель ошибки ядра (js/frontend/order/form.js),
+                // формулировка наша. Пересказывать строки ядра мы отказались: они расходятся
+                // между клиентом и сервером, а у плагинов доставки бывают и вовсе чужие.
+                'validation_reasons'          => [
+                    'method_required'  => _wp('zen.validation.reason.method_required'),
+                    'variant_required' => _wp('zen.validation.reason.variant_required'),
+                    'type_required'    => _wp('zen.validation.reason.type_required'),
+                ],
                 'nothing_to_summarize_title'   => _wp('zen.nothing_to_summarize.title'),
                 'nothing_to_summarize_message' => _wp('zen.nothing_to_summarize.message'),
                 'nothing_to_summarize_button'  => _wp('zen.nothing_to_summarize.button'),

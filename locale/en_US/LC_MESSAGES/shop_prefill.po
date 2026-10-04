@@ -541,10 +541,19 @@ msgid "zen.delivery.type.post"
 msgstr "Post"
 
 msgid "zen.validation.error.title"
-msgstr "Oops! Looks like some fields are not filled in correctly"
+msgstr "Oops! Not everything is ready yet"
 
 msgid "zen.validation.error.message"
-msgstr "Check the form — some fields have tips below."
+msgstr "There is a tip left in the form — something to fill in, choose or fix. Do that and try again."
+
+msgid "zen.validation.reason.method_required"
+msgstr "No payment method selected. Choose one and try again."
+
+msgid "zen.validation.reason.variant_required"
+msgstr "No delivery option selected. Choose one and try again."
+
+msgid "zen.validation.reason.type_required"
+msgstr "No delivery type selected. Choose one and try again."
 
 msgid "zen.validation.error.button"
 msgstr "Got it"

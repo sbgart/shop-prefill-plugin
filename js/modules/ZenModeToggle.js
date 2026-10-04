@@ -90,15 +90,28 @@ class ZenModeToggle {
 
     var cookieName = "prefill_zen_" + group;
 
-    // Устанавливаем cookie состояния
-    document.cookie = cookieName + "=expanded; path=/; SameSite=Lax";
+    // Пишем просьбу, а не состояние: сервер отличит «попросили только что» от «было развёрнуто»
+    // и откажет, если разворачивать нечего — шаг группы в ответе не считался. Иначе блок
+    // исчезал с экрана целиком (docs/bugs/done/zen-block-vanishes-on-stale-blocked-flag.md).
+    // Значение знает сервер: shopPrefillPluginZenLatch::EXPAND_REQUEST.
+    // max-age короткий: просьба имеет смысл только для ближайшего пересчёта. Если ядро
+    // в этом ответе не перерисует секцию-носителя, сервер её не погасит — и она должна
+    // истечь сама, а не сработать на действии, которого покупатель уже не ждёт.
+    document.cookie = cookieName + "=expand-request; path=/; SameSite=Lax; max-age=60";
 
     // Обновляем форму заказа
     if (window.waOrder && window.waOrder.form) {
       if (this.logger) {
-        this.logger.info("User expanded the " + group + " group section");
+        this.logger.info("User asked to expand the " + group + " group section");
       }
-      window.waOrder.form.update();
+
+      var self = this;
+      var updated = window.waOrder.form.update();
+      if (updated && typeof updated.then === "function") {
+        updated.then(function () {
+          self.reactToServerDecision(group, "expand");
+        });
+      }
     }
   }
 
@@ -128,27 +141,27 @@ class ZenModeToggle {
     var sections = this.getSectionsForGroup(group);
 
     // Валидируем секции группы
-    var hasErrors = this.validateSections(form, sections);
+    var validation = this.validateSections(form, sections);
 
-    if (!hasErrors) {
+    if (!validation.hasErrors) {
       var cookieName = "prefill_zen_" + group;
 
       // Валидация успешна → удаляем cookie и обновляем форму (бэкенд при ошибках снова проставит expanded)
       document.cookie = cookieName + "=; path=/; SameSite=Lax; max-age=0";
 
       if (this.logger) {
-        this.logger.info("User collapsed the " + group + " group section");
+        this.logger.info("User asked to collapse the " + group + " group section");
       }
 
-      // Сворачивание могло не состояться: минимума данных нет, и сервер оставит группу
-      // развёрнутой (Z2). Узнаём это по перерисованной разметке, а не по флагу до клика —
+      // Сворачивание могло не состояться: данных нет (Z2) либо в группе ошибка, которой
+      // клиент не видит (Z1). Узнаём это по перерисованной разметке, а не по флагу до клика —
       // покупатель мог заполнить поле уже после последнего рендера, и тогда сворачивание
       // законно, а предупреждение было бы враньём.
       var self = this;
       var updated = form.update();
       if (updated && typeof updated.then === "function") {
         updated.then(function () {
-          self.warnIfNothingToSummarize(group);
+          self.reactToServerDecision(group, "collapse");
         });
       }
     } else {
@@ -159,7 +172,7 @@ class ZenModeToggle {
       // покупателя к ним, иначе подсказка под полем в начале блока остаётся за экраном,
       // а кнопка «Свернуть» находится в его конце.
       this.scrollToReason(sections);
-      this.showValidationErrorDialog();
+      this.showValidationErrorDialog(this.resolveReasonMessage(validation.reasons));
     }
   }
 
@@ -167,36 +180,122 @@ class ZenModeToggle {
    * Диалог для обеих веток: клик по «Свернуть» при незаполненной группе и клик по
    * заблокированной кнопке (guideToBlockingGroup()).
    *
-   * Текст общий сознательно: он верен, каким бы ни был повод — пустое поле, неверное
-   * значение, невыбранный способ, серверная проверка. Конкретику несёт подсвеченное поле.
+   * @param {string} [message] - Точный текст повода; без него — общий
    */
-  showValidationErrorDialog() {
+  showValidationErrorDialog(message) {
     this.showNoticeDialog(
       "zen-validation-error",
       this.messages.validation_error_title || "",
-      this.messages.validation_error_message || "Validation error"
+      message || this.messages.validation_error_message || "Validation error"
     );
   }
 
   /**
-   * После пересчёта проверяет, свернулась ли группа, и объясняет, если нет.
+   * Выбирает текст диалога по опознавателям поводов.
    *
-   * Признак `data-nothing-to-summarize` ставит сервер тем же решением, которым отказался
-   * сворачивать (Z2). Читаем его уже после обновления формы: там сервер видел свежие
-   * данные покупателя, а не те, что были на предыдущем рендере.
+   * Точный текст даём только когда повод ровно один и он нам известен. Несколько поводов —
+   * перечислять их в диалоге мы отказались ещё в сентябре; неизвестный повод — тем более:
+   * у ошибок полей опознавателя нет, их название пришлось бы доставать из вёрстки темы, а
+   * серверные причины (почта, бан, чужой контакт) клиенту вообще не видны. Во всех этих
+   * случаях общий текст верен, а точный соврал бы.
+   *
+   * @param {Array<string>} reasons - Опознаватели из validateSections()
+   * @returns {string|undefined} Точный текст либо undefined, если его нет
+   */
+  resolveReasonMessage(reasons) {
+    var known = this.messages.validation_reasons || {};
+
+    if (!reasons || reasons.length !== 1) {
+      return undefined;
+    }
+
+    return known[reasons[0]];
+  }
+
+  /**
+   * Отвечает на клик тем, что сервер действительно сделал.
+   *
+   * Исход знает только сервер: клиентская проверка не воспроизводит ни серверные ошибки
+   * (почта, бан, чужой контакт), ни отказ развернуть группу, шаг которой в этом ответе не
+   * считался. Поэтому читаем свежую разметку после пересчёта, а не признаки, снятые до
+   * клика: к моменту клика они могли устареть — именно так блок оплаты исчезал с экрана
+   * (docs/bugs/done/zen-block-vanishes-on-stale-blocked-flag.md).
+   *
+   * Признаки ставит сервер и пересчитывает на каждом рендере: `data-blocked-by` — шаг группы
+   * не считался, `data-nothing-to-summarize` — сводить нечего (Z2), `data-has-errors` —
+   * в группе ошибка (Z1).
    *
    * @param {string} group - Имя группы
+   * @param {string} intent - Чего просил покупатель: "expand" или "collapse"
    */
-  warnIfNothingToSummarize(group) {
-    var selector = '.js-prefill-zen-toggle[data-group="' + group + '"][data-nothing-to-summarize]';
-    if (!document.querySelector(selector)) {
+  reactToServerDecision(group, intent) {
+    var buttons = document.querySelectorAll('.js-prefill-zen-toggle[data-group="' + group + '"]');
+    if (!buttons.length) {
       return;
     }
 
-    if (this.logger) {
-      this.logger.info("Collapse of the " + group + " group section had no effect: nothing to summarize yet");
+    var verdict = { collapsed: false, blockedBy: null, nothingToSummarize: false, hasErrors: false };
+
+    Array.prototype.forEach.call(buttons, function (btn) {
+      // Свёрнутая группа несёт кнопку «Изменить», развёрнутая — «Свернуть» (Z3)
+      if (btn.dataset.action === "expand") {
+        verdict.collapsed = true;
+      }
+      if (btn.dataset.blockedBy) {
+        verdict.blockedBy = btn.dataset.blockedBy;
+      }
+      if (btn.dataset.nothingToSummarize) {
+        verdict.nothingToSummarize = true;
+      }
+      if (btn.dataset.hasErrors) {
+        verdict.hasErrors = true;
+      }
+    });
+
+    if (intent === "expand") {
+      if (!verdict.collapsed) {
+        if (this.logger) {
+          this.logger.info("The " + group + " group section has been expanded");
+        }
+        return;
+      }
+
+      // Сервер отказал: разворачивать нечего, его шаг в этом ответе не считался. Блок при
+      // этом остался на месте — ведём покупателя туда, где работа. Куку не трогаем: сервер
+      // уже погасил просьбу, а вслепую стирать её опасно — так можно отменить и удачный
+      // разворот, если секция в этом ответе не перерисовалась.
+      if (this.logger) {
+        this.logger.info("Server refused to expand the " + group + " group section: blocked by " + (verdict.blockedBy || "unknown"));
+      }
+      if (verdict.blockedBy) {
+        this.guideToBlockingGroup(verdict.blockedBy);
+      }
+      return;
     }
-    this.showNothingToSummarizeDialog();
+
+    if (verdict.collapsed) {
+      if (this.logger) {
+        this.logger.info("The " + group + " group section has been collapsed");
+      }
+      return;
+    }
+
+    if (verdict.nothingToSummarize) {
+      if (this.logger) {
+        this.logger.info("Server kept the " + group + " group section expanded: nothing to summarize yet");
+      }
+      this.showNothingToSummarizeDialog();
+      return;
+    }
+
+    if (verdict.hasErrors) {
+      if (this.logger) {
+        this.logger.info("Server kept the " + group + " group section expanded: the group has errors");
+      }
+      // Подсказки уже нарисовал сервер в перерисованной секции — подводим к ним
+      this.scrollToReason(this.getSectionsForGroup(group));
+      this.showValidationErrorDialog();
+    }
   }
 
   /**
@@ -239,11 +338,12 @@ class ZenModeToggle {
 
     var sections = this.getSectionsForGroup(blockingGroup);
 
-    // Только ради отрисовки: результат не нужен, значения покупателя не трогаем (clean: false)
-    this.validateSections(form, sections);
+    // Отрисовка подсказок плюс опознаватели поводов: в блокирующей группе чаще всего просто
+    // не выбран вариант доставки — об этом и скажем, вместо общих слов (clean: false)
+    var validation = this.validateSections(form, sections);
 
     this.scrollToReason(sections);
-    this.showValidationErrorDialog();
+    this.showValidationErrorDialog(this.resolveReasonMessage(validation.reasons));
   }
 
   /**
@@ -324,12 +424,17 @@ class ZenModeToggle {
   /**
    * Валидирует секции формы
    *
+   * Возвращает не только факт ошибок, но и их опознаватели: по ним диалог говорит точнее.
+   * Опознаватель есть только у «не выбрано» (`method_required`, `variant_required`,
+   * `type_required` в js/frontend/order/form.js) — у ошибок полей его нет, и за них отвечает
+   * пустая строка: один такой повод уже делает набор неизвестным, и текст остаётся общим.
+   *
    * @param {Object} form - Объект формы waOrder
    * @param {Array<string>} sections - Массив имён секций для валидации
-   * @returns {boolean} true если есть ошибки, false если всё ОК
+   * @returns {{hasErrors: boolean, reasons: Array<string>}}
    */
   validateSections(form, sections) {
-    var hasErrors = false;
+    var result = { hasErrors: false, reasons: [] };
 
     sections.forEach(function (sectionName) {
       var section = form.sections[sectionName];
@@ -341,12 +446,15 @@ class ZenModeToggle {
         });
 
         if (sectionData.errors && sectionData.errors.length > 0) {
-          hasErrors = true;
+          result.hasErrors = true;
+          sectionData.errors.forEach(function (error) {
+            result.reasons.push(error && error.id ? error.id : "");
+          });
         }
       }
     });
 
-    return hasErrors;
+    return result;
   }
 }
 

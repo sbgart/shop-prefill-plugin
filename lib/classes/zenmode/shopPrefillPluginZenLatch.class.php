@@ -32,8 +32,21 @@ class shopPrefillPluginZenLatch
     /** Кука-владелец: хеш отпечатка личности, которой принадлежат защёлки. Пишет только сервер. */
     private const OWNER_COOKIE = 'prefill_zen_owner';
 
-    /** Единственное значение защёлки. */
+    /** Значение защёлки: группа развёрнута. Пишет только сервер, в sync(). */
     private const EXPANDED = 'expanded';
+
+    /**
+     * Просьба развернуть группу: её пишет клиент по клику «Изменить»
+     * (js/modules/ZenModeToggle.js), и живёт она ровно до ближайшего рендера группы.
+     *
+     * Нужна потому, что по одному значению `expanded` сервер не отличает «покупатель
+     * попросил только что» от «группа была развёрнута всё это время», а поступать с ними
+     * надо по-разному: просьбу, которую некуда применить (шаг группы не считался),
+     * отклоняем, а уже развёрнутую группу не трогаем. См. docs/plans/zen-blocked-group-feedback.md.
+     *
+     * Значение намеренно непохоже на 'expanded': спутать опечаткой нельзя.
+     */
+    public const EXPAND_REQUEST = 'expand-request';
 
     /**
      * Группы, чьи защёлки чистятся при смене личности и после заказа.
@@ -76,6 +89,10 @@ class shopPrefillPluginZenLatch
     /**
      * Держит ли покупатель эту группу развёрнутой.
      *
+     * Просьба (EXPAND_REQUEST) считается развёрнутым состоянием: если применить её есть куда,
+     * группа разворачивается в том же запросе, а sync() тут же переписывает куку в EXPANDED.
+     * Случай «применить некуда» разбирает shouldCollapseGroup() — до этой проверки.
+     *
      * @param string $group Имя группы
      * @return bool
      */
@@ -87,13 +104,35 @@ class shopPrefillPluginZenLatch
             return false;
         }
 
-        return $this->request->cookie(self::COOKIE_PREFIX . $group) === self::EXPANDED;
+        $value = $this->request->cookie(self::COOKIE_PREFIX . $group);
+
+        return $value === self::EXPANDED || $value === self::EXPAND_REQUEST;
+    }
+
+    /**
+     * Просит ли покупатель развернуть группу именно этим запросом.
+     *
+     * @param string $group Имя группы
+     * @return bool
+     */
+    public function isExpandRequested(string $group): bool
+    {
+        $this->reconcile();
+
+        if ($this->disabled) {
+            return false;
+        }
+
+        return $this->request->cookie(self::COOKIE_PREFIX . $group) === self::EXPAND_REQUEST;
     }
 
     /**
      * Синхронизирует защёлку группы с фактическим состоянием при каждом обновлении формы.
      * Группа осталась развёрнутой — защёлка ставится (в том числе когда разворот вызван
      * ошибками или нехваткой данных, Z4); свернулась — снимается.
+     *
+     * Здесь же гаснет просьба EXPAND_REQUEST: развернули — она становится EXPANDED,
+     * отказали — снимается вместе с защёлкой. Пережить рендер своей группы она не может.
      *
      * @param string $group Имя группы
      * @param bool $is_collapsed Свёрнута ли группа

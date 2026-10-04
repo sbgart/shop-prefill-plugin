@@ -156,9 +156,10 @@ class shopPrefillPluginZenMode
 
 
     /**
-     * Определяет, нужно ли сворачивать группу.
+     * Определяет, нужно ли сворачивать группу: собирает факты и отдаёт их decideCollapse().
      *
-     * Три условия, и каждое читает свой источник — путать их нельзя:
+     * Условия читают разные источники — путать их нельзя:
+     *   0. просьба развернуть — кука, которую клиент пишет по клику (ZenLatch::EXPAND_REQUEST);
      *   1. защёлка — покупатель сам открыл группу и работает в ней (шире: любой
      *      предыдущий разворот в рамках визита этой же личности, см. ZenLatch);
      *   2. ошибки — только из $params, они существуют в рамках запроса;
@@ -190,46 +191,79 @@ class shopPrefillPluginZenMode
             return false;
         }
 
-        if ($this->latch->isExpanded($group)) {
-            $this->last_decision = [
-                'collapsed' => false,
-                'reason' => 'expanded_by_user',
-                'zen_active' => $this->isActive(),
-                'group_enabled' => true,
-            ];
-            return false;
-        }
+        // Факты собираем здесь, решение принимает чистая функция: так порядок проверок
+        // можно запереть таблицей истинности (tests/ZenCollapseDecisionTest.php), а не
+        // надеяться, что следующая правка не переставит ветки местами.
+        $blocking = $state->getBlockingGroupFor($group);
 
-        if ($state->hasGroupErrors($group)) {
-            $this->last_decision = [
-                'collapsed' => false,
-                'reason' => 'validation_errors',
-                'zen_active' => $this->isActive(),
-                'group_enabled' => true,
-                'errors' => $state->getGroupErrorsInfo($group),
-            ];
-            shopPrefillPluginLog::debug("Zen group '{$group}' expanded: validation errors");
-            return false;
-        }
-
-        if (! $this->isGroupMinimumFilled($group, $state)) {
-            $this->last_decision = [
-                'collapsed' => false,
-                'reason' => 'minimum_not_filled',
-                'zen_active' => $this->isActive(),
-                'group_enabled' => true,
-            ];
-            shopPrefillPluginLog::debug("Zen group '{$group}' expanded: nothing to summarize yet");
-            return false;
-        }
+        $decision = self::decideCollapse([
+            'expand_requested' => $this->latch->isExpandRequested($group),
+            'blocked'          => $blocking !== null,
+            'latch_expanded'   => $this->latch->isExpanded($group),
+            'has_errors'       => $state->hasGroupErrors($group),
+            'minimum_filled'   => $this->isGroupMinimumFilled($group, $state),
+        ]);
 
         $this->last_decision = [
-            'collapsed' => true,
-            'reason' => 'minimum_filled',
+            'collapsed' => $decision['collapsed'],
+            'reason' => $decision['reason'],
             'zen_active' => $this->isActive(),
             'group_enabled' => true,
         ];
-        return true;
+
+        switch ($decision['reason']) {
+            case 'expand_refused_blocked':
+                shopPrefillPluginLog::debug("Zen group '{$group}' stays collapsed: expand requested while blocked by '{$blocking}'");
+                break;
+            case 'validation_errors':
+                $this->last_decision['errors'] = $state->getGroupErrorsInfo($group);
+                shopPrefillPluginLog::debug("Zen group '{$group}' expanded: validation errors");
+                break;
+            case 'minimum_not_filled':
+                shopPrefillPluginLog::debug("Zen group '{$group}' expanded: nothing to summarize yet");
+                break;
+        }
+
+        return $decision['collapsed'];
+    }
+
+    /**
+     * Решение о сворачивании группы по готовым фактам. Без зависимостей — только порядок проверок.
+     *
+     * Порядок не косметический, каждое место выбрано:
+     *
+     *  1. `expand_requested` + `blocked` — **раньше защёлки**. Просьба развернуть считается
+     *     защёлкой (ZenLatch::isExpanded()), и обычная ветка объявила бы группу развёрнутой
+     *     прежде, чем мы успеем отказать. Отказываем, потому что разворачивать нечего: шаг
+     *     группы в этом ответе не считался, под скрытой секцией нет ни полей, ни списков, и
+     *     блок исчез бы с экрана целиком. Группу, развёрнутую раньше, ветка не трогает — там
+     *     просьбы нет, есть состояние (docs/bugs/done/zen-block-vanishes-on-stale-blocked-flag.md).
+     *  2. защёлка — покупатель работает в группе, под руками её не закрываем (Z4).
+     *  3. ошибки группы — при любой проблеме группа развёрнута (Z1).
+     *  4. минимум данных — свёрнутый блок обещает «здесь всё готово» (Z2).
+     *
+     * @param array{expand_requested: bool, blocked: bool, latch_expanded: bool, has_errors: bool, minimum_filled: bool} $facts
+     * @return array{collapsed: bool, reason: string}
+     */
+    public static function decideCollapse(array $facts): array
+    {
+        if ($facts['expand_requested'] && $facts['blocked']) {
+            return ['collapsed' => true, 'reason' => 'expand_refused_blocked'];
+        }
+
+        if ($facts['latch_expanded']) {
+            return ['collapsed' => false, 'reason' => 'expanded_by_user'];
+        }
+
+        if ($facts['has_errors']) {
+            return ['collapsed' => false, 'reason' => 'validation_errors'];
+        }
+
+        if (! $facts['minimum_filled']) {
+            return ['collapsed' => false, 'reason' => 'minimum_not_filled'];
+        }
+
+        return ['collapsed' => true, 'reason' => 'minimum_filled'];
     }
 
     /** Возвращает решение, которое использовал последний buildCollapseBlock(). */
@@ -638,6 +672,10 @@ class shopPrefillPluginZenMode
             // короткозамыкает shouldCollapseGroup() до проверки данных. По причине признак
             // жил бы ровно один кадр, а потом молча пропадал вместе с починкой.
             'nothing_to_summarize'            => !$is_collapsed && !$this->isGroupMinimumFilled($group, $state),
+            // Почему признак, а не причина решения: причина со второго запроса всегда «кука»
+            // (Z4 пишет 'expanded' при любом развороте), и признак жил бы ровно один кадр.
+            // Тот же урок, что у nothing_to_summarize выше.
+            'has_errors'                      => !$is_collapsed && $state->hasGroupErrors($group),
         ];
 
         $template_path = shopPrefillPlugin::getPluginPath() . '/templates/zenmode/CollapseBlock.html';

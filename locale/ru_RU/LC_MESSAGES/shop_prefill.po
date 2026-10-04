@@ -130,10 +130,19 @@ msgid "zen.price.free"
 msgstr "Бесплатно"
 
 msgid "zen.validation.error.title"
-msgstr "Ой! Кажется, не все поля заполнены верно"
+msgstr "Ой! Кажется, не всё готово"
 
 msgid "zen.validation.error.message"
-msgstr "Проверьте форму — под некоторыми полями есть подсказки."
+msgstr "В форме осталась подсказка — что заполнить, выбрать или исправить. Сделайте это и попробуйте снова."
+
+msgid "zen.validation.reason.method_required"
+msgstr "Не выбран способ оплаты. Выберите его и попробуйте снова."
+
+msgid "zen.validation.reason.variant_required"
+msgstr "Не выбран вариант доставки. Выберите его и попробуйте снова."
+
+msgid "zen.validation.reason.type_required"
+msgstr "Не выбран тип доставки. Выберите его и попробуйте снова."
 
 msgid "zen.validation.error.button"
 msgstr "Сейчас проверю"
