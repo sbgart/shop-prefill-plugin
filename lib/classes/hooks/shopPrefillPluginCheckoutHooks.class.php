@@ -244,56 +244,108 @@ class shopPrefillPluginCheckoutHooks
         }
 
         $state = new shopPrefillCheckoutState($params);
-        return $this->renderLostDeliveryChoiceScript($state)
-            . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderShipping', 'SHIPPING SECTION');
+        return $this->renderSectionErrorsAndDebug($state, 'checkoutRenderShipping', 'SHIPPING SECTION');
     }
 
     /**
-     * Сообщает покупателю, что выбранный им вариант доставки пропал при пересчёте.
+     * Сообщает покупателю, что выбранное им (доставка либо оплата) пропало при пересчёте.
      *
-     * Разовость держит отметка «о потере этого варианта уже предупредили»: мёртвый вариант
+     * Решение принимается здесь, один раз за запрос: хук подтверждения видит данные всех
+     * секций, а два диалога подряд недопустимы. Доставка главнее оплаты
+     * (shopPrefillPluginLostChoiceDetector::pickDialog()).
+     *
+     * Разовость держит отметка «о потере этого выбора уже предупредили»: мёртвый выбор
      * остаётся в сессии, форма шлёт его заново на каждой загрузке страницы, и без отметки
      * диалог всплывал бы при каждой перезагрузке. Отметка снимается вместе с эхом (смена
-     * выбора, заказ) и когда вариант вернулся в список. Признака в разметке не нужно.
-     * Текст без причины: вес, адрес или количество — мы не знаем и гадать не должны
-     * (docs/todo/zen-lost-variant-silent-expand.md).
+     * выбора, заказ) и когда выбор вернулся в список. Текст без причины: вес, адрес или
+     * количество — мы не знаем и гадать не должны (docs/todo/zen-lost-variant-silent-expand.md).
      *
-     * Отдельное событие, а не prefill_delivery_unavailable: у того кнопка ведёт в «Мои
+     * Отдельные события, а не prefill_delivery_unavailable: у того кнопка ведёт в «Мои
      * варианты», которых у гостя нет, а поводом служит клик покупателя, а не пересчёт.
      */
-    private function renderLostDeliveryChoiceScript(shopPrefillCheckoutState $state): string
+    private function renderLostChoiceScript(shopPrefillCheckoutState $state): string
     {
-        $echo     = $this->session_storage->getDeliveryEcho();
-        $notified = $this->session_storage->getLostChoiceNotified();
+        $kind_delivery = shopPrefillPluginLostChoiceDetector::KIND_DELIVERY;
+        $kind_payment  = shopPrefillPluginLostChoiceDetector::KIND_PAYMENT;
+
+        $delivery_echo = $this->session_storage->getDeliveryEcho();
+        $delivery      = $this->evaluateLostChoice(
+            $kind_delivery,
+            $delivery_echo['variant_id'] ?? null,
+            $state->isFastRender() || $state->isStepSkipped('shipping'),
+            $state->getShippingVariantId()
+        );
+
+        // selected_method_id ядро отдаёт сырым значением из POST — сверяем со списком способов
+        $payment_echo_id = $this->session_storage->getPaymentEcho()['id'] ?? null;
+        $method_ids      = $state->getPaymentMethodIds();
+        $payment         = $this->evaluateLostChoice(
+            $kind_payment,
+            $payment_echo_id,
+            $method_ids === null,
+            ($payment_echo_id !== null && in_array((string) $payment_echo_id, $method_ids ?? [], true))
+                ? (string) $payment_echo_id
+                : null
+        );
+
+        $dialog = shopPrefillPluginLostChoiceDetector::pickDialog($delivery, $payment);
+
+        // Диалог про оплату пока только в лог: сначала проверяем критерий на живых
+        // сценариях без ложных срабатываний (docs/todo/zen-lost-variant-silent-expand.md)
+        $payment_dialog_enabled = false;
+        if ($dialog === $kind_payment && !$payment_dialog_enabled) {
+            shopPrefillPluginLog::debug('Lost payment choice: dialog suppressed (log-only)');
+            return '';
+        }
+
+        if ($dialog === null) {
+            return '';
+        }
+
+        // Потеряны оба — показываем про доставку, но об оплате тоже считаем предупреждёнными:
+        // иначе она всплыла бы вторым диалогом на следующей загрузке
+        if ($payment['lost']) {
+            $this->session_storage->markLostChoiceNotified($kind_payment, (string) $payment_echo_id);
+        }
+        if ($delivery['lost']) {
+            $this->session_storage->markLostChoiceNotified($kind_delivery, (string) $delivery_echo['variant_id']);
+        }
+
+        return '<script>if(typeof $!=="undefined"){$(document).trigger("prefill_' . $dialog . '_lost");}</script>';
+    }
+
+    /**
+     * Решение по одному выбору плюс побочные эффекты, общие для обоих видов: запись в лог
+     * и снятие отметки, когда выбор вернулся в список.
+     *
+     * @return array{lost: bool, reason: string}
+     */
+    private function evaluateLostChoice(string $kind, ?string $echo_id, bool $step_skipped, ?string $selected_id): array
+    {
         $decision = shopPrefillPluginLostChoiceDetector::decide([
-            'echo_variant_id'     => $echo['variant_id'] ?? null,
-            'step_skipped'        => $state->isFastRender() || $state->isStepSkipped('shipping'),
-            'selected_variant_id' => $state->getShippingVariantId(),
-            'notified_variant_id' => $notified,
+            'echo_id'      => $echo_id,
+            'step_skipped' => $step_skipped,
+            'selected_id'  => $selected_id,
+            'notified_id'  => $this->session_storage->getLostChoiceNotified($kind),
         ]);
 
         // «Нет эха» — норма почти каждого рендера, в лог его не тащим
         if ($decision['reason'] !== 'nothing_chosen') {
-            shopPrefillPluginLog::debug('Lost delivery choice check', [
-                'lost'                => $decision['lost'],
-                'reason'              => $decision['reason'],
-                'echo_variant_id'     => $echo['variant_id'] ?? null,
-                'selected_variant_id' => $state->getShippingVariantId(),
+            shopPrefillPluginLog::debug('Lost choice check', [
+                'kind'        => $kind,
+                'lost'        => $decision['lost'],
+                'reason'      => $decision['reason'],
+                'echo_id'     => $echo_id,
+                'selected_id' => $selected_id,
             ]);
         }
 
-        if ($decision['reason'] === 'variant_kept') {
-            // Вариант вернулся в список: следующую его потерю покажем заново
-            $this->session_storage->forgetLostChoiceNotified();
+        if ($decision['reason'] === 'kept') {
+            // Выбор вернулся в список: следующую его потерю покажем заново
+            $this->session_storage->forgetLostChoiceNotified($kind);
         }
 
-        if (!$decision['lost']) {
-            return '';
-        }
-
-        $this->session_storage->markLostChoiceNotified((string) $echo['variant_id']);
-
-        return '<script>if(typeof $!=="undefined"){$(document).trigger("prefill_delivery_lost");}</script>';
+        return $decision;
     }
 
     /**
@@ -357,6 +409,7 @@ class shopPrefillPluginCheckoutHooks
 
         $state = new shopPrefillCheckoutState($params);
         return $this->renderDeliveryUnavailableScript($state)
+            . $this->renderLostChoiceScript($state)
             . $this->renderConsentCheckbox()
             . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderConfirm', 'CONFIRM SECTION');
     }

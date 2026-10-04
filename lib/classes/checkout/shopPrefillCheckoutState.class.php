@@ -645,6 +645,19 @@ class shopPrefillCheckoutState
     }
 
     /**
+     * Идентификаторы способов оплаты, которые ядро посчитало для этого запроса.
+     *
+     * @return string[]|null null — список не посчитан (шаг не считался или выключен): это
+     *                       неопределённость, а не «способов нет» (B2a)
+     */
+    public function getPaymentMethodIds(): ?array
+    {
+        $methods = $this->params['vars']['payment']['methods'] ?? null;
+
+        return is_array($methods) ? array_map('strval', array_keys($methods)) : null;
+    }
+
+    /**
      * Возвращает название метода оплаты.
      * Ищет сначала в vars.payment.methods, затем через PluginsProvider.
      */
