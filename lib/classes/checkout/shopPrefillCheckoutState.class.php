@@ -645,12 +645,51 @@ class shopPrefillCheckoutState
     }
 
     /**
+     * Идентификаторы способов оплаты, которые хук checkout_render_payment видел в этом запросе.
+     *
+     * Ядро при `payment[html]=only` вырезает `methods` из результата шага ПОСЛЕ рисования секции
+     * (shopCheckoutPaymentStep::process()): хук оплаты список ещё видит, а хук подтверждения, где
+     * принимается решение о потере выбора, уже нет. Статика, а не поле: ядро пересоздаёт объект
+     * плагина на каждое событие, и состояние одного хука до другого не доживает.
+     *
+     * @var string[]|null
+     */
+    private static ?array $payment_method_ids_seen = null;
+
+    /**
+     * Запоминает список способов оплаты, если он есть в параметрах этого хука. Вызывается из
+     * хука оплаты, пока ядро не вырезало `methods`.
+     */
+    public function rememberPaymentMethodIds(): void
+    {
+        $ids = $this->readPaymentMethodIds();
+        if ($ids !== null) {
+            self::$payment_method_ids_seen = $ids;
+        }
+    }
+
+    /** Сбрасывает память (долгоживущие процессы и тесты; в запросе PHP статика и так пуста). */
+    public static function forgetSeenPaymentMethodIds(): void
+    {
+        self::$payment_method_ids_seen = null;
+    }
+
+    /**
      * Идентификаторы способов оплаты, которые ядро посчитало для этого запроса.
+     *
+     * Сначала параметры самого хука, затем то, что запомнил хук оплаты (при `html=only` ядро
+     * вырезает список раньше, чем срабатывает хук подтверждения).
      *
      * @return string[]|null null — список не посчитан (шаг не считался или выключен): это
      *                       неопределённость, а не «способов нет» (B2a)
      */
     public function getPaymentMethodIds(): ?array
+    {
+        return $this->readPaymentMethodIds() ?? self::$payment_method_ids_seen;
+    }
+
+    /** @return string[]|null */
+    private function readPaymentMethodIds(): ?array
     {
         $methods = $this->params['vars']['payment']['methods'] ?? null;
 
@@ -820,11 +859,47 @@ class shopPrefillCheckoutState
      *
      * Отсутствие ключа vars.<шаг> — неопределённость, а не пустота: по B2a отвечаем «нет».
      *
+     * Это вопрос «рисовало ли ядро секцию», а не «посчитало ли оно выбор»: при ошибке выше
+     * prepare() шага, которому запрошен HTML, кладёт в vars.<шаг> отрисованный `html`, и массив
+     * не пуст, хотя process() не вызывался. Для «посчитан ли выбор» есть wasStepProcessed().
+     *
      * @param string $step auth | region | shipping | details | payment | confirm
      */
     public function isStepSkipped(string $step): bool
     {
         return isset($this->params['vars'][$step]) && $this->params['vars'][$step] === [];
+    }
+
+    /**
+     * Ключ, который кладёт в результат только process() шага: выбор покупателя, как его оставило
+     * ядро (даже пустой — тогда значение null, а ключ есть). prepare() его не кладёт никогда.
+     * Не вырезается при `html=only` (в отличие от `types` у доставки и `methods` у оплаты).
+     */
+    private const STEP_RESULT_MARKER = [
+        'shipping' => 'selected_variant_id',
+        'payment'  => 'selected_method_id',
+    ];
+
+    /**
+     * Ядро посчитало выбор шага в этом запросе: отличает «выбора нет, потому что посчитали и
+     * не нашли» (настоящая потеря) от «не считали вовсе» (ошибка выше по форме, fast_render,
+     * шаг выключен, ранний выход ядра), где пустой ответ ничего не доказывает.
+     *
+     * Решение по положительному признаку, а не по порядку шагов или пустоте массива: порядок
+     * шагов принадлежит ядру и меняется событием checkout_steps, а пустоту при ошибке выше
+     * перекрывает отрисованный `html`. Нет признака — отвечаем «нет» (B2a): для сообщения
+     * покупателю молчание безопаснее ложной тревоги, а сломанный признак (другая версия ядра)
+     * проявится как тишина, а не как неверный диалог. Живая карта ответов — в
+     * docs/bugs/lost-choice-false-positive-on-upstream-error.md.
+     *
+     * @param string $step shipping | payment (для остальных шагов признака нет — всегда false)
+     */
+    public function wasStepProcessed(string $step): bool
+    {
+        $marker = self::STEP_RESULT_MARKER[$step] ?? null;
+        $vars   = $this->params['vars'][$step] ?? null;
+
+        return $marker !== null && is_array($vars) && array_key_exists($marker, $vars);
     }
 
     /**

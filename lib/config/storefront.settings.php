@@ -47,6 +47,9 @@ return [
     // Zen Mode — сворачивание секций чекаута
     'zen'         => [
         'active'                => ['value' => true, 'filter' => FILTER_VALIDATE_BOOLEAN],
+        // Диалог «Нужно выбрать другую доставку / оплату», когда выбор пропал после пересчёта
+        // (P10). Opt-in: функция новая, магазин сначала проверяет её у себя.
+        'lost_choice_notice'    => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
         // 'small' | 'medium' | 'large' — размер иконок (2.5rem×1.5rem, 3.5rem×2rem, 4.5rem×2.5rem)
         'icon_size'             => ['value' => 'medium'],
         'toggle_button_classes' => ['value' => ''],

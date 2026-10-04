@@ -265,6 +265,11 @@ class shopPrefillPluginCheckoutHooks
      */
     private function renderLostChoiceScript(shopPrefillCheckoutState $state): string
     {
+        // Опция выключена — не делаем вообще ничего: ни записей в лог, ни отметок в сессии (P5)
+        if (!$this->isLostChoiceNoticeEnabled()) {
+            return '';
+        }
+
         $kind_delivery = shopPrefillPluginLostChoiceDetector::KIND_DELIVERY;
         $kind_payment  = shopPrefillPluginLostChoiceDetector::KIND_PAYMENT;
 
@@ -272,7 +277,9 @@ class shopPrefillPluginCheckoutHooks
         $delivery      = $this->evaluateLostChoice(
             $kind_delivery,
             $delivery_echo['variant_id'] ?? null,
-            $state->isFastRender() || $state->isStepSkipped('shipping'),
+            // Не «пуст ли ответ шага», а «считало ли ядро выбор»: при ошибке авторизации или
+            // региона ядро рисует HTML шага доставки, не считая его, и пустой выбор не потеря
+            $state->isFastRender() || !$state->wasStepProcessed('shipping'),
             $state->getShippingVariantId()
         );
 
@@ -304,6 +311,29 @@ class shopPrefillPluginCheckoutHooks
         }
 
         return '<script>if(typeof $!=="undefined"){$(document).trigger("prefill_' . $dialog . '_lost");}</script>';
+    }
+
+    /**
+     * Включено ли предупреждение о пропавшем выборе доставки и оплаты (zen.lost_choice_notice).
+     *
+     * Опция, а не умолчание: функция новая, и магазин сначала проверяет её у себя. Выключено по
+     * умолчанию, включается в «Дзен-режим → Основные».
+     */
+    private function isLostChoiceNoticeEnabled(): bool
+    {
+        return !empty($this->storefront_settings['zen']['lost_choice_notice']);
+    }
+
+    /**
+     * Список способов оплаты нужен хуку подтверждения (решение о потере выбора), но к нему ядро
+     * при `payment[html]=only` уже вырежет `methods`: запоминаем, пока хук оплаты его видит.
+     * Опция выключена — не запоминаем.
+     */
+    private function rememberPaymentMethodsForConfirm(shopPrefillCheckoutState $state): void
+    {
+        if ($this->isLostChoiceNoticeEnabled()) {
+            $state->rememberPaymentMethodIds();
+        }
     }
 
     /**
@@ -380,6 +410,9 @@ class shopPrefillPluginCheckoutHooks
         }
 
         $state = new shopPrefillCheckoutState($params);
+
+        $this->rememberPaymentMethodsForConfirm($state);
+
         return $this->buildZenModeGroupBlock('payment', $state, 'checkoutRenderPayment')
             . $this->renderSectionErrorsAndDebug($state, 'checkoutRenderPayment', 'PAYMENT SECTION');
     }

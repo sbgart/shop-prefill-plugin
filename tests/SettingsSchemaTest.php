@@ -7,7 +7,9 @@
  *     по которому shopPrefillPluginSettingsConfig::isField() отличает лист от группы);
  *   - opt-in по умолчанию выключен: guest.enabled, remember_me.on_order и все три
  *     integration.* — их включение меняет видимое поведение сайта или переживает данные
- *     между визитами, поэтому дефолт не может быть true;
+ *     между визитами, поэтому дефолт не может быть true; zen.lost_choice_notice — новая
+ *     функция, которую магазин сначала проверяет у себя (включить по умолчанию — решение
+ *     владельца после обкатки, а не правка схемы походя);
  *   - my_delivery_variants_limit — в пределах 1..10 (диапазон, который реально клампит
  *     shopPrefillPluginFillParamsCollection::normalizeLimit()).
  *
@@ -99,6 +101,7 @@ $opt_in_off = [
     'prefill.integration.cityselect',
     'prefill.integration.regions',
     'prefill.integration.dp',
+    'zen.lost_choice_notice',
 ];
 
 foreach ($opt_in_off as $path) {

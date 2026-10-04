@@ -139,16 +139,16 @@ msgid "dialog.content.error"
 msgstr "Failed to load content, please try again later."
 
 msgid "dialog.consent_revoke.title"
-msgstr "Clear form data?"
+msgstr "Consent withdrawn"
 
 msgid "dialog.consent_revoke.text"
-msgstr "The checkout form is already filled. Clear the entered data?"
+msgstr "Saved data has been deleted and new data will not be remembered. Also clear what is already entered in the form on this page?"
 
 msgid "dialog.consent_revoke.confirm"
 msgstr "Yes, clear"
 
 msgid "dialog.consent_revoke.cancel"
-msgstr "No"
+msgstr "Keep"
 
 msgid "message.form_data_cleared"
 msgstr "Form data cleared"
@@ -1301,3 +1301,12 @@ msgstr "We recalculated your order, and the payment method you chose no longer f
 
 msgid "dialog.lost_payment.button"
 msgstr "Got it"
+
+msgid "zen.setting.lost_choice_notice"
+msgstr "Warn when the chosen delivery or payment method disappears"
+
+msgid "zen.tooltip.lost_choice_notice"
+msgstr "Shows the customer a dialog when, after the cart or address changes, the chosen delivery or payment method is no longer available."
+
+msgid "hint.zen.lost_choice_notice"
+msgstr "A new feature, off by default. Without it the block simply opens and the customer does not understand why their choice disappeared. Turn it on for your storefront, check it with your own delivery and payment methods, and tell us if anything works wrong."

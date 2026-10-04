@@ -54,7 +54,10 @@ $cases = [
     'оплата: эхо есть, из списка ушла'  => ['22',   false, null,   true,  'missing_in_response'],
 ];
 
-foreach ($cases as $name => [$echo, $skipped, $selected, $lost, $reason, $notified]) {
+foreach ($cases as $name => $case) {
+    // Шестой элемент (о чём уже предупреждали) есть не у всех кейсов
+    [$echo, $skipped, $selected, $lost, $reason] = $case;
+    $notified = $case[5] ?? null;
     $r = shopPrefillPluginLostChoiceDetector::decide([
         'echo_id'      => $echo,
         'step_skipped' => $skipped,

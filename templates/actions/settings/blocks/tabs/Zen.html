@@ -52,6 +52,14 @@
                         tooltip='[`zen.tooltip.active`]'
                         hint_after='[`hint.zen.active`]'}
 
+                    {include file='../../components/Field.html'
+                        name="{$name_prefix}[zen][lost_choice_notice]"
+                        type='Switcher'
+                        label='[`zen.setting.lost_choice_notice`]'
+                        value=$settings['zen']['lost_choice_notice']
+                        tooltip='[`zen.tooltip.lost_choice_notice`]'
+                        hint_after='[`hint.zen.lost_choice_notice`]'}
+
                     <div class="field">
                         <div class="name">[`zen.icon_size`]</div>
                         <div class="value">

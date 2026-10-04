@@ -199,16 +199,16 @@ msgid "dialog.content.error"
 msgstr "Ошибка получения контента, попробуйте позже."
 
 msgid "dialog.consent_revoke.title"
-msgstr "Очистить данные формы?"
+msgstr "Согласие отозвано"
 
 msgid "dialog.consent_revoke.text"
-msgstr "Форма оформления заказа уже заполнена. Очистить введённые данные?"
+msgstr "Сохранённые данные удалены, новые запоминаться не будут. Очистить и то, что уже введено в форму на этой странице?"
 
 msgid "dialog.consent_revoke.confirm"
 msgstr "Да, очистить"
 
 msgid "dialog.consent_revoke.cancel"
-msgstr "Нет"
+msgstr "Оставить"
 
 msgid "message.form_data_cleared"
 msgstr "Данные формы очищены"
@@ -1301,3 +1301,12 @@ msgstr "Мы пересчитали заказ, и выбранный вами �
 
 msgid "dialog.lost_payment.button"
 msgstr "Понятно"
+
+msgid "zen.setting.lost_choice_notice"
+msgstr "Предупреждать, если выбранная доставка или оплата пропала"
+
+msgid "zen.tooltip.lost_choice_notice"
+msgstr "Показывает покупателю диалог, если после изменения корзины или адреса выбранный способ доставки или оплаты стал недоступен."
+
+msgid "hint.zen.lost_choice_notice"
+msgstr "Новая функция, по умолчанию выключена. Без неё блок просто раскрывается, и покупатель не понимает, почему его выбор исчез. Включите на своей витрине, проверьте на своих способах доставки и оплаты и сообщите, если что-то работает не так."
