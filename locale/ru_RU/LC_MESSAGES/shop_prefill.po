@@ -876,8 +876,8 @@ msgstr "URL логотипа выбранного плагина доставк�
 msgid "Plugin name"
 msgstr "Название плагина"
 
-msgid "Shipping carrier name from checkout data (always set when delivery is selected)"
-msgstr "Название службы доставки из данных чекаута (всегда заполнено при выбранной доставке)"
+msgid "Shipping carrier name from checkout data. If it matches the shipping rate name, the delivery type is shown instead, so the summary does not repeat itself"
+msgstr "Название службы доставки из данных чекаута. Если оно совпадает с названием тарифа, вместо него показывается тип доставки, чтобы сводка не повторяла одно и то же"
 
 msgid "Delivery tariff"
 msgstr "Тариф доставки"

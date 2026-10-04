@@ -86,6 +86,14 @@ class shopPrefillPluginFrontendParamsChoiceAction extends waViewAction
 
         foreach ($items as $item_obj) {
             $item_array               = $item_obj->toArray();
+            // Адрес собираем здесь, а не в шаблоне: пустой индекс или улица (самовывоз) иначе оставляют запятые
+            $item_array['address_line'] = shopPrefillPluginDisplayText::joinAddress([
+                $item_array['zip'] ?? '',
+                $item_array['country_name'] ?? '',
+                $item_array['region_name'] ?? '',
+                $item_array['city'] ?? '',
+                $item_array['street'] ?? '',
+            ]);
             $item_array['is_current'] = $item_obj->isSameDeliveryOption($current);
             $fill_params_array[]      = $item_array;
         }

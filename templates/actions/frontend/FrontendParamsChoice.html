@@ -8,8 +8,7 @@
             {$fill_params.shipping_name|escape}
         </header>
         <div class="prefill-params__card-content">
-            {$fill_params.zip|escape}, {$fill_params.country_name|escape}, {$fill_params.region_name|escape},
-            {$fill_params.city|escape}, {$fill_params.street|escape}
+            {$fill_params.address_line|escape}
         </div>
     </div>
     {foreachelse}

@@ -160,7 +160,7 @@ class shopPrefillPluginZenData
             'delivery_plugin' => [
                 'group' => 'delivery',
                 'name' => _wp('Plugin name'),
-                'description' => _wp('Shipping carrier name from checkout data (always set when delivery is selected)'),
+                'description' => _wp('Shipping carrier name from checkout data. If it matches the shipping rate name, the delivery type is shown instead, so the summary does not repeat itself'),
                 'example' => _wp('zen.custom_template.example_value.delivery_plugin'),
             ],
             'delivery_tariff' => [
@@ -520,9 +520,14 @@ class shopPrefillPluginZenData
 
         // 3. Расширенные данные доставки
         $data['delivery_est_delivery'] = $state->getShippingEstDelivery();
-        $data['delivery_plugin'] = $state->getShippingPluginName();
         $data['delivery_tariff'] = $state->getShippingService();
         $data['delivery_type'] = $this->formatDeliveryType($state->getShippingType());
+        // Название службы совпадает с названием тарифа — в сводке это две одинаковые строки подряд
+        $data['delivery_plugin'] = shopPrefillPluginDisplayText::deliveryHeader(
+            $state->getShippingPluginName(),
+            $data['shipping_name'],
+            $data['delivery_type']
+        );
         $data['delivery_description'] = $state->getShippingDescription();
         $data['delivery_pickup_address'] = $state->getShippingPickupAddress();
         $data['delivery_way'] = $state->getShippingWay();
