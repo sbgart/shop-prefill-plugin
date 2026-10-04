@@ -55,7 +55,7 @@ class ZenModeToggle {
     this.showNoticeDialog(
       "prefill-lost-delivery-choice",
       this.messages.lost_choice_title || "",
-      this.messages.lost_choice_text || "The delivery method you selected is not available right now.",
+      this.messages.lost_choice_text || "The delivery method you chose no longer fits.",
       this.messages.lost_choice_button
     );
   }

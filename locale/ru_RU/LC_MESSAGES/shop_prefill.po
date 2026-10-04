@@ -1285,10 +1285,10 @@ msgid "debug.error_step"
 msgstr "Шаг с ошибкой"
 
 msgid "dialog.lost_choice.title"
-msgstr "Способ доставки недоступен"
+msgstr "Нужно выбрать другую доставку"
 
 msgid "dialog.lost_choice.text"
-msgstr "Способ доставки, который вы выбрали, сейчас недоступен. Выберите другой."
+msgstr "Мы пересчитали заказ, и выбранный вами способ доставки больше не подходит. Выберите другой — это быстро."
 
 msgid "dialog.lost_choice.button"
 msgstr "Понятно"

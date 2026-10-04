@@ -1285,10 +1285,10 @@ msgid "debug.error_step"
 msgstr "Error step"
 
 msgid "dialog.lost_choice.title"
-msgstr "Delivery method unavailable"
+msgstr "Please choose another delivery"
 
 msgid "dialog.lost_choice.text"
-msgstr "The delivery method you selected is not available right now. Please choose another one."
+msgstr "We recalculated your order, and the delivery method you chose no longer fits. Please pick another one — it only takes a moment."
 
 msgid "dialog.lost_choice.button"
 msgstr "Got it"
