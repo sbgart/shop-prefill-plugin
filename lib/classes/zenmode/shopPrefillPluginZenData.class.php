@@ -160,8 +160,14 @@ class shopPrefillPluginZenData
             'delivery_plugin' => [
                 'group' => 'delivery',
                 'name' => _wp('Plugin name'),
-                'description' => _wp('Shipping carrier name from checkout data. If it matches the shipping rate name, the delivery type is shown instead, so the summary does not repeat itself'),
+                'description' => _wp('Shipping carrier name from checkout data (always set when delivery is selected)'),
                 'example' => _wp('zen.custom_template.example_value.delivery_plugin'),
+            ],
+            'delivery_header' => [
+                'group' => 'delivery',
+                'name' => _wp('Delivery summary heading'),
+                'description' => _wp('Heading for the delivery summary: the carrier name, but if it equals the shipping rate name, the delivery type instead (empty when that repeats too), so the summary does not say the same thing twice'),
+                'example' => _wp('zen.custom_template.example_value.delivery_header'),
             ],
             'delivery_tariff' => [
                 'group' => 'delivery',
@@ -522,9 +528,11 @@ class shopPrefillPluginZenData
         $data['delivery_est_delivery'] = $state->getShippingEstDelivery();
         $data['delivery_tariff'] = $state->getShippingService();
         $data['delivery_type'] = $this->formatDeliveryType($state->getShippingType());
-        // Название службы совпадает с названием тарифа — в сводке это две одинаковые строки подряд
-        $data['delivery_plugin'] = shopPrefillPluginDisplayText::deliveryHeader(
-            $state->getShippingPluginName(),
+        $data['delivery_plugin'] = $state->getShippingPluginName();
+        // Отдельная переменная, а не подмена delivery_plugin: у той контракт «название службы, всегда заполнено»,
+        // и магазин вправе выводить её где угодно. Здесь — только заголовок сводки без повтора тарифа
+        $data['delivery_header'] = shopPrefillPluginDisplayText::deliveryHeader(
+            $data['delivery_plugin'],
             $data['shipping_name'],
             $data['delivery_type']
         );

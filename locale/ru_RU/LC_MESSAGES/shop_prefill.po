@@ -795,6 +795,9 @@ msgstr "inn: 7707083893"
 msgid "zen.custom_template.example_value.delivery_plugin"
 msgstr "СДЭК"
 
+msgid "zen.custom_template.example_value.delivery_header"
+msgstr "Курьер"
+
 msgid "zen.custom_template.example_value.delivery_tariff"
 msgstr "Самовывоз из магазина"
 
@@ -876,8 +879,14 @@ msgstr "URL логотипа выбранного плагина доставк�
 msgid "Plugin name"
 msgstr "Название плагина"
 
-msgid "Shipping carrier name from checkout data. If it matches the shipping rate name, the delivery type is shown instead, so the summary does not repeat itself"
-msgstr "Название службы доставки из данных чекаута. Если оно совпадает с названием тарифа, вместо него показывается тип доставки, чтобы сводка не повторяла одно и то же"
+msgid "Shipping carrier name from checkout data (always set when delivery is selected)"
+msgstr "Название службы доставки из данных чекаута (всегда заполнено при выбранной доставке)"
+
+msgid "Delivery summary heading"
+msgstr "Заголовок сводки доставки"
+
+msgid "Heading for the delivery summary: the carrier name, but if it equals the shipping rate name, the delivery type instead (empty when that repeats too), so the summary does not say the same thing twice"
+msgstr "Заголовок сводки доставки: название службы, но если оно совпадает с названием тарифа — тип доставки (пусто, если и он повторяет тариф), чтобы сводка не говорила одно и то же дважды"
 
 msgid "Delivery tariff"
 msgstr "Тариф доставки"

@@ -408,8 +408,14 @@ msgstr "URL of the selected shipping plugin logo (from checkout vars)"
 msgid "Plugin name"
 msgstr "Plugin name"
 
-msgid "Shipping carrier name from checkout data. If it matches the shipping rate name, the delivery type is shown instead, so the summary does not repeat itself"
-msgstr "Shipping carrier name from checkout data. If it matches the shipping rate name, the delivery type is shown instead, so the summary does not repeat itself"
+msgid "Shipping carrier name from checkout data (always set when delivery is selected)"
+msgstr "Shipping carrier name from checkout data (always set when delivery is selected)"
+
+msgid "Delivery summary heading"
+msgstr "Delivery summary heading"
+
+msgid "Heading for the delivery summary: the carrier name, but if it equals the shipping rate name, the delivery type instead (empty when that repeats too), so the summary does not say the same thing twice"
+msgstr "Heading for the delivery summary: the carrier name, but if it equals the shipping rate name, the delivery type instead (empty when that repeats too), so the summary does not say the same thing twice"
 
 msgid "Delivery tariff"
 msgstr "Delivery tariff"
@@ -944,6 +950,9 @@ msgstr "inn: 7707083893"
 
 msgid "zen.custom_template.example_value.delivery_plugin"
 msgstr "CDEK"
+
+msgid "zen.custom_template.example_value.delivery_header"
+msgstr "Courier"
 
 msgid "zen.custom_template.example_value.delivery_tariff"
 msgstr "Store pickup"
