@@ -2,7 +2,7 @@
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).
 
-## [v1.0.0] — 2026-09-13
+## [v1.0.0] — 2026-10-04
 
 ### Added
 
