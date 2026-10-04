@@ -290,14 +290,6 @@ class shopPrefillPluginCheckoutHooks
 
         $dialog = shopPrefillPluginLostChoiceDetector::pickDialog($delivery, $payment);
 
-        // Диалог про оплату пока только в лог: сначала проверяем критерий на живых
-        // сценариях без ложных срабатываний (docs/todo/zen-lost-variant-silent-expand.md)
-        $payment_dialog_enabled = false;
-        if ($dialog === $kind_payment && !$payment_dialog_enabled) {
-            shopPrefillPluginLog::debug('Lost payment choice: dialog suppressed (log-only)');
-            return '';
-        }
-
         if ($dialog === null) {
             return '';
         }

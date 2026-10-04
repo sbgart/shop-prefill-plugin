@@ -42,21 +42,25 @@ class ZenModeToggle {
     // Делегирование событий на document для обработки динамически добавленных элементов
     document.addEventListener("click", this.handleClick.bind(this));
 
-    // Событие шлёт сервер в ответе пересчёта, где выбранный вариант доставки пропал
-    // (shopPrefillPluginCheckoutHooks::renderLostDeliveryChoiceScript)
-    $(document).on("prefill_delivery_lost", () => this.showLostChoiceDialog());
+    // События шлёт сервер в ответе пересчёта, где выбранное покупателем (доставка либо
+    // оплата) пропало; за запрос приходит не больше одного — решает
+    // shopPrefillPluginCheckoutHooks::renderLostChoiceScript
+    $(document).on("prefill_delivery_lost", () => this.showLostChoiceDialog("delivery"));
+    $(document).on("prefill_payment_lost", () => this.showLostChoiceDialog("payment"));
   }
 
   /**
-   * Сообщает, что выбранный покупателем вариант доставки пропал при пересчёте.
+   * Сообщает, что выбранное покупателем (доставка либо оплата) пропало при пересчёте.
    * Только факт, без причины: вес, адрес или количество — мы не знаем и гадать не должны.
+   *
+   * @param {"delivery"|"payment"} kind - Что пропало
    */
-  showLostChoiceDialog() {
+  showLostChoiceDialog(kind) {
     this.showNoticeDialog(
-      "prefill-lost-delivery-choice",
-      this.messages.lost_choice_title || "",
-      this.messages.lost_choice_text || "The delivery method you chose no longer fits.",
-      this.messages.lost_choice_button
+      `prefill-lost-${kind}-choice`,
+      this.messages[`lost_${kind}_title`] || "",
+      this.messages[`lost_${kind}_text`] || "The option you chose no longer fits your order.",
+      this.messages[`lost_${kind}_button`]
     );
   }
 

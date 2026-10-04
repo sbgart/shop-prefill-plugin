@@ -1284,11 +1284,20 @@ msgstr "Группу нельзя скрывать: покупатель дол�
 msgid "debug.error_step"
 msgstr "Шаг с ошибкой"
 
-msgid "dialog.lost_choice.title"
+msgid "dialog.lost_delivery.title"
 msgstr "Нужно выбрать другую доставку"
 
-msgid "dialog.lost_choice.text"
+msgid "dialog.lost_delivery.text"
 msgstr "Мы пересчитали заказ, и выбранный вами способ доставки больше не подходит. Выберите другой — это быстро."
 
-msgid "dialog.lost_choice.button"
+msgid "dialog.lost_delivery.button"
+msgstr "Понятно"
+
+msgid "dialog.lost_payment.title"
+msgstr "Нужно выбрать другую оплату"
+
+msgid "dialog.lost_payment.text"
+msgstr "Мы пересчитали заказ, и выбранный вами способ оплаты больше не подходит. Выберите другой — это быстро."
+
+msgid "dialog.lost_payment.button"
 msgstr "Понятно"

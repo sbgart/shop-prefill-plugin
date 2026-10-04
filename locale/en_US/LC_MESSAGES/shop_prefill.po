@@ -1284,11 +1284,20 @@ msgstr "The group cannot be hidden because the customer must correct these field
 msgid "debug.error_step"
 msgstr "Error step"
 
-msgid "dialog.lost_choice.title"
+msgid "dialog.lost_delivery.title"
 msgstr "Please choose another delivery"
 
-msgid "dialog.lost_choice.text"
+msgid "dialog.lost_delivery.text"
 msgstr "We recalculated your order, and the delivery method you chose no longer fits. Please pick another one — it only takes a moment."
 
-msgid "dialog.lost_choice.button"
+msgid "dialog.lost_delivery.button"
+msgstr "Got it"
+
+msgid "dialog.lost_payment.title"
+msgstr "Please choose another payment method"
+
+msgid "dialog.lost_payment.text"
+msgstr "We recalculated your order, and the payment method you chose no longer fits. Please pick another one — it only takes a moment."
+
+msgid "dialog.lost_payment.button"
 msgstr "Got it"
