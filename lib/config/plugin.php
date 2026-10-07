@@ -4,7 +4,7 @@
 return [
     'name' => "Автовыбор доставки и оплаты",
     'description' => "На основе прошлого заказа, как на маркетплейсах.",
-    'version' => "1.0.0",
+    'version' => "1.0.1",
     'img' => "img/plugin.png",
     'vendor' => '1059969',
     'custom_settings' => true,
