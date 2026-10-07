@@ -24,6 +24,8 @@
 
 > **Что сюда класть:** идеи, доработки и открытые хвосты незавершённых планов, которые не входят в текущий релиз — разбирать после релиза или по запросу пользователей. Голая идея без разбора может остаться одной строкой без файла; как только появляется разбор — выносить в `todo/` или `plans/` и ссылаться оттуда. Задача закрыта — переносить строку в архив, файл (если был) — в `todo/done/` или `plans/done/`.
 
+- [ ] 🟠 Перевод руководства на английский: [user-guide/ru.html](user-guide/ru.html) → `user-guide/en.html` — тексты берутся из `locale/en_US/…/shop_prefill.po`, чтобы названия настроек совпали с интерфейсом; затем скриншоты вкладок настроек
+- [ ] 🟢 Сверить с кодом оставшиеся концепт-документы: [CONCEPT.md](concept/CONCEPT.md) (cookie `prefill_guest_hash` вместо `prefill_guest_token`), [ZEN-MODE.md](concept/ZEN-MODE.md) (сам помечен как разошедшийся с кодом), [CHECKOUT-ADDRESS-SELECTION.md](concept/CHECKOUT-ADDRESS-SELECTION.md) — устаревшее удалять, как сделано с `CHECKOUT-PREFILL-LOGIC.md`
 - [ ] [CSS-классы для баннеров в кастомных шаблонах](todo/zen-mode-template-banners.md)
 - [ ] [Выбор места доставки в любом месте сайта](todo/delivery-point-anywhere.md)
 - [ ] [Опция «Оплата после получения»](todo/payment-after-receive.md)
