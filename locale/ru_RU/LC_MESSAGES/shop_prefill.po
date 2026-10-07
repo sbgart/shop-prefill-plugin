@@ -13,7 +13,7 @@ msgstr ""
 "X-Generator: Poedit 3.2.2\n"
 
 msgid "title"
-msgstr "Предзаполнение полей оформления заказа"
+msgstr "Автовыбор доставки и оплаты"
 
 msgid "menu.help"
 msgstr "Поддержка"

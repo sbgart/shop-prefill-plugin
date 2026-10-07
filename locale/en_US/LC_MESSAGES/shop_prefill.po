@@ -13,7 +13,7 @@ msgstr ""
 "X-Generator: Poedit 3.2.2\n"
 
 msgid "title"
-msgstr "Pre-filling checkout fields"
+msgstr "Auto-select delivery and payment"
 
 msgid "menu.help"
 msgstr "Support"
@@ -1319,3 +1319,10 @@ msgstr "Shows the customer a dialog when, after the cart or address changes, the
 
 msgid "hint.zen.lost_choice_notice"
 msgstr "A new feature, off by default. Without it the block simply opens and the customer does not understand why their choice disappeared. Turn it on for your storefront, check it with your own delivery and payment methods, and tell us if anything works wrong."
+
+# lib/config/plugin.php: имя и описание плагина
+msgid "Автовыбор доставки и оплаты"
+msgstr "Auto-select delivery and payment"
+
+msgid "На основе прошлого заказа, как на маркетплейсах."
+msgstr "Based on the previous order, like on marketplaces."

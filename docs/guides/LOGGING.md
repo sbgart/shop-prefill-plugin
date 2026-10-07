@@ -3,25 +3,27 @@
 Единая система логирования работает и в PHP, и в JS. Основная цель — отделить общие логи от критических ошибок.
 
 ## 1. Куда пишутся логи?
-- `wa-log/prefill.plugin.log` — Пишутся **только** при включенном режиме отладки Webasyst (`waSystemConfig::isDebug()`). Сюда попадают уровни `INFO` и `DEBUG`.
-- `wa-log/prefill.plugin.error.log` — Пишутся **всегда**, даже на "живом" сайте. Сюда попадают уровни `WARNING` и `ERROR`.
+- `wa-log/prefill.plugin.log` — уровни `INFO` и `DEBUG`.
+- `wa-log/prefill.plugin.error.log` — уровни `WARNING` и `ERROR`.
+
+Что именно пишется, определяет настройка «Уровень логирования» (вкладка «Отладка», общая для всех витрин): `off`, `error`, `warning` (по умолчанию), `info`, `debug`. Режим отладки Webasyst на запись логов не влияет — на живом сайте при уровне `warning` пишутся предупреждения и ошибки, а `INFO`/`DEBUG` — только после повышения уровня.
 
 ## 2. Как логировать в PHP?
 Используйте методы класса `shopPrefillPluginLog`:
 
 ```php
-// Инфо: сохранение настроек, успешное завершение важного действия (пишется только в debug режиме)
+// Инфо: сохранение настроек, успешное завершение важного действия (пишется при уровне `info` и выше)
 shopPrefillPluginLog::info('Storefront settings saved', [
     'storefront' => $storefront_code
 ]);
 
-// Предупреждение: проблема не ломает чекаут, но требует внимания (пишется всегда)
+// Предупреждение: проблема не ломает чекаут, но требует внимания (пишется при уровне `warning` и выше)
 shopPrefillPluginLog::warning('Contact provider failed', [
     'contact_id' => $id,
     'error' => $e->getMessage()
 ]);
 
-// Ошибка: критический сбой, не отработал хук или не сохранились данные (пишется всегда)
+// Ошибка: критический сбой, не отработал хук или не сохранились данные (пишется при любом уровне, кроме `off`)
 shopPrefillPluginLog::error('Order creation hook failed', [
     'order_id' => $order_id,
     'exception' => $e->getMessage()
@@ -39,7 +41,7 @@ shopPrefillPluginLog::error('Order creation hook failed', [
 // Пишется только если включен режим отладки (info, log, debug)
 this.logger.info("User expanded the section");
 
-// Пишется всегда в prefill.plugin.error.log
+// Пишется в prefill.plugin.error.log
 this.logger.warn("Validation failed for group");
 this.logger.error("Failed to load dialog content");
 ```
