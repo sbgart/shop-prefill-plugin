@@ -2,8 +2,8 @@
 // Requires PHP >= 7.4 (arrow functions, typed properties, ??= operator)
 
 return [
-    'name' => "Предзаполнение полей оформления заказа",
-    'description' => "Упрощает оформление заказа в корзине.",
+    'name' => "Автовыбор доставки и оплаты",
+    'description' => "На основе прошлого заказа, как на маркетплейсах.",
     'version' => "1.0.0",
     'img' => "img/plugin.png",
     'vendor' => '1059969',
