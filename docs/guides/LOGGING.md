@@ -38,7 +38,7 @@ shopPrefillPluginLog::error('Order creation hook failed', [
 В новых модулях JS `Logger` пробрасывается через конструктор из `prefill.frontend.js`:
 
 ```javascript
-// Пишется только если включен режим отладки (info, log, debug)
+// Пишется только тому, кому видна панель отладки (debug_panel + полный доступ к магазину)
 this.logger.info("User expanded the section");
 
 // Пишется в prefill.plugin.error.log

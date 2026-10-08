@@ -229,7 +229,7 @@ msgid "hint.prefill.my_delivery_variants_limit"
 msgstr "Maximum number of cards in the dialog, from 1 to 10. The most recent ones are shown; identical variants are merged, so the order history is scanned deeper until enough distinct variants are collected."
 
 msgid "hint.prefill.debug_panel"
-msgstr "Show the floating debug panel and extended checkout hints only when Webasyst debug mode is on. Off by default so a permanently enabled admin debug flag does not expose the panel to customers."
+msgstr "Shows a panel on the checkout page with what the plugin did on that page, and writes a detailed log from the browser. Only users with full access to the store see the panel, once they sign in on the storefront with their account; customers never see it. Webasyst debug mode is not required."
 
 msgid "hint.prefill.sections.customer"
 msgstr "Allows prefill for the «Customer (auth)» block."

@@ -1,6 +1,8 @@
 # `refresh-debug` не требует `isAdmin('shop')`/CSRF, в отличие от соседних debug-эндпоинтов
 
-**Статус:** 🔍 Найдено 12.09.2026 при прогоне `/plugin-test prefill full`, точечная регрессия ФО-12
+**Статус:** ✅ Исправлено 08.10.2026. Панель и все её эндпоинты гейтятся одним `shopPrefillPlugin::isDebugPanelEnabled()` = настройка витрины `debug_panel` + `isAdmin('shop')`, без глобального debug Webasyst. Панель выводится только на странице оформления заказа. `refresh-debug` и `debug-source` наследуют `shopPrefillPluginFrontendDebugBaseController` (POST + CSRF), JS-логгер включается вместе с панелью. Проверено живьём при `debug=false`: аноним — панели нет, все 6 debug-эндпоинтов 403; админ — панель на `/order/`, `refresh-debug`/`debug-source` POST 200, на главной панели нет.
+
+**Найдено:** 12.09.2026 при прогоне `/plugin-test prefill full`, точечная регрессия ФО-12
 **Приоритет:** 🟢 Мелочь (та же предпосылка, что и у [debug-panel-not-checkout-scoped.md](debug-panel-not-checkout-scoped.md) — оба флага off по умолчанию)
 **Сценарий:** обнаружено при спот-чеке ФО-12 (L-04/L2.4) после коммитов 11.09.2026 (`eea2deb` — единая
 CSRF/method-проверка для debug-эндпоинтов, `77dab64` — снапшот и `isDebugPanelEnabled()`), не входит явно

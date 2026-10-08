@@ -47,7 +47,7 @@ git -C ../../../.. status --porcelain -- wa-system wa-apps/shop --
 
 # 4. Хардкод русского текста в пользовательской поверхности.
 # Исключены: min-бандл, комментарии и отладочная поверхность (js/prefill.debug.js,
-# templates/debug/) — она видна только админу при глобальном debug.
+# templates/debug/) — она видна только админу с полным доступом к магазину.
 grep -rnP '["\x27][^"\x27]*[а-яА-Я]{3}' js/ templates/ \
   --include='*.js' --include='*.html' --exclude='*.min.js' \
   --exclude='prefill.debug.js' --exclude-dir='debug' \
@@ -68,7 +68,7 @@ php ../../../../wa.php compress shop/plugins/prefill -style false
 | `templates/actions/settings/blocks/ContactsDialog.html:13` | `aria-label="Закрыть"` | 🔴 **реальный пробел локализации** — заменить на `_wp()` (ФО-13) |
 | `js/modules/ParamsChoiceManager.js:145` | русский текст в `logger.debug()` | 🟢 не пользовательский текст, оставляем |
 
-Исключённая отладочная поверхность (`js/prefill.debug.js` — 14 строк `confirm()`/`alert()`, `templates/debug/*` — 24 строки) не локализована **осознанно**: видна только админу при глобальном debug. Если решим её локализовать — снять `--exclude` и завести задачу.
+Исключённая отладочная поверхность (`js/prefill.debug.js` — 14 строк `confirm()`/`alert()`, `templates/debug/*` — 24 строки) не локализована **осознанно**: видна только админу с полным доступом к магазину. Если решим её локализовать — снять `--exclude` и завести задачу.
 
 ### L1 — автотесты
 
@@ -88,7 +88,7 @@ for t in tests/*Test.php; do php "$t" || echo "ПРОВАЛ: $t"; done
 | L2.1 | Гость не создаёт следов | `curl -sk -o /dev/null -D - https://wa-dev.loc/ \| grep -i '^set-cookie'` | нет ни одной куки `prefill_*` | P5, P8 |
 | L2.2 | Ассеты не висят на каталоге | `test $(curl -sk https://wa-dev.loc/ \| grep -c 'plugins/prefill') -eq 0` | 0 на главной и в карточке товара | A1 |
 | L2.3 | Ассеты есть на чекауте | `curl -sk -b jar https://wa-dev.loc/order/ \| grep -c 'plugins/prefill'` | > 0 при товаре в корзине | A1 |
-| L2.4 | Изменяющие debug-эндпоинты закрыты | `for e in clear-storage force-prefill reset-and-refill; do curl -sk -o /dev/null -w "%{http_code} $e\n" -X POST https://wa-dev.loc/prefill/$e; done` | ни один не выполняет команду анониму; GET `refresh-debug`/`debug-source` доступны только при gate панели и читают текущий контекст | — |
+| L2.4 | Debug-эндпоинты закрыты | `for e in clear-storage force-prefill reset-and-refill refresh-debug debug-source logs; do curl -sk -o /dev/null -w "%{http_code} $e\n" -X POST https://wa-dev.loc/prefill/$e; done` | **403** у всех шести — и при включённой `debug_panel`, и при глобальном debug | — |
 | L2.5 | Гость не лезет в чужую историю | `curl -sk -X POST https://wa-dev.loc/prefill/params-choice` и `.../apply-delivery -d 'order_id=1'` | **403** | P6 |
 
 На инсталляции с плагином «SEO-регионы» L2.1 не может требовать «только `landing`»: `PHPSESSID` анониму ставит он, проверено его выключением. Критерий сужен до отсутствия `prefill_*`.
@@ -415,10 +415,11 @@ A1–A8, A11, A12 реализованы 11.09.2026 — см. [tests/TESTS.md](T
 
 | ID | Сценарий | Ожидание | Правило | Конф. |
 |---|---|---|---|---|
-| L-01 | debug off | Панель не выводится, служебные эндпоинты отказывают даже админу | — | K16 |
-| L-02 | debug on + `debug_panel=off` | Панель не выводится | — | K16 |
-| L-03 | debug on + `debug_panel=on` + админ | Панель и стек хуков видны, `refresh-debug` работает | — | K16 |
-| L-04 `SMOKE` | Аноним дёргает изменяющие debug-endpoints `clear-storage`, `force-prefill`, `reset-and-refill` | Все отказывают | — | K2 |
+| L-01 | `debug_panel=off` + админ | Панель не выводится, debug-эндпоинты отвечают 403 даже админу | — | K16 |
+| L-02 | `debug_panel=on` + аноним или покупатель | Панели нет, `isDebug:false` в JS-инициализаторе, debug-эндпоинты 403 | — | K16 |
+| L-03 | `debug_panel=on` + админ, глобальный debug **выключен** | Панель на `/order/`, `refresh-debug`/`debug-source` POST 200, в консоли `[prefill]` | — | K16 |
+| L-04 `SMOKE` | Аноним дёргает все debug-endpoints (`clear-storage`, `force-prefill`, `reset-and-refill`, `refresh-debug`, `debug-source`, `logs`) | Все 403 | — | K2 |
+| L-07 | `debug_panel=on` + админ, главная или карточка товара | Панели нет — только страница оформления заказа | — | K16 |
 | L-05 | Админ: `force-prefill`, `reset-and-refill` | Источник действительно перечитывается (видно по счётчику SQL) | — | K16 |
 | L-06 | Уровень лога `warning` (умолчание) | `debug`-строки не пишутся; лог не растёт на каждом запросе | — | K1 |
 

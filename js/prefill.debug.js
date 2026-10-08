@@ -165,7 +165,7 @@
 
     function refresh(button) {
         runAction(button, function () {
-            return request('prefill/refresh-debug', 'GET').then(function (data) {
+            return request('prefill/refresh-debug', 'POST').then(function (data) {
                 var trace = panel().querySelector('#prefill-debug-trace');
                 replaceFromHtml('#prefill-debug-state', data.html);
                 var replacementTrace = panel().querySelector('#prefill-debug-trace');
@@ -176,7 +176,7 @@
 
     function loadSource(button) {
         runAction(button, function () {
-            return request('prefill/debug-source', 'GET').then(function (data) {
+            return request('prefill/debug-source', 'POST').then(function (data) {
                 replaceFromHtml('#prefill-debug-source', data.html);
             });
         });

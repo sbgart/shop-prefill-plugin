@@ -97,10 +97,12 @@ class shopPrefillPluginFrontendHooks
         // DialogManager и его вызовы живут в JS-модулях, подключаемых тем же условием.
         if ($this->page_detector->isCheckoutPage()) {
             $head_html .= shopPrefillPluginViewProvider::render('checkout/DialogTemplates');
-        }
 
-        if ($this->is_debug_panel) {
-            $head_html .= shopPrefillPluginDebug::renderDebugPanel();
+            // Панель показывает сессию оформления заказа и события его хуков — на других
+            // страницах ей нечего показать. Кому она видна, решает isDebugPanelEnabled()
+            if ($this->is_debug_panel) {
+                $head_html .= shopPrefillPluginDebug::renderDebugPanel();
+            }
         }
 
         return $head_html;
@@ -232,8 +234,10 @@ class shopPrefillPluginFrontendHooks
         $js_params = [
             'pluginID'                  => shopPrefillPlugin::PLUGIN_ID,
             'appUrl'                    => wa()->getAppUrl('shop'),
-            'isDebug'                   => $this->is_debug,
-            'canSendServerLogs'         => wa()->getUser()->isAdmin('shop'),
+            // JS-логгер — часть диагностики: пишет только тому, кому видна панель. Иначе при
+            // включённом логгере консоль и серверный лог засыпали бы браузеры всех посетителей
+            'isDebug'                   => $this->is_debug_panel,
+            'canSendServerLogs'         => $this->is_debug_panel,
             'isAuth'                    => $this->user_provider->isAuth(),
             'myDeliveryVariantsEnabled' => $this->storefront_settings['prefill']['my_delivery_variants'] ?? true,
             'myDeliveryVariantsButtonClasses' => $this->storefront_settings['prefill']['my_delivery_variants_button_classes'] ?? '',
@@ -273,7 +277,8 @@ class shopPrefillPluginFrontendHooks
             ],
         ];
 
-        // Несжатые ассеты и isDebug в JS (логгер) — по глобальному debug; панель — по is_debug_panel
+        // Несжатые ассеты — по глобальному debug (это нужно разработчику плагина);
+        // логгер и панель — по is_debug_panel, см. $js_params выше
         $this->assets_manager->init(
             $this->is_debug,
             $css_variables,

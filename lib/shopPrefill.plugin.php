@@ -92,7 +92,8 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
-     * Режим отладки плагина = глобальный debug Webasyst (несжатые ассеты, JS-логгер, служебные эндпоинты).
+     * Глобальный debug Webasyst — только сборка ассетов: несжатые модули вместо бандла.
+     * Это нужно разработчику плагина; диагностика от него не зависит, см. isDebugPanelEnabled().
      */
     public function isDebug(): bool
     {
@@ -100,17 +101,25 @@ class shopPrefillPlugin extends shopPlugin
     }
 
     /**
-     * Плавающая панель и стек хуков в head: только при глобальном debug и включённой настройке витрины prefill.debug_panel.
+     * Диагностика (панель, её эндпоинты, JS-логгер): настройка витрины prefill.debug_panel
+     * и полный доступ к магазину у текущего пользователя.
+     *
+     * От глобального debug не зависит намеренно: ради одного плагина никто не станет
+     * переводить весь живой сайт в режим отладки, а поддержке панель нужна именно там.
+     * Видимость ограничивает проверка прав — покупатель панель не увидит, даже если
+     * настройку оставили включённой.
      */
     public function isDebugPanelEnabled(): bool
     {
-        if (! waSystemConfig::isDebug()) {
+        $settings = $this->getEffectiveStorefrontSettings();
+
+        if (empty($settings['prefill']['debug_panel'])) {
             return false;
         }
 
-        $settings = $this->getEffectiveStorefrontSettings();
-
-        return ! empty($settings['prefill']['debug_panel']);
+        // Тот же уровень, что требуется для открытия настроек плагина: панель показывает
+        // сессию оформления заказа и умеет её сбрасывать
+        return wa()->getUser()->isAdmin(self::APP_ID);
     }
 
     /**

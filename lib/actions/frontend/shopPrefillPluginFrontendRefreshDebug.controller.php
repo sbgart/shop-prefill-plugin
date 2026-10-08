@@ -1,18 +1,14 @@
 <?php
 
 /** Обновляет снимок текущего состояния без чтения истории заказов. */
-class shopPrefillPluginFrontendRefreshDebugController extends waJsonController
+class shopPrefillPluginFrontendRefreshDebugController extends shopPrefillPluginFrontendDebugBaseController
 {
-    public function execute()
+    protected function handle()
     {
         try {
             waLocale::loadByDomain(['shop', 'prefill']);
             waSystem::pushActivePlugin('prefill', 'shop');
             $plugin = shopPrefillPlugin::getInstance();
-            if (!$plugin->isDebugPanelEnabled()) {
-                $this->errors = ['error' => 'Access denied'];
-                return;
-            }
 
             $vars = shopPrefillPluginDebug::collectCurrentState($plugin);
             $vars['initial_events'] = [];

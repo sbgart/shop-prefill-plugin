@@ -77,8 +77,7 @@ Located in `lib/actions/frontend/`:
 - `FrontendParamsChoice` — returns available delivery options for selection UI
 - `FrontendApplyDelivery` — applies selected delivery option
 - `FrontendConsent` — saves guest consent
-- `FrontendLogs`, `FrontendForcePrefill`, `FrontendResetAndRefill`, `FrontendClearStorage` — debug/dev-only endpoints extending `shopPrefillPluginFrontendDebugBaseController` (gated by `isAdmin('shop')`, except `FrontendLogs` which is intentionally public)
-- `FrontendRefreshDebug`, `FrontendDebugSource` — refresh/inspect the diagnostic snapshot; extend `waJsonController` directly, **not** the debug base, and gate only on `isDebugPanelEnabled()` — no `isAdmin`/CSRF check (known open gap for `FrontendRefreshDebug`, [docs/bugs/refresh-debug-missing-admin-csrf-gate.md](docs/bugs/refresh-debug-missing-admin-csrf-gate.md); `FrontendDebugSource` has the same shape but no filed issue yet)
+- `FrontendLogs`, `FrontendForcePrefill`, `FrontendResetAndRefill`, `FrontendClearStorage`, `FrontendRefreshDebug`, `FrontendDebugSource` — debug-panel endpoints; all extend `shopPrefillPluginFrontendDebugBaseController`: POST + `isDebugPanelEnabled()` + CSRF. Read-only ones included — they expose the checkout session, so there is no weaker gate for them
 
 ### Data Flow
 
@@ -145,4 +144,4 @@ Archive output: `wa-apps/shop/plugins/prefill/prefill.tar.gz`. Must be `.tar.gz`
 - `self::$effective_storefront` / `self::$effective_storefront_settings` are request-scoped caches (PHP resets statics between requests anyway, so no explicit invalidation is needed)
 - Storefront lookups are nullable by name: `findCurrentStorefront()` / `findStorefront($code)` return `null` (use them in backend actions and report a clear error), while `getGlobalStorefront()` and `getEffectiveStorefront()` always return an object
 - `order_action.create` fires outside the storefront too (backend, API, CLI, import). The hook exits early via `isStorefrontRequest()`: there is no checkout session there, and the admin's guest cookie would otherwise be attached to a customer's order
-- Debug mode is tied to `waSystemConfig::isDebug()` (Webasyst global debug flag)
+- **Two separate debug switches.** `isDebug()` = Webasyst global debug, controls only asset build (separate unminified modules instead of the bundle) — a developer concern. Diagnostics (panel, its endpoints, JS logger) is `isDebugPanelEnabled()` = storefront setting `debug_panel` + `isAdmin('shop')`, deliberately **independent** of global debug: no shop will switch the whole live site into debug mode for one plugin, and support needs the panel exactly there. The rights check is what keeps customers out — never gate diagnostics on global debug alone again ([docs/bugs/done/debug-panel-not-checkout-scoped.md](docs/bugs/done/debug-panel-not-checkout-scoped.md)). The panel renders only on the checkout page

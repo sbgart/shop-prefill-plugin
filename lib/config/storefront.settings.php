@@ -8,7 +8,8 @@ return [
         // shopPrefillPluginFillParamsCollection::normalizeLimit()
         'my_delivery_variants_limit'          => ['value' => 5, 'filter' => FILTER_VALIDATE_INT],
         'my_delivery_variants_button_classes' => ['value' => ''],
-        // Плавающая панель отладки и связанный UI (при глобальном debug Webasyst)
+        // Плавающая панель отладки на чекауте и JS-логгер; видна только при полном доступе
+        // к магазину, от глобального debug Webasyst не зависит (см. isDebugPanelEnabled())
         'debug_panel'                         => ['value' => false, 'filter' => FILTER_VALIDATE_BOOLEAN],
         // Группы секций чекаута: customer=auth, delivery=region+shipping+details, payment, confirm
         'sections'                            => [

@@ -1,18 +1,14 @@
 <?php
 
 /** Явно читает источник истории для просмотра, ничего не применяя к checkout. */
-class shopPrefillPluginFrontendDebugSourceController extends waJsonController
+class shopPrefillPluginFrontendDebugSourceController extends shopPrefillPluginFrontendDebugBaseController
 {
-    public function execute()
+    protected function handle()
     {
         try {
             waLocale::loadByDomain(['shop', 'prefill']);
             waSystem::pushActivePlugin('prefill', 'shop');
             $plugin = shopPrefillPlugin::getInstance();
-            if (!$plugin->isDebugPanelEnabled()) {
-                $this->errors = ['error' => 'Access denied'];
-                return;
-            }
 
             $vars = shopPrefillPluginDebug::loadSource($plugin);
             $this->response = [
